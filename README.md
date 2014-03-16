@@ -55,6 +55,7 @@ Now playing the audio through your Loopback interface will make it possible to c
 Not to worry! There are (at least) two ways of sending the audio output to the loopback and your actual audio interface at the same time:
 
 - pulseaudio (easy):
+
 In the file "/etc/pulse/default.pa" add the line  "load-module module-combine-sink" (in pulseaudio versions < 2.0 the module is only called "module-combine"). Then restart pulseaudio.
 
 Pulseaudio setup can also be done in paprefs (debain: sudo apt-get install paprefs && paprefs&), the far right tab "Simultaneous Output" and check the box.
@@ -62,6 +63,7 @@ Pulseaudio setup can also be done in paprefs (debain: sudo apt-get install papre
 After that there should be an extra Output in your sound options called Simultaneous output to... Note that when using this method if you turn down the volume on the Simultaneous output, this will effect the visualizer. So to avoid this you have to select the actual output then turn down the volume then select the Simultaneous output again.
 
 - alsa (hard):
+
 Look at the inculded example file: /etc/asound.cnf. I was able to make this work on my laptop an Asus ux31 running elemetary os. But had no luck with the alsa method on my Rasberry PI with an USB DAC runnig rasbian. The pulseaudio method however works perfectly on my PI.
 
 Read more about the alsa method [here](http://stackoverflow.com/questions/12984089/capture-playback-on-play-only-sound-card-with-alsa)
