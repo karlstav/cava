@@ -56,7 +56,8 @@ Not to worry! There are (at least) two ways of sending the audio output to the l
 
 - pulseaudio (easy):
 
-In the file "/etc/pulse/default.pa" add the line  "load-module module-combine-sink" (in pulseaudio versions < 2.0 the module is only called "module-combine"). Then restart pulseaudio.
+In the file "/etc/pulse/default.pa" add the line  "load-module module-combine-sink" (in pulseaudio versions < 2.0 the module is only called "module-combine"). Then restart pulseaudio. For some reason i had to turn of realtime scheduling in order for this to work on raspberry pi, set "realtime-scheduling = no" in /etc/pulse/daemon.conf.
+
 
 Pulseaudio setup can also be done in paprefs (debain: sudo apt-get install paprefs && paprefs&), the far right tab "Simultaneous Output" and check the box.
 
