@@ -63,7 +63,7 @@ fftw_plan p;
 struct timespec start, stop;
 double accum;
 char *color;
-int col = 37;
+int col = 36;
 int sens = 100;
 int beat=0;
 //**END INIT
@@ -247,15 +247,25 @@ for(o=0;o<M/32;o++)
         {
                 //              left                            right
                  //structuere [litte],[litte],[big],[big],[litte],[litte],[big],[big]... 
-                                
-                x[n+(int)frames*o] = ((buffer[i+(format/4)-1 ] << 8)+(buffer[i+(format/8)-1] << 8))/2;//avg of left and right
-                if(debug==1)printf("1: %f\n",x[n+(int)frames*o]); 
-                lo=((buffer[i+(format/4)-2]+buffer[i+(format/8)-2])/2);
+                  
+                //first channel           
+                x[n+(int)frames*o] = ((buffer[i+(format/4)-1 ] << 8));//+(buffer[i+(format/8)-1] << 8))/2;//avg of left and right 
+                lo=((buffer[i+(format/4)-2]));//+buffer[i+(format/8)-2])/2);
                 if (lo<0)lo=lo+255;
                 if(x[n+(int)frames*o]>=0)x[n+(int)frames*o]= x[n+(int)frames*o] + lo;
                 if(x[n+(int)frames*o]<0)x[n+(int)frames*o]= x[n+(int)frames*o] - lo;
-                if(debug==1)printf("2: %d\n",lo);  
-                if(debug==1)printf("3: %f\n",x[n+(int)frames*o]); 
+
+                //other channel
+                temp=(buffer[i+(format/8)-1] << 8);
+                lo=buffer[i+(format/8)-2];
+                if(lo<0)lo=lo+255;
+                if(temp>=0)temp=temp+lo;
+                else temp=temp-lo;
+
+                //adding channels
+                x[n+(int)frames*o]=(x[n+(int)frames*o]+temp)/2;
+
+                
                     if(x[n+(int)frames*o]>hpeak) hpeak=x[o];
                     if(x[n+(int)frames*o]<lpeak) lpeak=x[o];
                 n++;  
