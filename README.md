@@ -1,4 +1,4 @@
-C.A.V.A
+C.A.V.A.
 =========
 Console-based Audio Visualizer for Alsa
 
@@ -113,13 +113,15 @@ If there is a huge buffer in your audio device, you might experience that cava i
 Usage
 --------------------
 ```
-./cava [options]
+Usage : ./cava [options]
 
 Options:
-	-b 1..(console columns/2-1) or 200, number of bars in the spectrum (default 20 + fills up the console), program wil auto adjust to maxsize if input is to high)
+	-b 1..(console columns/2-1) or 200)	 number of bars in the spectrum (default 20 + fills up the console), program wil auto adjust to maxsize if input is to high)
 
-	-d 'alsa device', name of alsa capture device (default 'hw:1,1')
+	-d 'alsa device'	 name of alsa capture device (default 'hw:1,1')
 
-	-c color	suported colors: red, green, yellow, magenta, cyan, white, bliue (default: cyan)
+	-c color	suported colors: red, green, yellow, magenta, cyan, white, blue (default: cyan)
+
+	-s sensitivity %	 sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth
 ```
 exit with ctrl+c

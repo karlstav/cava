@@ -64,11 +64,17 @@ struct timespec start, stop;
 double accum;
 char *color;
 int col = 37;
-//---------- THIS IS THE END OF INIT, MUST STOP PUTTING INIT BELOW
+int sens = 100;
+
+//**END INIT
+
+
+
+
 
 
 //**arg handler**//
-while ((c = getopt (argc, argv, "b:d:c:t:B")) != -1)
+while ((c = getopt (argc, argv, "b:d:s:c:t:B")) != -1)
          switch (c)
            {
            case 'b':
@@ -78,6 +84,9 @@ while ((c = getopt (argc, argv, "b:d:c:t:B")) != -1)
              break;
            case 'd':
              device = optarg;
+             break;
+           case 's':
+             sens = atoi(optarg);
              break;
            case 'c':
             col=0;
@@ -96,7 +105,7 @@ while ((c = getopt (argc, argv, "b:d:c:t:B")) != -1)
                 }
              break;
            case '?':
-             printf ("\nUsage : ./cava [options]\n\nOptions:\n\t-b 1..(console columns/2-1) or 200, number of bars in the spectrum (default 20 + fills up the console), program wil auto adjust to maxsize if input is to high)\n\n\t-d 'alsa device', name of alsa capture device (default 'hw:1,1')\n\n\t-c color\tsuported colors: red, green, yellow, magenta, cyan, white, blue (default: cyan)\n\n\"");
+             printf ("\nUsage : ./cava [options]\n\nOptions:\n\t-b 1..(console columns/2-1) or 200)\t number of bars in the spectrum (default 20 + fills up the console), program wil auto adjust to maxsize if input is to high)\n\n\t-d 'alsa device'\t name of alsa capture device (default 'hw:1,1')\n\n\t-c color\tsuported colors: red, green, yellow, magenta, cyan, white, blue (default: cyan)\n\n\t-s sensitivity %\t sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth\n\n");
              return 1;
            default:
              abort ();
@@ -111,7 +120,7 @@ action.sa_handler = &sigint_handler;
 sigaction(SIGINT, &action, &old_action);
 
 
-//**drawing frame**//
+//**preparing screen**//
 if(debug==0){
 virt = system("setfont cava.psf");
 system("setterm -cursor off");
@@ -133,46 +142,18 @@ if(autoband==1) bands=bands+(((w.ws_col)-(bw*bands+bands-1))/(bw+1));
 rest=(((w.ws_col)-(bw*bands+bands-1)));
 if(rest<0)rest=0;
 
+
+//printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",(int)w.ws_row,(int)w.ws_col,bands,bw,rest);
+
 //resetting console
 printf("\033[0m\n");
 system("clear");
 
 printf("\033[%dm",col);//setting volor
+printf("\033[1m"); //setting "bright" color mode, looks cooler...
 
 
 
-
-/*
-if(debug==0){
-for(yb=0;yb<w.ws_row;yb++)
-{
-for(xb=0;xb<w.ws_col;xb++)
-{
-    if(yb==0)
-    {
-    if(xb==0)printf("\u250c");//top left
-    else if(xb==w.ws_col-1)printf("\u2510");//top right
-    else printf("\u2500");//top 
-    }
-    else if(yb==w.ws_row-1)
-    {   
-    if(xb==0)printf("\u2514");//bottom left
-    else if(xb==w.ws_col-1)printf("\u2518");//bottom right
-    else printf("\u2500");//bottom 
-    }
-    else 
-    {
-    if (xb==0||xb==w.ws_col-1)printf("\u2502");//left and right  
-    else printf("%1c",32);    
-    }
-}
-if(yb!=w.ws_row-1)printf("\n");
-}
-printf("\r\033[%dC",1);
-printf("%c[%dA",27,w.ws_row-2);//backup
-fflush(stdout);
-}
-*/
 
 
 //**init sound device***//
@@ -324,11 +305,13 @@ for(o=0;o<M/32;o++)
             //mulitplise by log of frequency probably because of eq master cd standard, riaa...?
 
 
-            f[o]=((peak[o]*(float)height*log(hcf[o]+10)*log(hcf[o]+10))) /(254*(M/8)*(log(hcf[bands-1]))) ;  //weighing signal to height and frequency
+            f[o]=((peak[o]*(float)height*log(lcf[o]+hcf[o]+10)*log(lcf[o]+hcf[o]+10))) /(254*(M/8)*(log(hcf[bands-1]))) ;  //weighing signal to height and frequency
+
+            f[o]=f[o]*((float)sens/100);
 
             if(f[o]>height)f[o]=height;//just in case
 
-            if(debug==1){ printf("%d: f:%f->%f peak:%f adjpeak: %f \n",o,fc[o],fc[o+1],peak[o],f[o]);}
+            if(debug==1){ printf("%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n",o,fc[o],fc[o+1],lcf[o],hcf[o],peak[o],f[o]);}
         }
       if(debug==1){ printf("topp overall unfiltered:%f \n",peak[bands]);
  
@@ -408,7 +391,8 @@ if (debug==0)
            
                     
           }
-        printf("\n\033[%dC",(rest/2));//next line and one to the right
+        printf("\n");//next line
+        if(rest!=0)printf("\033[%dC",(rest/2));//center adjustment
         }
 
 printf("\033[%dA",height);//backup
