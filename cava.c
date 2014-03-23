@@ -47,7 +47,7 @@ long int lpeak,hpeak;
 int bands=20;
 int sleep=0;
 float h;
-int i, n, o, size, dir, err,xb,yb,bw,format,rate,width,height,c,rest,virt;
+int i, n, o, size, dir, err,xb,yb,bw,format,rate,width,height,c,rest,virt,lo;
 int autoband=1;
 //long int peakhist[bands][400];
 double temp;
@@ -65,7 +65,7 @@ double accum;
 char *color;
 int col = 37;
 int sens = 100;
-
+int beat=0;
 //**END INIT
 
 
@@ -74,7 +74,7 @@ int sens = 100;
 
 
 //**arg handler**//
-while ((c = getopt (argc, argv, "b:d:s:c:t:B")) != -1)
+while ((c = getopt (argc, argv, "b:d:s:c:")) != -1)
          switch (c)
            {
            case 'b':
@@ -143,7 +143,7 @@ rest=(((w.ws_col)-(bw*bands+bands-1)));
 if(rest<0)rest=0;
 
 
-//printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",(int)w.ws_row,(int)w.ws_col,bands,bw,rest);
+printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",(int)w.ws_row,(int)w.ws_col,bands,bw,rest);
 
 //resetting console
 printf("\033[0m\n");
@@ -248,11 +248,18 @@ for(o=0;o<M/32;o++)
                 //              left                            right
                  //structuere [litte],[litte],[big],[big],[litte],[litte],[big],[big]... 
                                 
-                x[n+(int)frames*o] = (buffer[i+(format/4)-1]+buffer[i+(format/8)-1])/2;//avg of left and right
-               
+                x[n+(int)frames*o] = ((buffer[i+(format/4)-1 ] << 8)+(buffer[i+(format/8)-1] << 8))/2;//avg of left and right
+                if(debug==1)printf("1: %f\n",x[n+(int)frames*o]); 
+                lo=((buffer[i+(format/4)-2]+buffer[i+(format/8)-2])/2);
+                if (lo<0)lo=lo+255;
+                if(x[n+(int)frames*o]>=0)x[n+(int)frames*o]= x[n+(int)frames*o] + lo;
+                if(x[n+(int)frames*o]<0)x[n+(int)frames*o]= x[n+(int)frames*o] - lo;
+                if(debug==1)printf("2: %d\n",lo);  
+                if(debug==1)printf("3: %f\n",x[n+(int)frames*o]); 
                     if(x[n+(int)frames*o]>hpeak) hpeak=x[o];
                     if(x[n+(int)frames*o]<lpeak) lpeak=x[o];
-                n++;          
+                n++;  
+                  
         }
 }
 
@@ -305,7 +312,7 @@ for(o=0;o<M/32;o++)
             //mulitplise by log of frequency probably because of eq master cd standard, riaa...?
 
 
-            f[o]=((peak[o]*(float)height*log(lcf[o]+hcf[o]+10)*log(lcf[o]+hcf[o]+10))) /(254*(M/8)*(log(hcf[bands-1]))) ;  //weighing signal to height and frequency
+            f[o]=((peak[o]*(float)height*log(lcf[o]+hcf[o]+10)*log(lcf[o]+hcf[o]+10))) /(65536*(M/8)*(log(hcf[bands-1]))) ;  //weighing signal to height and frequency
 
             f[o]=f[o]*((float)sens/100);
 
@@ -334,6 +341,15 @@ for(o=0;o<M/32;o++)
 //**DRAWING**// -- put in function file maybe?
 if (debug==0)
 {
+/* //**BEAT detection, not yet implemented...
+    printf("\033[0m");
+    printf("\033[%dm",col);
+    if (beat)
+        {
+        printf("\033[47m");
+        beat=0;
+        }
+*/
     for (n=(height-1);n>=0;n--)
         {
         o=0;   
