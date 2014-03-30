@@ -98,7 +98,7 @@ Another note on fonts, "setfont" is suposed to return the defualt font, but this
  
 - In terminal emulators:
 
-In terminal emulator like xTerm, the font is chosen in the software and cannot be changed by an apliaction. So find your terminal settings and try out diferent fonts, some look pretty crap with the block charachters :( . "WenQuanYi Micro Hei Mono" is what I have found to look pretty good, But it still looks better in the tty. 
+In terminal emulator like xTerm, the font is chosen in the software and cannot be changed by an apliaction. So find your terminal settings and try out diferent fonts, some look pretty crap with the block charachters :( . "FreeMono Bold" and "WenQuanYi Micro Hei Mono" is what I have found to look pretty good, But it still looks much better in the tty. 
 
 !!warning!! cava also turns of the cursor, it's suposed to turn it back on on exit (ctrl+c), but in case it terminates unexpectedly, run: "setterm -cursor on" to get the cursor back.
 
