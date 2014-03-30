@@ -2,13 +2,13 @@ C.A.V.A.
 =========
 Console-based Audio Visualizer for Alsa
 
-![spectrum](http://stavestrand.no/cava2.gif "spectrum")
+![spectrum](http://stavestrand.no/cava5.gif "spectrum")
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no )
 
 What it is
 ----------
-C.A.V.A is a bar spectrum analyzer for audio using Alsa for input. The frequency range is limited to 80-8000Hz. I know that the human ear can hear from 20 up to 20,000 Hz (and probably "sense" even higher frequencies). But the frequencies between 80 - 8000Hz seems to me to be the sounds that are most distinguishable. (I do believe telephones used to be limited to 8kHz as well.)
+C.A.V.A is a bar spectrum analyzer for audio using Alsa for input. The frequency range is limited to 50-12000Hz. I know that the human ear can hear from 20 up to 20,000 Hz (and probably "sense" even higher frequencies). But the frequencies between 50 - 12000Hz seems to me to be the sounds that are most distinguishable. (I do believe telephones used to be limited to as low as 8kHz.)
 
 This is my first actual "published" work and I am not a professional programmer so the source code is probably, by all conventions, a complete mess.
 
@@ -116,12 +116,14 @@ Usage
 Usage : ./cava [options]
 
 Options:
-	-b 1..(console columns/2-1) or 200)	 number of bars in the spectrum (default 20 + fills up the console), program wil auto adjust to maxsize if input is to high)
+	-b 1..(console columns/2-1) or 200	 number of bars in the spectrum (default 25 + fills up the console), program wil auto adjust to maxsize if input is to high)
 
-	-d 'alsa device'	 name of alsa capture device (default 'hw:1,1')
+	-d 'alsa device'			 name of alsa capture device (default 'hw:1,1')
 
-	-c color	suported colors: red, green, yellow, magenta, cyan, white, blue (default: cyan)
+	-c color				 suported colors: red, green, yellow, magenta, cyan, white, blue (default: cyan)
 
-	-s sensitivity %	 sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth
+	-s sensitivity %			 sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth
+
+	-f framerate 				 max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)
 ```
 exit with ctrl+c
