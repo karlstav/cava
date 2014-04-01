@@ -1,10 +1,8 @@
 #include<stdio.h>
 #include<stdbool.h>
-#include <time.h>
 #include <math.h>
 #include <alsa/asoundlib.h>
 #include <sys/ioctl.h>
-#include <unistd.h>
 #include <fftw3.h>
 #define PI 3.14159265358979323846
 #include<unistd.h>
@@ -26,6 +24,7 @@ void sigint_handler(int sig_no)
     printf("\033[0m\n");
     system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz ");
     system("setterm -cursor on");
+    system("setterm -blank 10");
     system("clear");        
     printf("CTRL-C pressed -- goodbye\n");
     sigaction(SIGINT, &old_action, NULL);
@@ -33,11 +32,9 @@ void sigint_handler(int sig_no)
 }
 
 
-
 void*
 music(void* data)
 {
-
 signed char *buffer;
 snd_pcm_t *handle;
 snd_pcm_hw_params_t *params;
@@ -55,17 +52,17 @@ if ((err = snd_pcm_open(&handle, device,  SND_PCM_STREAM_CAPTURE , 0) < 0))
   printf("error opening stream:    %s\n",snd_strerror(err) );
 else
  if(debug==1){ printf("open stream succes\n");  }    
-snd_pcm_hw_params_alloca(&params);
-snd_pcm_hw_params_any (handle, params);
-snd_pcm_hw_params_set_access(handle, params, SND_PCM_ACCESS_RW_INTERLEAVED);
-snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_LE); 
-snd_pcm_hw_params_set_channels(handle, params, 2);
+snd_pcm_hw_params_alloca(&params);//assembling params
+snd_pcm_hw_params_any (handle, params);//setting defaults or something
+snd_pcm_hw_params_set_access(handle, params, SND_PCM_ACCESS_RW_INTERLEAVED);//interleeaved mode right left right left
+snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_LE); //trying to set 16bit
+snd_pcm_hw_params_set_channels(handle, params, 2);//asuming stereo
 val = 44100;
-snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir);
+snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir);//trying 44100 rate
 frames = 32;
-snd_pcm_hw_params_set_period_size_near(handle, params, &frames, &dir);
+snd_pcm_hw_params_set_period_size_near(handle, params, &frames, &dir); //number of frames pr read
 
-err = snd_pcm_hw_params(handle, params);
+err = snd_pcm_hw_params(handle, params); //atempting to set params
 if (err < 0) {
     fprintf(stderr,
             "unable to set hw parameters: %s\n",
@@ -73,22 +70,20 @@ if (err < 0) {
     exit(1);
 }
 
-snd_pcm_hw_params_get_format(params, (snd_pcm_format_t * )&val); //getting format	
-
+snd_pcm_hw_params_get_format(params, (snd_pcm_format_t * )&val); //getting actual format	
+//convverting result to number of bits
 if(val<6)format=16;
 else if(val>5&&val<10)format=24;
 else if(val>9)format=32;
 
-
 snd_pcm_hw_params_get_rate( params, &rate, &dir); //getting rate 	
-if(debug==1)printf("detected rate: %d\n",rate);
 
 snd_pcm_hw_params_get_period_size(params,&frames, &dir);   
 snd_pcm_hw_params_get_period_time(params,  &val, &dir);
 
-size = frames * (format/8)*2; /* bytes/sample * 2 channels */
+size = frames * (format/8)*2; // frames * bits/8 * 2 channels 
 buffer = (char *) malloc(size); 
-radj=format/4;
+radj=format/4;//adjustments for interleaved
 ladj=format/8;
 o=0;
 while(1){
@@ -131,16 +126,11 @@ while(1){
                 o++;
                 if(o==M-1)o=0;
 
-                //shifing ringbuffer one to the left, this ended up sing to much cpu..
+                //shifing ringbuffer one to the left, this ended up using to much cpu..
                 //for(o=0;o<M-1;o++) shared[o]=shared[o+1];
-
-                n++;  
-                  
+                n++;                
         }
-
     }
-
-
 }
 
 
@@ -173,6 +163,7 @@ fftw_complex out[M/2+1][2];
 fftw_plan p;
 char *color;
 int col = 36;
+int bgcol = 0;
 int sens = 100;
 int move=0;
 int fall[200];
@@ -180,7 +171,7 @@ float fpeak[200];
 float k[200];
 float g;
 int framerate=60;
-char *usage="\nUsage : ./cava [options]\n\nOptions:\n\t-b 1..(console columns/2-1) or 200)\t number of bars in the spectrum (default 25 + fills up the console), program wil auto adjust to maxsize if input is to high)\n\n\t-d 'alsa device'\t name of alsa capture device (default 'hw:1,1')\n\n\t-c color\tsuported colors: red, green, yellow, magenta, cyan, white, blue (default: cyan)\n\n\t-s sensitivity %\t sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth\n\n\t-f framerate \t max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60\n\n";
+char *usage="\nUsage : ./cava [options]\n\nOptions:\n\t-b 1..(console columns/2-1) or 200\t number of bars in the spectrum (default 25 + fills up the console), program wil auto adjust to maxsize if input is to high)\n\n\t-d 'alsa device'\t\t\t name of alsa capture device (default 'hw:1,1')\n\n\t-c color\t\t\t\t suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\n\t-C backround color\t\t\t supported colors: same as above (default: no change) \n\n\t-s sensitivity %\t\t\t sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth\n\n\t-f framerate \t\t\t\t max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)\n\n";
 //**END INIT
 
 for (i=0;i<200;i++)
@@ -193,7 +184,7 @@ for (i=0;i<M;i++)shared[M]=0;
 
 
 //**arg handler**//
-while ((c = getopt (argc, argv, "b:d:s:f:c:h")) != -1)
+while ((c = getopt (argc, argv, "b:d:s:f:c:C:h")) != -1)
          switch (c)
            {
            case 'b':
@@ -213,6 +204,7 @@ while ((c = getopt (argc, argv, "b:d:s:f:c:h")) != -1)
            case 'c':
             col=0;
              color = optarg;
+             if(strcmp(color,"black")==0) col=30;
              if(strcmp(color,"red")==0) col=31;
              if(strcmp(color,"green")==0) col=32;
              if(strcmp(color,"yellow")==0) col=33;
@@ -221,6 +213,23 @@ while ((c = getopt (argc, argv, "b:d:s:f:c:h")) != -1)
              if(strcmp(color,"cyan")==0) col=36;
              if(strcmp(color,"white")==0) col=37;
              if(col==0)
+                {
+                printf("color %s not suprted\n",color);
+                exit(1);
+                }
+             break;
+           case 'C':
+            bgcol=0;
+             color = optarg;
+             if(strcmp(color,"black")==0) bgcol=40;
+             if(strcmp(color,"red")==0) bgcol=41;
+             if(strcmp(color,"green")==0) bgcol=42;
+             if(strcmp(color,"yellow")==0) bgcol=43;
+             if(strcmp(color,"blue")==0) bgcol=44;
+             if(strcmp(color,"magenta")==0) bgcol=45;
+             if(strcmp(color,"cyan")==0) bgcol=46;
+             if(strcmp(color,"white")==0) bgcol=47;
+             if(bgcol==0)
                 {
                 printf("color %s not suprted\n",color);
                 exit(1);
@@ -238,13 +247,10 @@ while ((c = getopt (argc, argv, "b:d:s:f:c:h")) != -1)
 
 
 //**ctrl c handler**//
-
 struct sigaction action;
 memset(&action, 0, sizeof(action));
 action.sa_handler = &sigint_handler;
 sigaction(SIGINT, &action, &old_action);
-
-
 
 
 
@@ -291,13 +297,13 @@ while (format==-1||rate==-1)
         }
     }
 printf("got format: %d and rate %d\n",format,rate);
-
+debug=0;
 //**calculating cutof frequencies**/
 for(n=0;n<bands+1;n++)
 { 
-    fc[n]=12000*pow(10,-2.5+(((float)n/(float)bands)*2.5));//decided to cut it at 12k, little interesting to hear above
-    fr[n]=fc[n]/(rate); //remember nyquist
-    lcf[n]=fr[n]*(M/2+1);
+    fc[n]=10000*pow(10,-2.35+(((float)n/(float)bands)*2.35));//decided to cut it at 10k, little interesting to hear above
+    fr[n]=fc[n]/(rate/2); //remember nyquist!
+    lcf[n]=fr[n]*(M/2);  //lfc stores the lower cut frequency fro each band in the fft out buffer
 
     if(n!=0)
         {
@@ -311,9 +317,7 @@ for(n=0;n<bands+1;n++)
 //exit(1);
 
 //constants to wigh signal to frequency
-for(n=0;n<bands;n++)k[n]=((float)height*log(lcf[n]+2) )/ (1024*(M/4)); 
-
-
+for(n=0;n<bands;n++)k[n]=((float)height*log(lcf[n]+2) )/(1024*(M/4));//1024 is max height acording to 10bit length M is divided by beacause os the fftw 
 
 
 p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
@@ -323,13 +327,29 @@ p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
 if(debug==0){
 virt = system("setfont cava.psf");
 system("setterm -cursor off");
+system("setterm -blank 0");
 //resetting console
 printf("\033[0m\n");
 system("clear");
 
-printf("\033[%dm",col);//setting volor
-printf("\033[1m"); //setting "bright" color mode, looks cooler...
+printf("\033[%dm",col);//setting color
 
+printf("\033[1m"); //setting "bright" color mode, looks cooler... I think
+if(bgcol!=0)
+printf("\033[%dm",bgcol);
+    {
+    for (n=(height);n>=0;n--)
+            {
+                 for (i=0;i<width+bands;i++)
+                {
+
+                printf(" ",bgcol);//setting backround volor
+
+                }
+            printf("\n");//setting volor
+            }
+    printf("\033[%dA",height);//backup
+    }
 }
 
 
@@ -375,8 +395,8 @@ while  (1)
                 if(y[i]>peak[o]) peak[o]=y[i];     
                 }
 
-            temp=peak[o]*k[o];  //weighing signal to height and frequency
-
+            temp=peak[o]*k[o]*((float)sens/100);;  //weighing signal to height, set sens and frequency
+    
             
             //**falloff function**//
             if(temp<flast[o])
@@ -392,10 +412,9 @@ while  (1)
                 }
 
             flast[o]=f[o]; //memmory for falloff func
-            f[o]=f[o]*((float)sens/100); //adjusting sens
 
             if(f[o]>height)f[o]=height;//just in case
-
+            if(f[o]<0.125)f[o]=0.125;
             if(debug==1){ printf("%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n",o,fc[o],fc[o+1],lcf[o],hcf[o],peak[o],f[o]);}
         }
      // if(debug==1){ printf("topp overall unfiltered:%f \n",peak[bands]); }
@@ -514,23 +533,9 @@ printf("\033[%dA",height);//backup
 usleep((1/(float)framerate)*1000000);//sleeping for set us
 
 }
-//
 
-//snd_pcm_drain(handle);
-//snd_pcm_drop(handle);
-//snd_pcm_close(handle);
-/* //tried to make this frameramet limit to save cpu....
-if( clock_gettime( CLOCK_REALTIME, &stop) == -1 ) {
-      perror( "clock gettime" );
-      exit( EXIT_FAILURE );
-}
-*/
-//accum = (( stop.tv_sec - start.tv_sec )+ ( stop.tv_nsec - start.tv_nsec ))/1000000;
-//if(accum<50000&&accum>0)usleep(50000-accum); //16666.666666667 usec = 60 fps  
-//printf("time used: %f\n",accum);
 }
 
-fftw_destroy_plan(p);
 return 0;
 }
     
