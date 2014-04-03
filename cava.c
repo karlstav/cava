@@ -76,6 +76,7 @@ if(val<6)format=16;
 else if(val>5&&val<10)format=24;
 else if(val>9)format=32;
 
+
 snd_pcm_hw_params_get_rate( params, &rate, &dir); //getting rate 	
 
 snd_pcm_hw_params_get_period_size(params,&frames, &dir);   
@@ -301,9 +302,9 @@ debug=0;
 //**calculating cutof frequencies**/
 for(n=0;n<bands+1;n++)
 { 
-    fc[n]=10000*pow(10,-2.35+(((float)n/(float)bands)*2.35));//decided to cut it at 10k, little interesting to hear above
-    fr[n]=fc[n]/(rate/2); //remember nyquist!
-    lcf[n]=fr[n]*(M/2);  //lfc stores the lower cut frequency fro each band in the fft out buffer
+    fc[n]=10000*pow(10,-2.37+((((float)n+1)/((float)bands+1))*2.37));//decided to cut it at 10k, little interesting to hear above
+    fr[n]=fc[n]/(rate/2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
+    lcf[n]=fr[n]*(M/4);  //lfc stores the lower cut frequency fro each band in the fft out buffer
 
     if(n!=0)
         {
@@ -317,7 +318,8 @@ for(n=0;n<bands+1;n++)
 //exit(1);
 
 //constants to wigh signal to frequency
-for(n=0;n<bands;n++)k[n]=((float)height*log(lcf[n]+2) )/(1024*(M/4));//1024 is max height acording to 10bit length M is divided by beacause os the fftw 
+for(n=0;n<bands;n++)k[n]=((float)height*log(lcf[n]+2))/(1024*(M/6));
+
 
 
 p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
@@ -395,11 +397,11 @@ while  (1)
                 if(y[i]>peak[o]) peak[o]=y[i];     
                 }
 
-            temp=peak[o]*k[o]*((float)sens/100);;  //weighing signal to height, set sens and frequency
+            temp=peak[o]*k[o]*((float)sens/100);  //weighing signal to height, set sens and frequency
     
             
             //**falloff function**//
-            if(temp<flast[o])
+            if(temp<flast[o])   
                 {
                 f[o]=fpeak[o]-(g*fall[o]*fall[o]);
                 fall[o]++;
