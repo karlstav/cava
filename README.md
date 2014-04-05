@@ -4,6 +4,8 @@ Console-based Audio Visualizer for Alsa
 
 ![spectrum](http://stavestrand.no/cava5.gif "spectrum")
 
+http://youtu.be/vA4RyatP064
+
 by [Karl Stavestrand](mailto:karl@stavestrand.no )
 
 What it is
