@@ -59,7 +59,7 @@ snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_LE); //trying to
 snd_pcm_hw_params_set_channels(handle, params, 2);//asuming stereo
 val = 44100;
 snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir);//trying 44100 rate
-frames = 32;
+frames = 256;
 snd_pcm_hw_params_set_period_size_near(handle, params, &frames, &dir); //number of frames pr read
 
 err = snd_pcm_hw_params(handle, params); //atempting to set params
@@ -283,7 +283,6 @@ if(rest<0)rest=0;
 
 printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",(int)w.ws_row,(int)w.ws_col,bands,bw,rest);
 
-
 //**watintg for audio to be ready**//
 n=0;
 thr_id = pthread_create(&p_thread, NULL, music,(void*)device); //starting music listner
@@ -293,11 +292,11 @@ while (format==-1||rate==-1)
     n++;
     if(n>2000)
         {
-        printf("could not get rate and or format, problems with audoi thread? quiting...\n");
+        if(debug==1)printf("could not get rate and or format, problems with audoi thread? quiting...\n");
         exit(1);
         }
     }
-printf("got format: %d and rate %d\n",format,rate);
+if(debug==1)printf("got format: %d and rate %d\n",format,rate);
 debug=0;
 //**calculating cutof frequencies**/
 for(n=0;n<bands+1;n++)
@@ -318,7 +317,7 @@ for(n=0;n<bands+1;n++)
 //exit(1);
 
 //constants to wigh signal to frequency
-for(n=0;n<bands;n++)k[n]=((float)height*log(lcf[n]+2))/(1024*(M/6));
+for(n=0;n<bands;n++)k[n]=((float)height*pow(log(lcf[n]+1),1.3))/(1024*(M/6));// the log(lcf[n]+2) is because higher frequencys are usally lower ine effect in music
 
 
 
@@ -397,8 +396,8 @@ while  (1)
                 if(y[i]>peak[o]) peak[o]=y[i];     
                 }
 
-            temp=peak[o]*k[o]*((float)sens/100);  //weighing signal to height, set sens and frequency
-    
+            temp=peak[o]*k[o]*((float)sens/100); //multiplying with k and adjusting to sens settings
+            if(temp>height)temp=height;//just in case
             
             //**falloff function**//
             if(temp<flast[o])   
@@ -415,7 +414,7 @@ while  (1)
 
             flast[o]=f[o]; //memmory for falloff func
 
-            if(f[o]>height)f[o]=height;//just in case
+            
             if(f[o]<0.125)f[o]=0.125;
             if(debug==1){ printf("%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n",o,fc[o],fc[o+1],lcf[o],hcf[o],peak[o],f[o]);}
         }
@@ -426,11 +425,12 @@ while  (1)
     }
     else//**if no signal don't bother**//
     {
-        if (sleep>(rate*5)/M)//if no signal for 5 sec, go to sleep mode
+        if (sleep>(rate*3)/M)//if no signal for 3 sec, go to sleep mode
         {
             if(debug==1)printf("no sound detected for 5 sec, going to sleep mode\n");
             for (i=0;i<200;i++)flast[i]=0; //zeroing memory
-            usleep(1*200000);//wait 200 msec, then check sound again. 
+            //pthread_cancel(thr_id);// this didnt work to well, killing sound thread
+            usleep(1*1000000);//wait 1 sec, then check sound again. 
             continue;
         }
         if(debug==1)printf("no sound detected, trying again\n");  
@@ -536,8 +536,8 @@ usleep((1/(float)framerate)*1000000);//sleeping for set us
 
 }
 
-}
 
+}
 return 0;
 }
     
