@@ -31,7 +31,7 @@ void sigint_handler(int sig_no)
     kill(0, SIGINT);
 }
 
-
+//ALSA audio listner
 void*
 music(void* data)
 {
@@ -135,14 +135,63 @@ while(1){
 }
 
 
+//FIFO audio listner
+void*
+fifomusic(void* data)
+{
+ FILE *fp;
+ 
+ int fifo;
+ int n=0;
+ signed char buf[1024];
+ int tempr,templ,lo;
+ int i,q;
+ int size=1024;
+ char *path = ((char*)data);
+ fp =  fopen(path,"r");
 
+while (1)
+ {
+
+    fread(&buf, sizeof(char),size,fp);
+    
+    for (q=0;q<(size/4);q++)
+        { 
+        //printf("%d, %d\n",buf[q],buf[q+1]);
+
+        tempr = ( buf[size - 4*q-1] << 2);
+        lo =  ( buf[size - 4*q ] >> 6);
+        //printf("%d\n",buf[4*q+1]); 
+        if (lo<0)lo=lo+4;
+        if(tempr>=0)tempr= tempr + lo;
+        if(tempr<0)tempr= tempr - lo;    
+        
+
+        templ = ( buf[size - 4*q - 3] << 2);
+        lo =  ( buf[size - 4*q - 2] >> 6);
+        
+        if(lo<0)lo=lo+4;
+        if(templ>=0)templ=templ+lo;
+        else templ=templ-lo;  
+         
+        //printf("%d\n",((tempr+templ)/2));
+        shared[n]=(tempr+templ)/2;
+
+        n++;
+        if(n==M-1)n=0;
+        }
+   }
+   fclose(fp);
+}
 
 
 int main(int argc, char **argv)
 {
 pthread_t  p_thread; 
 int        thr_id; 
+char *input = "alsa"; 
 char *device = "hw:1,1";
+char *path = "/tmp/mpd.fifo";
 float fc[200];//={150.223,297.972,689.062,1470,3150,5512.5,11025,18000};
 float fr[200];//={0.00340905,0.0067567,0.015625,0.0333,0.07142857,0.125,0.25,0.4};
 int lcf[200], hcf[200];
@@ -153,7 +202,7 @@ int y[M/2+1];
 long int lpeak,hpeak;
 int bands=25;
 int sleep=0;
-int i, n, o, size, dir, err,bw,width,height,c,rest,virt;
+int i, n, o, size, dir, err,bw,width,height,c,rest,virt,im;
 int autoband=1;
 //long int peakhist[bands][400];
 float temp;
@@ -172,7 +221,7 @@ float fpeak[200];
 float k[200];
 float g;
 int framerate=60;
-char *usage="\nUsage : ./cava [options]\n\nOptions:\n\t-b 1..(console columns/2-1) or 200\t number of bars in the spectrum (default 25 + fills up the console), program wil auto adjust to maxsize if input is to high)\n\n\t-d 'alsa device'\t\t\t name of alsa capture device (default 'hw:1,1')\n\n\t-c color\t\t\t\t suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\n\t-C backround color\t\t\t supported colors: same as above (default: no change) \n\n\t-s sensitivity %\t\t\t sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth\n\n\t-f framerate \t\t\t\t max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)\n\n";
+char *usage="\nUsage : ./cava [options]\n\nOptions:\n\t-b 1..(console columns/2-1) or 200\t number of bars in the spectrum (default 25 + fills up the console), program wil auto adjust to maxsize if input is to high)\n\n\t-i 'input method'\t\t\t method used for listnening to audio, supports 'alsa' and 'fifo'\n\n\t-d 'alsa device'\t\t\t name of alsa capture device (default 'hw:1,1')\n\n\t-p 'fifo path'\t\t\t\t path to fifo (default '/tmp/mpd.fifo')\n\n\t-c color\t\t\t\t suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\n\t-C backround color\t\t\t supported colors: same as above (default: no change) \n\n\t-s sensitivity %\t\t\t sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth\n\n\t-f framerate \t\t\t\t max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)\n\n";
 //**END INIT
 
 for (i=0;i<200;i++)
@@ -185,11 +234,25 @@ for (i=0;i<M;i++)shared[M]=0;
 
 
 //**arg handler**//
-while ((c = getopt (argc, argv, "b:d:s:f:c:C:h")) != -1)
+while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:h")) != -1)
          switch (c)
            {
+           case 'p':
+            path = optarg;
+            break;
+           case 'i':
+             im=0;
+             input = optarg;
+             if(strcmp(input,"alsa")==0) im=1;
+             if(strcmp(input,"fifo")==0) im=2;
+              if(im==0)
+                {
+                printf("input method %s not supprted, supported methods are: 'alsa' and 'fifo'\n",input);
+                exit(1);
+                } 
+            break;                
            case 'b':
-             bands = atoi(optarg);
+            bands = atoi(optarg);
             autoband=0;  //dont automaticly add bands to fill frame
             if (bands>200)bands=200;
              break;
@@ -283,9 +346,12 @@ if(rest<0)rest=0;
 
 printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",(int)w.ws_row,(int)w.ws_col,bands,bw,rest);
 
-//**watintg for audio to be ready**//
 n=0;
-thr_id = pthread_create(&p_thread, NULL, music,(void*)device); //starting music listner
+
+if(im==1)
+{
+//**watintg for audio to be ready**//
+thr_id = pthread_create(&p_thread, NULL, music,(void*)device); //starting alsamusic listner
 while (format==-1||rate==-1)
     {
     usleep(1000);
@@ -298,6 +364,15 @@ while (format==-1||rate==-1)
     }
 if(debug==1)printf("got format: %d and rate %d\n",format,rate);
 debug=0;
+}
+
+if(im==2)
+{
+thr_id = pthread_create(&p_thread, NULL, fifomusic,(void*)path); //starting fifomusic listner
+rate=44100;
+format=16;
+}
+
 //**calculating cutof frequencies**/
 for(n=0;n<bands+1;n++)
 { 
