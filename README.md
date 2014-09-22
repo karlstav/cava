@@ -11,7 +11,7 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no )
 
 Updates
 ----------
-22th Sept. 2014 - updated support for fifo (mpd).
+9/22/2014 - updated support for fifo (mpd).
 
 What it is
 ----------
