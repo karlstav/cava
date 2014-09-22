@@ -8,6 +8,11 @@ http://youtu.be/vA4RyatP064
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no )
 
+
+Updates
+----------
+22th Sept. 2014 - updated support for fifo (mpd).
+
 What it is
 ----------
 C.A.V.A is a bar spectrum analyzer for audio using Alsa for input. The frequency range is limited to 50-12000Hz. I know that the human ear can hear from 20 up to 20,000 Hz (and probably "sense" even higher frequencies). But the frequencies between 50 - 12000Hz seems to me to be the sounds that are most distinguishable. (I do believe telephones used to be limited to as low as 8kHz.)
@@ -39,6 +44,8 @@ make
 ```
 
 
+
+
 Capturing audio straight from output
 -------------
 
@@ -63,7 +70,7 @@ In the file "/etc/pulse/default.pa" add the line  "load-module module-combine-si
 
 Pulseaudio setup can also be done in paprefs (debain: sudo apt-get install paprefs && paprefs&), the far right tab "Simultaneous Output" and check the box.
 
-After that there should be an extra Output in your sound options called Simultaneous output to... Note that when using this method if you turn down the volume on the Simultaneous output, this will effect the visualizer. So to avoid this you have to select the actual output then turn down the volume then select the Simultaneous output again.
+After that there should be an extra Output in your sound options called "Simultaneous output to..." Note that when using this method if you turn down the volume on the Simultaneous output, this will effect the visualizer. So to avoid this you have to select the actual output then turn down the volume then select the Simultaneous output again.
 
 - alsa (hard):
 
@@ -73,6 +80,29 @@ Read more about the alsa method [here](http://stackoverflow.com/questions/129840
 
 
 Cava defaults to "hw:1,1" if your loopback interface is not on that index, or you want to capture audio from somewhere else, simply cahnge this with the -d option.
+
+
+Capturing audio from fifo output (mpd)
+-------------
+add this lines in mpd:
+
+```
+audio_output {
+    type                    "fifo"
+    name                    "my_fifo"
+    path                    "/tmp/mpd.fifo"
+    format                  "44100:16:2"
+}
+```
+
+run cava with:
+```
+ ~ $ ./cava -i fifo
+```
+
+The path of the fifo can be specified with -p.
+
+There might be an issue with syncronisation/latency here..
 
 Running via ssh:
 --------------------
@@ -100,7 +130,7 @@ Another note on fonts, "setfont" is suposed to return the defualt font, but this
  
 - In terminal emulators:
 
-In terminal emulator like xTerm, the font is chosen in the software and cannot be changed by an apliaction. So find your terminal settings and try out diferent fonts, some look pretty crap with the block charachters :( . "FreeMono Bold" and "WenQuanYi Micro Hei Mono" is what I have found to look pretty good, But it still looks much better in the tty. 
+In terminal emulator like xTerm, the font is chosen in the software and cannot be changed by an apliaction. So find your terminal settings and try out diferent fonts, some look pretty crap with the block charachters :( . "FreeMono Bold" and "WenQuanYi Micro Hei Mono" is what I have found to look pretty good, But it still looks much better in the tty. I found out that it looks pretty good in the standard gnome terminal.
 
 !!warning!! cava also turns of the cursor, it's suposed to turn it back on on exit (ctrl+c), but in case it terminates unexpectedly, run: "setterm -cursor on" to get the cursor back.
 
@@ -120,9 +150,15 @@ Usage : ./cava [options]
 Options:
 	-b 1..(console columns/2-1) or 200	 number of bars in the spectrum (default 25 + fills up the console), program wil auto adjust to maxsize if input is to high)
 
+	-i 'input method'			 method used for listnening to audio, supports 'alsa' and 'fifo'
+
 	-d 'alsa device'			 name of alsa capture device (default 'hw:1,1')
 
-	-c color				 suported colors: red, green, yellow, magenta, cyan, white, blue (default: cyan)
+	-p 'fifo path'				 path to fifo (default '/tmp/mpd.fifo')
+
+	-c color				 suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)
+
+	-C backround color			 supported colors: same as above (default: no change) 
 
 	-s sensitivity %			 sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth
 
