@@ -2,7 +2,7 @@ C.A.V.A.
 =========
 Console-based Audio Visualizer for Alsa
 
-![spectrum](http://stavestrand.no/cava5.gif "spectrum")
+![spectrum](http://stavestrand.no/cava6.gif "spectrum")
 
 http://youtu.be/vA4RyatP064
 
