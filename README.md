@@ -102,7 +102,16 @@ run cava with:
 
 The path of the fifo can be specified with -p.
 
-There might be an issue with syncronisation/latency here..
+I had some trouble with sync (the visualizer was before the sound) reducing the alsa buffer in the mpd fixed it:
+
+```
+audio_output {
+        type            "alsa"
+        name            "My ALSA"
+        buffer_time     "50000" #  (50ms)  default is 500000 microseconds (0.5 seconds)
+}
+```
+
 
 Running via ssh:
 --------------------
