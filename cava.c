@@ -190,6 +190,7 @@ int main(int argc, char **argv)
 pthread_t  p_thread; 
 int        thr_id; 
 char *input = "alsa"; 
+int im = 1;
 char *device = "hw:1,1";
 char *path = "/tmp/mpd.fifo";
 float fc[200];//={150.223,297.972,689.062,1470,3150,5512.5,11025,18000};
@@ -202,7 +203,7 @@ int y[M/2+1];
 long int lpeak,hpeak;
 int bands=25;
 int sleep=0;
-int i, n, o, size, dir, err,bw,width,height,c,rest,virt,im;
+int i, n, o, size, dir, err,bw,width,height,c,rest,virt;
 int autoband=1;
 //long int peakhist[bands][400];
 float temp;
