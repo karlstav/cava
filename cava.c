@@ -25,7 +25,8 @@ void sigint_handler(int sig_no)
     system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz ");
     system("setterm -cursor on");
     system("setterm -blank 10");
-    system("clear");        
+    system("clear");
+    system("stty echo"); 
     printf("CTRL-C pressed -- goodbye\n");
     sigaction(SIGINT, &old_action, NULL);
     kill(0, SIGINT);
@@ -408,6 +409,7 @@ system("setterm -blank 0");
 //resetting console
 printf("\033[0m\n");
 system("clear");
+system("stty -echo");
 
 printf("\033[%dm",col);//setting color
 
