@@ -173,4 +173,6 @@ Options:
 
 	-f framerate 				 max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)
 ```
-exit with ctrl+c
+exit with ctrl+c.
+
+If cava quits unexpectedly or is force killed echo must be turned on manualy with "stty -echo".
