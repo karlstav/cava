@@ -422,7 +422,7 @@ printf("\033[%dm",bgcol);
                  for (i=0;i<width+bands;i++)
                 {
 
-                printf(" ",bgcol);//setting backround volor
+                printf(" ");//setting backround volor
 
                 }
             printf("\n");//setting volor
@@ -432,7 +432,7 @@ printf("\033[%dm",bgcol);
 }
 
 
-
+//debug=1;
 //**start main loop**//
 while  (1)
 {
@@ -454,11 +454,13 @@ while  (1)
     // if(debug==1) printf("%d %f\n",i,in[i]);
     }
     peak[bands]=(hpeak+abs(lpeak));
-
-    //**if sound go ahead with fft**//
-    if (peak[bands]!=0)    
+    if (peak[bands]==0)sleep++;
+    else sleep=0;		
+   
+    //**if sound for the last 5 sec go ahead with fft**//
+    if (sleep<framerate*5)    
     {
-        sleep=0; //wake if was sleepy
+       
         
         fftw_execute(p);         //applying FFT to signal
 
@@ -501,19 +503,13 @@ while  (1)
        
        //if(debug==1){ printf("topp overall alltime:%f \n",sum);}
     }
-    else//**if no signal don't bother**//
+    else//**if in sleep mode wait and continiue**//
     {
-        if (sleep>(rate*3)/M)//if no signal for 3 sec, go to sleep mode
-        {
-            if(debug==1)printf("no sound detected for 5 sec, going to sleep mode\n");
-            for (i=0;i<200;i++)flast[i]=0; //zeroing memory
+            if(debug==1)printf("no sound detected for 3 sec, going to sleep mode\n");
+            //for (i=0;i<200;i++)flast[i]=0; //zeroing memory	no more nesceseary after faloff on pauses
             //pthread_cancel(thr_id);// this didnt work to well, killing sound thread
             usleep(1*1000000);//wait 1 sec, then check sound again. 
             continue;
-        }
-        if(debug==1)printf("no sound detected, trying again\n");  
-        sleep++;
-        continue;
     }
 
 //**DRAWING**// -- put in function file maybe?
