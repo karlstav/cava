@@ -18,7 +18,6 @@ int debug  = 0;
 int format = -1;
 int rate   = -1;
 
-
 void sigint_handler(int sig_no)
 {
     printf("\033[0m\n");
@@ -77,7 +76,6 @@ music(void* data)
     if(val<6)format=16;
     else if(val>5&&val<10)format=24;
     else if(val>9)format=32;
-
 
     snd_pcm_hw_params_get_rate( params, &rate, &dir); //getting rate
 
@@ -142,7 +140,6 @@ music(void* data)
     }
 }
 
-
 //FIFO audio listner
 void*
 fifomusic(void* data)
@@ -174,7 +171,6 @@ fifomusic(void* data)
             if(tempr>=0)tempr= tempr + lo;
             if(tempr<0)tempr= tempr - lo;
 
-
             templ = ( buf[size - 4*q - 3] << 2);
             lo =  ( buf[size - 4*q - 2] >> 6);
 
@@ -191,7 +187,6 @@ fifomusic(void* data)
     }
     fclose(fp);
 }
-
 
 int main(int argc, char **argv)
 {
@@ -240,7 +235,6 @@ int main(int argc, char **argv)
         fpeak[i]=0;
     }
     for (i=0; i<M; i++)shared[M]=0;
-
 
 //**arg handler**//
     while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:h")) != -1)
@@ -318,13 +312,11 @@ int main(int argc, char **argv)
             abort ();
         }
 
-
 //**ctrl c handler**//
     struct sigaction action;
     memset(&action, 0, sizeof(action));
     action.sa_handler = &sigint_handler;
     sigaction(SIGINT, &action, &old_action);
-
 
 
 //**getting h*w of term**//
@@ -342,7 +334,6 @@ int main(int argc, char **argv)
     }
     bw=width/bands;
 
-
     g=((float)height/1000)*pow((60/(float)framerate),2.5);//calculating gravity
 
 //if no bands are selected it tries to padd the default 20 if there is extra room
@@ -351,7 +342,6 @@ int main(int argc, char **argv)
 //checks if there is stil extra room, will use this to center
     rest=(((w.ws_col)-(bw*bands+bands-1)));
     if(rest<0)rest=0;
-
 
     printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",(int)w.ws_row,(int)w.ws_col,bands,bw,rest);
 
@@ -406,9 +396,7 @@ int main(int argc, char **argv)
     for(n=0; n<bands; n++)k[n]=((float)height*pow(log(lcf[n]+1),1.3))/(1024*(M/6)); // the log(lcf[n]+2) is because higher frequencys are usally lower ine effect in music
 
 
-
     p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
-
 
 //**preparing screen**//
     if(debug==0) {
@@ -440,7 +428,6 @@ int main(int argc, char **argv)
         }
     }
 
-
 //debug=1;
 //**start main loop**//
     while  (1)
@@ -448,7 +435,6 @@ int main(int argc, char **argv)
         if(debug==1) {
             system("clear");
         }
-
 
 //**populating input buffer & checking if there is sound**//
         lpeak=0;
@@ -471,7 +457,6 @@ int main(int argc, char **argv)
         //**if sound for the last 5 sec go ahead with fft**//
         if (sleep<framerate*5)
         {
-
 
             fftw_execute(p);         //applying FFT to signal
 
@@ -505,14 +490,12 @@ int main(int argc, char **argv)
 
                 flast[o]=f[o]; //memmory for falloff func
 
-
                 if(f[o]<0.125)f[o]=0.125;
                 if(debug==1) {
                     printf("%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n",o,fc[o],fc[o+1],lcf[o],hcf[o],peak[o],f[o]);
                 }
             }
             // if(debug==1){ printf("topp overall unfiltered:%f \n",peak[bands]); }
-
 
             //if(debug==1){ printf("topp overall alltime:%f \n",sum);}
         }
@@ -541,7 +524,6 @@ int main(int argc, char **argv)
                         o++;
                         if(o<bands)move++;
                     }
-
 
 
                     //draw color or blank or move+1
@@ -610,7 +592,6 @@ int main(int argc, char **argv)
                         }
                     }
 
-
                 }
 
                 printf("\n");//next line
@@ -622,7 +603,6 @@ int main(int argc, char **argv)
             usleep((1/(float)framerate)*1000000);//sleeping for set us
 
         }
-
 
     }
     return 0;
