@@ -398,8 +398,8 @@ int main(int argc, char **argv)
 //constants to wigh signal to frequency
     for(n = 0; n < bands;
         n++)k[n] = ((float)height * pow(log(lcf[n] + 1),
-                                            1.3)) / (1024 * (M /
-                                                    6)); // the log(lcf[n]+2) is because higher frequencys are usally lower ine effect in music
+                                              2.4+((float)bands/75))) / (1024 * (M /
+                                                     12)); // the log(lcf[n]) is because higher frequencys are usally lower ine effect in music
 
 
     p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
@@ -466,9 +466,9 @@ int main(int argc, char **argv)
                 //getting peaks
                 for (i = lcf[o]; i <= hcf[o]; i++) {
                     y[i] = pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5); //getting r of compex
-                    if(y[i] > peak[o]) peak[o] = y[i];
+                    peak[o] += y[i]; //adding upp band
                 }
-
+		peak[o]=peak[o]/i; //getting average
                 temp = peak[o] * k[o] * ((float)sens /
                                          100); //multiplying with k and adjusting to sens settings
                 if(temp > height)temp = height; //just in case
@@ -588,4 +588,3 @@ int main(int argc, char **argv)
     }
     return 0;
 }
-
