@@ -5,6 +5,10 @@
 #include <sys/ioctl.h>
 #include <fftw3.h>
 #define PI 3.14159265358979323846
+#define max(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _a : _b; })
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
@@ -500,6 +504,17 @@ int main(int argc, char **argv)
             //pthread_cancel(thr_id);// this didnt work to well, killing sound thread
             usleep(1 * 1000000); //wait 1 sec, then check sound again.
             continue;
+        }
+
+        /* MONSTERCAT STYLE EASING BY CW !aFrP90ZN26 */
+        int z, m_y;
+        for (z = 0; z < bands; z++) {
+            for (m_y = z-1; m_y >= 0; m_y--) {
+                f[m_y] = max(f[z]/pow(2, z-m_y), f[m_y]);
+            }
+            for (m_y = z+1; m_y < bands; m_y++) {
+                f[m_y] = max(f[z]/pow(2, m_y-z), f[m_y]);
+            }
         }
 
 //**DRAWING**// -- put in function file maybe?
