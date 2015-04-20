@@ -7,3 +7,4 @@ TODO
 * optional framebuffer graphics
 * check possibility of grabbing audio straight from pulseaudio sink/source, and implementing such function
 * frequency distribution should be more exponential with increased number of bars
+* new gif and demo video
