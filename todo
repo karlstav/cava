@@ -1,0 +1,9 @@
+TODO
+----
+
+* make cava react to terminal resizing
+* sort sourcecode in seperate files
+* optional configure of sourcecode without requirement for ALSA dev files (mpd fifo only) 
+* optional framebuffer graphics
+* check possibility of grabbing audio straight from pulseaudio sink/source, and implementing such function
+* frequency distribution should be more exponential with increased number of bars
