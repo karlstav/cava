@@ -1,4 +1,4 @@
-C.A.V.A. - CW's fork
+C.A.V.A. 
 ====================
 
 **C**onsole-based **A**udio **V**isualizer for **A**LSA
@@ -13,7 +13,8 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
 Updates
 -------
 
-4/19/2015 - Added Monstercat style FFT easing.
+4/19/2015 - Added Monstercat style FFT easing (by [CelestialWalrus)](https://github.com/CelestialWalrus).
+
 9/22/2014 - Added support for mpd FIFO input.
 
 What it is
@@ -27,10 +28,6 @@ This is my first published code. I am not a professional programmer so the sourc
 
 Any tips or comments would be much appreciated.
 
-TODO
-----
-
-* make cava react to terminal resizing
 
 Build requirements
 ------------------
