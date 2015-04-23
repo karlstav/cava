@@ -1,7 +1,6 @@
 TODO
 ----
 
-* make cava react to terminal resizing
 * sort sourcecode in seperate files
 * optional configure of sourcecode without requirement for ALSA dev files (mpd fifo only) 
 * optional framebuffer graphics
