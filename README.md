@@ -13,6 +13,8 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
 Updates
 -------
 
+4/23/2015 - Fixed terminal window resizing, added smoothenig 
+
 4/19/2015 - Added Monstercat style FFT easing (by [CelestialWalrus)](https://github.com/CelestialWalrus).
 
 9/22/2014 - Added support for mpd FIFO input.
