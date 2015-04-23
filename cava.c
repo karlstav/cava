@@ -25,7 +25,7 @@ int rate = -1;
 void sigint_handler(int sig_no)
 {
     printf("\033[0m\n");
-    system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz ");
+    system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
     system("setterm -cursor on");
     system("setterm -blank 10");
     system("clear");
@@ -205,7 +205,8 @@ int main(int argc, char **argv)
     float fc[200];//={150.223,297.972,689.062,1470,3150,5512.5,11025,18000};
     float fr[200];//={0.00340905,0.0067567,0.015625,0.0333,0.07142857,0.125,0.25,0.4};
     int lcf[200], hcf[200];
-    float f[200];
+    float f[200];  
+    float fmem[200];	
     int flast[200];
     float peak[201];
     int y[M / 2 + 1];
@@ -239,6 +240,7 @@ int main(int argc, char **argv)
         flast[i] = 0;
         fall[i] = 0;
         fpeak[i] = 0;
+	fmem[o] = 0;
     }
     for (i = 0; i < M; i++)shared[M] = 0;
 
@@ -322,11 +324,48 @@ int main(int argc, char **argv)
     sigaction(SIGINT, &action, &old_action);
 
 
+
+    n = 0;
+    if(im == 1) {
+//**watintg for audio to be ready**//
+        thr_id = pthread_create(&p_thread, NULL, music,
+                                (void*)device); //starting alsamusic listner
+        while (format == -1 || rate == -1) {
+            usleep(1000);
+            n++;
+            if(n > 2000) {
+                if(debug == 1)
+                    printf("could not get rate and or format, problems with audoi thread? quiting...\n");
+                exit(1);
+            }
+        }
+        if(debug == 1)printf("got format: %d and rate %d\n", format, rate);
+
+    }
+
+    if(im == 2) {
+        thr_id = pthread_create(&p_thread, NULL, fifomusic,
+                                (void*)path); //starting fifomusic listner
+        rate = 44100;
+        format = 16;
+    }
+
+    p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
+
+
 //**getting h*w of term**//
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    while  (1) {//jumbing back to this loop means that you resized the screen  
+	//getting orignial numbers of bands incase of resize
+	if (autoband == 0)	{
+	    bands = atoi(optarg);
+	    if (bands > 200)bands = 200;
+	}    
+	else bands = 25;
+
     if(bands > (int)w.ws_col / 2 - 1)bands = (int)w.ws_col / 2 -
                 1; //handle for user setting to many bars
-    height = (int)w.ws_row - 1;
+    height = (int)w.ws_row -1;
     width = (int)w.ws_col - bands - 1;
     int matrix[width][height];
     for(i = 0; i < width; i++) {
@@ -342,39 +381,15 @@ int main(int argc, char **argv)
 //if no bands are selected it tries to padd the default 20 if there is extra room
     if(autoband == 1) bands = bands + (((w.ws_col) - (bw * bands + bands - 1)) /
                                            (bw + 1));
-
+    width = (int)w.ws_col - bands - 1;
 //checks if there is stil extra room, will use this to center
     rest = (((w.ws_col) - (bw * bands + bands - 1)));
     if(rest < 0)rest = 0;
 
-    printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n", (int)w.ws_row,
+    if(debug == 1) printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n", (int)w.ws_row,
            (int)w.ws_col, bands, bw, rest);
 
-    n = 0;
 
-    if(im == 1) {
-//**watintg for audio to be ready**//
-        thr_id = pthread_create(&p_thread, NULL, music,
-                                (void*)device); //starting alsamusic listner
-        while (format == -1 || rate == -1) {
-            usleep(1000);
-            n++;
-            if(n > 2000) {
-                if(debug == 1)
-                    printf("could not get rate and or format, problems with audoi thread? quiting...\n");
-                exit(1);
-            }
-        }
-        if(debug == 1)printf("got format: %d and rate %d\n", format, rate);
-        debug = 0;
-    }
-
-    if(im == 2) {
-        thr_id = pthread_create(&p_thread, NULL, fifomusic,
-                                (void*)path); //starting fifomusic listner
-        rate = 44100;
-        format = 16;
-    }
 
 //**calculating cutof frequencies**/
     for(n = 0; n < bands + 1; n++) {
@@ -399,18 +414,17 @@ int main(int argc, char **argv)
     }
 //exit(1);
 
-//constants to wigh signal to frequency
+//constants to weigh signal to frequency
     for(n = 0; n < bands;
         n++)k[n] = ((float)height * pow(log(lcf[n] + 1),
                                               2.4+((float)bands/75))) / (1024 * (M /
-                                                     12)); // the log(lcf[n]) is because higher frequencys are usally lower ine effect in music
+                                                     10)); // the log(lcf[n]) is because higher frequencys are usally lower ine effect in music
 
 
-    p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
 
 //**preparing screen**//
     if(debug == 0) {
-        virt = system("setfont cava.psf");
+        virt = system("setfont cava.psf  >/dev/null 2>&1");
         system("setterm -cursor off");
         system("setterm -blank 0");
 //resetting console
@@ -439,9 +453,24 @@ int main(int argc, char **argv)
 //debug=1;
 //**start main loop**//
     while  (1) {
+
+
+
+//**checkint if terminal windows has been resized**//
+
+    if(virt!=0){	
+    	ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+   	 if( ((int)w.ws_row - 1) != height || ((int)w.ws_col - bands - 1) != width){
+   	 break;
+   	 }
+    }
+
+
         if(debug == 1) {
             system("clear");
         }
+  
+ 
 
 //**populating input buffer & checking if there is sound**//
         lpeak = 0;
@@ -487,6 +516,14 @@ int main(int argc, char **argv)
                     fall[o] = 0;
                 }
 
+		//**smoothening**//
+
+                fmem[o]+=f[o];
+		fmem[o]=fmem[o]*0.55;
+		f[o]=fmem[o];
+
+
+ 
                 flast[o] = f[o]; //memmory for falloff func
 
                 if(f[o] < 0.125)f[o] = 0.125;
@@ -506,16 +543,16 @@ int main(int argc, char **argv)
             continue;
         }
 
-        /* MONSTERCAT STYLE EASING BY CW !aFrP90ZN26 */
-        int z, m_y;
-        for (z = 0; z < bands; z++) {
-            for (m_y = z-1; m_y >= 0; m_y--) {
-                f[m_y] = max(f[z]/pow(2, z-m_y), f[m_y]);
-            }
-            for (m_y = z+1; m_y < bands; m_y++) {
-                f[m_y] = max(f[z]/pow(2, m_y-z), f[m_y]);
-            }
-        }
+		/* MONSTERCAT STYLE EASING BY CW !aFrP90ZN26 */
+		int z, m_y;
+		for (z = 0; z < bands; z++) {
+		    for (m_y = z-1; m_y >= 0; m_y--) {
+		        f[m_y] = max(f[z]/pow(2, z-m_y), f[m_y]);
+		    }
+		    for (m_y = z+1; m_y < bands; m_y++) {
+		        f[m_y] = max(f[z]/pow(2, m_y-z), f[m_y]);
+		    }
+		}
 
 //**DRAWING**// -- put in function file maybe?
         if (debug == 0) {
@@ -601,5 +638,6 @@ int main(int argc, char **argv)
         }
 
     }
+}
     return 0;
 }
