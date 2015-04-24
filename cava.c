@@ -240,7 +240,7 @@ int main(int argc, char **argv)
         flast[i] = 0;
         fall[i] = 0;
         fpeak[i] = 0;
-	fmem[o] = 0;
+	    fmem[i] = 0;
     }
     for (i = 0; i < M; i++)shared[M] = 0;
 
