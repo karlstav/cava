@@ -119,6 +119,8 @@ To run via ssh to an external monitor, redirect output to `/dev/console`:
 
      ~# ./cava [options] > /dev/console
 
+exit with ctrl+z then run 'bg' to keep it running after you log out.
+
 (You must be root to redirect to console. Simple sudo is not enough: Run `sudo su` first.)
 
 
@@ -144,7 +146,7 @@ In terminal emulators like `xterm`, the font is chosen in the software and canno
 
 Cava also disables the terminal cursor, and turns it back on on exit, but in case it terminates unexpectedly, run `setterm -cursor on` to get it back.e
 
-Tip: Cava will look much nicer in small font sizes. Use a second terminal emulator for cava and set the font size to 1. Warning, can cause high CPU usage and latency if the terminal window is to large!
+Tip: Cava will look much nicer in small font sizes. Use a second terminal emulator for cava and set the font size to 1. Warning, can cause high CPU usage and latency if the terminal window is too large!
 
 
 Latency notes
