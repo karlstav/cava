@@ -142,7 +142,9 @@ Actually, `setfont` is supposed to return the default font, but this usually isn
 
 In terminal emulators like `xterm`, the font is chosen in the software and cannot be changed by an application. So find your terminal settings and try out different fonts. Some look pretty crap with the block charachters :(. "FreeMono Bold" and "WenQuanYi Micro Hei Mono" look pretty good, but it still looks much better in the TTY. I found out that it looks pretty good with the default `gnome-terminal` settings.
 
-Cava also disables the terminal cursor, and turns it back on on exit, but in case it terminates unexpectedly, run `setterm -cursor on` to get it back.
+Cava also disables the terminal cursor, and turns it back on on exit, but in case it terminates unexpectedly, run `setterm -cursor on` to get it back.e
+
+Tip: Cava will look much nicer in small font sizes. Use a second terminal emulator for cava and set the font size to 1. Warning, can cause high CPU usage and latency if the terminal window is to large!
 
 
 Latency notes
