@@ -213,7 +213,7 @@ int main(int argc, char **argv)
     long int lpeak, hpeak;
     int bands = 25;
     int sleep = 0;
-    int i, n, o, size, dir, err, bw, width, height, c, rest, virt;
+    int i, n, o, size, dir, err, bw, width, height, c, rest, virt, fixedbands;
     int autoband = 1;
 //long int peakhist[bands][400];
     float temp;
@@ -262,9 +262,9 @@ int main(int argc, char **argv)
             }
             break;
         case 'b':
-            bands = atoi(optarg);
+            fixedbands = atoi(optarg);
             autoband = 0; //dont automaticly add bands to fill frame
-            if (bands > 200)bands = 200;
+            if (fixedbands > 200)fixedbands = 200;
             break;
         case 'd':
             device = optarg;
@@ -357,11 +357,11 @@ int main(int argc, char **argv)
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
     while  (1) {//jumbing back to this loop means that you resized the screen  
 	//getting orignial numbers of bands incase of resize
-	if (autoband == 0)	{
-	    bands = atoi(optarg);
-	    if (bands > 200)bands = 200;
-	}    
-	else bands = 25;
+	if (autoband == 1)	{
+	    bands = 25;
+	}
+    else bands = fixedbands;    
+	 
 
     if(bands > (int)w.ws_col / 2 - 1)bands = (int)w.ws_col / 2 -
                 1; //handle for user setting to many bars
@@ -417,8 +417,8 @@ int main(int argc, char **argv)
 //constants to weigh signal to frequency
     for(n = 0; n < bands;
         n++)k[n] = ((float)height * pow(log(lcf[n] + 1),
-                                              2.4+((float)bands/75))) / (1024 * (M /
-                                                     10)); // the log(lcf[n]) is because higher frequencys are usally lower ine effect in music
+                                              2+((float)bands/75))) / (1024 * (M /
+                                                     16)); // the log(lcf[n]) is because higher frequencys are usally lower ine effect in music
 
 
 
@@ -507,6 +507,7 @@ int main(int argc, char **argv)
                 if(temp > height)temp = height; //just in case
 
                 //**falloff function**//
+
                 if(temp < flast[o]) {
                     f[o] = fpeak[o] - (g * fall[o] * fall[o]);
                     fall[o]++;
@@ -516,11 +517,11 @@ int main(int argc, char **argv)
                     fall[o] = 0;
                 }
 
-		//**smoothening**//
+	        	//**smoothening**//
 
                 fmem[o]+=f[o];
-		fmem[o]=fmem[o]*0.55;
-		f[o]=fmem[o];
+		        fmem[o]=fmem[o]*0.55;
+	        	f[o]=fmem[o];
 
 
  
