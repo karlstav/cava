@@ -232,6 +232,8 @@ int main(int argc, char **argv)
     float k[200];
     float g;
     int framerate = 60;
+    float smooth[64] = {5, 4.5, 4, 3, 2, 1.5, 1.25, 1.5, 1.5, 1.25, 1.25, 1.5, 1.25, 1.25, 1.5, 2, 2, 1.75, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.75, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+    float sm = 1.25; //min val from the above array
     char *usage =
         "\nUsage : ./cava [options]\n\nOptions:\n\t-b 1..(console columns/2-1) or 200\t number of bars in the spectrum (default 25 + fills up the console), program wil auto adjust to maxsize if input is to high)\n\n\t-i 'input method'\t\t\t method used for listnening to audio, supports 'alsa' and 'fifo'\n\n\t-d 'alsa device'\t\t\t name of alsa capture device (default 'hw:1,1')\n\n\t-p 'fifo path'\t\t\t\t path to fifo (default '/tmp/mpd.fifo')\n\n\t-c color\t\t\t\t suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\n\t-C backround color\t\t\t supported colors: same as above (default: no change) \n\n\t-s sensitivity %\t\t\t sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth\n\n\t-f framerate \t\t\t\t max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)\n\n";
 //**END INIT
@@ -545,15 +547,18 @@ int main(int argc, char **argv)
         }
 
 		/* MONSTERCAT STYLE EASING BY CW !aFrP90ZN26 */
-		int z, m_y;
-		for (z = 0; z < bands; z++) {
-		    for (m_y = z-1; m_y >= 0; m_y--) {
-		        f[m_y] = max(f[z]/pow(2, z-m_y), f[m_y]);
-		    }
-		    for (m_y = z+1; m_y < bands; m_y++) {
-		        f[m_y] = max(f[z]/pow(2, m_y-z), f[m_y]);
-		    }
-		}
+        int z, m_y;
+        float m_o = 64/bands;
+        for (z = 0; z < bands; z++) {
+            f[z] = f[z] * sm / smooth[(int)floor(z*m_o)];
+            if(f[z] < 0.125)f[z] = 0.125;
+            for (m_y = z-1; m_y >= 0; m_y--) {
+                f[m_y] = max(f[z]/pow(2, z-m_y), f[m_y]);
+            }
+            for (m_y = z+1; m_y < bands; m_y++) {
+                f[m_y] = max(f[z]/pow(2, m_y-z), f[m_y]);
+            }
+        }
 
 //**DRAWING**// -- put in function file maybe?
         if (debug == 0) {
