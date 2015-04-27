@@ -1,7 +1,7 @@
 CC       = gcc
-CFLAGS   = -Wall -Wextra
-CPPFLAGS =
-LDLIBS  = -lasound -lm -lfftw3 -lpthread
+CFLAGS   = -std=c99 -Wall -Wextra
+CPPFLAGS = -D_POSIX_SOURCE -D _POSIX_C_SOURCE=200809L
+LDLIBS   = -lasound -lm -lfftw3 -lpthread
 
 INSTALL     = install
 INSTALL_BIN = $(INSTALL) -D -m 755

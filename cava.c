@@ -1,3 +1,4 @@
+#include <alloca.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <math.h>
@@ -13,17 +14,26 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <string.h>
+#include <time.h>
 #include <getopt.h>
 #include <pthread.h>
+
+#ifdef __GNUC__
+// curses.h or other sources may already define
+#undef  GCC_UNUSED
+#define GCC_UNUSED __attribute__((unused))
+#else
+#define GCC_UNUSED /* nothing */
+#endif
 
 struct sigaction old_action;
 int M = 2048;
 int shared[2048];
 int debug = 0;
 int format = -1;
-int rate = -1;
+unsigned int rate = 0;
 
-void sigint_handler(int sig_no)
+void sigint_handler(int sig_no GCC_UNUSED)
 {
 	printf("\033[0m\n");
 	system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
@@ -92,7 +102,7 @@ music(void* data)
 	snd_pcm_hw_params_get_period_time(params,  &val, &dir);
 
 	size = frames * (format / 8) * 2; // frames * bits/8 * 2 channels
-	buffer = (char *) malloc(size);
+	buffer = malloc(size);
 	radj = format / 4; //adjustments for interleaved
 	ladj = format / 8;
 	o = 0;
@@ -155,11 +165,10 @@ fifomusic(void* data)
 {
 	FILE *fp;
 
-	int fifo;
 	int n = 0;
 	signed char buf[1024];
 	int tempr, templ, lo;
-	int i, q;
+	int q;
 	int size = 1024;
 	char *path = ((char*)data);
 	fp =  fopen(path, "r");
@@ -198,7 +207,7 @@ fifomusic(void* data)
 int main(int argc, char **argv)
 {
 	pthread_t  p_thread;
-	int        thr_id;
+	int        thr_id GCC_UNUSED;
 	char *input = "alsa";
 	int im = 1;
 	char *device = "hw:1,1";
@@ -214,11 +223,10 @@ int main(int argc, char **argv)
 	long int lpeak, hpeak;
 	int bands = 25;
 	int sleep = 0;
-	int i, n, o, size, dir, err, bw, width, height, c, rest, virt, fixedbands;
+	int i, n, o, bw, width, height, c, rest, virt, fixedbands;
 	int autoband = 1;
 //long int peakhist[bands][400];
 	float temp;
-	double sum = 0;
 	struct winsize w;
 	double in[2 * (M / 2 + 1)];
 	fftw_complex out[M / 2 + 1][2];
@@ -235,6 +243,7 @@ int main(int argc, char **argv)
 	int framerate = 60;
 	float smooth[64] = {5, 4.5, 4, 3, 2, 1.5, 1.25, 1.5, 1.5, 1.25, 1.25, 1.5, 1.25, 1.25, 1.5, 2, 2, 1.75, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.75, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 	float sm = 1.25; //min val from the above array
+	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
 	char *usage =
 	    "\nUsage : ./cava [options]\n\nOptions:\n\t-b 1..(console columns/2-1) or 200\t number of bars in the spectrum (default 25 + fills up the console), program wil auto adjust to maxsize if input is to high)\n\n\t-i 'input method'\t\t\t method used for listnening to audio, supports 'alsa' and 'fifo'\n\n\t-d 'alsa device'\t\t\t name of alsa capture device (default 'hw:1,1')\n\n\t-p 'fifo path'\t\t\t\t path to fifo (default '/tmp/mpd.fifo')\n\n\t-c color\t\t\t\t suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\n\t-C backround color\t\t\t supported colors: same as above (default: no change) \n\n\t-s sensitivity %\t\t\t sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth\n\n\t-f framerate \t\t\t\t max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)\n\n";
 //**END INIT
@@ -333,8 +342,10 @@ int main(int argc, char **argv)
 //**watintg for audio to be ready**//
 		thr_id = pthread_create(&p_thread, NULL, music,
 		                        (void*)device); //starting alsamusic listner
-		while (format == -1 || rate == -1) {
-			usleep(1000);
+		while (format == -1 || rate == 0) {
+			req.tv_sec = 0;
+			req.tv_nsec = 1000000;
+			nanosleep (&req, NULL);
 			n++;
 			if (n > 2000) {
 				if (debug == 1)
@@ -544,7 +555,10 @@ int main(int argc, char **argv)
 				if (debug == 1)printf("no sound detected for 3 sec, going to sleep mode\n");
 				//for (i=0;i<200;i++)flast[i]=0; //zeroing memory   no more nesceseary after faloff on pauses
 				//pthread_cancel(thr_id);// this didnt work to well, killing sound thread
-				usleep(1 * 1000000); //wait 1 sec, then check sound again.
+				//wait 1 sec, then check sound again.
+				req.tv_sec = 1;
+				req.tv_nsec = 0;
+				nanosleep (&req, NULL);
 				continue;
 			}
 
@@ -641,7 +655,9 @@ int main(int argc, char **argv)
 
 				printf("\033[%dA", height); //backup
 
-				usleep((1 / (float)framerate) * 1000000); //sleeping for set us
+				req.tv_sec = 0;
+				req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
+				nanosleep (&req, NULL);
 
 			}
 
