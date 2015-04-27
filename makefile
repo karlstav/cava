@@ -1,7 +1,7 @@
 CC       = gcc
 CFLAGS   = -Wall -Wextra
 CPPFLAGS =
-LDFLAGS  = -lasound -lm -lfftw3 -lpthread
+LDLIBS  = -lasound -lm -lfftw3 -lpthread
 
 INSTALL     = install
 INSTALL_BIN = $(INSTALL) -D -m 755
