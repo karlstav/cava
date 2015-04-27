@@ -50,6 +50,24 @@ Getting started
 
     make
 
+### Installing
+
+Install `cava` to default `/usr/local`:
+
+    make install
+
+Or you can change `PREFIX`, for example:
+
+    make PREFIX=$HOME/.local install
+
+### Uninstalling
+
+    make uninstall
+
+Or:
+
+    make PREFIX=$HOME/.local uninstall
+
 
 Capturing audio
 ---------------
