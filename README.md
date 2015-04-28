@@ -3,7 +3,9 @@ C.A.V.A.
 
 **C**onsole-based **A**udio **V**isualizer for **A**LSA
 
-![spectrum](http://stavestrand.no/cava6.gif "spectrum")
+![spectrum](https://cloud.githubusercontent.com/assets/5231746/7368413/7d7ca93e-ed9f-11e4-842f-61c54fc03dbe.gif "spectrum")
+
+thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( http://unix.stackexchange.com/questions/113695/gif-screencastng-the-unix-way).
 
 [Demo video](http://youtu.be/vA4RyatP064)
 
@@ -160,7 +162,7 @@ Actually, `setfont` is supposed to return the default font, but this usually isn
 
 ### In terminal emulators
 
-In terminal emulators like `xterm`, the font is chosen in the software and cannot be changed by an application. So find your terminal settings and try out different fonts. Some look pretty crap with the block charachters :(. "FreeMono Bold" and "WenQuanYi Micro Hei Mono" look pretty good, but it still looks much better in the TTY. I found out that it looks pretty good with the default `gnome-terminal` settings.
+In terminal emulators like `xterm`, the font settings is chosen in the software and cannot be changed by an application. So find your terminal settings and try out different fonts and settings. Also character spacing affects the look of the bar spectrum.
 
 Cava also disables the terminal cursor, and turns it back on on exit, but in case it terminates unexpectedly, run `setterm -cursor on` to get it back.e
 
