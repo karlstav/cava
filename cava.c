@@ -265,8 +265,26 @@ int main(int argc, char **argv)
 	float smooth[64] = {5, 4.5, 4, 3, 2, 1.5, 1.25, 1.5, 1.5, 1.25, 1.25, 1.5, 1.25, 1.25, 1.5, 2, 2, 1.75, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.75, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 	float sm = 1.25; //min val from the above array
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
-	char *usage =
-	        "\nUsage : ./cava [options]\n\nOptions:\n\t-b 1..(console columns/2-1) or 200\t number of bars in the spectrum (default 25 + fills up the console), program wil auto adjust to maxsize if input is to high)\n\n\t-i 'input method'\t\t\t method used for listnening to audio, supports 'alsa' and 'fifo'\n\n\t-d 'alsa device'\t\t\t name of alsa capture device (default 'hw:1,1')\n\n\t-p 'fifo path'\t\t\t\t path to fifo (default '/tmp/mpd.fifo')\n\n\t-c color\t\t\t\t suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\n\t-C backround color\t\t\t supported colors: same as above (default: no change) \n\n\t-s sensitivity %\t\t\t sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth\n\n\t-f framerate \t\t\t\t max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)\n\n";
+	char *usage = "\n\
+Usage : ./cava [options]\n\
+\n\
+Options:\n\
+	-b 1..(console columns/2-1) or 200	 number of bars in the spectrum (default 25 + fills up the console), program wil auto adjust to maxsize if input is to high)\n\
+\n\
+	-i 'input method'			 method used for listnening to audio, supports 'alsa' and 'fifo'\n\
+\n\
+	-d 'alsa device'			 name of alsa capture device (default 'hw:1,1')\n\
+\n\
+	-p 'fifo path'				 path to fifo (default '/tmp/mpd.fifo')\n\
+\n\
+	-c color				 suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
+\n\
+	-C backround color			 supported colors: same as above (default: no change)\n\
+\n\
+	-s sensitivity %			 sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth\n\
+\n\
+	-f framerate 				 max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)\n\
+\n";
 //**END INIT**//
 
 	for (i = 0; i < 200; i++) {
