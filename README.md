@@ -3,13 +3,14 @@ C.A.V.A.
 
 **C**onsole-based **A**udio **V**isualizer for **A**LSA
 
+by [Karl Stavestrand](mailto:karl@stavestrand.no)
+
 ![spectrum](https://cloud.githubusercontent.com/assets/5231746/7368413/7d7ca93e-ed9f-11e4-842f-61c54fc03dbe.gif "spectrum")
 
 thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( http://unix.stackexchange.com/questions/113695/gif-screencastng-the-unix-way).
 
 [Demo video](http://youtu.be/vA4RyatP064)
 
-by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
 
 Updates
