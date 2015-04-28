@@ -4,6 +4,7 @@
 */
 
 #include <alloca.h>
+#include <locale.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <math.h>
@@ -286,6 +287,8 @@ Options:\n\
 	-f framerate 				 max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)\n\
 \n";
 //**END INIT**//
+
+	setlocale(LC_ALL, "");
 
 	for (i = 0; i < 200; i++) {
 		flast[i] = 0;
@@ -650,38 +653,10 @@ Options:\n\
 								if (move != 0)printf("\033[%dC", move);
 								move = 0;
 								c = ((((f[o] - (float)n) - 0.125) / 0.875 * 7) + 1);
-								switch (c) {
-								case 1:
-									if (virt == 0)printf("1");
-									else printf("\u2581");
-									break;
-								case 2:
-									if (virt == 0)printf("2");
-									else printf("\u2582");
-									break;
-								case 3:
-									if (virt == 0)printf("3");
-									else printf("\u2583");
-									break;
-								case 4:
-									if (virt == 0)printf("4");
-									else printf("\u2584");
-									break;
-								case 5:
-									if (virt == 0)printf("5");
-									else printf("\u2585");
-									break;
-								case 6:
-									if (virt == 0)printf("6");
-									else printf("\u2586");
-									break;
-								case 7:
-									if (virt == 0)printf("7");
-									else printf("\u2587");
-									break;
-								default:
-									printf(" ");
-								}
+								if (0 < c && c < 8) {
+									if (virt == 0)printf("%d", c);
+									else printf("%lc", L'\u2580' + c);
+								} else printf(" ");
 								matrix[i][n] = 2;
 							}
 						}
