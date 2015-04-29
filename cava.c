@@ -35,7 +35,6 @@
 struct sigaction old_action;
 int M = 2048;
 int shared[2048];
-int debug = 0;
 int format = -1;
 unsigned int rate = 0;
 
@@ -71,9 +70,10 @@ music(void* data)
 
 	if ((err = snd_pcm_open(&handle, device,  SND_PCM_STREAM_CAPTURE , 0) < 0))
 		printf("error opening stream:    %s\n", snd_strerror(err) );
-	else if (debug == 1) {
-		printf("open stream succes\n");
-	}
+#ifdef DEBUG
+	else printf("open stream succes\n");
+#endif
+
 	snd_pcm_hw_params_alloca(&params);//assembling params
 	snd_pcm_hw_params_any (handle, params);//setting defaults or something
 	snd_pcm_hw_params_set_access(handle, params,
@@ -117,19 +117,18 @@ music(void* data)
 		err = snd_pcm_readi(handle, buffer, frames);
 		if (err == -EPIPE) {
 			/* EPIPE means overrun */
-			if (debug == 1) {
-				fprintf(stderr, "overrun occurred\n");
-			}
+#ifdef DEBUG
+			fprintf(stderr, "overrun occurred\n");
+#endif
 			snd_pcm_prepare(handle);
 		} else if (err < 0) {
-			if (debug == 1) {
-				fprintf(stderr, "error from read: %s\n",
-				        snd_strerror(err));
-			}
+#ifdef DEBUG
+			fprintf(stderr, "error from read: %s\n", snd_strerror(err));
+#endif
 		} else if (err != (int)frames) {
-			if (debug == 1) {
-				fprintf(stderr, "short read, read %d %d frames\n", err, (int)frames);
-			}
+#ifdef DEBUG
+			fprintf(stderr, "short read, read %d %d frames\n", err, (int)frames);
+#endif
 		}
 
 		//sorting out one channel and only biggest octet
@@ -257,7 +256,9 @@ int main(int argc, char **argv)
 	int col = 36;
 	int bgcol = 0;
 	int sens = 100;
+#ifndef DEBUG
 	int move = 0;
+#endif
 	int fall[200];
 	float fpeak[200];
 	float k[200];
@@ -390,12 +391,15 @@ Options:\n\
 			nanosleep (&req, NULL);
 			n++;
 			if (n > 2000) {
-				if (debug == 1)
-					printf("could not get rate and or format, problems with audoi thread? quiting...\n");
+#ifdef DEBUG
+				printf("could not get rate and or format, problems with audoi thread? quiting...\n");
+#endif
 				exit(1);
 			}
 		}
-		if (debug == 1)printf("got format: %d and rate %d\n", format, rate);
+#ifdef DEBUG
+		printf("got format: %d and rate %d\n", format, rate);
+#endif
 
 	}
 
@@ -422,12 +426,14 @@ Options:\n\
 			                1; //handle for user setting to many bars
 		height = (int)w.ws_row - 1;
 		width = (int)w.ws_col - bands - 1;
+#ifndef DEBUG
 		int matrix[width][height];
 		for (i = 0; i < width; i++) {
 			for (n = 0; n < height; n++) {
 				matrix[i][n] = 0;
 			}
 		}
+#endif
 		bw = width / bands;
 
 		g = ((float)height / 1000) * pow((60 / (float)framerate),
@@ -441,12 +447,11 @@ Options:\n\
 		rest = (((w.ws_col) - (bw * bands + bands - 1)));
 		if (rest < 0)rest = 0;
 
-		if (debug == 1)
-			printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
-			       (int)w.ws_row,
-			       (int)w.ws_col, bands, bw, rest);
-
-
+#ifdef DEBUG
+		printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
+		       (int)w.ws_row,
+		       (int)w.ws_col, bands, bw, rest);
+#endif
 
 //**calculating cutof frequencies**/
 		for (n = 0; n < bands + 1; n++) {
@@ -464,10 +469,12 @@ Options:\n\
 				hcf[n - 1] = lcf[n] - 1;
 			}
 
-			if (debug == 1 && n != 0) {
+#ifdef DEBUG
+			if (n != 0) {
 				printf("%d: %f -> %f (%d -> %d) \n", n, fc[n - 1], fc[n], lcf[n - 1],
 				       hcf[n - 1]);
 			}
+#endif
 		}
 //exit(1);
 
@@ -480,32 +487,32 @@ Options:\n\
 
 
 //**preparing screen**//
-		if (debug == 0) {
-			virt = system("setfont cava.psf  >/dev/null 2>&1");
-			system("setterm -cursor off");
-			system("setterm -blank 0");
+		virt = system("setfont cava.psf  >/dev/null 2>&1");
+#ifndef DEBUG
+		system("setterm -cursor off");
+		system("setterm -blank 0");
 //resetting console
-			printf("\033[0m\n");
-			system("clear");
-			system("stty -echo");
+		printf("\033[0m\n");
+		system("clear");
+		system("stty -echo");
 
-			printf("\033[%dm", col); //setting color
+		printf("\033[%dm", col); //setting color
 
-			printf("\033[1m"); //setting "bright" color mode, looks cooler... I think
-			if (bgcol != 0)
-				printf("\033[%dm", bgcol);
-			{
-				for (n = (height); n >= 0; n--) {
-					for (i = 0; i < width + bands; i++) {
+		printf("\033[1m"); //setting "bright" color mode, looks cooler... I think
+		if (bgcol != 0)
+			printf("\033[%dm", bgcol);
+		{
+			for (n = (height); n >= 0; n--) {
+				for (i = 0; i < width + bands; i++) {
 
-						printf(" ");//setting backround volor
+					printf(" ");//setting backround volor
 
-					}
-					printf("\n");//setting volor
 				}
-				printf("\033[%dA", height); //backup
+				printf("\n");//setting volor
 			}
+			printf("\033[%dA", height); //backup
 		}
+#endif
 
 //debug=1;
 //**start main loop**//
@@ -522,12 +529,9 @@ Options:\n\
 				}
 			}
 
-
-			if (debug == 1) {
-				system("clear");
-			}
-
-
+#ifdef DEBUG
+			system("clear");
+#endif
 
 //**populating input buffer & checking if there is sound**//
 			lpeak = 0;
@@ -585,16 +589,18 @@ Options:\n\
 					flast[o] = f[o]; //memmory for falloff func
 
 					if (f[o] < 0.125)f[o] = 0.125;
-					if (debug == 1) {
-						printf("%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
-						       lcf[o], hcf[o], peak[o], f[o]);
-					}
+#ifdef DEBUG
+					printf("%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
+					       lcf[o], hcf[o], peak[o], f[o]);
+#endif
 				}
 				// if(debug==1){ printf("topp overall unfiltered:%f \n",peak[bands]); }
 
 				//if(debug==1){ printf("topp overall alltime:%f \n",sum);}
 			} else { //**if in sleep mode wait and continiue**//
-				if (debug == 1)printf("no sound detected for 3 sec, going to sleep mode\n");
+#ifdef DEBUG
+				printf("no sound detected for 3 sec, going to sleep mode\n");
+#endif
 				//for (i=0;i<200;i++)flast[i]=0; //zeroing memory   no more nesceseary after faloff on pauses
 				//pthread_cancel(thr_id);// this didnt work to well, killing sound thread
 				//wait 1 sec, then check sound again.
@@ -619,62 +625,60 @@ Options:\n\
 			}
 
 //**DRAWING**// -- put in function file maybe?
-			if (debug == 0) {
-				for (n = (height - 1); n >= 0; n--) {
-					o = 0;
-					move = rest / 2; //center adjustment
-					//if(rest!=0)printf("\033[%dC",(rest/2));//center adjustment
-					for (i = 0; i < width; i++) {
+#ifndef DEBUG
+			for (n = (height - 1); n >= 0; n--) {
+				o = 0;
+				move = rest / 2; //center adjustment
+				//if(rest!=0)printf("\033[%dC",(rest/2));//center adjustment
+				for (i = 0; i < width; i++) {
 
-						//next bar? make a space
-						if (i != 0 && i % bw == 0) {
-							o++;
-							if (o < bands)move++;
-						}
-
-
-						//draw color or blank or move+1
-						if (o < bands) {     //watch so it doesnt draw to far
-							if (f[o] - n < 0.125) { //blank
-								if (matrix[i][n] != 0) { //change?
-									if (move != 0)printf("\033[%dC", move);
-									move = 0;
-									printf(" ");
-								} else move++; //no change, moving along
-								matrix[i][n] = 0;
-							} else if (f[o] - n > 1) { //color
-								if (matrix[i][n] != 1) { //change?
-									if (move != 0)printf("\033[%dC", move);
-									move = 0;
-									printf("\u2588");
-								} else move++; //no change, moving along
-								matrix[i][n] = 1;
-							} else { //top color, finding fraction
-								if (move != 0)printf("\033[%dC", move);
-								move = 0;
-								c = ((((f[o] - (float)n) - 0.125) / 0.875 * 7) + 1);
-								if (0 < c && c < 8) {
-									if (virt == 0)printf("%d", c);
-									else printf("%lc", L'\u2580' + c);
-								} else printf(" ");
-								matrix[i][n] = 2;
-							}
-						}
-
+					//next bar? make a space
+					if (i != 0 && i % bw == 0) {
+						o++;
+						if (o < bands)move++;
 					}
 
-					printf("\n");//next line
+
+					//draw color or blank or move+1
+					if (o < bands) {     //watch so it doesnt draw to far
+						if (f[o] - n < 0.125) { //blank
+							if (matrix[i][n] != 0) { //change?
+								if (move != 0)printf("\033[%dC", move);
+								move = 0;
+								printf(" ");
+							} else move++; //no change, moving along
+							matrix[i][n] = 0;
+						} else if (f[o] - n > 1) { //color
+							if (matrix[i][n] != 1) { //change?
+								if (move != 0)printf("\033[%dC", move);
+								move = 0;
+								printf("\u2588");
+							} else move++; //no change, moving along
+							matrix[i][n] = 1;
+						} else { //top color, finding fraction
+							if (move != 0)printf("\033[%dC", move);
+							move = 0;
+							c = ((((f[o] - (float)n) - 0.125) / 0.875 * 7) + 1);
+							if (0 < c && c < 8) {
+								if (virt == 0)printf("%d", c);
+								else printf("%lc", L'\u2580' + c);
+							} else printf(" ");
+							matrix[i][n] = 2;
+						}
+					}
 
 				}
 
-				printf("\033[%dA", height); //backup
-
-				req.tv_sec = 0;
-				req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
-				nanosleep (&req, NULL);
+				printf("\n");//next line
 
 			}
 
+			printf("\033[%dA", height); //backup
+
+			req.tv_sec = 0;
+			req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
+			nanosleep (&req, NULL);
+#endif
 		}
 	}
 	return 0;

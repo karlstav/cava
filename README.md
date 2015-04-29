@@ -53,6 +53,16 @@ Getting started
 
     make
 
+You can use the following for compilation options, value in *italic style* is the default value:
+
+| Name | Value | Description |
+| ---- | ----- | ----------- |
+| `debug` | *0* or 1 | Debugging message switch |
+
+For example, turning on debugging messages:
+
+    make debug=1
+
 ### Installing
 
 Install `cava` to default `/usr/local`:
