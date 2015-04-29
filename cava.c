@@ -1,8 +1,3 @@
-/*
-* to keep coherent styling autostyle with:
-* astyle --style=linux --pad-oper --pad-header --max-code-length=80 --keep-one-line-blocks --keep-one-line-statements --convert-tabs --indent=tab cava.c
-*/
-
 #include <alloca.h>
 #include <locale.h>
 #include <stdio.h>
@@ -134,9 +129,7 @@ music(void* data)
 		//sorting out one channel and only biggest octet
 		n = 0; //frame counter
 		for (i = 0; i < size ; i = i + (ladj) * 2) {
-			//              left                            right
-			//structuere [litte],[litte],[big],[big],[litte],[litte],[big],[big]...
-
+			
 			//first channel
 			tempr = ((buffer[i + (radj) - 1 ] <<
 			          2)); //using the 10 upper bits this whould give me a vert res of 1024, enough...
@@ -157,8 +150,6 @@ music(void* data)
 			o++;
 			if (o == M - 1)o = 0;
 
-			//shifing ringbuffer one to the left, this ended up using to much cpu..
-			//for(o=0;o<M-1;o++) shared[o]=shared[o+1];
 			n++;
 		}
 	}
@@ -178,11 +169,7 @@ fifomusic(void* data)
 	char *path = ((char*)data);
 	int bytes = 0;
 	int flags;
-	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
-
-	req.tv_sec = 0;
-	req.tv_nsec = 10000000;
-
+	struct timespec req = { .tv_sec = 0, .tv_nsec = 10000000 };
 
 	fd = open(path, O_RDONLY);
 	flags = fcntl(fd, F_GETFL, 0);
@@ -192,7 +179,7 @@ fifomusic(void* data)
 
 		bytes = read(fd, buf, sizeof(buf));
 
-		if (bytes == -1) { //if no bytes read sleep 10ms and zero
+		if (bytes == -1) { //if no bytes read sleep 10ms and zero shared buffer
 			nanosleep (&req, NULL);
 			t++;
 			if (t > 10) {
@@ -233,8 +220,8 @@ int main(int argc, char **argv)
 	int im = 1;
 	char *device = "hw:1,1";
 	char *path = "/tmp/mpd.fifo";
-	float fc[200];//={150.223,297.972,689.062,1470,3150,5512.5,11025,18000};
-	float fr[200];//={0.00340905,0.0067567,0.015625,0.0333,0.07142857,0.125,0.25,0.4};
+	float fc[200];
+	float fr[200];
 	int lcf[200], hcf[200];
 	float f[200];
 	float fmem[200];
@@ -246,7 +233,6 @@ int main(int argc, char **argv)
 	int sleep = 0;
 	int i, n, o, bw, width, height, c, rest, virt, fixedbands;
 	int autoband = 1;
-//long int peakhist[bands][400];
 	float temp;
 	struct winsize w;
 	double in[2 * (M / 2 + 1)];
@@ -460,7 +446,7 @@ Options:\n\
 			fr[n] = fc[n] / (rate /
 			                 2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
 			lcf[n] = fr[n] * (M /
-			                  4); //lfc stores the lower cut frequency fro each band in the fft out buffer
+			                  4); //lfc stores the lower cut frequency foo each band in the fft out buffer
 
 			if (n != 0) {
 				hcf[n - 1] = lcf[n] - 1;
@@ -476,9 +462,9 @@ Options:\n\
 			}
 #endif
 		}
-//exit(1);
 
-//constants to weigh signal to frequency
+
+//creating constants to weigh signal to frequency
 		for (n = 0; n < bands;
 		     n++)k[n] = ((float)height * pow(log(lcf[n] + 1),
 			                                     2 + ((float)bands / 75))) / (1024 * (M /
@@ -505,16 +491,16 @@ Options:\n\
 			for (n = (height); n >= 0; n--) {
 				for (i = 0; i < width + bands; i++) {
 
-					printf(" ");//setting backround volor
+					printf(" ");//setting backround color
 
 				}
-				printf("\n");//setting volor
+				printf("\n");
 			}
-			printf("\033[%dA", height); //backup
+			printf("\033[%dA", height); //moving cursor back up
 		}
 #endif
 
-//debug=1;
+
 //**start main loop**//
 		while  (1) {
 
@@ -542,7 +528,6 @@ Options:\n\
 					if (shared[i] > hpeak) hpeak = shared[i];
 					if (shared[i] < lpeak) lpeak = shared[i];
 				} else in[i] = 0;
-				// if(debug==1) printf("%d %f\n",i,in[i]);
 			}
 			peak[bands] = (hpeak + abs(lpeak));
 			if (peak[bands] == 0)sleep++;
@@ -594,15 +579,11 @@ Options:\n\
 					       lcf[o], hcf[o], peak[o], f[o]);
 #endif
 				}
-				// if(debug==1){ printf("topp overall unfiltered:%f \n",peak[bands]); }
 
-				//if(debug==1){ printf("topp overall alltime:%f \n",sum);}
 			} else { //**if in sleep mode wait and continiue**//
 #ifdef DEBUG
 				printf("no sound detected for 3 sec, going to sleep mode\n");
 #endif
-				//for (i=0;i<200;i++)flast[i]=0; //zeroing memory   no more nesceseary after faloff on pauses
-				//pthread_cancel(thr_id);// this didnt work to well, killing sound thread
 				//wait 1 sec, then check sound again.
 				req.tv_sec = 1;
 				req.tv_nsec = 0;
@@ -624,12 +605,11 @@ Options:\n\
 				}
 			}
 
-//**DRAWING**// -- put in function file maybe?
+//**DRAWING**// 
 #ifndef DEBUG
 			for (n = (height - 1); n >= 0; n--) {
 				o = 0;
 				move = rest / 2; //center adjustment
-				//if(rest!=0)printf("\033[%dC",(rest/2));//center adjustment
 				for (i = 0; i < width; i++) {
 
 					//next bar? make a space
