@@ -9,6 +9,12 @@ INSTALL_BIN = $(INSTALL) -D -m 755
 PREFIX ?= /usr/local
 BINDIR  = $(DESTDIR)/$(PREFIX)/bin
 
+debug ?= 0
+
+ifeq ($(debug),1)
+CPPFLAGS += -DDEBUG
+endif
+
 all: cava
 
 cava: cava.c
