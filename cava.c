@@ -214,6 +214,7 @@ fifomusic(void* data)
 
 int main(int argc, char **argv)
 {
+	bool smode = false;
 	pthread_t  p_thread;
 	int        thr_id GCC_UNUSED;
 	char *input = "alsa";
@@ -265,14 +266,15 @@ Options:\n\
 \n\
 	-p 'fifo path'				 path to fifo (default '/tmp/mpd.fifo')\n\
 \n\
-	-c color				 suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
+	-c color 					 suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
 \n\
 	-C backround color			 supported colors: same as above (default: no change)\n\
 \n\
 	-s sensitivity %			 sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth\n\
 \n\
 	-f framerate 				 max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)\n\
-\n";
+\n\
+	-S 							 \"scientific\" mode (disables most smoothing)";
 //**END INIT**//
 
 	setlocale(LC_ALL, "");
@@ -286,7 +288,7 @@ Options:\n\
 	for (i = 0; i < M; i++)shared[i] = 0;
 
 //**arg handler**//
-	while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:h")) != -1)
+	while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:h:S")) != -1)
 		switch (c) {
 		case 'p':
 			path = optarg;
@@ -347,6 +349,9 @@ Options:\n\
 				printf("color %s not suprted\n", color);
 				exit(1);
 			}
+			break;
+		case 'S':
+			smode = true;
 			break;
 		case 'h':
 			printf ("%s", usage);
@@ -422,9 +427,11 @@ Options:\n\
 #endif
 		bw = width / bands;
 
-		g = ((float)height / 1000) * pow((60 / (float)framerate),
-		                                 2.5); //calculating gravity
-
+		if (!smode)
+		{
+			g = ((float)height / 1000) * pow((60 / (float)framerate),
+											2.5); //calculating gravity
+		}
 //if no bands are selected it tries to padd the default 20 if there is extra room
 		if (autoband == 1) bands = bands + (((w.ws_col) - (bw * bands + bands - 1)) /
 			                                    (bw + 1));
@@ -439,7 +446,7 @@ Options:\n\
 		       (int)w.ws_col, bands, bw, rest);
 #endif
 
-//**calculating cutof frequencies**/
+//**calculating cutoff frequencies**/
 		for (n = 0; n < bands + 1; n++) {
 			fc[n] = 10000 * pow(10, -2.37 + ((((float)n + 1) / ((float)bands + 1)) *
 			                                 2.37)); //decided to cut it at 10k, little interesting to hear above
@@ -464,6 +471,7 @@ Options:\n\
 		}
 
 
+		
 //creating constants to weigh signal to frequency
 		for (n = 0; n < bands;
 		     n++)k[n] = ((float)height * pow(log(lcf[n] + 1),
@@ -551,27 +559,29 @@ Options:\n\
 					temp = peak[o] * k[o] * ((float)sens /
 					                         100); //multiplying with k and adjusting to sens settings
 					if (temp > height)temp = height; //just in case
-
+					f[o] = temp;
 					//**falloff function**//
+					if (!smode) {
+						if (temp < flast[o]) {
+							f[o] = fpeak[o] - (g * fall[o] * fall[o]);
+							fall[o]++;
+						} else if (temp >= flast[o]) {
+							f[o] = temp;
+							fpeak[o] = f[o];
+							fall[o] = 0;
+						}
 
-					if (temp < flast[o]) {
-						f[o] = fpeak[o] - (g * fall[o] * fall[o]);
-						fall[o]++;
-					} else if (temp >= flast[o]) {
-						f[o] = temp;
-						fpeak[o] = f[o];
-						fall[o] = 0;
+						//**smoothening**//
+
+						fmem[o] += f[o];
+						fmem[o] = fmem[o] * 0.55;
+						f[o] = fmem[o];
+
+
+
+						flast[o] = f[o]; //memmory for falloff func	
 					}
-
-					//**smoothening**//
-
-					fmem[o] += f[o];
-					fmem[o] = fmem[o] * 0.55;
-					f[o] = fmem[o];
-
-
-
-					flast[o] = f[o]; //memmory for falloff func
+					
 
 					if (f[o] < 0.125)f[o] = 0.125;
 #ifdef DEBUG
@@ -591,17 +601,20 @@ Options:\n\
 				continue;
 			}
 
-			/* MONSTERCAT STYLE EASING BY CW !aFrP90ZN26 */
-			int z, m_y;
-			float m_o = 64 / bands;
-			for (z = 0; z < bands; z++) {
-				f[z] = f[z] * sm / smooth[(int)floor(z * m_o)];
-				if (f[z] < 0.125)f[z] = 0.125;
-				for (m_y = z - 1; m_y >= 0; m_y--) {
-					f[m_y] = max(f[z] / pow(2, z - m_y), f[m_y]);
-				}
-				for (m_y = z + 1; m_y < bands; m_y++) {
-					f[m_y] = max(f[z] / pow(2, m_y - z), f[m_y]);
+			if (!smode)
+			{
+				/* MONSTERCAT STYLE EASING BY CW !aFrP90ZN26 */
+				int z, m_y;
+				float m_o = 64 / bands;
+				for (z = 0; z < bands; z++) {
+					f[z] = f[z] * sm / smooth[(int)floor(z * m_o)];
+					if (f[z] < 0.125)f[z] = 0.125;
+					for (m_y = z - 1; m_y >= 0; m_y--) {
+						f[m_y] = max(f[z] / pow(2, z - m_y), f[m_y]);
+					}
+					for (m_y = z + 1; m_y < bands; m_y++) {
+						f[m_y] = max(f[z] / pow(2, m_y - z), f[m_y]);
+					}
 				}
 			}
 
