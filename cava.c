@@ -133,15 +133,16 @@ music(void* data)
 			//first channel
 			tempr = ((buffer[i + (radj) - 1 ] <<
 			          2)); //using the 10 upper bits this whould give me a vert res of 1024, enough...
+			
 			lo = ((buffer[i + (radj) - 2] >> 6));
-			if (lo < 0)lo = lo + 4;
+			if (lo < 0)lo = abs(lo) + 1;
 			if (tempr >= 0)tempr = tempr + lo;
 			if (tempr < 0)tempr = tempr - lo;
 
 			//other channel
 			templ = (buffer[i + (ladj) - 1] << 2);
 			lo = (buffer[i + (ladj) - 2] >> 6);
-			if (lo < 0)lo = lo + 4;
+			if (lo < 0)lo = abs(lo) + 1;
 			if (templ >= 0)templ = templ + lo;
 			else templ = templ - lo;
 
@@ -171,6 +172,9 @@ fifomusic(void* data)
 	int flags;
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 10000000 };
 
+
+
+
 	fd = open(path, O_RDONLY);
 	flags = fcntl(fd, F_GETFL, 0);
 	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
@@ -189,16 +193,18 @@ fifomusic(void* data)
 		} else { //if bytes read go ahead
 			t = 0;
 			for (q = 0; q < (size / 4); q++) {
-				tempr = ( buf[size - 4 * q - 1] << 2);
-				lo =  ( buf[size - 4 * q ] >> 6);
-				if (lo < 0)lo = lo + 4;
+
+				tempr = ( buf[ 4 * q - 1] << 2);
+
+				lo =  ( buf[4 * q ] >> 6);
+				if (lo < 0)lo = abs(lo) + 1;
 				if (tempr >= 0)tempr = tempr + lo;
-				if (tempr < 0)tempr = tempr - lo;
+				else tempr = tempr - lo;
 
-				templ = ( buf[size - 4 * q - 3] << 2);
-				lo =  ( buf[size - 4 * q - 2] >> 6);
+				templ = ( buf[ 4 * q - 3] << 2);
 
-				if (lo < 0)lo = lo + 4;
+				lo =  ( buf[ 4 * q - 2] >> 6);
+				if (lo < 0)lo = abs(lo) + 1;
 				if (templ >= 0)templ = templ + lo;
 				else templ = templ - lo;
 
@@ -274,7 +280,7 @@ Options:\n\
 \n\
 	-f framerate 				 max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)\n\
 \n\
-	-S 							 \"scientific\" mode (disables most smoothing)";
+	-S 							 \"scientific\" mode (disables most smoothing)\n";
 //**END INIT**//
 
 	setlocale(LC_ALL, "");
