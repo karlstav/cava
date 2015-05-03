@@ -479,12 +479,8 @@ Options:\n\
 
 		
 //creating constants to weigh signal to frequency
-		for (n = 0; n < bands;
-		     n++)k[n] = ((float)height * pow(log(lcf[n] + 1),
-			                                     2 + ((float)bands / 75))) / (1024 * (M /
-			                                                     16)); // the log(lcf[n]) is because higher frequencys are usally lower ine effect in music
-
-
+                for (n = 0; n < bands;
+                     n++)k[n] = pow(fc[n],0.62) * (float)height/(M*2000);
 
 //**preparing screen**//
 		virt = system("setfont cava.psf  >/dev/null 2>&1");
@@ -561,7 +557,7 @@ Options:\n\
 						y[i] = pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5); //getting r of compex
 						peak[o] += y[i]; //adding upp band
 					}
-					peak[o] = peak[o] / i; //getting average
+					peak[o] = peak[o] / (hcf[o]-lcf[o]+1); //getting average
 					temp = peak[o] * k[o] * ((float)sens /
 					                         100); //multiplying with k and adjusting to sens settings
 					if (temp > height)temp = height; //just in case
