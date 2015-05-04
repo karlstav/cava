@@ -261,7 +261,7 @@ int main(int argc, char **argv)
 	float sm = 1.25; //min val from the above array
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
 	char *usage = "\n\
-Usage : ./cava [options]\n\
+Usage : " PACKAGE " [options]\n\
 \n\
 Options:\n\
 	-b 1..(console columns/2-1) or 200	 number of bars in the spectrum (default 25 + fills up the console), program wil auto adjust to maxsize if input is to high)\n\
@@ -280,7 +280,12 @@ Options:\n\
 \n\
 	-f framerate 				 max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)\n\
 \n\
-	-S 							 \"scientific\" mode (disables most smoothing)\n";
+	-S					 \"scientific\" mode (disables most smoothing)\n\
+\n\
+	-h					 print this again\n\
+\n\
+	-v					 print version\n\
+";
 //**END INIT**//
 
 	setlocale(LC_ALL, "");
@@ -294,7 +299,7 @@ Options:\n\
 	for (i = 0; i < M; i++)shared[i] = 0;
 
 //**arg handler**//
-	while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:h:S")) != -1)
+	while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:hSv")) != -1)
 		switch (c) {
 		case 'p':
 			path = optarg;
@@ -361,6 +366,9 @@ Options:\n\
 			break;
 		case 'h':
 			printf ("%s", usage);
+			return 0;
+		case 'v':
+			printf (PACKAGE " " VERSION "\n");
 			return 0;
 		case '?':
 			printf ("%s", usage);
