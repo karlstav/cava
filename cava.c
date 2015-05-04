@@ -63,10 +63,14 @@ music(void* data)
 
 //**init sound device***//
 
-	if ((err = snd_pcm_open(&handle, device,  SND_PCM_STREAM_CAPTURE , 0) < 0))
-		printf("error opening stream:    %s\n", snd_strerror(err) );
+	if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_CAPTURE, 0) < 0)) {
+		fprintf(stderr,
+		        "error opening stream: %s\n",
+		        snd_strerror(err));
+		exit(1);
+	}
 #ifdef DEBUG
-	else printf("open stream succes\n");
+	else printf("open stream successful\n");
 #endif
 
 	snd_pcm_hw_params_alloca(&params);//assembling params
