@@ -2,6 +2,7 @@
 #include <locale.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <termios.h>
 #include <math.h>
 #include <alsa/asoundlib.h>
 #include <sys/ioctl.h>
@@ -33,17 +34,27 @@ int shared[2048];
 int format = -1;
 unsigned int rate = 0;
 
-void sigint_handler(int sig_no GCC_UNUSED)
+bool smode = false;
+
+struct termios oldtio, newtio;
+int rc;
+
+void sig_handler(int sig_no)
 {
 	printf("\033[0m\n");
 	system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
 	system("setterm -cursor on");
 	system("setterm -blank 10");
 	system("clear");
-	system("stty echo");
-	printf("CTRL-C pressed -- goodbye\n");
-	sigaction(SIGINT, &old_action, NULL);
-	kill(0, SIGINT);
+	rc = tcsetattr(0, TCSAFLUSH, &oldtio);
+	switch (sig_no) {
+	case SIGINT:
+		printf("CTRL-C pressed -- goodbye\n");
+		sigaction(SIGINT, &old_action, NULL);
+		kill(0, SIGINT);
+	case SIGQUIT:
+		exit(0);
+	}
 }
 
 //ALSA audio listner
@@ -224,7 +235,6 @@ fifomusic(void* data)
 
 int main(int argc, char **argv)
 {
-	bool smode = false;
 	pthread_t  p_thread;
 	int        thr_id GCC_UNUSED;
 	char *input = "alsa";
@@ -290,6 +300,7 @@ Options:\n\
 \n\
 	-v					 print version\n\
 ";
+	char ch;
 //**END INIT**//
 
 	setlocale(LC_ALL, "");
@@ -384,10 +395,15 @@ Options:\n\
 //**ctrl c handler**//
 	struct sigaction action;
 	memset(&action, 0, sizeof(action));
-	action.sa_handler = &sigint_handler;
+	action.sa_handler = &sig_handler;
 	sigaction(SIGINT, &action, &old_action);
+	sigaction(SIGQUIT, &action, NULL);
 
-
+	rc = tcgetattr (0, &oldtio);
+	memcpy(&newtio, &oldtio, sizeof (newtio));
+	newtio.c_lflag &= ~(ICANON | ECHO);
+	newtio.c_cc[VMIN] = 0;
+	rc = tcsetattr(0, TCSAFLUSH, &newtio);
 
 	n = 0;
 	if (im == 1) {
@@ -502,7 +518,6 @@ Options:\n\
 //resetting console
 		printf("\033[0m\n");
 		system("clear");
-		system("stty -echo");
 
 		printf("\033[%dm", col); //setting color
 
@@ -526,7 +541,15 @@ Options:\n\
 //**start main loop**//
 		while  (1) {
 
-
+			if ((ch = getchar()) != EOF) {
+				switch (ch) {
+				case 's':
+					smode = !smode;
+					break;
+				case 'q':
+					kill(0, SIGQUIT);
+				}
+			}
 
 //**checkint if terminal windows has been resized**//
 
