@@ -461,11 +461,9 @@ Options:\n\
 #endif
 		bw = width / bands;
 
-		if (!smode)
-		{
-			g = ((float)height / 1000) * pow((60 / (float)framerate),
-											2.5); //calculating gravity
-		}
+		//calculating gravity
+		g = ((float)height / 1000) * pow((60 / (float)framerate), 2.5);
+
 //if no bands are selected it tries to padd the default 20 if there is extra room
 		if (autoband == 1) bands = bands + (((w.ws_col) - (bw * bands + bands - 1)) /
 			                                    (bw + 1));

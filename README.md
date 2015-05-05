@@ -217,5 +217,5 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 
 | Key | Description |
 | --- | ----------- |
-| `s` | Toggle Scientific mode |
-| `q` or `CTRL-C`| Quit C.A.V.A. |
+| <kbd>s</kbd> | Toggle Scientific mode |
+| <kbd>q</kbd> or <kbd>CTRL-C</kbd>| Quit C.A.V.A. |
