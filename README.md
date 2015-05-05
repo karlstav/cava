@@ -212,3 +212,10 @@ Usage
 Exit with ctrl+c.
 
 If cava quits unexpectedly or is force killed, echo must be turned on manually with `stty -echo`.
+
+### Controls
+
+| Key | Description |
+| --- | ----------- |
+| <kbd>s</kbd> | Toggle Scientific mode |
+| <kbd>q</kbd> or <kbd>CTRL-C</kbd>| Quit C.A.V.A. |
