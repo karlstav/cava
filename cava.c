@@ -28,7 +28,6 @@
 #define GCC_UNUSED /* nothing */
 #endif
 
-struct sigaction old_action;
 int M = 2048;
 int shared[2048];
 int format = -1;
@@ -39,7 +38,7 @@ bool smode = false;
 struct termios oldtio, newtio;
 int rc;
 
-void sig_handler(int sig_no)
+void cleanup()
 {
 	printf("\033[0m\n");
 	system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
@@ -47,14 +46,16 @@ void sig_handler(int sig_no)
 	system("setterm -blank 10");
 	system("clear");
 	rc = tcsetattr(0, TCSAFLUSH, &oldtio);
-	switch (sig_no) {
-	case SIGINT:
+}
+
+void sig_handler(int sig_no)
+{
+	cleanup();
+	if (sig_no == SIGINT) {
 		printf("CTRL-C pressed -- goodbye\n");
-		sigaction(SIGINT, &old_action, NULL);
-		kill(0, SIGINT);
-	case SIGQUIT:
-		exit(0);
 	}
+	signal(sig_no, SIG_DFL);
+	raise(sig_no);
 }
 
 //ALSA audio listner
@@ -396,8 +397,8 @@ Options:\n\
 	struct sigaction action;
 	memset(&action, 0, sizeof(action));
 	action.sa_handler = &sig_handler;
-	sigaction(SIGINT, &action, &old_action);
-	sigaction(SIGQUIT, &action, NULL);
+	sigaction(SIGINT, &action, NULL);
+	sigaction(SIGTERM, &action, NULL);
 
 	rc = tcgetattr (0, &oldtio);
 	memcpy(&newtio, &oldtio, sizeof (newtio));
@@ -545,7 +546,7 @@ Options:\n\
 					smode = !smode;
 					break;
 				case 'q':
-					kill(0, SIGQUIT);
+					goto exit;
 				}
 			}
 
@@ -709,5 +710,8 @@ Options:\n\
 #endif
 		}
 	}
-	return 0;
+
+exit:
+	cleanup();
+	return EXIT_SUCCESS;
 }
