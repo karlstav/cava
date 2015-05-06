@@ -196,6 +196,7 @@ Usage
     Options:
         -b 1..(console columns/2-1) or 200  number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)
         -i 'input method'           method used for listnening to audio, supports: 'alsa' and 'fifo'
+        -o 'output method'          method used for outputting processed data, only supports 'terminal'
         -d 'alsa device'            name of alsa capture device (default 'hw:1,1')
         -p 'fifo path'              path to fifo (default '/tmp/mpd.fifo')
         -c foreground color         suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)
@@ -205,7 +206,6 @@ Usage
         -S                  "scientific" mode (disables most smoothing)
         -h                  print the usage
         -v                  print version
-
 
 Exit with ctrl+c.
 

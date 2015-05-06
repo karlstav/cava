@@ -82,7 +82,7 @@ void* input_alsa(void* data)
 		        snd_strerror(err));
 		exit(EXIT_FAILURE);
 	}
-	
+
 	#ifdef DEBUG
 		else printf("open stream successful\n");
 	#endif
@@ -242,7 +242,9 @@ int main(int argc, char **argv)
 	pthread_t  p_thread;
 	int        thr_id GCC_UNUSED;
 	char *inputMethod = "alsa";
+	char *outputMethod = "terminal";
 	int im = 1;
+	int om = 1;
 	char *device = "hw:1,1";
 	char *path = "/tmp/mpd.fifo";
 	float fc[200];
@@ -285,6 +287,7 @@ Visualize audio input in terminal. \n\
 Options:\n\
 	-b 1..(console columns/2-1) or 200	number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
 	-i 'input method'			method used for listnening to audio, supports: 'alsa' and 'fifo'\n\
+	-o 'output method'			method used for outputting processed data, only supports 'terminal'\n\
 	-d 'alsa device'			name of alsa capture device (default 'hw:1,1')\n\
 	-p 'fifo path'				path to fifo (default '/tmp/mpd.fifo')\n\
 	-c foreground color			suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
@@ -310,84 +313,96 @@ Options:\n\
   // general: handle command-line arguments
 	while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:hSv")) != -1)
 		switch (c) {
-		case 'p': // argument: fifo path
-			path = optarg;
-			break;
-		case 'i': // argument: input method
-			im = 0;
-			inputMethod = optarg;
-			if (strcmp(inputMethod, "alsa") == 0) im = 1;
-			if (strcmp(inputMethod, "fifo") == 0) im = 2;
-			if (im == 0) {
-				cleanup();
-				fprintf(stderr,
-					"input method %s is not supported, supported methods are: 'alsa' and 'fifo'\n",
-				        inputMethod);
-				exit(EXIT_FAILURE);
-			}
-			break;
-		case 'b': // argument: bar count
-			fixedbands = atoi(optarg);
-			autoband = 0;
-			if (fixedbands > 200)fixedbands = 200;
-			break;
-		case 'd': // argument: alsa device
-			device = optarg;
-			break;
-		case 's': // argument: sensitivity
-			sens = atoi(optarg);
-			break;
-		case 'f': // argument: framerate
-			framerate = atoi(optarg);
-			break;
-		case 'c': // argument: foreground color
-			col = 0;
-			color = optarg;
-			if (strcmp(color, "black") == 0) col = 30;
-			if (strcmp(color, "red") == 0) col = 31;
-			if (strcmp(color, "green") == 0) col = 32;
-			if (strcmp(color, "yellow") == 0) col = 33;
-			if (strcmp(color, "blue") == 0) col = 34;
-			if (strcmp(color, "magenta") == 0) col = 35;
-			if (strcmp(color, "cyan") == 0) col = 36;
-			if (strcmp(color, "white") == 0) col = 37;
-			if (col == 0) {
-				cleanup();
-				fprintf(stderr, "color %s not supported\n", color);
-				exit(EXIT_FAILURE);
-			}
-			break;
-		case 'C': // argument: background color
-			bgcol = 0;
-			color = optarg;
-			if (strcmp(color, "black") == 0) bgcol = 40;
-			if (strcmp(color, "red") == 0) bgcol = 41;
-			if (strcmp(color, "green") == 0) bgcol = 42;
-			if (strcmp(color, "yellow") == 0) bgcol = 43;
-			if (strcmp(color, "blue") == 0) bgcol = 44;
-			if (strcmp(color, "magenta") == 0) bgcol = 45;
-			if (strcmp(color, "cyan") == 0) bgcol = 46;
-			if (strcmp(color, "white") == 0) bgcol = 47;
-			if (bgcol == 0) {
-				cleanup();
-				fprintf(stderr, "color %s not supported\n", color);
-				exit(EXIT_FAILURE);
-			}
-			break;
-		case 'S': // argument: enable "scientific" mode
-			scientificMode = true;
-			break;
-		case 'h': // argument: print usage
-			printf ("%s", usage);
-			return 0;
-		case '?': // argument: print usage
-			printf ("%s", usage);
-			return 1;
-		case 'v': // argument: print version
-			printf (PACKAGE " " VERSION "\n");
-			return 0;
-		default:  // argument: no arguments; exit
-			abort ();
+			case 'p': // argument: fifo path
+				path = optarg;
+				break;
+			case 'i': // argument: input method
+				im = 0;
+				inputMethod = optarg;
+				if (strcmp(inputMethod, "alsa") == 0) im = 1;
+				if (strcmp(inputMethod, "fifo") == 0) im = 2;
+				if (im == 0) {
+					cleanup();
+					fprintf(stderr,
+						"input method %s is not supported, supported methods are: 'alsa' and 'fifo'\n",
+					        inputMethod);
+					exit(EXIT_FAILURE);
+				}
+				break;
+			case 'o': // argument: output method
+				om = 0;
+				outputMethod = optarg;
+				if (strcmp(outputMethod, "terminal") == 0) im = 1;
+				if (im == 0) {
+					cleanup();
+					fprintf(stderr,
+						"output method %s is not supported, supported methods are: 'terminal'\n",
+					        outputMethod);
+					exit(EXIT_FAILURE);
+				}
+				break;
+			case 'b': // argument: bar count
+				fixedbands = atoi(optarg);
+				autoband = 0;
+				if (fixedbands > 200)fixedbands = 200;
+				break;
+			case 'd': // argument: alsa device
+				device = optarg;
+				break;
+			case 's': // argument: sensitivity
+				sens = atoi(optarg);
+				break;
+			case 'f': // argument: framerate
+				framerate = atoi(optarg);
+				break;
+			case 'c': // argument: foreground color
+				col = 0;
+				color = optarg;
+				if (strcmp(color, "black") == 0) col = 30;
+				if (strcmp(color, "red") == 0) col = 31;
+				if (strcmp(color, "green") == 0) col = 32;
+				if (strcmp(color, "yellow") == 0) col = 33;
+				if (strcmp(color, "blue") == 0) col = 34;
+				if (strcmp(color, "magenta") == 0) col = 35;
+				if (strcmp(color, "cyan") == 0) col = 36;
+				if (strcmp(color, "white") == 0) col = 37;
+				if (col == 0) {
+					cleanup();
+					fprintf(stderr, "color %s not supported\n", color);
+					exit(EXIT_FAILURE);
+				}
+				break;
+			case 'C': // argument: background color
+				bgcol = 0;
+				color = optarg;
+				if (strcmp(color, "black") == 0) bgcol = 40;
+				if (strcmp(color, "red") == 0) bgcol = 41;
+				if (strcmp(color, "green") == 0) bgcol = 42;
+				if (strcmp(color, "yellow") == 0) bgcol = 43;
+				if (strcmp(color, "blue") == 0) bgcol = 44;
+				if (strcmp(color, "magenta") == 0) bgcol = 45;
+				if (strcmp(color, "cyan") == 0) bgcol = 46;
+				if (strcmp(color, "white") == 0) bgcol = 47;
+				if (bgcol == 0) {
+					cleanup();
+					fprintf(stderr, "color %s not supported\n", color);
+					exit(EXIT_FAILURE);
+				}
+				break;
+			case 'S': // argument: enable "scientific" mode
+				scientificMode = true;
+				break;
+			case 'h': // argument: print usage
+				printf ("%s", usage);
+				return 0;
+			case '?': // argument: print usage
+				printf ("%s", usage);
+				return 1;
+			case 'v': // argument: print version
+				printf (PACKAGE " " VERSION "\n");
+				return 0;
+			default:  // argument: no arguments; exit
+				abort ();
 		}
 
 	// general: handle Ctrl+C
@@ -658,52 +673,56 @@ Options:\n\
 
 			// output: draw processed input
 			#ifndef DEBUG
-				for (n = (height - 1); n >= 0; n--) {
-					o = 0;
-					move = rest / 2; //center adjustment
-					for (i = 0; i < width; i++) {
+				switch (om) {
+					case 1:
+						for (n = (height - 1); n >= 0; n--) {
+							o = 0;
+							move = rest / 2; //center adjustment
+							for (i = 0; i < width; i++) {
 
-						// output: check if we're already at the next bar
-						if (i != 0 && i % bw == 0) {
-							o++;
-							if (o < bands)move++;
-						}
+								// output: check if we're already at the next bar
+								if (i != 0 && i % bw == 0) {
+									o++;
+									if (o < bands)move++;
+								}
 
-						// output: draw and move to another one, check whether we're not too far
-						if (o < bands) {
-							if (f[o] - n < 0.125) { //blank
-								if (matrix[i][n] != 0) { //change?
-									if (move != 0)printf("\033[%dC", move);
-									move = 0;
-									printf(" ");
-								} else move++; //no change, moving along
-								matrix[i][n] = 0;
-							} else if (f[o] - n > 1) { //color
-								if (matrix[i][n] != 1) { //change?
-									if (move != 0)printf("\033[%dC", move);
-									move = 0;
-									printf("\u2588");
-								} else move++; //no change, moving along
-								matrix[i][n] = 1;
-							} else { //top color, finding fraction
-								if (move != 0)printf("\033[%dC", move);
-								move = 0;
-								c = ((((f[o] - (float)n) - 0.125) / 0.875 * 7) + 1);
-								if (0 < c && c < 8) {
-									if (virt == 0)printf("%d", c);
-									else printf("%lc", L'\u2580' + c);
-								} else printf(" ");
-								matrix[i][n] = 2;
+								// output: draw and move to another one, check whether we're not too far
+								if (o < bands) {
+									if (f[o] - n < 0.125) { //blank
+										if (matrix[i][n] != 0) { //change?
+											if (move != 0)printf("\033[%dC", move);
+											move = 0;
+											printf(" ");
+										} else move++; //no change, moving along
+										matrix[i][n] = 0;
+									} else if (f[o] - n > 1) { //color
+										if (matrix[i][n] != 1) { //change?
+											if (move != 0)printf("\033[%dC", move);
+											move = 0;
+											printf("\u2588");
+										} else move++; //no change, moving along
+										matrix[i][n] = 1;
+									} else { //top color, finding fraction
+										if (move != 0)printf("\033[%dC", move);
+										move = 0;
+										c = ((((f[o] - (float)n) - 0.125) / 0.875 * 7) + 1);
+										if (0 < c && c < 8) {
+											if (virt == 0)printf("%d", c);
+											else printf("%lc", L'\u2580' + c);
+										} else printf(" ");
+										matrix[i][n] = 2;
+									}
+								}
+
 							}
+
+							printf("\n");
+
 						}
 
-					}
-
-					printf("\n");
-
+						printf("\033[%dA", height);
+						break;
 				}
-
-				printf("\033[%dA", height);
 
 				req.tv_sec = 0;
 				req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
