@@ -82,9 +82,10 @@ void* input_alsa(void* data)
 		        snd_strerror(err));
 		exit(EXIT_FAILURE);
 	}
-#ifdef DEBUG
-	else printf("open stream successful\n");
-#endif
+	
+	#ifdef DEBUG
+		else printf("open stream successful\n");
+	#endif
 
 	snd_pcm_hw_params_alloca(&params);//assembling params
 	snd_pcm_hw_params_any (handle, params);//setting defaults or something
@@ -130,18 +131,18 @@ void* input_alsa(void* data)
 		err = snd_pcm_readi(handle, buffer, frames);
 		if (err == -EPIPE) {
 			/* EPIPE means overrun */
-#ifdef DEBUG
-			fprintf(stderr, "overrun occurred\n");
-#endif
+			#ifdef DEBUG
+				fprintf(stderr, "overrun occurred\n");
+			#endif
 			snd_pcm_prepare(handle);
 		} else if (err < 0) {
-#ifdef DEBUG
-			fprintf(stderr, "error from read: %s\n", snd_strerror(err));
-#endif
+			#ifdef DEBUG
+				fprintf(stderr, "error from read: %s\n", snd_strerror(err));
+			#endif
 		} else if (err != (int)frames) {
-#ifdef DEBUG
-			fprintf(stderr, "short read, read %d %d frames\n", err, (int)frames);
-#endif
+			#ifdef DEBUG
+				fprintf(stderr, "short read, read %d %d frames\n", err, (int)frames);
+			#endif
 		}
 
 		//sorting out one channel and only biggest octet
@@ -266,9 +267,9 @@ int main(int argc, char **argv)
 	int col = 36;
 	int bgcol = 0;
 	int sens = 100;
-#ifndef DEBUG
-	int move = 0;
-#endif
+	#ifndef DEBUG
+		int move = 0;
+	#endif
 	int fall[200];
 	float fpeak[200];
 	float k[200];
@@ -404,7 +405,7 @@ Options:\n\
 
 	n = 0;
 
-  // input: wait for the input to be ready
+	// input: wait for the input to be ready
 	if (im == 1) {
 		thr_id = pthread_create(&p_thread, NULL, input_alsa,
 		                        (void*)device); //starting alsamusic listner
@@ -437,7 +438,7 @@ Options:\n\
 
 	p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
 
-  // output: get terminal's geometry
+	// output: get terminal's geometry
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 	while  (1) {//jumbing back to this loop means that you resized the screen
 		//getting orignial numbers of bands incase of resize
@@ -621,16 +622,16 @@ Options:\n\
 					
 
 					if (f[o] < 0.125)f[o] = 0.125;
-#ifdef DEBUG
-					printf("%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
-					       lcf[o], hcf[o], peak[o], f[o]);
-#endif
+					#ifdef DEBUG
+						printf("%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
+						       lcf[o], hcf[o], peak[o], f[o]);
+					#endif
 				}
 
 			} else { //**if in sleep mode wait and continiue**//
-#ifdef DEBUG
-				printf("no sound detected for 3 sec, going to sleep mode\n");
-#endif
+				#ifdef DEBUG
+					printf("no sound detected for 3 sec, going to sleep mode\n");
+				#endif
 				//wait 1 sec, then check sound again.
 				req.tv_sec = 1;
 				req.tv_nsec = 0;
@@ -656,58 +657,58 @@ Options:\n\
 			}
 
 			// output: draw processed input
-#ifndef DEBUG
-			for (n = (height - 1); n >= 0; n--) {
-				o = 0;
-				move = rest / 2; //center adjustment
-				for (i = 0; i < width; i++) {
+			#ifndef DEBUG
+				for (n = (height - 1); n >= 0; n--) {
+					o = 0;
+					move = rest / 2; //center adjustment
+					for (i = 0; i < width; i++) {
 
-					// output: check if we're already at the next bar
-					if (i != 0 && i % bw == 0) {
-						o++;
-						if (o < bands)move++;
-					}
-
-					// output: draw and move to another one, check whether we're not too far
-					if (o < bands) {
-						if (f[o] - n < 0.125) { //blank
-							if (matrix[i][n] != 0) { //change?
-								if (move != 0)printf("\033[%dC", move);
-								move = 0;
-								printf(" ");
-							} else move++; //no change, moving along
-							matrix[i][n] = 0;
-						} else if (f[o] - n > 1) { //color
-							if (matrix[i][n] != 1) { //change?
-								if (move != 0)printf("\033[%dC", move);
-								move = 0;
-								printf("\u2588");
-							} else move++; //no change, moving along
-							matrix[i][n] = 1;
-						} else { //top color, finding fraction
-							if (move != 0)printf("\033[%dC", move);
-							move = 0;
-							c = ((((f[o] - (float)n) - 0.125) / 0.875 * 7) + 1);
-							if (0 < c && c < 8) {
-								if (virt == 0)printf("%d", c);
-								else printf("%lc", L'\u2580' + c);
-							} else printf(" ");
-							matrix[i][n] = 2;
+						// output: check if we're already at the next bar
+						if (i != 0 && i % bw == 0) {
+							o++;
+							if (o < bands)move++;
 						}
+
+						// output: draw and move to another one, check whether we're not too far
+						if (o < bands) {
+							if (f[o] - n < 0.125) { //blank
+								if (matrix[i][n] != 0) { //change?
+									if (move != 0)printf("\033[%dC", move);
+									move = 0;
+									printf(" ");
+								} else move++; //no change, moving along
+								matrix[i][n] = 0;
+							} else if (f[o] - n > 1) { //color
+								if (matrix[i][n] != 1) { //change?
+									if (move != 0)printf("\033[%dC", move);
+									move = 0;
+									printf("\u2588");
+								} else move++; //no change, moving along
+								matrix[i][n] = 1;
+							} else { //top color, finding fraction
+								if (move != 0)printf("\033[%dC", move);
+								move = 0;
+								c = ((((f[o] - (float)n) - 0.125) / 0.875 * 7) + 1);
+								if (0 < c && c < 8) {
+									if (virt == 0)printf("%d", c);
+									else printf("%lc", L'\u2580' + c);
+								} else printf(" ");
+								matrix[i][n] = 2;
+							}
+						}
+
 					}
+
+					printf("\n");
 
 				}
 
-				printf("\n");
+				printf("\033[%dA", height);
 
-			}
-
-			printf("\033[%dA", height);
-
-			req.tv_sec = 0;
-			req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
-			nanosleep (&req, NULL);
-#endif
+				req.tv_sec = 0;
+				req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
+				nanosleep (&req, NULL);
+			#endif
 		}
 	}
 }
