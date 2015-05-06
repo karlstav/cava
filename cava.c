@@ -76,10 +76,11 @@ music(void* data)
 //**init sound device***//
 
 	if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_CAPTURE, 0) < 0)) {
+		cleanup();
 		fprintf(stderr,
 		        "error opening stream: %s\n",
 		        snd_strerror(err));
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 #ifdef DEBUG
 	else printf("open stream successful\n");
@@ -100,10 +101,11 @@ music(void* data)
 
 	err = snd_pcm_hw_params(handle, params); //atempting to set params
 	if (err < 0) {
+		cleanup();
 		fprintf(stderr,
 		        "unable to set hw parameters: %s\n",
 		        snd_strerror(err));
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	snd_pcm_hw_params_get_format(params,
@@ -326,9 +328,11 @@ Options:\n\
 			if (strcmp(input, "alsa") == 0) im = 1;
 			if (strcmp(input, "fifo") == 0) im = 2;
 			if (im == 0) {
-				printf("input method %s not supprted, supported methods are: 'alsa' and 'fifo'\n",
-				       input);
-				exit(1);
+				cleanup();
+				fprintf(stderr,
+					"input method %s not supported, supported methods are: 'alsa' and 'fifo'\n",
+				        input);
+				exit(EXIT_FAILURE);
 			}
 			break;
 		case 'b':
@@ -357,8 +361,9 @@ Options:\n\
 			if (strcmp(color, "cyan") == 0) col = 36;
 			if (strcmp(color, "white") == 0) col = 37;
 			if (col == 0) {
-				printf("color %s not suprted\n", color);
-				exit(1);
+				cleanup();
+				fprintf(stderr, "color %s not supported\n", color);
+				exit(EXIT_FAILURE);
 			}
 			break;
 		case 'C':
@@ -373,8 +378,9 @@ Options:\n\
 			if (strcmp(color, "cyan") == 0) bgcol = 46;
 			if (strcmp(color, "white") == 0) bgcol = 47;
 			if (bgcol == 0) {
-				printf("color %s not suprted\n", color);
-				exit(1);
+				cleanup();
+				fprintf(stderr, "color %s not supported\n", color);
+				exit(EXIT_FAILURE);
 			}
 			break;
 		case 'S':
@@ -418,9 +424,11 @@ Options:\n\
 			n++;
 			if (n > 2000) {
 #ifdef DEBUG
-				printf("could not get rate and or format, problems with audoi thread? quiting...\n");
+				cleanup();
+				fprintf(stderr,
+					"could not get rate and/or format, problems with audio thread? quiting...\n");
 #endif
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 		}
 #ifdef DEBUG
@@ -437,7 +445,6 @@ Options:\n\
 	}
 
 	p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
-
 
 //**getting h*w of term**//
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
@@ -546,7 +553,7 @@ Options:\n\
 					smode = !smode;
 					break;
 				case 'q':
-					goto exit;
+					goto out;
 				}
 			}
 
@@ -711,7 +718,7 @@ Options:\n\
 		}
 	}
 
-exit:
+out:
 	cleanup();
 	return EXIT_SUCCESS;
 }
