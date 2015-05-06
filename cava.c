@@ -279,30 +279,21 @@ int main(int argc, char **argv)
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
 	char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
+Visualize audio input in terminal. \n\
 \n\
 Options:\n\
-	-b 1..(console columns/2-1) or 200	 number of bars in the spectrum (default 25 + fills up the console), program wil auto adjust to maxsize if input is to high)\n\
-\n\
-	-i 'input method'			 method used for listnening to audio, supports 'alsa' and 'fifo'\n\
-\n\
-	-d 'alsa device'			 name of alsa capture device (default 'hw:1,1')\n\
-\n\
-	-p 'fifo path'				 path to fifo (default '/tmp/mpd.fifo')\n\
-\n\
-	-c color 					 suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
-\n\
-	-C backround color			 supported colors: same as above (default: no change)\n\
-\n\
-	-s sensitivity %			 sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth\n\
-\n\
-	-f framerate 				 max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)\n\
-\n\
-	-S					 \"scientific\" mode (disables most smoothing)\n\
-\n\
-	-h					 print this again\n\
-\n\
-	-v					 print version\n\
-";
+	-b 1..(console columns/2-1) or 200	number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
+	-i 'input method'			method used for listnening to audio, supports: 'alsa' and 'fifo'\n\
+	-d 'alsa device'			name of alsa capture device (default 'hw:1,1')\n\
+	-p 'fifo path'				path to fifo (default '/tmp/mpd.fifo')\n\
+	-c foreground color			suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
+	-C background color			supported colors: same as above (default: no change)\n\
+	-s sensitivity				sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...\n\
+	-f framerate 				FPS limit, if you are experiencing high CPU usage, try redcing this (default: 60)\n\
+	-S					\"scientific\" mode (disables most smoothing)\n\
+	-h					print the usage\n\
+	-v					print version\n\
+\n";
 	char ch;
 
 	setlocale(LC_ALL, "");
@@ -329,7 +320,7 @@ Options:\n\
 			if (im == 0) {
 				cleanup();
 				fprintf(stderr,
-					"input method %s not supported, supported methods are: 'alsa' and 'fifo'\n",
+					"input method %s is not supported, supported methods are: 'alsa' and 'fifo'\n",
 				        inputMethod);
 				exit(EXIT_FAILURE);
 			}
@@ -348,7 +339,7 @@ Options:\n\
 		case 'f': // argument: framerate
 			framerate = atoi(optarg);
 			break;
-		case 'c': // argument: color
+		case 'c': // argument: foreground color
 			col = 0;
 			color = optarg;
 			if (strcmp(color, "black") == 0) col = 30;
@@ -423,17 +414,17 @@ Options:\n\
 			nanosleep (&req, NULL);
 			n++;
 			if (n > 2000) {
-#ifdef DEBUG
+			#ifdef DEBUG
 				cleanup();
 				fprintf(stderr,
 					"could not get rate and/or format, problems with audio thread? quiting...\n");
-#endif
+			#endif
 				exit(EXIT_FAILURE);
 			}
 		}
-#ifdef DEBUG
-		printf("got format: %d and rate %d\n", format, rate);
-#endif
+	#ifdef DEBUG
+		printf("got format: %d and rate %d\n", format, rate);	
+	#endif
 
 	}
 
@@ -459,14 +450,16 @@ Options:\n\
 			                1; //handle for user setting to many bars
 		height = (int)w.ws_row - 1;
 		width = (int)w.ws_col - bands - 1;
-#ifndef DEBUG
-		int matrix[width][height];
-		for (i = 0; i < width; i++) {
-			for (n = 0; n < height; n++) {
-				matrix[i][n] = 0;
+
+		#ifndef DEBUG
+			int matrix[width][height];
+			for (i = 0; i < width; i++) {
+				for (n = 0; n < height; n++) {
+					matrix[i][n] = 0;
+				}
 			}
-		}
-#endif
+		#endif
+
 		bw = width / bands;
 
 		// process [smoothing]: calculate gravity
@@ -480,11 +473,11 @@ Options:\n\
 		rest = (((w.ws_col) - (bw * bands + bands - 1)));
 		if (rest < 0)rest = 0;
 
-#ifdef DEBUG
-		printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
-		       (int)w.ws_row,
-		       (int)w.ws_col, bands, bw, rest);
-#endif
+		#ifdef DEBUG
+			printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
+			       (int)w.ws_row,
+			       (int)w.ws_col, bands, bw, rest);
+		#endif
 
 		// process: calculate cutoff frequencies
 		for (n = 0; n < bands + 1; n++) {
@@ -502,12 +495,12 @@ Options:\n\
 				hcf[n - 1] = lcf[n] - 1;
 			}
 
-#ifdef DEBUG
-			if (n != 0) {
-				printf("%d: %f -> %f (%d -> %d) \n", n, fc[n - 1], fc[n], lcf[n - 1],
-				       hcf[n - 1]);
-			}
-#endif
+			#ifdef DEBUG
+						if (n != 0) {
+							printf("%d: %f -> %f (%d -> %d) \n", n, fc[n - 1], fc[n], lcf[n - 1],
+							       hcf[n - 1]);
+						}
+			#endif
 		}
 
 		// process: weigh signal to frequencies
@@ -516,31 +509,31 @@ Options:\n\
 
 		// output: prepare screen
 		virt = system("setfont cava.psf  >/dev/null 2>&1");
-#ifndef DEBUG
-		system("setterm -cursor off");
-		system("setterm -blank 0");
+		#ifndef DEBUG
+			system("setterm -cursor off");
+			system("setterm -blank 0");
 
-		// output: reset console
-		printf("\033[0m\n");
-		system("clear");
+			// output: reset console
+			printf("\033[0m\n");
+			system("clear");
 
-		printf("\033[%dm", col); //setting color
+			printf("\033[%dm", col); //setting color
 
-		printf("\033[1m"); //setting "bright" color mode, looks cooler... I think
-		if (bgcol != 0)
-			printf("\033[%dm", bgcol);
-		{
-			for (n = (height); n >= 0; n--) {
-				for (i = 0; i < width + bands; i++) {
+			printf("\033[1m"); //setting "bright" color mode, looks cooler... I think
+			if (bgcol != 0)
+				printf("\033[%dm", bgcol);
+			{
+				for (n = (height); n >= 0; n--) {
+					for (i = 0; i < width + bands; i++) {
 
-					printf(" ");//setting backround color
+						printf(" ");//setting backround color
 
+					}
+					printf("\n");
 				}
-				printf("\n");
+				printf("\033[%dA", height); //moving cursor back up
 			}
-			printf("\033[%dA", height); //moving cursor back up
-		}
-#endif
+		#endif
 
 
 		// general: main loop
@@ -566,9 +559,9 @@ Options:\n\
 				}
 			}
 
-#ifdef DEBUG
-			system("clear");
-#endif
+			#ifdef DEBUG
+				system("clear");
+			#endif
 
 			// process: populate input buffer and check if input is present
 			lpeak = 0;

@@ -190,24 +190,22 @@ If your audio device has a huge buffer, you might experience that cava is actual
 Usage
 -----
 
-    Usage : ./cava [options]
+    Usage : cava [options]
+    Visualize audio input in terminal. 
 
     Options:
-        -b 1..(console columns/2-1) or 200	 number of bars in the spectrum (default 25 + fills up the console), program wil auto adjust to maxsize if input is to high)
+        -b 1..(console columns/2-1) or 200  number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)
+        -i 'input method'           method used for listnening to audio, supports: 'alsa' and 'fifo'
+        -d 'alsa device'            name of alsa capture device (default 'hw:1,1')
+        -p 'fifo path'              path to fifo (default '/tmp/mpd.fifo')
+        -c foreground color         suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)
+        -C background color         supported colors: same as above (default: no change)
+        -s sensitivity              sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...
+        -f framerate                FPS limit, if you are experiencing high CPU usage, try redcing this (default: 60)
+        -S                  "scientific" mode (disables most smoothing)
+        -h                  print the usage
+        -v                  print version
 
-        -i 'input method'			 method used for listnening to audio, supports 'alsa' and 'fifo'
-
-        -d 'alsa device'			 name of alsa capture device (default 'hw:1,1')
-
-        -p 'fifo path'				 path to fifo (default '/tmp/mpd.fifo')
-
-        -c color				 suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)
-
-        -C backround color			 supported colors: same as above (default: no change)
-
-        -s sensitivity %			 sensitivity in percent, 0 means no respons 100 is normal 50 half 200 double and so forth
-
-        -f framerate 				 max frames per second to be drawn, if you are experiencing high CPU usage, try redcing this (default: 60)
 
 Exit with ctrl+c.
 
