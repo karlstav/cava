@@ -33,7 +33,7 @@ int shared[2048];
 int format = -1;
 unsigned int rate = 0;
 
-bool smode = false;
+bool scientificMode = false;
 
 struct termios oldtio, newtio;
 int rc;
@@ -240,7 +240,7 @@ int main(int argc, char **argv)
 {
 	pthread_t  p_thread;
 	int        thr_id GCC_UNUSED;
-	char *input = "alsa";
+	char *inputMethod = "alsa";
 	int im = 1;
 	char *device = "hw:1,1";
 	char *path = "/tmp/mpd.fifo";
@@ -318,37 +318,37 @@ Options:\n\
   // general: handle command-line arguments
 	while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:hSv")) != -1)
 		switch (c) {
-		case 'p':
+		case 'p': // argument: fifo path
 			path = optarg;
 			break;
-		case 'i':
+		case 'i': // argument: input method
 			im = 0;
-			input = optarg;
-			if (strcmp(input, "alsa") == 0) im = 1;
-			if (strcmp(input, "fifo") == 0) im = 2;
+			inputMethod = optarg;
+			if (strcmp(inputMethod, "alsa") == 0) im = 1;
+			if (strcmp(inputMethod, "fifo") == 0) im = 2;
 			if (im == 0) {
 				cleanup();
 				fprintf(stderr,
 					"input method %s not supported, supported methods are: 'alsa' and 'fifo'\n",
-				        input);
+				        inputMethod);
 				exit(EXIT_FAILURE);
 			}
 			break;
-		case 'b':
+		case 'b': // argument: bar count
 			fixedbands = atoi(optarg);
-			autoband = 0; //dont automaticly add bands to fill frame
+			autoband = 0;
 			if (fixedbands > 200)fixedbands = 200;
 			break;
-		case 'd':
+		case 'd': // argument: alsa device
 			device = optarg;
 			break;
-		case 's':
+		case 's': // argument: sensitivity
 			sens = atoi(optarg);
 			break;
-		case 'f':
+		case 'f': // argument: framerate
 			framerate = atoi(optarg);
 			break;
-		case 'c':
+		case 'c': // argument: color
 			col = 0;
 			color = optarg;
 			if (strcmp(color, "black") == 0) col = 30;
@@ -365,7 +365,7 @@ Options:\n\
 				exit(EXIT_FAILURE);
 			}
 			break;
-		case 'C':
+		case 'C': // argument: background color
 			bgcol = 0;
 			color = optarg;
 			if (strcmp(color, "black") == 0) bgcol = 40;
@@ -382,19 +382,19 @@ Options:\n\
 				exit(EXIT_FAILURE);
 			}
 			break;
-		case 'S':
-			smode = true;
+		case 'S': // argument: enable "scientific" mode
+			scientificMode = true;
 			break;
-		case 'h':
+		case 'h': // argument: print usage
 			printf ("%s", usage);
 			return 0;
-		case 'v':
-			printf (PACKAGE " " VERSION "\n");
-			return 0;
-		case '?':
+		case '?': // argument: print usage
 			printf ("%s", usage);
 			return 1;
-		default:
+		case 'v': // argument: print version
+			printf (PACKAGE " " VERSION "\n");
+			return 0;
+		default:  // argument: no arguments; exit
 			abort ();
 		}
 
@@ -550,7 +550,7 @@ Options:\n\
 			if ((ch = getchar()) != EOF) {
 				switch (ch) {
 				case 's':
-					smode = !smode;
+					scientificMode = !scientificMode;
 					break;
 				case 'q':
 					cleanup();
@@ -605,7 +605,7 @@ Options:\n\
 					if (temp > height)temp = height; //just in case
 					f[o] = temp;
 					//**falloff function**//
-					if (!smode) {
+					if (!scientificMode) {
 						if (temp < flast[o]) {
 							f[o] = fpeak[o] - (g * fall[o] * fall[o]);
 							fall[o]++;
@@ -645,7 +645,7 @@ Options:\n\
 				continue;
 			}
 
-			if (!smode)
+			if (!scientificMode)
 			{
 				// process [smoothing]: monstercat-style "average"
 				int z, m_y;
