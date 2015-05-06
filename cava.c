@@ -38,6 +38,7 @@ bool smode = false;
 struct termios oldtio, newtio;
 int rc;
 
+// general: cleanup
 void cleanup()
 {
 	printf("\033[0m\n");
@@ -48,6 +49,7 @@ void cleanup()
 	rc = tcsetattr(0, TCSAFLUSH, &oldtio);
 }
 
+// general: handle signals
 void sig_handler(int sig_no)
 {
 	cleanup();
@@ -58,9 +60,8 @@ void sig_handler(int sig_no)
 	raise(sig_no);
 }
 
-//ALSA audio listner
-void*
-music(void* data)
+// input: ALSA
+void* input_alsa(void* data)
 {
 	signed char *buffer;
 	snd_pcm_t *handle;
@@ -73,8 +74,7 @@ music(void* data)
 	int tempr, templ;
 	int radj, ladj;
 
-//**init sound device***//
-
+	// alsa: open devuce to capture audio
 	if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_CAPTURE, 0) < 0)) {
 		cleanup();
 		fprintf(stderr,
@@ -110,7 +110,7 @@ music(void* data)
 
 	snd_pcm_hw_params_get_format(params,
 	                             (snd_pcm_format_t * )&val); //getting actual format
-//convverting result to number of bits
+	//convverting result to number of bits
 	if (val < 6)format = 16;
 	else if (val > 5 && val < 10)format = 24;
 	else if (val > 9)format = 32;
@@ -174,9 +174,8 @@ music(void* data)
 	}
 }
 
-//FIFO audio listner
-void*
-fifomusic(void* data)
+//input: FIFO
+void* input_fifo(void* data)
 {
 	int fd;
 	int n = 0;
@@ -236,6 +235,7 @@ fifomusic(void* data)
 	close(fd);
 }
 
+// general: entry point
 int main(int argc, char **argv)
 {
 	pthread_t  p_thread;
@@ -304,7 +304,6 @@ Options:\n\
 	-v					 print version\n\
 ";
 	char ch;
-//**END INIT**//
 
 	setlocale(LC_ALL, "");
 
@@ -316,7 +315,7 @@ Options:\n\
 	}
 	for (i = 0; i < M; i++)shared[i] = 0;
 
-//**arg handler**//
+  // general: handle command-line arguments
 	while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:hSv")) != -1)
 		switch (c) {
 		case 'p':
@@ -399,7 +398,7 @@ Options:\n\
 			abort ();
 		}
 
-//**ctrl c handler**//
+	// general: handle Ctrl+C
 	struct sigaction action;
 	memset(&action, 0, sizeof(action));
 	action.sa_handler = &sig_handler;
@@ -413,9 +412,10 @@ Options:\n\
 	rc = tcsetattr(0, TCSAFLUSH, &newtio);
 
 	n = 0;
+
+  // input: wait for the input to be ready
 	if (im == 1) {
-//**watintg for audio to be ready**//
-		thr_id = pthread_create(&p_thread, NULL, music,
+		thr_id = pthread_create(&p_thread, NULL, input_alsa,
 		                        (void*)device); //starting alsamusic listner
 		while (format == -1 || rate == 0) {
 			req.tv_sec = 0;
@@ -438,7 +438,7 @@ Options:\n\
 	}
 
 	if (im == 2) {
-		thr_id = pthread_create(&p_thread, NULL, fifomusic,
+		thr_id = pthread_create(&p_thread, NULL, input_fifo,
 		                        (void*)path); //starting fifomusic listner
 		rate = 44100;
 		format = 16;
@@ -446,7 +446,7 @@ Options:\n\
 
 	p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
 
-//**getting h*w of term**//
+  // output: get terminal's geometry
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 	while  (1) {//jumbing back to this loop means that you resized the screen
 		//getting orignial numbers of bands incase of resize
@@ -469,14 +469,14 @@ Options:\n\
 #endif
 		bw = width / bands;
 
-		//calculating gravity
+		// process [smoothing]: calculate gravity
 		g = ((float)height / 1000) * pow((60 / (float)framerate), 2.5);
 
-//if no bands are selected it tries to padd the default 20 if there is extra room
+		//if no bands are selected it tries to padd the default 20 if there is extra room
 		if (autoband == 1) bands = bands + (((w.ws_col) - (bw * bands + bands - 1)) /
 			                                    (bw + 1));
 		width = (int)w.ws_col - bands - 1;
-//checks if there is stil extra room, will use this to center
+		//checks if there is stil extra room, will use this to center
 		rest = (((w.ws_col) - (bw * bands + bands - 1)));
 		if (rest < 0)rest = 0;
 
@@ -486,7 +486,7 @@ Options:\n\
 		       (int)w.ws_col, bands, bw, rest);
 #endif
 
-//**calculating cutoff frequencies**/
+		// process: calculate cutoff frequencies
 		for (n = 0; n < bands + 1; n++) {
 			fc[n] = 10000 * pow(10, -2.37 + ((((float)n + 1) / ((float)bands + 1)) *
 			                                 2.37)); //decided to cut it at 10k, little interesting to hear above
@@ -510,18 +510,17 @@ Options:\n\
 #endif
 		}
 
+		// process: weigh signal to frequencies
+		for (n = 0; n < bands;
+			n++)k[n] = pow(fc[n],0.62) * (float)height/(M*2000);
 
-		
-//creating constants to weigh signal to frequency
-                for (n = 0; n < bands;
-                     n++)k[n] = pow(fc[n],0.62) * (float)height/(M*2000);
-
-//**preparing screen**//
+		// output: prepare screen
 		virt = system("setfont cava.psf  >/dev/null 2>&1");
 #ifndef DEBUG
 		system("setterm -cursor off");
 		system("setterm -blank 0");
-//resetting console
+
+		// output: reset console
 		printf("\033[0m\n");
 		system("clear");
 
@@ -544,9 +543,10 @@ Options:\n\
 #endif
 
 
-//**start main loop**//
+		// general: main loop
 		while  (1) {
 
+			// general: keyboard controls
 			if ((ch = getchar()) != EOF) {
 				switch (ch) {
 				case 's':
@@ -557,8 +557,7 @@ Options:\n\
 				}
 			}
 
-//**checkint if terminal windows has been resized**//
-
+			// output: check if terminal has been resized
 			if (virt != 0) {
 				ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 				if ( ((int)w.ws_row - 1) != height || ((int)w.ws_col - bands - 1) != width) {
@@ -570,7 +569,7 @@ Options:\n\
 			system("clear");
 #endif
 
-//**populating input buffer & checking if there is sound**//
+			// process: populate input buffer and check if input is present
 			lpeak = 0;
 			hpeak = 0;
 			for (i = 0; i < (2 * (M / 2 + 1)); i++) {
@@ -584,16 +583,17 @@ Options:\n\
 			if (peak[bands] == 0)sleep++;
 			else sleep = 0;
 
-			//**if sound for the last 5 sec go ahead with fft**//
+			// process: if input was present for the last 5 seconds apply FFT to it
 			if (sleep < framerate * 5) {
 
-				fftw_execute(p);         //applying FFT to signal
+				// process: send input to external library
+				fftw_execute(p);
 
-				//seperating freq bands
+				// process: separate frequency bands
 				for (o = 0; o < bands; o++) {
 					peak[o] = 0;
 
-					//getting peaks
+					// process: get peaks
 					for (i = lcf[o]; i <= hcf[o]; i++) {
 						y[i] = pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5); //getting r of compex
 						peak[o] += y[i]; //adding upp band
@@ -614,7 +614,7 @@ Options:\n\
 							fall[o] = 0;
 						}
 
-						//**smoothening**//
+						// process [smoothing]
 
 						fmem[o] += f[o];
 						fmem[o] = fmem[o] * 0.55;
@@ -646,7 +646,7 @@ Options:\n\
 
 			if (!smode)
 			{
-				/* MONSTERCAT STYLE EASING BY CW !aFrP90ZN26 */
+				// process [smoothing]: monstercat-style "average"
 				int z, m_y;
 				float m_o = 64 / bands;
 				for (z = 0; z < bands; z++) {
@@ -661,22 +661,21 @@ Options:\n\
 				}
 			}
 
-//**DRAWING**// 
+			// output: draw processed input
 #ifndef DEBUG
 			for (n = (height - 1); n >= 0; n--) {
 				o = 0;
 				move = rest / 2; //center adjustment
 				for (i = 0; i < width; i++) {
 
-					//next bar? make a space
+					// output: check if we're already at the next bar
 					if (i != 0 && i % bw == 0) {
 						o++;
 						if (o < bands)move++;
 					}
 
-
-					//draw color or blank or move+1
-					if (o < bands) {     //watch so it doesnt draw to far
+					// output: draw and move to another one, check whether we're not too far
+					if (o < bands) {
 						if (f[o] - n < 0.125) { //blank
 							if (matrix[i][n] != 0) { //change?
 								if (move != 0)printf("\033[%dC", move);
@@ -705,11 +704,11 @@ Options:\n\
 
 				}
 
-				printf("\n");//next line
+				printf("\n");
 
 			}
 
-			printf("\033[%dA", height); //backup
+			printf("\033[%dA", height);
 
 			req.tv_sec = 0;
 			req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
