@@ -553,7 +553,8 @@ Options:\n\
 					smode = !smode;
 					break;
 				case 'q':
-					goto out;
+					cleanup();
+					return EXIT_SUCCESS;
 				}
 			}
 
@@ -716,8 +717,4 @@ Options:\n\
 #endif
 		}
 	}
-
-out:
-	cleanup();
-	return EXIT_SUCCESS;
 }
