@@ -74,7 +74,7 @@ void* input_alsa(void* data)
 	int tempr, templ;
 	int radj, ladj;
 
-	// alsa: open devuce to capture audio
+	// alsa: open device to capture audio
 	if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_CAPTURE, 0) < 0)) {
 		cleanup();
 		fprintf(stderr,
@@ -90,17 +90,17 @@ void* input_alsa(void* data)
 	snd_pcm_hw_params_alloca(&params);//assembling params
 	snd_pcm_hw_params_any (handle, params);//setting defaults or something
 	snd_pcm_hw_params_set_access(handle, params,
-	                             SND_PCM_ACCESS_RW_INTERLEAVED);//interleeaved mode right left right left
+	                             SND_PCM_ACCESS_RW_INTERLEAVED);//interleaved mode right left right left
 	snd_pcm_hw_params_set_format(handle, params,
 	                             SND_PCM_FORMAT_S16_LE); //trying to set 16bit
-	snd_pcm_hw_params_set_channels(handle, params, 2);//asuming stereo
+	snd_pcm_hw_params_set_channels(handle, params, 2);//assuming stereo
 	val = 44100;
 	snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir);//trying 44100 rate
 	frames = 256;
 	snd_pcm_hw_params_set_period_size_near(handle, params, &frames,
 	                                       &dir); //number of frames pr read
 
-	err = snd_pcm_hw_params(handle, params); //atempting to set params
+	err = snd_pcm_hw_params(handle, params); //attempting to set params
 	if (err < 0) {
 		cleanup();
 		fprintf(stderr,
@@ -111,7 +111,7 @@ void* input_alsa(void* data)
 
 	snd_pcm_hw_params_get_format(params,
 	                             (snd_pcm_format_t * )&val); //getting actual format
-	//convverting result to number of bits
+	//converting result to number of bits
 	if (val < 6)format = 16;
 	else if (val > 5 && val < 10)format = 24;
 	else if (val > 9)format = 32;
@@ -423,7 +423,7 @@ Options:\n\
 	// input: wait for the input to be ready
 	if (im == 1) {
 		thr_id = pthread_create(&p_thread, NULL, input_alsa,
-		                        (void*)device); //starting alsamusic listner
+		                        (void*)device); //starting alsamusic listener
 		while (format == -1 || rate == 0) {
 			req.tv_sec = 0;
 			req.tv_nsec = 1000000;
@@ -446,7 +446,7 @@ Options:\n\
 
 	if (im == 2) {
 		thr_id = pthread_create(&p_thread, NULL, input_fifo,
-		                        (void*)path); //starting fifomusic listner
+		                        (void*)path); //starting fifomusic listener
 		rate = 44100;
 		format = 16;
 	}
@@ -463,7 +463,7 @@ Options:\n\
 
 
 		if (bands > (int)w.ws_col / 2 - 1)bands = (int)w.ws_col / 2 -
-			                1; //handle for user setting to many bars
+			                1; //handle for user setting too many bars
 		height = (int)w.ws_row - 1;
 		width = (int)w.ws_col - bands - 1;
 
@@ -485,7 +485,7 @@ Options:\n\
 		if (autoband == 1) bands = bands + (((w.ws_col) - (bw * bands + bands - 1)) /
 			                                    (bw + 1));
 		width = (int)w.ws_col - bands - 1;
-		//checks if there is stil extra room, will use this to center
+		//checks if there is still extra room, will use this to center
 		rest = (((w.ws_col) - (bw * bands + bands - 1)));
 		if (rest < 0)rest = 0;
 
@@ -643,7 +643,7 @@ Options:\n\
 					#endif
 				}
 
-			} else { //**if in sleep mode wait and continiue**//
+			} else { //**if in sleep mode wait and continue**//
 				#ifdef DEBUG
 					printf("no sound detected for 3 sec, going to sleep mode\n");
 				#endif
