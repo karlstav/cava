@@ -623,6 +623,22 @@ Options:\n\
 			// process [smoothing]
 			if (!scientificMode)
 			{
+				for (o = 0; o < bands; o++) {
+
+					temp = f[o];
+
+					if (temp < flast[o]) {
+						f[o] = fpeak[o] - (g * fall[o] * fall[o]);
+						fall[o]++;
+					} else if (temp >= flast[o]) {
+						f[o] = temp;
+						fpeak[o] = f[o];
+						fall[o] = 0;
+					}
+
+					flast[o] = f[o];
+				}
+
 				// process [smoothing]: monstercat-style "average"
 				int z, m_y;
 				float m_o = 64 / bands;
@@ -639,35 +655,17 @@ Options:\n\
 
 				for (o = 0; o < bands; o++) {
 
-
-					temp = f[o];
-
-					if (temp < flast[o]) {
-						f[o] = fpeak[o] - (g * fall[o] * fall[o]);
-						fall[o]++;
-					} else if (temp >= flast[o]) {
-						f[o] = temp;
-						fpeak[o] = f[o];
-						fall[o] = 0;
-					}
-
 					fmem[o] += f[o];
 					fmem[o] = fmem[o] * 0.55;
 					f[o] = fmem[o];
 
 					if (f[o] < 1)f[o] = 1;
 
-					flast[o] = f[o];
 					#ifdef DEBUG
 						printf("%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
 						       lcf[o], hcf[o], peak[o], f[o]);
 					#endif
 				}
-
-
-
-	
-
 			}
 
 			// output: draw processed input
