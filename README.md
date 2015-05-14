@@ -39,14 +39,17 @@ Build requirements
 
 * [ALSA dev files](http://alsa-project.org/)
 * [FFTW](http://www.fftw.org/)
+* ncursesw dev files
 
 Debian/Raspbian users can install this with:
 
-    apt-get install libfftw3-dev libasound2-dev
+    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev
 
 ArchLinux users can install this with:
 
     pacman -S base-devel fftw
+
+Unfortunately I don't know how to install ncursesw in arch, will figure it out soon!
 
 Getting started
 ---------------

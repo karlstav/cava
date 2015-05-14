@@ -5,7 +5,7 @@ CC       = gcc
 CFLAGS   = -std=c99 -Wall -Wextra
 CPPFLAGS = -DPACKAGE=\"$(PACKAGE)\" -DVERSION=\"$(VERSION)\" \
            -D_POSIX_SOURCE -D _POSIX_C_SOURCE=200809L
-LDLIBS   = -lasound -lm -lfftw3 -lpthread
+LDLIBS   = -lasound -lm -lfftw3 -lpthread -lncursesw
 
 INSTALL     = install
 INSTALL_BIN = $(INSTALL) -D -m 755

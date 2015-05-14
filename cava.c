@@ -1,6 +1,8 @@
+#define _XOPEN_SOURCE_EXTENDED
 #include <alloca.h>
 #include <locale.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <stdbool.h>
 #include <termios.h>
 #include <math.h>
@@ -19,6 +21,9 @@
 #include <time.h>
 #include <getopt.h>
 #include <pthread.h>
+#include "ncursesw/curses.h"
+#include <wchar.h>
+
 
 #ifdef __GNUC__
 // curses.h or other sources may already define
@@ -41,11 +46,11 @@ int rc;
 // general: cleanup
 void cleanup()
 {
-	printf("\033[0m\n");
 	system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
 	system("setterm -cursor on");
 	system("setterm -blank 10");
 	system("clear");
+	endwin();
 	rc = tcsetattr(0, TCSAFLUSH, &oldtio);
 }
 
@@ -250,28 +255,25 @@ int main(int argc, char **argv)
 	float fc[200];
 	float fr[200];
 	int lcf[200], hcf[200];
-	float f[200];
-	float fmem[200];
+	int f[200];
+	int fmem[200];
 	int flast[200];
+	int flastd[200];
 	float peak[201];
 	int y[M / 2 + 1];
 	long int lpeak, hpeak;
 	int bands = 25;
 	int sleep = 0;
-	int i, n, o, bw, width, height, c, rest, virt, fixedbands;
+	int i, n, o, bw, width, height, h, w, hs, ws, c, rest, virt, fixedbands, q;
 	int autoband = 1;
 	float temp;
-	struct winsize w;
 	double in[2 * (M / 2 + 1)];
 	fftw_complex out[M / 2 + 1][2];
 	fftw_plan p;
 	char *color;
-	int col = 36;
+	int col = 6;
 	int bgcol = 0;
 	int sens = 100;
-	#ifndef DEBUG
-		int move = 0;
-	#endif
 	int fall[200];
 	float fpeak[200];
 	float k[200];
@@ -280,6 +282,7 @@ int main(int argc, char **argv)
 	float smooth[64] = {5, 4.5, 4, 3, 2, 1.5, 1.25, 1.5, 1.5, 1.25, 1.25, 1.5, 1.25, 1.25, 1.5, 2, 2, 1.75, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.75, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 	float sm = 1.25; //min val from the above array
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
+	const wchar_t* bars[] = {L"\u2581", L"\u2582", L"\u2583", L"\u2584", L"\u2585", L"\u2586", L"\u2587", L"\u2588"};
 	char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
 Visualize audio input in terminal. \n\
@@ -302,12 +305,7 @@ Options:\n\
 
 	setlocale(LC_ALL, "");
 
-	for (i = 0; i < 200; i++) {
-		flast[i] = 0;
-		fall[i] = 0;
-		fpeak[i] = 0;
-		fmem[i] = 0;
-	}
+
 	for (i = 0; i < M; i++)shared[i] = 0;
 
   // general: handle command-line arguments
@@ -358,14 +356,14 @@ Options:\n\
 			case 'c': // argument: foreground color
 				col = 0;
 				color = optarg;
-				if (strcmp(color, "black") == 0) col = 30;
-				if (strcmp(color, "red") == 0) col = 31;
-				if (strcmp(color, "green") == 0) col = 32;
-				if (strcmp(color, "yellow") == 0) col = 33;
-				if (strcmp(color, "blue") == 0) col = 34;
-				if (strcmp(color, "magenta") == 0) col = 35;
-				if (strcmp(color, "cyan") == 0) col = 36;
-				if (strcmp(color, "white") == 0) col = 37;
+				if (strcmp(color, "black") == 0) col = 0;
+				if (strcmp(color, "red") == 0) col = 1;
+				if (strcmp(color, "green") == 0) col = 2;
+				if (strcmp(color, "yellow") == 0) col = 3;
+				if (strcmp(color, "blue") == 0) col = 4;
+				if (strcmp(color, "magenta") == 0) col = 5;
+				if (strcmp(color, "cyan") == 0) col = 6;
+				if (strcmp(color, "white") == 0) col = 7;
 				if (col == 0) {
 					cleanup();
 					fprintf(stderr, "color %s not supported\n", color);
@@ -375,14 +373,14 @@ Options:\n\
 			case 'C': // argument: background color
 				bgcol = 0;
 				color = optarg;
-				if (strcmp(color, "black") == 0) bgcol = 40;
-				if (strcmp(color, "red") == 0) bgcol = 41;
-				if (strcmp(color, "green") == 0) bgcol = 42;
-				if (strcmp(color, "yellow") == 0) bgcol = 43;
-				if (strcmp(color, "blue") == 0) bgcol = 44;
-				if (strcmp(color, "magenta") == 0) bgcol = 45;
-				if (strcmp(color, "cyan") == 0) bgcol = 46;
-				if (strcmp(color, "white") == 0) bgcol = 47;
+				if (strcmp(color, "black") == 0) bgcol = 0;
+				if (strcmp(color, "red") == 0) bgcol = 1;
+				if (strcmp(color, "green") == 0) bgcol = 2;
+				if (strcmp(color, "yellow") == 0) bgcol = 3;
+				if (strcmp(color, "blue") == 0) bgcol = 4;
+				if (strcmp(color, "magenta") == 0) bgcol = 5;
+				if (strcmp(color, "cyan") == 0) bgcol = 6;
+				if (strcmp(color, "white") == 0) bgcol = 7;
 				if (bgcol == 0) {
 					cleanup();
 					fprintf(stderr, "color %s not supported\n", color);
@@ -454,45 +452,54 @@ Options:\n\
 	p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
 
 	// output: get terminal's geometry
-	ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+	initscr();
+	timeout(0);
+
 	while  (1) {//jumbing back to this loop means that you resized the screen
+		for (i = 0; i < 200; i++) {
+			flast[i] = 0;
+			flastd[i] = 0;
+			fall[i] = 0;
+			fpeak[i] = 0;
+			fmem[i] = 0;
+		}
+
+		clear();
+	
 		//getting orignial numbers of bands incase of resize
 		if (autoband == 1)  {
 			bands = 25;
 		} else bands = fixedbands;
+		
+
+		getmaxyx(stdscr,hs,ws);
+		
 
 
-		if (bands > (int)w.ws_col / 2 - 1)bands = (int)w.ws_col / 2 -
+		if (bands > ws / 2 - 1)bands = ws / 2 -
 			                1; //handle for user setting to many bars
-		height = (int)w.ws_row - 1;
-		width = (int)w.ws_col - bands - 1;
-
-		#ifndef DEBUG
-			int matrix[width][height];
-			for (i = 0; i < width; i++) {
-				for (n = 0; n < height; n++) {
-					matrix[i][n] = 0;
-				}
-			}
-		#endif
+		height = hs - 1;
+		width = ws - bands - 1;
 
 		bw = width / bands;
 
 		// process [smoothing]: calculate gravity
-		g = ((float)height / 1000) * pow((60 / (float)framerate), 2.5);
+		g = ((float)height / 400) * pow((60 / (float)framerate), 2.5);
 
 		//if no bands are selected it tries to padd the default 20 if there is extra room
-		if (autoband == 1) bands = bands + (((w.ws_col) - (bw * bands + bands - 1)) /
+		if (autoband == 1) bands = bands + ((ws - (bw * bands + bands - 1)) /
 			                                    (bw + 1));
-		width = (int)w.ws_col - bands - 1;
+
+		width = width - bands - 1;
+
 		//checks if there is stil extra room, will use this to center
-		rest = (((w.ws_col) - (bw * bands + bands - 1)));
+		rest = (((ws) - (bw * bands + bands - 1)) / 2) - 1;
 		if (rest < 0)rest = 0;
 
 		#ifdef DEBUG
 			printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
-			       (int)w.ws_row,
-			       (int)w.ws_col, bands, bw, rest);
+			       wh,
+			       ws, bands, bw, rest);
 		#endif
 
 		// process: calculate cutoff frequencies
@@ -521,7 +528,8 @@ Options:\n\
 
 		// process: weigh signal to frequencies
 		for (n = 0; n < bands;
-			n++)k[n] = pow(fc[n],0.62) * (float)height/(M*2000);
+			n++)k[n] = pow(fc[n],0.62) * ((float)height/(M*2000))  * 8 * ((float)sens /
+					                         100);
 
 		// output: prepare screen
 		virt = system("setfont cava.psf  >/dev/null 2>&1");
@@ -529,26 +537,10 @@ Options:\n\
 			system("setterm -cursor off");
 			system("setterm -blank 0");
 
-			// output: reset console
-			printf("\033[0m\n");
-			system("clear");
-
-			printf("\033[%dm", col); //setting color
-
-			printf("\033[1m"); //setting "bright" color mode, looks cooler... I think
-			if (bgcol != 0)
-				printf("\033[%dm", bgcol);
-			{
-				for (n = (height); n >= 0; n--) {
-					for (i = 0; i < width + bands; i++) {
-
-						printf(" ");//setting backround color
-
-					}
-					printf("\n");
-				}
-				printf("\033[%dA", height); //moving cursor back up
-			}
+			start_color();			
+			init_pair(1, col, bgcol);
+			bkgd(COLOR_PAIR(1));
+			attron(COLOR_PAIR(1));
 		#endif
 
 
@@ -556,7 +548,7 @@ Options:\n\
 		while  (1) {
 
 			// general: keyboard controls
-			if ((ch = getchar()) != EOF) {
+			if ((ch = getch()) != EOF) {
 				switch (ch) {
 				case 's':
 					scientificMode = !scientificMode;
@@ -567,12 +559,13 @@ Options:\n\
 				}
 			}
 
+
 			// output: check if terminal has been resized
 			if (virt != 0) {
-				ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-				if ( ((int)w.ws_row - 1) != height || ((int)w.ws_col - bands - 1) != width) {
-					break;
-				}
+				getmaxyx(stdscr,h,w);
+				if ( h != hs || w != ws) {
+					break;					
+				} 
 			}
 
 			#ifdef DEBUG
@@ -609,38 +602,11 @@ Options:\n\
 						peak[o] += y[i]; //adding upp band
 					}
 					peak[o] = peak[o] / (hcf[o]-lcf[o]+1); //getting average
-					temp = peak[o] * k[o] * ((float)sens /
-					                         100); //multiplying with k and adjusting to sens settings
-					if (temp > height)temp = height; //just in case
+					temp = peak[o] * k[o]; //multiplying with k and adjusting to sens settings
+					if (temp > height * 8)temp = height * 8; //just in case
 					f[o] = temp;
-					//**falloff function**//
-					if (!scientificMode) {
-						if (temp < flast[o]) {
-							f[o] = fpeak[o] - (g * fall[o] * fall[o]);
-							fall[o]++;
-						} else if (temp >= flast[o]) {
-							f[o] = temp;
-							fpeak[o] = f[o];
-							fall[o] = 0;
-						}
 
-						// process [smoothing]
-
-						fmem[o] += f[o];
-						fmem[o] = fmem[o] * 0.55;
-						f[o] = fmem[o];
-
-
-
-						flast[o] = f[o]; //memmory for falloff func	
-					}
 					
-
-					if (f[o] < 0.125)f[o] = 0.125;
-					#ifdef DEBUG
-						printf("%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
-						       lcf[o], hcf[o], peak[o], f[o]);
-					#endif
 				}
 
 			} else { //**if in sleep mode wait and continiue**//
@@ -654,6 +620,7 @@ Options:\n\
 				continue;
 			}
 
+			// process [smoothing]
 			if (!scientificMode)
 			{
 				// process [smoothing]: monstercat-style "average"
@@ -669,61 +636,73 @@ Options:\n\
 						f[m_y] = max(f[z] / pow(2, m_y - z), f[m_y]);
 					}
 				}
+
+				for (o = 0; o < bands; o++) {
+
+
+					temp = f[o];
+
+					if (temp < flast[o]) {
+						f[o] = fpeak[o] - (g * fall[o] * fall[o]);
+						fall[o]++;
+					} else if (temp >= flast[o]) {
+						f[o] = temp;
+						fpeak[o] = f[o];
+						fall[o] = 0;
+					}
+
+					fmem[o] += f[o];
+					fmem[o] = fmem[o] * 0.55;
+					f[o] = fmem[o];
+
+					if (f[o] < 1)f[o] = 1;
+
+					flast[o] = f[o];
+					#ifdef DEBUG
+						printf("%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
+						       lcf[o], hcf[o], peak[o], f[o]);
+					#endif
+				}
+
+
+
+	
+
 			}
 
 			// output: draw processed input
 			#ifndef DEBUG
 				switch (om) {
-					case 1:
-						for (n = (height - 1); n >= 0; n--) {
-							o = 0;
-							move = rest / 2; //center adjustment
-							for (i = 0; i < width; i++) {
+					case 1:						
+						
+						for (i = rest; i <  bands; i++) {
 
-								// output: check if we're already at the next bar
-								if (i != 0 && i % bw == 0) {
-									o++;
-									if (o < bands)move++;
+							if(f[i] > flastd[i]){//higher then last one
+								for (n = flastd[i] / 8; n < f[i] / 8; n++) for (q = 0; q < bw; q++) mvaddwstr((height - n), (i * bw) + q + i, bars[7]);
+								if (f[i] % 8 != 0) {
+									if (virt == 0) for (q = 0; q < bw; q++) mvprintw( (height - n), (i*bw) + q + i, "%d",(f[i] % 8) );
+									else for (q = 0; q < bw; q++) mvaddwstr( (height - n), (i*bw) + q + i, bars[(f[i] % 8) - 1]);
 								}
-
-								// output: draw and move to another one, check whether we're not too far
-								if (o < bands) {
-									if (f[o] - n < 0.125) { //blank
-										if (matrix[i][n] != 0) { //change?
-											if (move != 0)printf("\033[%dC", move);
-											move = 0;
-											printf(" ");
-										} else move++; //no change, moving along
-										matrix[i][n] = 0;
-									} else if (f[o] - n > 1) { //color
-										if (matrix[i][n] != 1) { //change?
-											if (move != 0)printf("\033[%dC", move);
-											move = 0;
-											printf("\u2588");
-										} else move++; //no change, moving along
-										matrix[i][n] = 1;
-									} else { //top color, finding fraction
-										if (move != 0)printf("\033[%dC", move);
-										move = 0;
-										c = ((((f[o] - (float)n) - 0.125) / 0.875 * 7) + 1);
-										if (0 < c && c < 8) {
-											if (virt == 0)printf("%d", c);
-											else printf("%lc", L'\u2580' + c);
-										} else printf(" ");
-										matrix[i][n] = 2;
-									}
+							}else if(f[i] < flastd[i]){//lower then last one
+								for (n = f[i] / 8; n < flastd[i]/8 + 1; n++) for (q = 0; q < bw; q++) mvaddstr( (height - n), (i*bw) + q + i, " ");
+								if (f[i] % 8 != 0) {
+									if (virt == 0) for (q = 0; q < bw; q++) mvprintw((height - f[i] / 8), (i * bw) + q + i, "%d",(f[i] % 8) );
+									else for (q = 0; q < bw; q++) mvaddwstr((height - f[i] / 8), (i * bw) + q + i, bars[(f[i] % 8) - 1]);
 								}
-
 							}
-
-							printf("\n");
+						
+							flastd[i] = f[i]; //memmory for falloff func	
 
 						}
 
-						printf("\033[%dA", height);
+
+						
+						
+						refresh();
 						break;
 				}
 
+				
 				req.tv_sec = 0;
 				req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
 				nanosleep (&req, NULL);
