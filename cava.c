@@ -7,7 +7,6 @@
 #include <alsa/asoundlib.h>
 #include <sys/ioctl.h>
 #include <fftw3.h>
-#define PI 3.14159265358979323846
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
@@ -87,15 +86,15 @@ void* input_alsa(void* data)
 		else printf("open stream successful\n");
 	#endif
 
-	snd_pcm_hw_params_alloca(&params);//assembling params
-	snd_pcm_hw_params_any (handle, params);//setting defaults or something
+	snd_pcm_hw_params_alloca(&params); //assembling params
+	snd_pcm_hw_params_any (handle, params); //setting defaults or something
 	snd_pcm_hw_params_set_access(handle, params,
-	                             SND_PCM_ACCESS_RW_INTERLEAVED);//interleaved mode right left right left
+	                             SND_PCM_ACCESS_RW_INTERLEAVED); //interleaved mode right left right left
 	snd_pcm_hw_params_set_format(handle, params,
 	                             SND_PCM_FORMAT_S16_LE); //trying to set 16bit
-	snd_pcm_hw_params_set_channels(handle, params, 2);//assuming stereo
+	snd_pcm_hw_params_set_channels(handle, params, 2); //assuming stereo
 	val = 44100;
-	snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir);//trying 44100 rate
+	snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir); //trying 44100 rate
 	frames = 256;
 	snd_pcm_hw_params_set_period_size_near(handle, params, &frames,
 	                                       &dir); //number of frames pr read
@@ -151,7 +150,7 @@ void* input_alsa(void* data)
 			
 			//first channel
 			tempr = ((buffer[i + (radj) - 1 ] <<
-			          2)); //using the 10 upper bits this whould give me a vert res of 1024, enough...
+			          2)); //using the 10 upper bits this would give me a vert res of 1024, enough...
 			
 			lo = ((buffer[i + (radj) - 2] >> 6));
 			if (lo < 0)lo = abs(lo) + 1;
@@ -165,7 +164,7 @@ void* input_alsa(void* data)
 			if (templ >= 0)templ = templ + lo;
 			else templ = templ - lo;
 
-			//adding channels and storing it int the buffer
+			//adding channels and storing it in the buffer
 			shared[o] = (tempr + templ) / 2;
 			o++;
 			if (o == M - 1)o = 0;
@@ -206,7 +205,7 @@ void* input_fifo(void* data)
 			t++;
 			if (t > 10) {
 				for (i = 0; i < M; i++)shared[i] = 0;
-				t = 0;
+			t = 0;
 			}
 		} else { //if bytes read go ahead
 			t = 0;
@@ -277,8 +276,12 @@ int main(int argc, char **argv)
 	float k[200];
 	float g;
 	int framerate = 60;
-	float smooth[64] = {5, 4.5, 4, 3, 2, 1.5, 1.25, 1.5, 1.5, 1.25, 1.25, 1.5, 1.25, 1.25, 1.5, 2, 2, 1.75, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.75, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-	float sm = 1.25; //min val from the above array
+	float smooth[64] = {5, 4.5, 4, 3, 2, 1.5, 1.25, 1.5, 1.5, 1.25, 1.25, 1.5, 
+						1.25, 1.25, 1.5, 2, 2, 1.75, 1.5, 1.5, 1.5, 1.5, 1.5, 
+						1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 
+						1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 
+						1.75, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+	float sm = 1.25; //min val from smooth[]
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
 	char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
@@ -286,14 +289,14 @@ Visualize audio input in terminal. \n\
 \n\
 Options:\n\
 	-b 1..(console columns/2-1) or 200	number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
-	-i 'input method'			method used for listnening to audio, supports: 'alsa' and 'fifo'\n\
+	-i 'input method'			method used for listening to audio, supports: 'alsa' and 'fifo'\n\
 	-o 'output method'			method used for outputting processed data, only supports 'terminal'\n\
 	-d 'alsa device'			name of alsa capture device (default 'hw:1,1')\n\
 	-p 'fifo path'				path to fifo (default '/tmp/mpd.fifo')\n\
-	-c foreground color			suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
+	-c foreground color			supported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
 	-C background color			supported colors: same as above (default: no change)\n\
 	-s sensitivity				sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...\n\
-	-f framerate 				FPS limit, if you are experiencing high CPU usage, try redcing this (default: 60)\n\
+	-f framerate 				FPS limit, if you are experiencing high CPU usage, try reducing this (default: 60)\n\
 	-S					\"scientific\" mode (disables most smoothing)\n\
 	-h					print the usage\n\
 	-v					print version\n\
@@ -455,7 +458,7 @@ Options:\n\
 
 	// output: get terminal's geometry
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-	while  (1) {//jumbing back to this loop means that you resized the screen
+	while  (1) { //jumbing back to this loop means that you resized the screen
 		//getting orignial numbers of bands incase of resize
 		if (autoband == 1)  {
 			bands = 25;
@@ -490,7 +493,7 @@ Options:\n\
 		if (rest < 0)rest = 0;
 
 		#ifdef DEBUG
-			printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
+			printf("height: %d width: %d bands:%d bandwidth: %d rest: %d\n",
 			       (int)w.ws_row,
 			       (int)w.ws_col, bands, bw, rest);
 		#endif
@@ -542,7 +545,7 @@ Options:\n\
 				for (n = (height); n >= 0; n--) {
 					for (i = 0; i < width + bands; i++) {
 
-						printf(" ");//setting backround color
+						printf(" "); //setting backround color
 
 					}
 					printf("\n");
