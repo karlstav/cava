@@ -7,7 +7,6 @@
 #include <alsa/asoundlib.h>
 #include <sys/ioctl.h>
 #include <fftw3.h>
-#define PI 3.14159265358979323846
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
