@@ -494,7 +494,7 @@ Options:\n\
 		if (rest < 0)rest = 0;
 
 		#ifdef DEBUG
-			printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
+			printf("height: %d width: %d bands:%d bandwidth: %d rest: %d\n",
 			       (int)w.ws_row,
 			       (int)w.ws_col, bands, bw, rest);
 		#endif
