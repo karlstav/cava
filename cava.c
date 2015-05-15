@@ -289,14 +289,14 @@ Visualize audio input in terminal. \n\
 \n\
 Options:\n\
 	-b 1..(console columns/2-1) or 200	number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
-	-i 'input method'			method used for listnening to audio, supports: 'alsa' and 'fifo'\n\
+	-i 'input method'			method used for listening to audio, supports: 'alsa' and 'fifo'\n\
 	-o 'output method'			method used for outputting processed data, only supports 'terminal'\n\
 	-d 'alsa device'			name of alsa capture device (default 'hw:1,1')\n\
 	-p 'fifo path'				path to fifo (default '/tmp/mpd.fifo')\n\
-	-c foreground color			suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
+	-c foreground color			supported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
 	-C background color			supported colors: same as above (default: no change)\n\
 	-s sensitivity				sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...\n\
-	-f framerate 				FPS limit, if you are experiencing high CPU usage, try redcing this (default: 60)\n\
+	-f framerate 				FPS limit, if you are experiencing high CPU usage, try reducing this (default: 60)\n\
 	-S					\"scientific\" mode (disables most smoothing)\n\
 	-h					print the usage\n\
 	-v					print version\n\
