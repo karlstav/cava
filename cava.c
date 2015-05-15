@@ -454,6 +454,7 @@ Options:\n\
 	// output: get terminal's geometry
 	initscr();
 	timeout(0);
+	noecho();
 
 	while  (1) {//jumbing back to this loop means that you resized the screen
 		for (i = 0; i < 200; i++) {
@@ -536,11 +537,11 @@ Options:\n\
 		#ifndef DEBUG
 			system("setterm -cursor off");
 			system("setterm -blank 0");
-
 			start_color();			
 			init_pair(1, col, bgcol);
 			bkgd(COLOR_PAIR(1));
 			attron(COLOR_PAIR(1));
+			attron(A_BOLD);
 		#endif
 
 
@@ -676,10 +677,11 @@ Options:\n\
 						for (i = rest; i <  bands; i++) {
 
 							if(f[i] > flastd[i]){//higher then last one
-								for (n = flastd[i] / 8; n < f[i] / 8; n++) for (q = 0; q < bw; q++) mvaddwstr((height - n), (i * bw) + q + i, bars[7]);
+								if (virt == 0) for (n = flastd[i] / 8; n < f[i] / 8; n++) for (q = 0; q < bw; q++) mvprintw((height - n), (i * bw) + q + i, "%d",8);
+								else for (n = flastd[i] / 8; n < f[i] / 8; n++) for (q = 0; q < bw; q++) mvaddwstr((height - n), (i * bw) + q + i, bars[7]);
 								if (f[i] % 8 != 0) {
-									if (virt == 0) for (q = 0; q < bw; q++) mvprintw( (height - n), (i*bw) + q + i, "%d",(f[i] % 8) );
-									else for (q = 0; q < bw; q++) mvaddwstr( (height - n), (i*bw) + q + i, bars[(f[i] % 8) - 1]);
+									if (virt == 0) for (q = 0; q < bw; q++) mvprintw( (height - n), (i * bw) + q + i, "%d",(f[i] % 8) );
+									else for (q = 0; q < bw; q++) mvaddwstr( (height - n), (i * bw) + q + i, bars[(f[i] % 8) - 1]);
 								}
 							}else if(f[i] < flastd[i]){//lower then last one
 								for (n = f[i] / 8; n < flastd[i]/8 + 1; n++) for (q = 0; q < bw; q++) mvaddstr( (height - n), (i*bw) + q + i, " ");
