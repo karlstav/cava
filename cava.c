@@ -87,15 +87,15 @@ void* input_alsa(void* data)
 		else printf("open stream successful\n");
 	#endif
 
-	snd_pcm_hw_params_alloca(&params);//assembling params
-	snd_pcm_hw_params_any (handle, params);//setting defaults or something
+	snd_pcm_hw_params_alloca(&params); //assembling params
+	snd_pcm_hw_params_any (handle, params); //setting defaults or something
 	snd_pcm_hw_params_set_access(handle, params,
-	                             SND_PCM_ACCESS_RW_INTERLEAVED);//interleaved mode right left right left
+	                             SND_PCM_ACCESS_RW_INTERLEAVED); //interleaved mode right left right left
 	snd_pcm_hw_params_set_format(handle, params,
 	                             SND_PCM_FORMAT_S16_LE); //trying to set 16bit
-	snd_pcm_hw_params_set_channels(handle, params, 2);//assuming stereo
+	snd_pcm_hw_params_set_channels(handle, params, 2); //assuming stereo
 	val = 44100;
-	snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir);//trying 44100 rate
+	snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir); //trying 44100 rate
 	frames = 256;
 	snd_pcm_hw_params_set_period_size_near(handle, params, &frames,
 	                                       &dir); //number of frames pr read
@@ -455,7 +455,7 @@ Options:\n\
 
 	// output: get terminal's geometry
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-	while  (1) {//jumbing back to this loop means that you resized the screen
+	while  (1) { //jumbing back to this loop means that you resized the screen
 		//getting orignial numbers of bands incase of resize
 		if (autoband == 1)  {
 			bands = 25;
@@ -542,7 +542,7 @@ Options:\n\
 				for (n = (height); n >= 0; n--) {
 					for (i = 0; i < width + bands; i++) {
 
-						printf(" ");//setting backround color
+						printf(" "); //setting backround color
 
 					}
 					printf("\n");
