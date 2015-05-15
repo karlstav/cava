@@ -150,7 +150,7 @@ void* input_alsa(void* data)
 			
 			//first channel
 			tempr = ((buffer[i + (radj) - 1 ] <<
-			          2)); //using the 10 upper bits this whould give me a vert res of 1024, enough...
+			          2)); //using the 10 upper bits this would give me a vert res of 1024, enough...
 			
 			lo = ((buffer[i + (radj) - 2] >> 6));
 			if (lo < 0)lo = abs(lo) + 1;
@@ -164,7 +164,7 @@ void* input_alsa(void* data)
 			if (templ >= 0)templ = templ + lo;
 			else templ = templ - lo;
 
-			//adding channels and storing it int the buffer
+			//adding channels and storing it in the buffer
 			shared[o] = (tempr + templ) / 2;
 			o++;
 			if (o == M - 1)o = 0;
