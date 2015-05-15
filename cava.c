@@ -281,7 +281,7 @@ int main(int argc, char **argv)
 						1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 
 						1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 
 						1.75, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-	float sm = 1.25; //min val from the above array
+	float sm = 1.25; //min val from smooth[]
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
 	char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
