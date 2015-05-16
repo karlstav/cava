@@ -69,8 +69,7 @@ void* input_alsa(void* data)
 	snd_pcm_uframes_t frames;
 	char *device = ((char*)data);
 	val = 44100;
-	unsigned int size;
-	int i, n, o, dir, err, lo;
+	int i, n, o, size, dir, err, lo;
 	int tempr, templ;
 	int radj, ladj;
 
