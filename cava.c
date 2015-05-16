@@ -282,7 +282,7 @@ int main(int argc, char **argv)
 						1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 
 						1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 
 						1.75, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-	float sm = 1.25; //min val from smooth[]
+	float sm = 1.25f; //min val from smooth[]
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
 	char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
@@ -483,7 +483,7 @@ Options:\n\
 		bw = width / bands;
 
 		// process [smoothing]: calculate gravity
-		g = ((float)height / 1000) * powf((60 / (float)framerate), 2.5);
+		g = ((float)height / 1000) * powf((60 / (float)framerate), 2.5f);
 
 		//if no bands are selected it tries to padd the default 20 if there is extra room
 		if (autoband == 1) bands = bands + (((w.ws_col) - (bw * bands + bands - 1)) /
@@ -501,8 +501,8 @@ Options:\n\
 
 		// process: calculate cutoff frequencies
 		for (n = 0; n < bands + 1; n++) {
-			fc[n] = 10000 * pow(10, -2.37 + ((((float)n + 1) / ((float)bands + 1)) *
-			                                 2.37)); //decided to cut it at 10k, little interesting to hear above
+			fc[n] = 10000 * pow(10, -2.37f + ((((float)n + 1) / ((float)bands + 1)) *
+			                                 2.37f)); //decided to cut it at 10k, little interesting to hear above
 			fr[n] = fc[n] / (rate /
 			                 2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
 			lcf[n] = fr[n] * (M /
@@ -609,7 +609,7 @@ Options:\n\
 
 					// process: get peaks
 					for (i = lcf[o]; i <= hcf[o]; i++) {
-						y[i] = pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5); //getting r of compex
+						y[i] = pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5f); //getting r of compex
 						peak[o] += y[i]; //adding upp band
 					}
 					peak[o] = peak[o] / (hcf[o]-lcf[o]+1); //getting average
@@ -640,7 +640,7 @@ Options:\n\
 					}
 					
 
-					if (f[o] < 0.125)f[o] = 0.125;
+					if (f[o] < 0.125f)f[o] = 0.125f;
 					#ifdef DEBUG
 						printf("%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
 						       lcf[o], hcf[o], peak[o], f[o]);
@@ -665,7 +665,7 @@ Options:\n\
 				float m_o = 64 / bands;
 				for (z = 0; z < bands; z++) {
 					f[z] = f[z] * sm / smooth[(int)floor(z * m_o)];
-					if (f[z] < 0.125)f[z] = 0.125;
+					if (f[z] < 0.125f)f[z] = 0.125f;
 					for (m_y = z - 1; m_y >= 0; m_y--) {
 						f[m_y] = fmax(f[z] / powf(2, z - m_y), f[m_y]);
 					}
@@ -692,7 +692,7 @@ Options:\n\
 
 								// output: draw and move to another one, check whether we're not too far
 								if (o < bands) {
-									if (f[o] - n < 0.125) { //blank
+									if (f[o] - n < 0.125f) { //blank
 										if (matrix[i][n] != 0) { //change?
 											if (move != 0)printf("\033[%dC", move);
 											move = 0;
@@ -709,7 +709,7 @@ Options:\n\
 									} else { //top color, finding fraction
 										if (move != 0)printf("\033[%dC", move);
 										move = 0;
-										c = ((((f[o] - (float)n) - 0.125) / 0.875 * 7) + 1);
+										c = ((((f[o] - (float)n) - 0.125f) / 0.875f * 7) + 1);
 										if (0 < c && c < 8) {
 											if (virt == 0)printf("%d", c);
 											else printf("%lc", L'\u2580' + c);
