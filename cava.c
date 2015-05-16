@@ -663,7 +663,7 @@ Options:\n\
 					f[z] = f[z] * sm / smooth[(int)floor(z * m_o)];
 					if (f[z] < 0.125f)f[z] = 0.125f;
 						for (int m_y = z - 1; m_y >= 0; m_y--) {
-							f[m_y] = fmax(f[z] / powf(2, z - m_y), f[m_y]);
+							f[m_y] = fmaxf(f[z] / powf(2, z - m_y), f[m_y]);
 						}
 					for (int m_y = z + 1; m_y < bands; m_y++) {
 						f[m_y] = fmaxf(f[z] / powf(2, m_y - z), f[m_y]);
