@@ -34,6 +34,11 @@ bool scientificMode = false;
 struct termios oldtio, newtio;
 int rc;
 
+void cleanup(void);
+void sig_handler(int sig_no);
+void* input_alsa(void* data);
+void* input_fifo(void* data);
+
 // general: cleanup
 void cleanup()
 {
