@@ -127,7 +127,7 @@ void* input_alsa(void* data)
 	radj = format / 4; //adjustments for interleaved
 	ladj = format / 8;
 	o = 0;
-	while (1) {
+	while (true) {
 
 		err = snd_pcm_readi(handle, buffer, frames);
 		if (err == -EPIPE) {
@@ -194,7 +194,7 @@ void* input_fifo(void* data)
 	flags = fcntl(fd, F_GETFL, 0);
 	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 
-	while (1) {
+	while (true) {
 
 		bytes = read(fd, buf, sizeof(buf));
 
@@ -456,7 +456,7 @@ Options:\n\
 
 	// output: get terminal's geometry
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-	while  (1) { //jumbing back to this loop means that you resized the screen
+	while (true) { //jumbing back to this loop means that you resized the screen
 		//getting orignial numbers of bands incase of resize
 		if (autoband == 1)  {
 			bands = 25;
@@ -554,7 +554,7 @@ Options:\n\
 
 
 		// general: main loop
-		while  (1) {
+		while (true) {
 
 			// general: keyboard controls
 			if ((ch = getchar()) != EOF) {
