@@ -482,7 +482,7 @@ Options:\n\
 		bw = width / bands;
 
 		// process [smoothing]: calculate gravity
-		g = ((float)height / 1000) * pow((60 / (float)framerate), 2.5);
+		g = ((float)height / 1000) * powf((60 / (float)framerate), 2.5);
 
 		//if no bands are selected it tries to padd the default 20 if there is extra room
 		if (autoband == 1) bands = bands + (((w.ws_col) - (bw * bands + bands - 1)) /
