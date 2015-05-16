@@ -24,7 +24,7 @@
 #define GCC_UNUSED /* nothing */
 #endif
 
-int M = 2048;
+const int M = 2048;
 int shared[2048];
 int format = -1;
 unsigned int rate = 0;
