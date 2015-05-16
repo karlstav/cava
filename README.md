@@ -89,26 +89,26 @@ Capturing audio
 
 If you want to capture audio straight fom the output (not just mic or line-in), you must create an ALSA loopback interface, then output the audio simultaneously to both the loopback and your normal interface.
 
-Here is one way to create a loopback interface:
+To create a loopback interface simply run:
 
-- Copy the file "alsa-aloop.conf" to your  "/etc/modprobe.d/" directory. You might have to change the index=1 to match your sound setup. Look at "aplay -l" to se what index is available.
-- Add the line "snd-aloop" to /etc/modules
-- Run "sudo modprobe snd_aloop"
+`sudo modprobe snd_aloop`
 
-Hopefully your "aplay -l" should now contain a few "Loopback" interfaces.
+To make it presistent across boot add the line `snd-aloop` to "/etc/modules"
 
-Now playing the audio through your Loopback interface makes it possible for cava to to capture it, but there will be no sound in your speakers. :(
+Hopefully your `aplay -l` should now contain a loopback interface.
+
+Playing the audio through your Loopback interface makes it possible for cava to to capture it, but there will be no sound in your speakers. :(
 
 Not to worry! There are (at least) two ways of sending the audio output to the loopback *and* your actual audio interface at the same time:
 
 #### PulseAudio (easy)
 
-To `/etc/pulse/default.pa`, add the line `load-module module-combine-sink` (in PulseAudio versions <2.0, the module is only called `module-combine`). Then restart PulseAudio. For some reason, I had to turn off realtime scheduling for this to work on a Raspberry Pi (set `realtime-scheduling = no` in `/etc/pulse/daemon.conf`).
-
+To `/etc/pulse/default.pa`, add the line `load-module module-combine-sink` (in PulseAudio versions <1.0, the module was only called `module-combine`). Then restart PulseAudio. For some reason, I had to turn off realtime scheduling for this to work on a Raspberry Pi (set `realtime-scheduling = no` in `/etc/pulse/daemon.conf`).
 
 PulseAudio setup can also be done in paprefs (Debian: `sudo apt-get install paprefs && paprefs`): In the far right tab check the box "Simultaneous Output".
 
 An extra Output should appear in your sound options called "Simultaneous output to..." Note that when using this method if you turn down the volume on the Simultaneous output, this will effect the visualizer. To avoid this, select the actual output, then turn down the volume, then select the Simultaneous output again.
+
 
 #### ALSA (hard)
 
