@@ -503,7 +503,7 @@ Options:\n\
 			                                 2.37)); //decided to cut it at 10k, little interesting to hear above
 			fr[n] = fc[n] / (rate /
 			                 2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
-			lcf[n] = fr[n] * (M /
+			lcf[n] = (int)fr[n] * (M /
 			                  4); //lfc stores the lower cut frequency foo each band in the fft out buffer
 
 			if (n != 0) {
