@@ -631,7 +631,7 @@ Options:\n\
 						// process [smoothing]
 
 						fmem[o] += f[o];
-						fmem[o] = fmem[o] * 0.55;
+						fmem[o] = fmem[o] * 0.55f;
 						f[o] = fmem[o];
 
 
