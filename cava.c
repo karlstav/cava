@@ -72,7 +72,7 @@ void* input_alsa(void* data)
 	snd_pcm_uframes_t frames;
 	char *device = ((char*)data);
 	val = 44100;
-	int i, n, o, size, dir, err, lo;
+	int i, o, size, dir, err, lo;
 	int tempr, templ;
 	int radj, ladj;
 
@@ -147,7 +147,6 @@ void* input_alsa(void* data)
 		}
 
 		//sorting out one channel and only biggest octet
-		n = 0; //frame counter
 		for (i = 0; i < size ; i = i + (ladj) * 2) {
 			
 			//first channel
@@ -170,8 +169,6 @@ void* input_alsa(void* data)
 			shared[o] = (tempr + templ) / 2;
 			o++;
 			if (o == M - 1)o = 0;
-
-			n++;
 		}
 	}
 }
