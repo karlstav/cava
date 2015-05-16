@@ -1,20 +1,21 @@
-#include <alloca.h>
+#include <string.h>
+#include <time.h>
 #include <locale.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <termios.h>
 #include <math.h>
-#include <alsa/asoundlib.h>
-#include <sys/ioctl.h>
-#include <fftw3.h>
-
-#include <unistd.h>
-#include <sys/types.h>
 #include <signal.h>
-#include <string.h>
-#include <time.h>
+
+#include <termios.h>
+#include <unistd.h>
 #include <getopt.h>
 #include <pthread.h>
+#include <alloca.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+
+#include <alsa/asoundlib.h>
+#include <fftw3.h>
 
 #ifdef __GNUC__
 // curses.h or other sources may already define
