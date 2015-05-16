@@ -24,15 +24,15 @@
 #define GCC_UNUSED /* nothing */
 #endif
 
-const int M = 2048;
-int shared[2048];
-int format = -1;
-unsigned int rate = 0;
+static const int M = 2048;
+static int shared[2048];
+static int format = -1;
+static unsigned int rate = 0;
 
-bool scientificMode = false;
+static bool scientificMode = false;
 
-struct termios oldtio, newtio;
-int rc;
+static struct termios oldtio, newtio;
+static int rc;
 
 void cleanup(void);
 void sig_handler(int sig_no);
