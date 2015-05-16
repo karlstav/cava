@@ -72,7 +72,7 @@ void* input_alsa(void* data)
 	snd_pcm_uframes_t frames;
 	char *device = ((char*)data);
 	val = 44100;
-	int i, o, size, dir, err, lo;
+	int o, size, dir, err, lo;
 	int tempr, templ;
 	int radj, ladj;
 
@@ -147,7 +147,7 @@ void* input_alsa(void* data)
 		}
 
 		//sorting out one channel and only biggest octet
-		for (i = 0; i < size ; i = i + (ladj) * 2) {
+		for (int i = 0; i < size ; i = i + (ladj) * 2) {
 			
 			//first channel
 			tempr = ((buffer[i + (radj) - 1 ] <<
@@ -180,7 +180,6 @@ void* input_fifo(void* data)
 	int n = 0;
 	signed char buf[1024];
 	int tempr, templ, lo;
-	int q, i;
 	int t = 0;
 	int size = 1024;
 	char *path = ((char*)data);
@@ -203,23 +202,23 @@ void* input_fifo(void* data)
 			nanosleep (&req, NULL);
 			t++;
 			if (t > 10) {
-				for (i = 0; i < M; i++)shared[i] = 0;
+				for (int i = 0; i < M; i++)shared[i] = 0;
 					t = 0;
 			}
 		} else { //if bytes read go ahead
 			t = 0;
-			for (q = 0; q < (size / 4); q++) {
+			for (int i = 0; i < (size / 4); i++) {
 
-				tempr = ( buf[ 4 * q - 1] << 2);
+				tempr = ( buf[ 4 * i - 1] << 2);
 
-				lo =  ( buf[4 * q ] >> 6);
+				lo =  ( buf[4 * i ] >> 6);
 				if (lo < 0)lo = abs(lo) + 1;
 				if (tempr >= 0)tempr = tempr + lo;
 				else tempr = tempr - lo;
 
-				templ = ( buf[ 4 * q - 3] << 2);
+				templ = ( buf[ 4 * i - 3] << 2);
 
-				lo =  ( buf[ 4 * q - 2] >> 6);
+				lo =  ( buf[ 4 * i - 2] >> 6);
 				if (lo < 0)lo = abs(lo) + 1;
 				if (templ >= 0)templ = templ + lo;
 				else templ = templ - lo;
@@ -255,7 +254,7 @@ int main(int argc, char **argv)
 	long int lpeak, hpeak;
 	int bands = 25;
 	int sleep = 0;
-	int i, n, o, bw, width, height, c, rest, virt, fixedbands;
+	int bw, width, height, c, rest, virt, fixedbands;
 	int autoband = 1;
 	float temp;
 	struct winsize w;
@@ -303,13 +302,13 @@ Options:\n\
 
 	setlocale(LC_ALL, "");
 
-	for (i = 0; i < 200; i++) {
+	for (int i = 0; i < 200; i++) {
 		flast[i] = 0;
 		fall[i] = 0;
 		fpeak[i] = 0;
 		fmem[i] = 0;
 	}
-	for (i = 0; i < M; i++)shared[i] = 0;
+	for (int i = 0; i < M; i++)shared[i] = 0;
 
   // general: handle command-line arguments
 	while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:hSv")) != -1)
@@ -419,10 +418,11 @@ Options:\n\
 	newtio.c_cc[VMIN] = 0;
 	rc = tcsetattr(0, TCSAFLUSH, &newtio);
 
-	n = 0;
+	
 
 	// input: wait for the input to be ready
 	if (im == 1) {
+		int n = 0;
 		thr_id = pthread_create(&p_thread, NULL, input_alsa,
 		                        (void*)device); //starting alsamusic listener
 		while (format == -1 || rate == 0) {
@@ -470,8 +470,8 @@ Options:\n\
 
 		#ifndef DEBUG
 			int matrix[width][height];
-			for (i = 0; i < width; i++) {
-				for (n = 0; n < height; n++) {
+			for (int i = 0; i < width; i++) {
+				for (int n = 0; n < height; n++) {
 					matrix[i][n] = 0;
 				}
 			}
@@ -497,7 +497,7 @@ Options:\n\
 		#endif
 
 		// process: calculate cutoff frequencies
-		for (n = 0; n < bands + 1; n++) {
+		for (int n = 0; n < bands + 1; n++) {
 			fc[n] = 10000 * pow(10, -2.37f + ((((float)n + 1) / ((float)bands + 1)) *
 			                                 2.37f)); //decided to cut it at 10k, little interesting to hear above
 			fr[n] = fc[n] / (rate /
@@ -521,7 +521,7 @@ Options:\n\
 		}
 
 		// process: weigh signal to frequencies
-		for (n = 0; n < bands;
+		for (int n = 0; n < bands;
 			n++)k[n] = powf(fc[n],0.62f) * (float)height/(M*2000);
 
 		// output: prepare screen
@@ -540,8 +540,8 @@ Options:\n\
 			if (bgcol != 0)
 				printf("\033[%dm", bgcol);
 			{
-				for (n = (height); n >= 0; n--) {
-					for (i = 0; i < width + bands; i++) {
+				for (int n = (height); n >= 0; n--) {
+					for (int i = 0; i < width + bands; i++) {
 
 						printf(" "); //setting backround color
 
@@ -583,7 +583,7 @@ Options:\n\
 			// process: populate input buffer and check if input is present
 			lpeak = 0;
 			hpeak = 0;
-			for (i = 0; i < (2 * (M / 2 + 1)); i++) {
+			for (int i = 0; i < (2 * (M / 2 + 1)); i++) {
 				if (i < M) {
 					in[i] = shared[i];
 					if (shared[i] > hpeak) hpeak = shared[i];
@@ -601,11 +601,11 @@ Options:\n\
 				fftw_execute(p);
 
 				// process: separate frequency bands
-				for (o = 0; o < bands; o++) {
+				for (int o = 0; o < bands; o++) {
 					peak[o] = 0;
 
 					// process: get peaks
-					for (i = lcf[o]; i <= hcf[o]; i++) {
+					for (int i = lcf[o]; i <= hcf[o]; i++) {
 						y[i] = pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5f); //getting r of compex
 						peak[o] += y[i]; //adding upp band
 					}
@@ -658,15 +658,14 @@ Options:\n\
 			if (!scientificMode)
 			{
 				// process [smoothing]: monstercat-style "average"
-				int z, m_y;
 				float m_o = 64 / bands;
-				for (z = 0; z < bands; z++) {
+				for (int z = 0; z < bands; z++) {
 					f[z] = f[z] * sm / smooth[(int)floor(z * m_o)];
 					if (f[z] < 0.125f)f[z] = 0.125f;
-					for (m_y = z - 1; m_y >= 0; m_y--) {
-						f[m_y] = fmax(f[z] / powf(2, z - m_y), f[m_y]);
-					}
-					for (m_y = z + 1; m_y < bands; m_y++) {
+						for (int m_y = z - 1; m_y >= 0; m_y--) {
+							f[m_y] = fmax(f[z] / powf(2, z - m_y), f[m_y]);
+						}
+					for (int m_y = z + 1; m_y < bands; m_y++) {
 						f[m_y] = fmaxf(f[z] / powf(2, m_y - z), f[m_y]);
 					}
 				}
@@ -676,10 +675,10 @@ Options:\n\
 			#ifndef DEBUG
 				switch (om) {
 					case 1:
-						for (n = (height - 1); n >= 0; n--) {
-							o = 0;
+						for (int n = (height - 1); n >= 0; n--) {
+							int o = 0;
 							move = rest / 2; //center adjustment
-							for (i = 0; i < width; i++) {
+							for (int i = 0; i < width; i++) {
 
 								// output: check if we're already at the next bar
 								if (i != 0 && i % bw == 0) {
