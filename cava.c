@@ -204,7 +204,7 @@ void* input_fifo(void* data)
 			t++;
 			if (t > 10) {
 				for (i = 0; i < M; i++)shared[i] = 0;
-				t = 0;
+			t = 0;
 			}
 		} else { //if bytes read go ahead
 			t = 0;
