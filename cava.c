@@ -634,7 +634,7 @@ Options:\n\
 
 
 
-						flast[o] = f[o]; //memmory for falloff func	
+						flast[o] = f[o]; //memory for falloff func	
 					}
 					
 
