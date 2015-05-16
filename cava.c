@@ -591,7 +591,7 @@ Options:\n\
 					if (shared[i] < lpeak) lpeak = shared[i];
 				} else in[i] = 0;
 			}
-			peak[bands] = (hpeak + abs(lpeak));
+			peak[bands] = (hpeak + labs(lpeak));
 			if (peak[bands] == 0)sleep++;
 			else sleep = 0;
 
