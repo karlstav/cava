@@ -594,7 +594,7 @@ Options:\n\
 				} else in[i] = 0;
 			}
 			peak[bands] = (hpeak + labs(lpeak));
-			if (peak[bands] == 0)sleep++;
+			if (peak[bands] == 0.0f)sleep++;
 			else sleep = 0;
 
 			// process: if input was present for the last 5 seconds apply FFT to it
