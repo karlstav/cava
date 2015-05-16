@@ -232,7 +232,6 @@ void* input_fifo(void* data)
 			}
 		}
 	}
-	close(fd);
 }
 
 // general: entry point
