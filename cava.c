@@ -7,10 +7,7 @@
 #include <alsa/asoundlib.h>
 #include <sys/ioctl.h>
 #include <fftw3.h>
-#define max(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a > _b ? _a : _b; })
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <signal.h>
@@ -665,10 +662,10 @@ Options:\n\
 					f[z] = f[z] * sm / smooth[(int)floor(z * m_o)];
 					if (f[z] < 0.125)f[z] = 0.125;
 					for (m_y = z - 1; m_y >= 0; m_y--) {
-						f[m_y] = max(f[z] / pow(2, z - m_y), f[m_y]);
+						f[m_y] = fmax(f[z] / pow(2, z - m_y), f[m_y]);
 					}
 					for (m_y = z + 1; m_y < bands; m_y++) {
-						f[m_y] = max(f[z] / pow(2, m_y - z), f[m_y]);
+						f[m_y] = fmaxf(f[z] / pow(2, m_y - z), f[m_y]);
 					}
 				}
 			}
