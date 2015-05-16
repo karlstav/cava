@@ -525,7 +525,7 @@ Options:\n\
 
 		// process: weigh signal to frequencies
 		for (n = 0; n < bands;
-			n++)k[n] = pow(fc[n],0.62) * (float)height/(M*2000);
+			n++)k[n] = powf(fc[n],0.62f) * (float)height/(M*2000);
 
 		// output: prepare screen
 		virt = system("setfont cava.psf  >/dev/null 2>&1");
