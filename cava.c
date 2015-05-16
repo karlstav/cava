@@ -90,7 +90,6 @@ void* input_alsa(void* data)
 	snd_pcm_hw_params_set_format(handle, params,
 	                             SND_PCM_FORMAT_S16_LE); //trying to set 16bit
 	snd_pcm_hw_params_set_channels(handle, params, 2); //assuming stereo
-	val = 44100;
 	snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir); //trying 44100 rate
 	frames = 256;
 	snd_pcm_hw_params_set_period_size_near(handle, params, &frames,
