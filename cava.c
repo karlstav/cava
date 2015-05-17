@@ -41,8 +41,7 @@ void *input_alsa(void *data);
 void *input_fifo(void *data);
 
 // general: cleanup
-void cleanup()
-{
+void cleanup() {
     printf("\033[0m\n");
     system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
     system("setterm -cursor on");
@@ -52,8 +51,7 @@ void cleanup()
 }
 
 // general: handle signals
-void sig_handler(int sig_no)
-{
+void sig_handler(int sig_no) {
     cleanup();
     if (sig_no == SIGINT)
         printf("CTRL-C pressed -- goodbye\n");
@@ -62,8 +60,7 @@ void sig_handler(int sig_no)
 }
 
 // input: ALSA
-void* input_alsa(void* data)
-{
+void *input_alsa(void *data) {
     const char *device = ((char *)data);
     snd_pcm_t *handle;
     int err = 0;
@@ -196,8 +193,7 @@ void* input_alsa(void* data)
 }
 
 //input: FIFO
-void *input_fifo(void* data)
-{
+void *input_fifo(void *data) {
     signed char buf[1024];
     const char *path = ((char *)data);
 
@@ -254,8 +250,7 @@ void *input_fifo(void* data)
 }
 
 // general: entry point
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     setlocale(LC_ALL, "");
 
     char *usage = "\n\
@@ -263,34 +258,19 @@ Usage : " PACKAGE " [options]\n\
 Visualize audio input in terminal. \n\
 \n\
 Options:\n\
-	-b 1..(console columns/2-1) or 200	number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
-	-i 'input method'			method used for listening to audio, supports: 'alsa' and 'fifo'\n\
-	-o 'output method'			method used for outputting processed data, only supports 'terminal'\n\
-	-d 'alsa device'			name of alsa capture device (default 'hw:1,1')\n\
-	-p 'fifo path'				path to fifo (default '/tmp/mpd.fifo')\n\
-	-c foreground color			supported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
-	-C background color			supported colors: same as above (default: no change)\n\
-	-s sensitivity				sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...\n\
-	-f framerate 				FPS limit, if you are experiencing high CPU usage, try reducing this (default: 60)\n\
-	-S					\"scientific\" mode (disables most smoothing)\n\
-	-h					print the usage\n\
-	-v					print version\n\
+    -b 1..(console columns/2-1) or 200  number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
+    -i 'input method'           method used for listening to audio, supports: 'alsa' and 'fifo'\n\
+    -o 'output method'          method used for outputting processed data, only supports 'terminal'\n\
+    -d 'alsa device'            name of alsa capture device (default 'hw:1,1')\n\
+    -p 'fifo path'              path to fifo (default '/tmp/mpd.fifo')\n\
+    -c foreground color         supported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
+    -C background color         supported colors: same as above (default: no change)\n\
+    -s sensitivity              sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...\n\
+    -f framerate                FPS limit, if you are experiencing high CPU usage, try reducing this (default: 60)\n\
+    -S                  \"scientific\" mode (disables most smoothing)\n\
+    -h                  print the usage\n\
+    -v                  print version\n\
 \n";
-
-    char *inputMethod = "alsa";
-    char *outputMethod = "terminal";
-    int om = 1;
-    char *device = "hw:1,1";
-    char *path = "/tmp/mpd.fifo";
-
-    int fixedbands;
-    int autoband = 1;
-    struct winsize w;
-
-    char *color;
-    int col = 36;
-    int bgcol = 0;
-    int sens = 100;
 
     int flast[200];
     int fall[200];
@@ -307,8 +287,24 @@ Options:\n\
         shared[i] = 0;
 
     int im = 1;
+    int om = 1;
     int framerate = 60;
     int c = 0;
+
+    char *inputMethod = "alsa";
+    char *outputMethod = "terminal";
+
+    char *device = "hw:1,1";
+    char *path = "/tmp/mpd.fifo";
+
+    int fixedbands = 0;
+    int autoband = 1;
+    struct winsize w;
+
+    char *color;
+    int col = 36;
+    int bgcol = 0;
+    int sens = 100;
 
     // general: handle command-line arguments
     while ((c = getopt(argc, argv, "p:i:b:d:s:f:c:C:hSv")) != -1)
@@ -579,7 +575,7 @@ Options:\n\
             fr[n] = fc[n] / (rate / 2);
 
             // lfc stores the lower cut frequency foo each band in the fft out buffer
-            lcf[n] = fr[n] * (M / 4);
+            lcf[n] = (int)fr[n] * (M / 4);
 
             if (n != 0) {
                 hcf[n - 1] = lcf[n] - 1;
@@ -634,7 +630,7 @@ Options:\n\
         while (true) {
             char ch;
             // general: keyboard controls
-            if ((ch = getchar()) != EOF) {
+            if ((ch = (char)getchar()) != EOF) {
                 switch (ch) {
                     case 's':
                         scientificMode = !scientificMode;
@@ -697,7 +693,7 @@ Options:\n\
                         int y[1025];
 
                         // getting r of compex
-                        y[i] = pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5f);
+                        y[i] = powf(powf((float)*out[i][0], 2.0f) + powf((float)*out[i][1], 2.0f), 0.5f);
 
                         // adding upp band
                         peak[o] += y[i];
@@ -734,7 +730,7 @@ Options:\n\
                         f[o] = fmem[o];
 
                         // memory for falloff func
-                        flast[o] = f[o];
+                        flast[o] = (int)f[o];
                     }
 
                     if (f[o] < 0.125f)
@@ -763,17 +759,17 @@ Options:\n\
             if (!scientificMode) {
                 // process [smoothing]: monstercat-style "average"
                 for (int z = 0; z < bands; z++) {
-                    const float smooth[64] = {5, 4.5, 4, 3, 2, 1.5, 1.25, 1.5, 1.5, 1.25, 1.25, 1.5,
-                                              1.25, 1.25, 1.5, 2, 2, 1.75, 1.5, 1.5, 1.5, 1.5, 1.5,
-                                              1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5,
-                                              1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5,
-                                              1.75, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+                    const float smooth[64] = {5.0f, 4.5f, 4.0f, 3.0f, 2.0f, 1.5f, 1.25f, 1.5f, 1.5f, 1.25f, 1.25f, 1.5f,
+                                              1.25f, 1.25f, 1.5f, 2.0f, 2.0f, 1.75f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f,
+                                              1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f,
+                                              1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f,
+                                              1.75f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f};
 
                     // min val from smooth[]
                     const float sm = 1.25f;
                     const float m_o = 64 / bands;
 
-                    f[z] = f[z] * sm / smooth[(int)floor(z * m_o)];
+                    f[z] = f[z] * sm / smooth[(int)floorf(z * m_o)];
                     if (f[z] < 0.125f)
                         f[z] = 0.125f;
 
@@ -837,7 +833,7 @@ Options:\n\
                                     if (move != 0)
                                         printf("\033[%dC", move);
                                     move = 0;
-                                    c = ((((f[o] - (float)n) - 0.125f) / 0.875f * 7) + 1);
+                                    c = (int)((((f[o] - (float)n) - 0.125f) / 0.875f * 7.0f) + 1.0f);
                                     if (0 < c && c < 8) {
                                         if (virt == 0)
                                             printf("%d", c);
