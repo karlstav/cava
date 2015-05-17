@@ -288,7 +288,7 @@ Options:\n\
 	char *path = "/tmp/mpd.fifo";
 
 
-	int fixedbands;
+	int c, fixedbands;
 	int autoband = 1;
 	struct winsize w;
 
@@ -313,7 +313,6 @@ Options:\n\
 
 	int im = 1;
 	int framerate = 60;
-	int c = 0;
 
   	// general: handle command-line arguments
 	while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:hSv")) != -1)
@@ -469,9 +468,8 @@ Options:\n\
 	if (im == 1) {
 		int n = 0;
 		pthread_t p_thread;
-
-		//starting alsamusic listener
-		thr_id = pthread_create(&p_thread, NULL, input_alsa, (void*)device);
+		thr_id = pthread_create(&p_thread, NULL, input_alsa,
+		                        (void*)device); //starting alsamusic listener
 		while (format == -1 || rate == 0) {
 			req.tv_sec = 0;
 			req.tv_nsec = 1000000;
@@ -481,8 +479,8 @@ Options:\n\
 				#ifdef DEBUG
 					cleanup();
 					fprintf(stderr,
-						"could not get rate and/or format, problems with audio thread? quiting...\n");
-				#endif
+					"could not get rate and/or format, problems with audio thread? quiting...\n");
+			#endif
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -796,73 +794,55 @@ Options:\n\
 					case 1:
 						for (int n = (height - 1); n >= 0; n--) {
 							int o = 0;
+							int move = rest / 2; //center adjustment
 							for (int i = 0; i < width; i++) {
-
-								//center adjustment
-								int move = rest / 2;
 
 								// output: check if we're already at the next bar
 								if (i != 0 && i % bw == 0) {
 									o++;
-									if (o < bands)
-										move++;
+									if (o < bands)move++;
 								}
 
 								// output: draw and move to another one, check whether we're not too far
 								if (o < bands) {
-									// blank
-									if (f[o] - n < 0.125f) {
-										if (matrix[i][n] != 0) {
-											// change?
+									if (f[o] - n < 0.125f) { //blank
+										if (matrix[i][n] != 0) { //change?
 											if (move != 0)printf("\033[%dC", move);
-												move = 0;
+											move = 0;
 											printf(" ");
-										}
-										// no change, moving along
-										else
-											move++; 
+										} else move++; //no change, moving along
 										matrix[i][n] = 0;
-									}
-									//color
-									else if (f[o] - n > 1) {
-										// change?
-										if (matrix[i][n] != 1) {
+									} else if (f[o] - n > 1) { //color
+										if (matrix[i][n] != 1) { //change?
 											if (move != 0)printf("\033[%dC", move);
-												move = 0;
+											move = 0;
 											printf("\u2588");
-										}
-										// no change, moving along
-										else
-											move++;
+										} else move++; //no change, moving along
 										matrix[i][n] = 1;
-									}
-									// top color, finding fraction
-									else { 
-										if (move != 0)
-											printf("\033[%dC", move);
+									} else { //top color, finding fraction
+										if (move != 0)printf("\033[%dC", move);
 										move = 0;
 										c = ((((f[o] - (float)n) - 0.125f) / 0.875f * 7) + 1);
 										if (0 < c && c < 8) {
-											if (virt == 0)
-												printf("%d", c);
-											else
-												printf("%lc", L'\u2580' + c);
-										}
-										else
-											printf(" ");
+											if (virt == 0)printf("%d", c);
+											else printf("%lc", L'\u2580' + c);
+										} else printf(" ");
 										matrix[i][n] = 2;
 									}
 								}
+
 							}
+
 							printf("\n");
+
 						}
+
 						printf("\033[%dA", height);
 						break;
 				}
 
 				req.tv_sec = 0;
-				// sleeping for set us
-				req.tv_nsec = (1 / (float)framerate) * 1000000000;
+				req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
 				nanosleep (&req, NULL);
 			#endif
 		}
