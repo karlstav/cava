@@ -571,7 +571,7 @@ Options:\n\
         // process: calculate cutoff frequencies
         for (int n = 0; n < bands + 1; n++) {
             // //decided to cut it at 10k, little interesting to hear above
-            fc[n] = 10000 * pow(10, -2.37f + ((((float)n + 1) / ((float)bands + 1)) * 2.37f));
+            fc[n] = 10000.0f * powf(10.0f, -2.37f + ((((float)n + 1) / ((float)bands + 1.0f)) * 2.37f));
 
             // remember nyquist!, pr my calculations this should be rate/2 and
             // nyquist freq in M/2 but testing shows it is not...
