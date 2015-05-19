@@ -46,6 +46,7 @@ int rc;
 // general: cleanup
 void cleanup()
 {
+	echo();
 	system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
 	system("setterm -cursor on");
 	system("setterm -blank 10");
@@ -264,7 +265,7 @@ int main(int argc, char **argv)
 	long int lpeak, hpeak;
 	int bands = 25;
 	int sleep = 0;
-	int i, n, o, bw, width, height, h, w, hs, ws, c, rest, virt, fixedbands, q;
+	int i, n, o, bw, height, h, w, c, rest, virt, fixedbands, q;
 	int autoband = 1;
 	float temp;
 	double in[2 * (M / 2 + 1)];
@@ -296,7 +297,7 @@ Options:\n\
 	-c foreground color			suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
 	-C background color			supported colors: same as above (default: no change)\n\
 	-s sensitivity				sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...\n\
-	-f framerate 				FPS limit, if you are experiencing high CPU usage, try redcing this (default: 60)\n\
+	-f framerate  				FPS limit, if you are experiencing high CPU usage, try redcing this (default: 60)\n\
 	-S					\"scientific\" mode (disables most smoothing)\n\
 	-h					print the usage\n\
 	-v					print version\n\
@@ -352,6 +353,12 @@ Options:\n\
 				break;
 			case 'f': // argument: framerate
 				framerate = atoi(optarg);
+				if (framerate < 0) {
+					cleanup();
+					fprintf(stderr,
+						"framerate can't be negative!\n");
+					exit(EXIT_FAILURE);
+				}
 				break;
 			case 'c': // argument: foreground color
 				col = 0;
@@ -473,28 +480,24 @@ Options:\n\
 		} else bands = fixedbands;
 		
 
-		getmaxyx(stdscr,hs,ws);
+		getmaxyx(stdscr,h,w);
 		
-
-
-		if (bands > ws / 2 - 1)bands = ws / 2 -
+		if (bands > COLS / 2 - 1)bands = COLS / 2 -
 			                1; //handle for user setting to many bars
-		height = hs - 1;
-		width = ws - bands - 1;
+		height = LINES - 1;
 
-		bw = width / bands;
+		bw = (COLS - bands - 1) / bands;
 
 		// process [smoothing]: calculate gravity
 		g = ((float)height / 400) * pow((60 / (float)framerate), 2.5);
 
 		//if no bands are selected it tries to padd the default 20 if there is extra room
-		if (autoband == 1) bands = bands + ((ws - (bw * bands + bands - 1)) /
+		if (autoband == 1) bands = bands + ((COLS - (bw * bands + bands - 1)) /
 			                                    (bw + 1));
 
-		width = width - bands - 1;
 
 		//checks if there is stil extra room, will use this to center
-		rest = (((ws) - (bw * bands + bands - 1)) / 2) - 1;
+		rest = (COLS - bands * bw - bands + 1) / 2;
 		if (rest < 0)rest = 0;
 
 		#ifdef DEBUG
@@ -563,8 +566,7 @@ Options:\n\
 
 			// output: check if terminal has been resized
 			if (virt != 0) {
-				getmaxyx(stdscr,h,w);
-				if ( h != hs || w != ws) {
+				if ( LINES != h || COLS != w) {
 					break;					
 				} 
 			}
@@ -674,20 +676,20 @@ Options:\n\
 				switch (om) {
 					case 1:						
 						
-						for (i = rest; i <  bands; i++) {
+						for (i = 0; i <  bands; i++) {
 
 							if(f[i] > flastd[i]){//higher then last one
-								if (virt == 0) for (n = flastd[i] / 8; n < f[i] / 8; n++) for (q = 0; q < bw; q++) mvprintw((height - n), (i * bw) + q + i, "%d",8);
-								else for (n = flastd[i] / 8; n < f[i] / 8; n++) for (q = 0; q < bw; q++) mvaddwstr((height - n), (i * bw) + q + i, bars[7]);
+								if (virt == 0) for (n = flastd[i] / 8; n < f[i] / 8; n++) for (q = 0; q < bw; q++) mvprintw((height - n), (i * bw) + q + i + rest, "%d",8);
+								else for (n = flastd[i] / 8; n < f[i] / 8; n++) for (q = 0; q < bw; q++) mvaddwstr((height - n), (i * bw) + q + i + rest, bars[7]);
 								if (f[i] % 8 != 0) {
-									if (virt == 0) for (q = 0; q < bw; q++) mvprintw( (height - n), (i * bw) + q + i, "%d",(f[i] % 8) );
-									else for (q = 0; q < bw; q++) mvaddwstr( (height - n), (i * bw) + q + i, bars[(f[i] % 8) - 1]);
+									if (virt == 0) for (q = 0; q < bw; q++) mvprintw( (height - n), (i * bw) + q + i + rest, "%d",(f[i] % 8) );
+									else for (q = 0; q < bw; q++) mvaddwstr( (height - n), (i * bw) + q + i + rest, bars[(f[i] % 8) - 1]);
 								}
 							}else if(f[i] < flastd[i]){//lower then last one
-								for (n = f[i] / 8; n < flastd[i]/8 + 1; n++) for (q = 0; q < bw; q++) mvaddstr( (height - n), (i*bw) + q + i, " ");
+								for (n = f[i] / 8; n < flastd[i]/8 + 1; n++) for (q = 0; q < bw; q++) mvaddstr( (height - n), (i*bw) + q + i + rest, " ");
 								if (f[i] % 8 != 0) {
-									if (virt == 0) for (q = 0; q < bw; q++) mvprintw((height - f[i] / 8), (i * bw) + q + i, "%d",(f[i] % 8) );
-									else for (q = 0; q < bw; q++) mvaddwstr((height - f[i] / 8), (i * bw) + q + i, bars[(f[i] % 8) - 1]);
+									if (virt == 0) for (q = 0; q < bw; q++) mvprintw((height - f[i] / 8), (i * bw) + q + i + rest, "%d",(f[i] % 8) );
+									else for (q = 0; q < bw; q++) mvaddwstr((height - f[i] / 8), (i * bw) + q + i + rest, bars[(f[i] % 8) - 1]);
 								}
 							}
 						
@@ -703,8 +705,8 @@ Options:\n\
 				}
 
 				
-				req.tv_sec = 0;
-				req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
+				if (framerate <= 1) req.tv_sec = 1  / (float)framerate;
+				if (framerate > 1) req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
 				nanosleep (&req, NULL);
 			#endif
 		}
