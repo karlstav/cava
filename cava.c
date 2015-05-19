@@ -705,8 +705,13 @@ Options:\n\
 				}
 
 				
-				if (framerate <= 1) req.tv_sec = 1  / (float)framerate;
-				if (framerate > 1) req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
+				if (framerate <= 1) {
+					req.tv_sec = 1  / (float)framerate;
+				} else { 
+					req.tv_sec = 0;
+					req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
+				}
+
 				nanosleep (&req, NULL);
 			#endif
 		}
