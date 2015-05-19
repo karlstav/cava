@@ -21,7 +21,7 @@
 #include <time.h>
 #include <getopt.h>
 #include <pthread.h>
-#include "ncursesw/curses.h"
+#include <curses.h>
 #include <wchar.h>
 
 
