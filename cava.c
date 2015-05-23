@@ -312,6 +312,20 @@ Options:\n\
 
 	for (i = 0; i < M; i++)shared[i] = 0;
 
+	// general: handle Ctrl+C
+	struct sigaction action;
+	memset(&action, 0, sizeof(action));
+	action.sa_handler = &sig_handler;
+	sigaction(SIGINT, &action, NULL);
+	sigaction(SIGTERM, &action, NULL);
+
+	rc = tcgetattr (0, &oldtio);
+	memcpy(&newtio, &oldtio, sizeof (newtio));
+	newtio.c_lflag &= ~(ICANON | ECHO);
+	newtio.c_cc[VMIN] = 0;
+	rc = tcsetattr(0, TCSAFLUSH, &newtio);
+
+
   // general: handle command-line arguments
 	while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:hSv")) != -1)
 		switch (c) {
@@ -413,20 +427,7 @@ Options:\n\
 				abort ();
 		}
 
-	// general: handle Ctrl+C
-	struct sigaction action;
-	memset(&action, 0, sizeof(action));
-	action.sa_handler = &sig_handler;
-	sigaction(SIGINT, &action, NULL);
-	sigaction(SIGTERM, &action, NULL);
-
-	rc = tcgetattr (0, &oldtio);
-	memcpy(&newtio, &oldtio, sizeof (newtio));
-	newtio.c_lflag &= ~(ICANON | ECHO);
-	newtio.c_cc[VMIN] = 0;
-	rc = tcsetattr(0, TCSAFLUSH, &newtio);
-
-	n = 0;
+		n = 0;
 
 	// input: wait for the input to be ready
 	if (im == 1) {
