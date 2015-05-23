@@ -9,12 +9,14 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
 thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( http://unix.stackexchange.com/questions/113695/gif-screencastng-the-unix-way).
 
-[Demo video](http://youtu.be/vA4RyatP064)
+[Demo video](http://youtu.be/vA4RyatP064) (old)
 
 
 
 Updates
 -------
+
+5/23/2015 - 0.2.0 - Switched to ncurses
 
 4/23/2015 - Fixed terminal window resizing, added smoothenig 
 
@@ -39,7 +41,7 @@ Build requirements
 
 * [ALSA dev files](http://alsa-project.org/)
 * [FFTW](http://www.fftw.org/)
-* ncursesw dev files
+* ncursesw dev files (bundled in ncurses in arch)
 
 Debian/Raspbian users can install this with:
 
@@ -47,9 +49,7 @@ Debian/Raspbian users can install this with:
 
 ArchLinux users can install this with:
 
-    pacman -S base-devel fftw
-
-Unfortunately I don't know how to install ncursesw in arch, will figure it out soon!
+    pacman -S base-devel fftw ncurses
 
 Getting started
 ---------------
