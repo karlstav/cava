@@ -488,9 +488,14 @@ Options:\n\
 		
 		if (bands > COLS / 2 - 1)bands = COLS / 2 -
 			                1; //handle for user setting to many bars
+
+		if (bands < 1) bands = 1; // must have at least 1 bar;
+
 		height = LINES - 1;
 
 		bw = (COLS - bands - 1) / bands;
+
+		if (bw < 1) bw = 1; //bars must have width
 
 		// process [smoothing]: calculate gravity
 		g = ((float)height / 400) * pow((60 / (float)framerate), 2.5);
@@ -506,8 +511,8 @@ Options:\n\
 
 		#ifdef DEBUG
 			printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
-			       wh,
-			       ws, bands, bw, rest);
+			       COLS,
+			       LINES, bands, bw, rest);
 		#endif
 
 		// process: calculate cutoff frequencies
@@ -618,7 +623,7 @@ Options:\n\
 
 			} else { //**if in sleep mode wait and continue**//
 				#ifdef DEBUG
-					printf("no sound detected for 3 sec, going to sleep mode\n");
+					printw("no sound detected for 3 sec, going to sleep mode\n");
 				#endif
 				//wait 1 sec, then check sound again.
 				req.tv_sec = 1;
@@ -669,7 +674,7 @@ Options:\n\
 					if (f[o] < 1)f[o] = 1;
 
 					#ifdef DEBUG
-						printf("%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
+						mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
 						       lcf[o], hcf[o], peak[o], f[o]);
 					#endif
 				}
