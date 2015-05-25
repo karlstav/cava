@@ -415,12 +415,15 @@ Options:\n\
 				scientificMode = true;
 				break;
 			case 'h': // argument: print usage
-				printf ("%s", usage);
+				cleanup();				
+				printf ("%s", usage);				
 				return 0;
 			case '?': // argument: print usage
+				cleanup();
 				printf ("%s", usage);
 				return 1;
 			case 'v': // argument: print version
+				cleanup();
 				printf (PACKAGE " " VERSION "\n");
 				return 0;
 			default:  // argument: no arguments; exit
