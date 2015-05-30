@@ -47,11 +47,9 @@ void cleanup()
 {
 	echo();
 	system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
-	system("setterm -cursor on");
 	system("setterm -blank 10");
-	system("clear");
 	endwin();
-	rc = tcsetattr(0, TCSAFLUSH, &oldtio);
+	system("clear");
 }
 
 // general: handle signals
@@ -319,12 +317,6 @@ Options:\n\
 	sigaction(SIGINT, &action, NULL);
 	sigaction(SIGTERM, &action, NULL);
 
-	rc = tcgetattr (0, &oldtio);
-	memcpy(&newtio, &oldtio, sizeof (newtio));
-	newtio.c_lflag &= ~(ICANON | ECHO);
-	newtio.c_cc[VMIN] = 0;
-	rc = tcsetattr(0, TCSAFLUSH, &newtio);
-
 
   // general: handle command-line arguments
 	while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:hSv")) != -1)
@@ -337,8 +329,7 @@ Options:\n\
 				inputMethod = optarg;
 				if (strcmp(inputMethod, "alsa") == 0) im = 1;
 				if (strcmp(inputMethod, "fifo") == 0) im = 2;
-				if (im == 0) {
-					cleanup();
+				if (im == 0) {	
 					fprintf(stderr,
 						"input method %s is not supported, supported methods are: 'alsa' and 'fifo'\n",
 					        inputMethod);
@@ -349,8 +340,7 @@ Options:\n\
 				om = 0;
 				outputMethod = optarg;
 				if (strcmp(outputMethod, "terminal") == 0) im = 1;
-				if (im == 0) {
-					cleanup();
+				if (im == 0) {	
 					fprintf(stderr,
 						"output method %s is not supported, supported methods are: 'terminal'\n",
 					        outputMethod);
@@ -370,8 +360,7 @@ Options:\n\
 				break;
 			case 'f': // argument: framerate
 				framerate = atoi(optarg);
-				if (framerate < 0) {
-					cleanup();
+				if (framerate < 0) {	
 					fprintf(stderr,
 						"framerate can't be negative!\n");
 					exit(EXIT_FAILURE);
@@ -388,8 +377,7 @@ Options:\n\
 				if (strcmp(color, "magenta") == 0) col = 5;
 				if (strcmp(color, "cyan") == 0) col = 6;
 				if (strcmp(color, "white") == 0) col = 7;
-				if (col == 0) {
-					cleanup();
+				if (col == 0) {	
 					fprintf(stderr, "color %s not supported\n", color);
 					exit(EXIT_FAILURE);
 				}
@@ -405,8 +393,7 @@ Options:\n\
 				if (strcmp(color, "magenta") == 0) bgcol = 5;
 				if (strcmp(color, "cyan") == 0) bgcol = 6;
 				if (strcmp(color, "white") == 0) bgcol = 7;
-				if (bgcol == 0) {
-					cleanup();
+				if (bgcol == 0) {	
 					fprintf(stderr, "color %s not supported\n", color);
 					exit(EXIT_FAILURE);
 				}
@@ -414,16 +401,13 @@ Options:\n\
 			case 'S': // argument: enable "scientific" mode
 				scientificMode = true;
 				break;
-			case 'h': // argument: print usage
-				cleanup();				
+			case 'h': // argument: print usage	
 				printf ("%s", usage);				
 				return 0;
-			case '?': // argument: print usage
-				cleanup();
+			case '?': // argument: print usage	
 				printf ("%s", usage);
 				return 1;
 			case 'v': // argument: print version
-				cleanup();
 				printf (PACKAGE " " VERSION "\n");
 				return 0;
 			default:  // argument: no arguments; exit
@@ -465,10 +449,22 @@ Options:\n\
 
 	p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
 
-	// output: get terminal's geometry
+
+
+	//output: start ncurses mode
+	virt = system("setfont cava.psf  >/dev/null 2>&1");
+	if (virt == 0) system("setterm -blank 0");
 	initscr();
+	curs_set(0);
 	timeout(0);
 	noecho();
+	start_color();			
+	init_pair(1, col, bgcol);
+	bkgd(COLOR_PAIR(1));
+	attron(COLOR_PAIR(1));
+	attron(A_BOLD);
+
+
 
 	while  (1) {//jumbing back to this loop means that you resized the screen
 		for (i = 0; i < 200; i++) {
@@ -479,7 +475,7 @@ Options:\n\
 			fmem[i] = 0;
 		}
 
-		clear();
+	
 	
 		//getting orignial numbers of bands incase of resize
 		if (autoband == 1)  {
@@ -487,6 +483,8 @@ Options:\n\
 		} else bands = fixedbands;
 		
 
+		// output: get terminal's geometry
+		clear();
 		getmaxyx(stdscr,h,w);
 		
 		if (bands > COLS / 2 - 1)bands = COLS / 2 -
@@ -513,7 +511,7 @@ Options:\n\
 		if (rest < 0)rest = 0;
 
 		#ifdef DEBUG
-			printf("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
+			printw("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
 			       COLS,
 			       LINES, bands, bw, rest);
 		#endif
@@ -536,7 +534,7 @@ Options:\n\
 
 			#ifdef DEBUG
 						if (n != 0) {
-							printf("%d: %f -> %f (%d -> %d) \n", n, fc[n - 1], fc[n], lcf[n - 1],
+							printw("%d: %f -> %f (%d -> %d) \n", n, fc[n - 1], fc[n], lcf[n - 1],
 							       hcf[n - 1]);
 						}
 			#endif
@@ -547,19 +545,7 @@ Options:\n\
 			n++)k[n] = pow(fc[n],0.62) * ((float)height/(M*2000))  * 8 * ((float)sens /
 					                         100);
 
-		// output: prepare screen
-		virt = system("setfont cava.psf  >/dev/null 2>&1");
-		#ifndef DEBUG
-			system("setterm -cursor off");
-			system("setterm -blank 0");
-			start_color();			
-			init_pair(1, col, bgcol);
-			bkgd(COLOR_PAIR(1));
-			attron(COLOR_PAIR(1));
-			attron(A_BOLD);
-		#endif
-
-
+	
 		// general: main loop
 		while  (1) {
 
