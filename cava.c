@@ -542,24 +542,35 @@ Options:\n\
 
 		// process: weigh signal to frequencies
 		for (n = 0; n < bands;
-			n++)k[n] = pow(fc[n],0.62) * ((float)height/(M*2000))  * 8 * ((float)sens /
-					                         100);
+			n++)k[n] = pow(fc[n],0.62) * ((float)height/(M*2000))  * 8;
+					                         
 
 	
 		// general: main loop
 		while  (1) {
 
 			// general: keyboard controls
-			if ((ch = getch()) != EOF) {
-				switch (ch) {
-				case 's':
-					scientificMode = !scientificMode;
-					break;
-				case 'q':
-					cleanup();
-					return EXIT_SUCCESS;
-				}
+			
+			ch = getch();
+			switch (ch) {
+			case 65:    // key up
+				sens += 10;
+			        break;
+			case 66:    // key down
+				sens -= 10;
+			        break;
+		    	case 67:    // key right
+		        	break;
+			case 68:    // key left
+				break;
+			case 's':
+				scientificMode = !scientificMode;
+				break;
+			case 'q':
+				cleanup();
+				return EXIT_SUCCESS;
 			}
+		
 
 
 			// output: check if terminal has been resized
@@ -603,7 +614,7 @@ Options:\n\
 						peak[o] += y[i]; //adding upp band
 					}
 					peak[o] = peak[o] / (hcf[o]-lcf[o]+1); //getting average
-					temp = peak[o] * k[o]; //multiplying with k and adjusting to sens settings
+					temp = peak[o] * k[o] * ((float)sens / 100); //multiplying with k and adjusting to sens settings
 					if (temp > height * 8)temp = height * 8; //just in case
 					f[o] = temp;
 
