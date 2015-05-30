@@ -96,9 +96,9 @@ To create a loopback interface simply run:
 
 `sudo modprobe snd_aloop`
 
-To make it presistent across boot add the line `snd-aloop` to "/etc/modules"
-
 Hopefully your `aplay -l` should now contain a loopback interface.
+
+To make it presistent across boot add the line `snd-aloop` to "/etc/modules". To keep it form beeing loaded as the first soundcard add the line `options snd-aloop index=1` to "/etc/modprobe.d/alsa-base.conf", this will load is at '1' which is what cave uses as default. 
 
 Playing the audio through your Loopback interface makes it possible for cava to to capture it, but there will be no sound in your speakers. :(
 
