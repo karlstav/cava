@@ -41,7 +41,7 @@ Build requirements
 
 * [ALSA dev files](http://alsa-project.org/)
 * [FFTW](http://www.fftw.org/)
-* ncursesw dev files (bundled in ncurses in arch)
+* [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
 
 This can be installed easily in all major distros:
 
