@@ -43,13 +43,20 @@ Build requirements
 * [FFTW](http://www.fftw.org/)
 * ncursesw dev files (bundled in ncurses in arch)
 
-Debian/Raspbian users can install this with:
+This can be installed easily in all major distros:
+
+Debian/Raspbian:
 
     apt-get install libfftw3-dev libasound2-dev libncursesw5-dev
 
-ArchLinux users can install this with:
+ArchLinux:
 
     pacman -S base-devel fftw ncurses
+
+openSUSE:
+
+    zypper install alsa-devel ncurses-devel fftw3-devel
+
 
 Getting started
 ---------------
