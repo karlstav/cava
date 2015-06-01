@@ -270,7 +270,7 @@ int main(int argc, char **argv)
 	fftw_plan p;
 	char *color;
 	int col = 6;
-	int bgcol = 0;
+	int bgcol = -1;
 	int sens = 100;
 	int fall[200];
 	float fpeak[200];
@@ -393,7 +393,6 @@ Options:\n\
 				if (strcmp(color, "magenta") == 0) bgcol = 5;
 				if (strcmp(color, "cyan") == 0) bgcol = 6;
 				if (strcmp(color, "white") == 0) bgcol = 7;
-				if (strcmp(color, "default") == 0) bgcol = -1;
 				if (bgcol == -2) {	
 					fprintf(stderr, "color %s not supported\n", color);
 					exit(EXIT_FAILURE);
