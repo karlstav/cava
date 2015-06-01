@@ -544,7 +544,7 @@ Options:\n\
 
 		// process: weigh signal to frequencies
 		for (n = 0; n < bands;
-			n++)k[n] = pow(fc[n],0.62) * ((float)height/(M*2000))  * 8;
+			n++)k[n] = pow(fc[n],0.62) * ((float)height/(M*3000))  * 8;
 					                         
 
 	
@@ -637,8 +637,9 @@ Options:\n\
 			// process [smoothing]
 			if (!scientificMode)
 			{
-				for (o = 0; o < bands; o++) {
 
+				// process [smoothing]: falloff
+				for (o = 0; o < bands; o++) {
 					temp = f[o];
 
 					if (temp < flast[o]) {
@@ -667,10 +668,9 @@ Options:\n\
 					}
 				}
 
+				// process [smoothing]: integral
 				for (o = 0; o < bands; o++) {
-
-					fmem[o] += f[o];
-					fmem[o] = fmem[o] * 0.55;
+					fmem[o] = fmem[o] * 0.55 + f[o];
 					f[o] = fmem[o];
 
 					if (f[o] < 1)f[o] = 1;
