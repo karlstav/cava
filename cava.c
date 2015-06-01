@@ -393,6 +393,7 @@ Options:\n\
 				if (strcmp(color, "magenta") == 0) bgcol = 5;
 				if (strcmp(color, "cyan") == 0) bgcol = 6;
 				if (strcmp(color, "white") == 0) bgcol = 7;
+				if (strcmp(color, "none") == 0) bgcol = -1;
 				if (bgcol == -2) {	
 					fprintf(stderr, "color %s not supported\n", color);
 					exit(EXIT_FAILURE);
@@ -459,8 +460,10 @@ Options:\n\
 	timeout(0);
 	noecho();
 	start_color();			
+	use_default_colors();
 	init_pair(1, col, bgcol);
-	bkgd(COLOR_PAIR(1));
+	if(bgcol != -1)
+		bkgd(COLOR_PAIR(1));
 	attron(COLOR_PAIR(1));
 	attron(A_BOLD);
 
