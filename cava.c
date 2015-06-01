@@ -367,7 +367,7 @@ Options:\n\
 				}
 				break;
 			case 'c': // argument: foreground color
-				col = 0;
+				col = -2;
 				color = optarg;
 				if (strcmp(color, "black") == 0) col = 0;
 				if (strcmp(color, "red") == 0) col = 1;
@@ -377,13 +377,13 @@ Options:\n\
 				if (strcmp(color, "magenta") == 0) col = 5;
 				if (strcmp(color, "cyan") == 0) col = 6;
 				if (strcmp(color, "white") == 0) col = 7;
-				if (col == 0) {	
+				if (col == -2) {	
 					fprintf(stderr, "color %s not supported\n", color);
 					exit(EXIT_FAILURE);
 				}
 				break;
 			case 'C': // argument: background color
-				bgcol = 0;
+				bgcol = -2;
 				color = optarg;
 				if (strcmp(color, "black") == 0) bgcol = 0;
 				if (strcmp(color, "red") == 0) bgcol = 1;
@@ -393,7 +393,7 @@ Options:\n\
 				if (strcmp(color, "magenta") == 0) bgcol = 5;
 				if (strcmp(color, "cyan") == 0) bgcol = 6;
 				if (strcmp(color, "white") == 0) bgcol = 7;
-				if (bgcol == 0) {	
+				if (bgcol == -2) {	
 					fprintf(stderr, "color %s not supported\n", color);
 					exit(EXIT_FAILURE);
 				}
