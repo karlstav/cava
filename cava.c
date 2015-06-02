@@ -20,8 +20,9 @@
 #include <time.h>
 #include <getopt.h>
 #include <pthread.h>
-#include <curses.h>
-#include <wchar.h>
+#include "output/terminal_ncurses.h"
+#include "output/terminal_ncurses.c"
+
 
 
 #ifdef __GNUC__
@@ -45,11 +46,7 @@ int rc;
 // general: cleanup
 void cleanup()
 {
-	echo();
-	system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
-	system("setterm -blank 10");
-	endwin();
-	system("clear");
+	cleanup_terminal_ncurses();
 }
 
 // general: handle signals
@@ -61,6 +58,66 @@ void sig_handler(int sig_no)
 	}
 	signal(sig_no, SIG_DFL);
 	raise(sig_no);
+}
+//input: FIFO
+void* input_fifo(void* data)
+{
+	int fd;
+	int n = 0;
+	signed char buf[1024];
+	int tempr, templ, lo;
+	int q, i;
+	int t = 0;
+	int size = 1024;
+	char *path = ((char*)data);
+	int bytes = 0;
+	int flags;
+	struct timespec req = { .tv_sec = 0, .tv_nsec = 10000000 };
+
+
+
+
+	fd = open(path, O_RDONLY);
+	flags = fcntl(fd, F_GETFL, 0);
+	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+
+	while (1) {
+
+		bytes = read(fd, buf, sizeof(buf));
+
+		if (bytes == -1) { //if no bytes read sleep 10ms and zero shared buffer
+			nanosleep (&req, NULL);
+			t++;
+			if (t > 10) {
+				for (i = 0; i < M; i++)shared[i] = 0;
+			t = 0;
+			}
+		} else { //if bytes read go ahead
+			t = 0;
+			for (q = 0; q < (size / 4); q++) {
+
+				tempr = ( buf[ 4 * q - 1] << 2);
+
+				lo =  ( buf[4 * q ] >> 6);
+				if (lo < 0)lo = abs(lo) + 1;
+				if (tempr >= 0)tempr = tempr + lo;
+				else tempr = tempr - lo;
+
+				templ = ( buf[ 4 * q - 3] << 2);
+
+				lo =  ( buf[ 4 * q - 2] >> 6);
+				if (lo < 0)lo = abs(lo) + 1;
+				if (templ >= 0)templ = templ + lo;
+				else templ = templ - lo;
+
+				shared[n] = (tempr + templ) / 2;
+
+				n++;
+				if (n == M - 1)n = 0;
+			}
+		}
+	}
+	close(fd);
 }
 
 // input: ALSA
@@ -178,66 +235,8 @@ void* input_alsa(void* data)
 	}
 }
 
-//input: FIFO
-void* input_fifo(void* data)
-{
-	int fd;
-	int n = 0;
-	signed char buf[1024];
-	int tempr, templ, lo;
-	int q, i;
-	int t = 0;
-	int size = 1024;
-	char *path = ((char*)data);
-	int bytes = 0;
-	int flags;
-	struct timespec req = { .tv_sec = 0, .tv_nsec = 10000000 };
 
 
-
-
-	fd = open(path, O_RDONLY);
-	flags = fcntl(fd, F_GETFL, 0);
-	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-
-	while (1) {
-
-		bytes = read(fd, buf, sizeof(buf));
-
-		if (bytes == -1) { //if no bytes read sleep 10ms and zero shared buffer
-			nanosleep (&req, NULL);
-			t++;
-			if (t > 10) {
-				for (i = 0; i < M; i++)shared[i] = 0;
-			t = 0;
-			}
-		} else { //if bytes read go ahead
-			t = 0;
-			for (q = 0; q < (size / 4); q++) {
-
-				tempr = ( buf[ 4 * q - 1] << 2);
-
-				lo =  ( buf[4 * q ] >> 6);
-				if (lo < 0)lo = abs(lo) + 1;
-				if (tempr >= 0)tempr = tempr + lo;
-				else tempr = tempr - lo;
-
-				templ = ( buf[ 4 * q - 3] << 2);
-
-				lo =  ( buf[ 4 * q - 2] >> 6);
-				if (lo < 0)lo = abs(lo) + 1;
-				if (templ >= 0)templ = templ + lo;
-				else templ = templ - lo;
-
-				shared[n] = (tempr + templ) / 2;
-
-				n++;
-				if (n == M - 1)n = 0;
-			}
-		}
-	}
-	close(fd);
-}
 
 // general: entry point
 int main(int argc, char **argv)
@@ -262,7 +261,7 @@ int main(int argc, char **argv)
 	long int lpeak, hpeak;
 	int bands = 25;
 	int sleep = 0;
-	int i, n, o, bw, height, h, w, c, rest, virt, fixedbands, q;
+	int i, n, o, bw, height, h, w, c, rest, virt, fixedbands;
 	int autoband = 1;
 	float temp;
 	double in[2 * (M / 2 + 1)];
@@ -284,7 +283,6 @@ int main(int argc, char **argv)
 						1.75, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 	float sm = 1.25; //min val from smooth[]
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
-	const wchar_t* bars[] = {L"\u2581", L"\u2582", L"\u2583", L"\u2584", L"\u2585", L"\u2586", L"\u2587", L"\u2588"};
 	char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
 Visualize audio input in terminal. \n\
@@ -416,6 +414,8 @@ Options:\n\
 
 		n = 0;
 
+
+
 	// input: wait for the input to be ready
 	if (im == 1) {
 		thr_id = pthread_create(&p_thread, NULL, input_alsa,
@@ -451,20 +451,19 @@ Options:\n\
 
 
 
-	//output: start ncurses mode
+	if (framerate <= 1) {
+		req.tv_sec = 1  / (float)framerate;
+	} else { 
+		req.tv_sec = 0;
+		req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
+	}
+
 	virt = system("setfont cava.psf  >/dev/null 2>&1");
 	if (virt == 0) system("setterm -blank 0");
-	initscr();
-	curs_set(0);
-	timeout(0);
-	noecho();
-	start_color();			
-	use_default_colors();
-	init_pair(1, col, bgcol);
-	if(bgcol != -1)
-		bkgd(COLOR_PAIR(1));
-	attron(COLOR_PAIR(1));
-	attron(A_BOLD);
+
+
+	//output: start ncurses mode
+	init_terminal_ncurses(col, bgcol);
 
 
 
@@ -486,17 +485,17 @@ Options:\n\
 		
 
 		// output: get terminal's geometry
-		clear();
-		getmaxyx(stdscr,h,w);
-		
-		if (bands > COLS / 2 - 1)bands = COLS / 2 -
+		get_terminal_dim_ncurses(&w, &h);		
+
+
+		if (bands > w / 2 - 1)bands = w / 2 -
 			                1; //handle for user setting to many bars
 
 		if (bands < 1) bands = 1; // must have at least 1 bar;
 
-		height = LINES - 1;
+		height = h - 1;
 
-		bw = (COLS - bands - 1) / bands;
+		bw = (w - bands - 1) / bands;
 
 		if (bw < 1) bw = 1; //bars must have width
 
@@ -504,18 +503,18 @@ Options:\n\
 		g = ((float)height / 400) * pow((60 / (float)framerate), 2.5);
 
 		//if no bands are selected it tries to padd the default 20 if there is extra room
-		if (autoband == 1) bands = bands + ((COLS - (bw * bands + bands - 1)) /
+		if (autoband == 1) bands = bands + ((w - (bw * bands + bands - 1)) /
 			                                    (bw + 1));
 
 
 		//checks if there is stil extra room, will use this to center
-		rest = (COLS - bands * bw - bands + 1) / 2;
+		rest = (w - bands * bw - bands + 1) / 2;
 		if (rest < 0)rest = 0;
 
 		#ifdef DEBUG
 			printw("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
-			       COLS,
-			       LINES, bands, bw, rest);
+			       w,
+			       h, bands, bw, rest);
 		#endif
 
 		// process: calculate cutoff frequencies
@@ -544,7 +543,7 @@ Options:\n\
 
 		// process: weigh signal to frequencies
 		for (n = 0; n < bands;
-			n++)k[n] = pow(fc[n],0.62) * ((float)height/(M*2000))  * 8;
+			n++)k[n] = pow(fc[n],0.62) * ((float)height/(M*3500))  * 8;
 					                         
 
 	
@@ -574,13 +573,6 @@ Options:\n\
 			}
 		
 
-
-			// output: check if terminal has been resized
-			if (virt != 0) {
-				if ( LINES != h || COLS != w) {
-					break;					
-				} 
-			}
 
 			#ifdef DEBUG
 				system("clear");
@@ -637,8 +629,9 @@ Options:\n\
 			// process [smoothing]
 			if (!scientificMode)
 			{
-				for (o = 0; o < bands; o++) {
 
+				// process [smoothing]: falloff
+				for (o = 0; o < bands; o++) {
 					temp = f[o];
 
 					if (temp < flast[o]) {
@@ -666,11 +659,9 @@ Options:\n\
 						f[m_y] = max(f[z] / pow(2, m_y - z), f[m_y]);
 					}
 				}
-
+				// process [smoothing]: integral
 				for (o = 0; o < bands; o++) {
-
-					fmem[o] += f[o];
-					fmem[o] = fmem[o] * 0.55;
+					fmem[o] = fmem[o] * 0.55 + f[o];
 					f[o] = fmem[o];
 
 					if (f[o] < 1)f[o] = 1;
@@ -686,37 +677,13 @@ Options:\n\
 			#ifndef DEBUG
 				switch (om) {
 					case 1:
-						
-						for (i = 0; i <  bands; i++) {
 
-							if(f[i] > flastd[i]){//higher then last one
-								if (virt == 0) for (n = flastd[i] / 8; n < f[i] / 8; n++) for (q = 0; q < bw; q++) mvprintw((height - n), (i * bw) + q + i + rest, "%d",8);
-								else for (n = flastd[i] / 8; n < f[i] / 8; n++) for (q = 0; q < bw; q++) mvaddwstr((height - n), (i * bw) + q + i + rest, bars[7]);
-								if (f[i] % 8 != 0) {
-									if (virt == 0) for (q = 0; q < bw; q++) mvprintw( (height - n), (i * bw) + q + i + rest, "%d",(f[i] % 8) );
-									else for (q = 0; q < bw; q++) mvaddwstr( (height - n), (i * bw) + q + i + rest, bars[(f[i] % 8) - 1]);
-								}
-							}else if(f[i] < flastd[i]){//lower then last one
-								for (n = f[i] / 8; n < flastd[i]/8 + 1; n++) for (q = 0; q < bw; q++) mvaddstr( (height - n), (i*bw) + q + i + rest, " ");
-								if (f[i] % 8 != 0) {
-									if (virt == 0) for (q = 0; q < bw; q++) mvprintw((height - f[i] / 8), (i * bw) + q + i + rest, "%d",(f[i] % 8) );
-									else for (q = 0; q < bw; q++) mvaddwstr((height - f[i] / 8), (i * bw) + q + i + rest, bars[(f[i] % 8) - 1]);
-								}
-							}
-							flastd[i] = f[i]; //memmory for falloff func	
-						}
-
-						refresh();
+						rc = draw_terminal_ncurses(virt, h, w, bands, bw, rest, f, flastd);
 						break;
 				}
 
-				
-				if (framerate <= 1) {
-					req.tv_sec = 1  / (float)framerate;
-				} else { 
-					req.tv_sec = 0;
-					req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
-				}
+				if (rc == -1) break; //terminal has been resized breaking to recalibrating values
+			
 
 				nanosleep (&req, NULL);
 			#endif
