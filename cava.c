@@ -22,7 +22,10 @@
 #include <pthread.h>
 #include "output/terminal_ncurses.h"
 #include "output/terminal_ncurses.c"
-
+#include "input/alsa.h"
+#include "input/alsa.c"
+#include "input/fifo.h"
+#include "input/fifo.c"
 
 
 #ifdef __GNUC__
@@ -33,10 +36,8 @@
 #define GCC_UNUSED /* nothing */
 #endif
 
-int M = 2048;
-int shared[2048];
-int format = -1;
-unsigned int rate = 0;
+
+
 
 bool scientificMode = false;
 
@@ -59,196 +60,19 @@ void sig_handler(int sig_no)
 	signal(sig_no, SIG_DFL);
 	raise(sig_no);
 }
-//input: FIFO
-void* input_fifo(void* data)
-{
-	int fd;
-	int n = 0;
-	signed char buf[1024];
-	int tempr, templ, lo;
-	int q, i;
-	int t = 0;
-	int size = 1024;
-	char *path = ((char*)data);
-	int bytes = 0;
-	int flags;
-	struct timespec req = { .tv_sec = 0, .tv_nsec = 10000000 };
-
-
-
-
-	fd = open(path, O_RDONLY);
-	flags = fcntl(fd, F_GETFL, 0);
-	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-
-	while (1) {
-
-		bytes = read(fd, buf, sizeof(buf));
-
-		if (bytes == -1) { //if no bytes read sleep 10ms and zero shared buffer
-			nanosleep (&req, NULL);
-			t++;
-			if (t > 10) {
-				for (i = 0; i < M; i++)shared[i] = 0;
-			t = 0;
-			}
-		} else { //if bytes read go ahead
-			t = 0;
-			for (q = 0; q < (size / 4); q++) {
-
-				tempr = ( buf[ 4 * q - 1] << 2);
-
-				lo =  ( buf[4 * q ] >> 6);
-				if (lo < 0)lo = abs(lo) + 1;
-				if (tempr >= 0)tempr = tempr + lo;
-				else tempr = tempr - lo;
-
-				templ = ( buf[ 4 * q - 3] << 2);
-
-				lo =  ( buf[ 4 * q - 2] >> 6);
-				if (lo < 0)lo = abs(lo) + 1;
-				if (templ >= 0)templ = templ + lo;
-				else templ = templ - lo;
-
-				shared[n] = (tempr + templ) / 2;
-
-				n++;
-				if (n == M - 1)n = 0;
-			}
-		}
-	}
-	close(fd);
-}
-
-// input: ALSA
-void* input_alsa(void* data)
-{
-	signed char *buffer;
-	snd_pcm_t *handle;
-	snd_pcm_hw_params_t *params;
-	unsigned int val;
-	snd_pcm_uframes_t frames;
-	char *device = ((char*)data);
-	val = 44100;
-	int i, n, o, size, dir, err, lo;
-	int tempr, templ;
-	int radj, ladj;
-
-	// alsa: open device to capture audio
-	if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_CAPTURE, 0) < 0)) {
-		cleanup();
-		fprintf(stderr,
-		        "error opening stream: %s\n",
-		        snd_strerror(err));
-		exit(EXIT_FAILURE);
-	}
-
-	#ifdef DEBUG
-		else printf("open stream successful\n");
-	#endif
-
-	snd_pcm_hw_params_alloca(&params); //assembling params
-	snd_pcm_hw_params_any (handle, params); //setting defaults or something
-	snd_pcm_hw_params_set_access(handle, params,
-	                             SND_PCM_ACCESS_RW_INTERLEAVED); //interleaved mode right left right left
-	snd_pcm_hw_params_set_format(handle, params,
-	                             SND_PCM_FORMAT_S16_LE); //trying to set 16bit
-	snd_pcm_hw_params_set_channels(handle, params, 2); //assuming stereo
-	val = 44100;
-	snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir); //trying 44100 rate
-	frames = 256;
-	snd_pcm_hw_params_set_period_size_near(handle, params, &frames,
-	                                       &dir); //number of frames pr read
-
-	err = snd_pcm_hw_params(handle, params); //attempting to set params
-	if (err < 0) {
-		cleanup();
-		fprintf(stderr,
-		        "unable to set hw parameters: %s\n",
-		        snd_strerror(err));
-		exit(EXIT_FAILURE);
-	}
-
-	snd_pcm_hw_params_get_format(params,
-	                             (snd_pcm_format_t * )&val); //getting actual format
-	//converting result to number of bits
-	if (val < 6)format = 16;
-	else if (val > 5 && val < 10)format = 24;
-	else if (val > 9)format = 32;
-
-	snd_pcm_hw_params_get_rate( params, &rate, &dir); //getting rate
-
-	snd_pcm_hw_params_get_period_size(params, &frames, &dir);
-	snd_pcm_hw_params_get_period_time(params,  &val, &dir);
-
-	size = frames * (format / 8) * 2; // frames * bits/8 * 2 channels
-	buffer = malloc(size);
-	radj = format / 4; //adjustments for interleaved
-	ladj = format / 8;
-	o = 0;
-	while (1) {
-
-		err = snd_pcm_readi(handle, buffer, frames);
-		if (err == -EPIPE) {
-			/* EPIPE means overrun */
-			#ifdef DEBUG
-				fprintf(stderr, "overrun occurred\n");
-			#endif
-			snd_pcm_prepare(handle);
-		} else if (err < 0) {
-			#ifdef DEBUG
-				fprintf(stderr, "error from read: %s\n", snd_strerror(err));
-			#endif
-		} else if (err != (int)frames) {
-			#ifdef DEBUG
-				fprintf(stderr, "short read, read %d %d frames\n", err, (int)frames);
-			#endif
-		}
-
-		//sorting out one channel and only biggest octet
-		n = 0; //frame counter
-		for (i = 0; i < size ; i = i + (ladj) * 2) {
-			
-			//first channel
-			tempr = ((buffer[i + (radj) - 1 ] <<
-			          2)); //using the 10 upper bits this would give me a vert res of 1024, enough...
-			
-			lo = ((buffer[i + (radj) - 2] >> 6));
-			if (lo < 0)lo = abs(lo) + 1;
-			if (tempr >= 0)tempr = tempr + lo;
-			if (tempr < 0)tempr = tempr - lo;
-
-			//other channel
-			templ = (buffer[i + (ladj) - 1] << 2);
-			lo = (buffer[i + (ladj) - 2] >> 6);
-			if (lo < 0)lo = abs(lo) + 1;
-			if (templ >= 0)templ = templ + lo;
-			else templ = templ - lo;
-
-			//adding channels and storing it in the buffer
-			shared[o] = (tempr + templ) / 2;
-			o++;
-			if (o == M - 1)o = 0;
-
-			n++;
-		}
-	}
-}
-
 
 
 
 // general: entry point
 int main(int argc, char **argv)
 {
+	int M = 2048;
 	pthread_t  p_thread;
 	int        thr_id GCC_UNUSED;
 	char *inputMethod = "alsa";
 	char *outputMethod = "terminal";
 	int im = 1;
 	int om = 1;
-	char *device = "hw:1,1";
-	char *path = "/tmp/mpd.fifo";
 	float fc[200];
 	float fr[200];
 	int lcf[200], hcf[200];
@@ -302,11 +126,15 @@ Options:\n\
 	-v					print version\n\
 \n";
 	char ch;
+	struct audio_data audio;
+
+	audio.format = -1;
+	audio.rate = 0;
 
 	setlocale(LC_ALL, "");
 
 
-	for (i = 0; i < M; i++)shared[i] = 0;
+	for (i = 0; i < M; i++)audio.audio_out[i] = 0;
 
 	// general: handle Ctrl+C
 	struct sigaction action;
@@ -320,7 +148,7 @@ Options:\n\
 	while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:hSv")) != -1)
 		switch (c) {
 			case 'p': // argument: fifo path
-				path = optarg;
+				audio.source = optarg;
 				break;
 			case 'i': // argument: input method
 				im = 0;
@@ -351,7 +179,7 @@ Options:\n\
 				if (fixedbands > 200)fixedbands = 200;
 				break;
 			case 'd': // argument: alsa device
-				device = optarg;
+				audio.source  = optarg;
 				break;
 			case 's': // argument: sensitivity
 				sens = atoi(optarg);
@@ -418,9 +246,10 @@ Options:\n\
 
 	// input: wait for the input to be ready
 	if (im == 1) {
+		audio.source = "hw:1,1";
 		thr_id = pthread_create(&p_thread, NULL, input_alsa,
-		                        (void*)device); //starting alsamusic listener
-		while (format == -1 || rate == 0) {
+		                        (void *)&audio); //starting alsamusic listener
+		while (audio.format == -1 || audio.rate == 0) {
 			req.tv_sec = 0;
 			req.tv_nsec = 1000000;
 			nanosleep (&req, NULL);
@@ -441,10 +270,10 @@ Options:\n\
 	}
 
 	if (im == 2) {
+		audio.source =	"/tmp/mpd.fifo";
 		thr_id = pthread_create(&p_thread, NULL, input_fifo,
-		                        (void*)path); //starting fifomusic listener
-		rate = 44100;
-		format = 16;
+		                        (void*)&audio); //starting fifomusic listener
+		audio.rate = 44100;
 	}
 
 	p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
@@ -521,7 +350,7 @@ Options:\n\
 		for (n = 0; n < bands + 1; n++) {
 			fc[n] = 10000 * pow(10, -2.37 + ((((float)n + 1) / ((float)bands + 1)) *
 			                                 2.37)); //decided to cut it at 10k, little interesting to hear above
-			fr[n] = fc[n] / (rate /
+			fr[n] = fc[n] / (audio.rate /
 			                 2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
 			lcf[n] = fr[n] * (M /
 			                  4); //lfc stores the lower cut frequency foo each band in the fft out buffer
@@ -583,9 +412,9 @@ Options:\n\
 			hpeak = 0;
 			for (i = 0; i < (2 * (M / 2 + 1)); i++) {
 				if (i < M) {
-					in[i] = shared[i];
-					if (shared[i] > hpeak) hpeak = shared[i];
-					if (shared[i] < lpeak) lpeak = shared[i];
+					in[i] = audio.audio_out[i];
+					if (audio.audio_out[i] > hpeak) hpeak = audio.audio_out[i];
+					if (audio.audio_out[i] < lpeak) lpeak = audio.audio_out[i];
 				} else in[i] = 0;
 			}
 			peak[bands] = (hpeak + abs(lpeak));
