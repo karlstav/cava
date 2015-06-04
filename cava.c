@@ -329,7 +329,7 @@ Options:\n\
 		if (bw < 1) bw = 1; //bars must have width
 
 		// process [smoothing]: calculate gravity
-		g = ((float)height / 400) * pow((60 / (float)framerate), 2.5);
+		g = ((float)height / 200) * pow((60 / (float)framerate), 2.5);
 
 		//if no bands are selected it tries to padd the default 20 if there is extra room
 		if (autoband == 1) bands = bands + ((w - (bw * bands + bands - 1)) /
@@ -372,7 +372,7 @@ Options:\n\
 
 		// process: weigh signal to frequencies
 		for (n = 0; n < bands;
-			n++)k[n] = pow(fc[n],0.62) * ((float)height/(M*3500))  * 8;
+			n++)k[n] = pow(fc[n],0.62) * ((float)height/(M*5000))  * 8;
 					                         
 
 	
@@ -433,7 +433,7 @@ Options:\n\
 
 					// process: get peaks
 					for (i = lcf[o]; i <= hcf[o]; i++) {
-						y[i] = pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5); //getting r of compex
+						y[i] =  pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5); //getting r of compex
 						peak[o] += y[i]; //adding upp band
 					}
 					peak[o] = peak[o] / (hcf[o]-lcf[o]+1); //getting average
@@ -488,9 +488,10 @@ Options:\n\
 						f[m_y] = max(f[z] / pow(2, m_y - z), f[m_y]);
 					}
 				}
+
 				// process [smoothing]: integral
 				for (o = 0; o < bands; o++) {
-					fmem[o] = fmem[o] * 0.55 + f[o];
+					fmem[o] = fmem[o] * 0.66 + f[o];
 					f[o] = fmem[o];
 
 					if (f[o] < 1)f[o] = 1;
@@ -500,6 +501,7 @@ Options:\n\
 						       lcf[o], hcf[o], peak[o], f[o]);
 					#endif
 				}
+
 			}
 
 			// output: draw processed input
