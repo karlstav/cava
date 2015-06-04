@@ -280,13 +280,6 @@ Options:\n\
 
 
 
-	if (framerate <= 1) {
-		req.tv_sec = 1  / (float)framerate;
-	} else { 
-		req.tv_sec = 0;
-		req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
-	}
-
 	virt = system("setfont cava.psf  >/dev/null 2>&1");
 	if (virt == 0) system("setterm -blank 0");
 
@@ -515,6 +508,12 @@ Options:\n\
 
 				if (rc == -1) break; //terminal has been resized breaking to recalibrating values
 			
+				if (framerate <= 1) {
+					req.tv_sec = 1  / (float)framerate;
+				} else { 
+					req.tv_sec = 0;
+					req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
+				}
 
 				nanosleep (&req, NULL);
 			#endif
