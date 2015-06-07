@@ -15,7 +15,7 @@ int init_terminal_ncurses(int col, int bgcol) {
 	if(bgcol != -1)
 		bkgd(COLOR_PAIR(1));
 	attron(COLOR_PAIR(1));
-	attron(A_BOLD);
+//	attron(A_BOLD);
 	return 0;
 }
 
