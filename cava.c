@@ -133,6 +133,8 @@ Options:\n\
 
 	setlocale(LC_ALL, "");
 
+		
+
 
 	for (i = 0; i < M; i++)audio.audio_out[i] = 0;
 
@@ -147,20 +149,26 @@ Options:\n\
   // general: handle command-line arguments
 	while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:hSv")) != -1)
 		switch (c) {
-			case 'p': // argument: fifo path
-				audio.source = optarg;
-				break;
 			case 'i': // argument: input method
 				im = 0;
 				inputMethod = optarg;
-				if (strcmp(inputMethod, "alsa") == 0) im = 1;
-				if (strcmp(inputMethod, "fifo") == 0) im = 2;
+				if (strcmp(inputMethod, "alsa") == 0) {
+					im = 1;
+					audio.source =	"/tmp/mpd.fifo";
+				}
+				if (strcmp(inputMethod, "fifo") == 0) {
+					im = 2;
+					audio.source = "hw:1,1";
+				}
 				if (im == 0) {	
 					fprintf(stderr,
 						"input method %s is not supported, supported methods are: 'alsa' and 'fifo'\n",
 					        inputMethod);
 					exit(EXIT_FAILURE);
 				}
+				break;
+			case 'p': // argument: fifo path
+				audio.source = optarg;
 				break;
 			case 'o': // argument: output method
 				om = 0;
@@ -246,7 +254,6 @@ Options:\n\
 
 	// input: wait for the input to be ready
 	if (im == 1) {
-		audio.source = "hw:1,1";
 		thr_id = pthread_create(&p_thread, NULL, input_alsa,
 		                        (void *)&audio); //starting alsamusic listener
 		while (audio.format == -1 || audio.rate == 0) {
@@ -270,7 +277,6 @@ Options:\n\
 	}
 
 	if (im == 2) {
-		audio.source =	"/tmp/mpd.fifo";
 		thr_id = pthread_create(&p_thread, NULL, input_fifo,
 		                        (void*)&audio); //starting fifomusic listener
 		audio.rate = 44100;
