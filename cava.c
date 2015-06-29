@@ -36,11 +36,6 @@
 #define GCC_UNUSED /* nothing */
 #endif
 
-
-
-
-bool scientificMode = false;
-
 struct termios oldtio, newtio;
 int rc;
 
@@ -71,8 +66,11 @@ int main(int argc, char **argv)
 	int        thr_id GCC_UNUSED;
 	char *inputMethod = "alsa";
 	char *outputMethod = "terminal";
+	char *modeString = "normal";
 	int im = 1;
 	int om = 1;
+	int mode = 1;
+	int modes = 3; // amount of smoothing modes
 	float fc[200];
 	float fr[200];
 	int lcf[200], hcf[200];
@@ -121,7 +119,7 @@ Options:\n\
 	-C background color			supported colors: same as above (default: no change)\n\
 	-s sensitivity				sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...\n\
 	-f framerate 				FPS limit, if you are experiencing high CPU usage, try reducing this (default: 60)\n\
-	-S					\"scientific\" mode (disables most smoothing)\n\
+	-m mode					set mode (normal, scientific, waves)\n\
 	-h					print the usage\n\
 	-v					print version\n\
 \n";
@@ -147,7 +145,7 @@ Options:\n\
 
 
   // general: handle command-line arguments
-	while ((c = getopt (argc, argv, "p:i:o:b:d:s:f:c:C:hSv")) != -1)
+	while ((c = getopt (argc, argv, "p:i:o:m:b:d:s:f:c:C:hv")) != -1)
 		switch (c) {
 			case 'i': // argument: input method
 				im = 0;
@@ -178,6 +176,19 @@ Options:\n\
 					fprintf(stderr,
 						"output method %s is not supported, supported methods are: 'terminal'\n",
 					        outputMethod);
+					exit(EXIT_FAILURE);
+				}
+				break;
+			case 'm': // argument: smoothing mode
+				mode = 0;
+				modeString = optarg;
+				if (strcmp(modeString, "normal") == 0) mode = 1;
+				if (strcmp(modeString, "scientific") == 0) mode = 2;
+				if (strcmp(modeString, "waves") == 0) mode = 3;
+				if (mode == 0) {	
+					fprintf(stderr,
+						"smoothing mode %s is not supported, supported modes are: 'normal', 'scientific', 'waves'\n",
+					        modeString);
 					exit(EXIT_FAILURE);
 				}
 				break;
@@ -231,9 +242,6 @@ Options:\n\
 					fprintf(stderr, "color %s not supported\n", color);
 					exit(EXIT_FAILURE);
 				}
-				break;
-			case 'S': // argument: enable "scientific" mode
-				scientificMode = true;
 				break;
 			case 'h': // argument: print usage	
 				printf ("%s", usage);				
@@ -392,8 +400,12 @@ Options:\n\
 		        	break;
 			case 68:    // key left
 				break;
-			case 's':
-				scientificMode = !scientificMode;
+			case 'm':
+				if (mode == modes) {
+					mode = 1;
+				} else {
+					mode++;
+				}
 				break;
 			case 'q':
 				cleanup();
@@ -455,7 +467,7 @@ Options:\n\
 			}
 
 			// process [smoothing]
-			if (!scientificMode)
+			if (mode != 2)
 			{
 
 				// process [smoothing]: falloff
@@ -477,14 +489,26 @@ Options:\n\
 				// process [smoothing]: monstercat-style "average"
 				int z, m_y;
 				float m_o = 64 / bands;
-				for (z = 0; z < bands; z++) {
-					f[z] = f[z] * sm / smooth[(int)floor(z * m_o)];
-					if (f[z] < 0.125)f[z] = 0.125;
-					for (m_y = z - 1; m_y >= 0; m_y--) {
-						f[m_y] = max(f[z] / pow(2, z - m_y), f[m_y]);
+				if (mode == 3) {
+					for (z = 0; z < bands; z++) { // waves
+						if (f[z] < 0.125)f[z] = 0.125;
+						for (m_y = z - 1; m_y >= 0; m_y--) {
+							f[m_y] = max(f[z] - pow(z - m_y, 2), f[m_y]);
+						}
+						for (m_y = z + 1; m_y < bands; m_y++) {
+							f[m_y] = max(f[z] - pow(m_y - z, 2), f[m_y]);
+						}
 					}
-					for (m_y = z + 1; m_y < bands; m_y++) {
-						f[m_y] = max(f[z] / pow(2, m_y - z), f[m_y]);
+				} else {
+					for (z = 0; z < bands; z++) {
+						f[z] = f[z] * sm / smooth[(int)floor(z * m_o)];
+						if (f[z] < 0.125)f[z] = 0.125;
+						for (m_y = z - 1; m_y >= 0; m_y--) {
+							f[m_y] = max(f[z] / pow(2, z - m_y), f[m_y]);
+						}
+						for (m_y = z + 1; m_y < bands; m_y++) {
+							f[m_y] = max(f[z] / pow(2, m_y - z), f[m_y]);
+						}
 					}
 				}
 

@@ -18,7 +18,7 @@ Updates
 
 5/23/2015 - 0.2.0 - Switched to ncurses
 
-4/23/2015 - Fixed terminal window resizing, added smoothenig 
+4/23/2015 - Fixed terminal window resizing, added smoothing 
 
 4/19/2015 - Added Monstercat style FFT easing (by [CelestialWalrus)](https://github.com/CelestialWalrus).
 
@@ -213,7 +213,7 @@ Usage
         -C background color         supported colors: same as above (default: no change)
         -s sensitivity              sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...
         -f framerate                FPS limit, if you are experiencing high CPU usage, try redcing this (default: 60)
-        -S                  "scientific" mode (disables most smoothing)
+        -m mode                 set mode (normal, scientific, waves)
         -h                  print the usage
         -v                  print version
 
@@ -225,6 +225,6 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 
 | Key | Description |
 | --- | ----------- |
-| <kbd>s</kbd> | Toggle Scientific mode |
+| <kbd>m</kbd> | Swtich between smoothing modes |
 | <kbd>up</kbd> / <kbd>down</kbd>| increase/decrease sensitivity |
 | <kbd>q</kbd> or <kbd>CTRL-C</kbd>| Quit C.A.V.A. |
