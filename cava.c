@@ -147,7 +147,7 @@ Options:\n\
 
 
   // general: handle command-line arguments
-	while ((c = getopt (argc, argv, "p:i:b:d:s:f:c:C:hSv")) != -1)
+	while ((c = getopt (argc, argv, "p:i:o:b:d:s:f:c:C:hSv")) != -1)
 		switch (c) {
 			case 'i': // argument: input method
 				im = 0;
@@ -173,8 +173,8 @@ Options:\n\
 			case 'o': // argument: output method
 				om = 0;
 				outputMethod = optarg;
-				if (strcmp(outputMethod, "terminal") == 0) im = 1;
-				if (im == 0) {	
+				if (strcmp(outputMethod, "terminal") == 0) om = 1;
+				if (om == 0) {	
 					fprintf(stderr,
 						"output method %s is not supported, supported methods are: 'terminal'\n",
 					        outputMethod);
