@@ -470,6 +470,37 @@ Options:\n\
 			if (mode != 2)
 			{
 
+				// process [smoothing]: monstercat-style "average"
+				int z, m_y, de;
+				float m_o = 64 / bands;
+				if (mode == 3) {
+					for (z = 0; z < bands; z++) { // waves
+						f[z] = f[z] / 1.25;
+						if (f[z] < 0.125)f[z] = 0.125;
+						for (m_y = z - 1; m_y >= 0; m_y--) {
+							de = z - m_y;
+							f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
+						}
+						for (m_y = z + 1; m_y < bands; m_y++) {
+							de = m_y - z;
+							f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
+						}
+					}
+				} else {
+					for (z = 0; z < bands; z++) {
+						f[z] = f[z] * sm / smooth[(int)floor(z * m_o)];
+						if (f[z] < 0.125)f[z] = 0.125;
+						for (m_y = z - 1; m_y >= 0; m_y--) {
+							de = z - m_y;
+							f[m_y] = max(f[z] / pow(1.5, de), f[m_y]);
+						}
+						for (m_y = z + 1; m_y < bands; m_y++) {
+							de = m_y - z;
+							f[m_y] = max(f[z] / pow(1.5, de), f[m_y]);
+						}
+					}
+				}
+
 				// process [smoothing]: falloff
 				for (o = 0; o < bands; o++) {
 					temp = f[o];
@@ -484,32 +515,6 @@ Options:\n\
 					}
 
 					flast[o] = f[o];
-				}
-
-				// process [smoothing]: monstercat-style "average"
-				int z, m_y;
-				float m_o = 64 / bands;
-				if (mode == 3) {
-					for (z = 0; z < bands; z++) { // waves
-						if (f[z] < 0.125)f[z] = 0.125;
-						for (m_y = z - 1; m_y >= 0; m_y--) {
-							f[m_y] = max(f[z] - pow(z - m_y, 2), f[m_y]);
-						}
-						for (m_y = z + 1; m_y < bands; m_y++) {
-							f[m_y] = max(f[z] - pow(m_y - z, 2), f[m_y]);
-						}
-					}
-				} else {
-					for (z = 0; z < bands; z++) {
-						f[z] = f[z] * sm / smooth[(int)floor(z * m_o)];
-						if (f[z] < 0.125)f[z] = 0.125;
-						for (m_y = z - 1; m_y >= 0; m_y--) {
-							f[m_y] = max(f[z] / pow(1.5, z - m_y), f[m_y]);
-						}
-						for (m_y = z + 1; m_y < bands; m_y++) {
-							f[m_y] = max(f[z] / pow(1.5, m_y - z), f[m_y]);
-						}
-					}
 				}
 
 				// process [smoothing]: integral
