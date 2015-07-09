@@ -22,6 +22,8 @@
 #include <pthread.h>
 #include "output/terminal_ncurses.h"
 #include "output/terminal_ncurses.c"
+#include "output/terminal_bcircle.h"
+#include "output/terminal_bcircle.c"
 #include "input/alsa.h"
 #include "input/alsa.c"
 #include "input/fifo.h"
@@ -112,7 +114,7 @@ Visualize audio input in terminal. \n\
 Options:\n\
 	-b 1..(console columns/2-1) or 200	number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
 	-i 'input method'			method used for listening to audio, supports: 'alsa' and 'fifo'\n\
-	-o 'output method'			method used for outputting processed data, only supports 'terminal'\n\
+	-o 'output method'			method used for outputting processed data, supports: 'terminal' and 'circle'\n\
 	-d 'alsa device'			name of alsa capture device (default 'hw:1,1')\n\
 	-p 'fifo path'				path to fifo (default '/tmp/mpd.fifo')\n\
 	-c foreground color			supported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
@@ -172,9 +174,10 @@ Options:\n\
 				om = 0;
 				outputMethod = optarg;
 				if (strcmp(outputMethod, "terminal") == 0) om = 1;
+				if (strcmp(outputMethod, "circle") == 0) om = 2;
 				if (om == 0) {	
 					fprintf(stderr,
-						"output method %s is not supported, supported methods are: 'terminal'\n",
+						"output method %s is not supported, supported methods are: 'terminal', 'circle'\n",
 					        outputMethod);
 					exit(EXIT_FAILURE);
 				}
@@ -536,8 +539,10 @@ Options:\n\
 			#ifndef DEBUG
 				switch (om) {
 					case 1:
-
 						rc = draw_terminal_ncurses(virt, h, w, bands, bw, rest, f, flastd);
+						break;
+					case 2:
+						rc = draw_terminal_bcircle(virt, h, w, f);
 						break;
 				}
 
