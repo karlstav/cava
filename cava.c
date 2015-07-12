@@ -130,7 +130,8 @@ Options:\n\
 
 	audio.format = -1;
 	audio.rate = 0;
-
+	audio.source = "hw:1,1";
+	
 	setlocale(LC_ALL, "");
 
 		
@@ -154,11 +155,11 @@ Options:\n\
 				inputMethod = optarg;
 				if (strcmp(inputMethod, "alsa") == 0) {
 					im = 1;
-					audio.source =	"/tmp/mpd.fifo";
+					audio.source = "hw:1,1";
 				}
 				if (strcmp(inputMethod, "fifo") == 0) {
 					im = 2;
-					audio.source = "hw:1,1";
+					audio.source =	"/tmp/mpd.fifo";
 				}
 				if (im == 0) {	
 					fprintf(stderr,
@@ -339,7 +340,7 @@ Options:\n\
 		if (bw < 1) bw = 1; //bars must have width
 
 		// process [smoothing]: calculate gravity
-		g = ((float)height / 200) * pow((60 / (float)framerate), 2.5);
+		g = ((float)height / 270) * pow((60 / (float)framerate), 2.5);
 
 		//if no bands are selected it tries to padd the default 20 if there is extra room
 		if (autoband == 1) bands = bands + ((w - (bw * bands + bands - 1)) /
@@ -382,7 +383,7 @@ Options:\n\
 
 		// process: weigh signal to frequencies
 		for (n = 0; n < bands;
-			n++)k[n] = pow(fc[n],0.62) * ((float)height/(M*5000))  * 8;
+			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000));
 					                         
 
 	
@@ -522,7 +523,7 @@ Options:\n\
 
 				// process [smoothing]: integral
 				for (o = 0; o < bands; o++) {
-					fmem[o] = fmem[o] * 0.66 + f[o];
+					fmem[o] = fmem[o] * 0.70 + f[o];
 					f[o] = fmem[o];
 
 					if (f[o] < 1)f[o] = 1;
