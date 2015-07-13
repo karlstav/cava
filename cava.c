@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <getopt.h>
 #include <pthread.h>
@@ -28,6 +29,7 @@
 #include "input/alsa.c"
 #include "input/fifo.h"
 #include "input/fifo.c"
+#include "iniparser/src/iniparser.h"
 
 
 #ifdef __GNUC__
@@ -58,17 +60,36 @@ void sig_handler(int sig_no)
 	raise(sig_no);
 }
 
-
-
 // general: entry point
 int main(int argc, char **argv)
 {
+	// config: location
+	char *configDirectory = "%s/.config/cava/";
+	char *configFile = "config.ini";
+	char configPath[255];
+	char *home = getenv ("HOME");
+	if (home == NULL) {
+		printf("No HOME found, exiting...");
+		exit(EXIT_FAILURE);
+	}
+
+	// config: create empty file
+	snprintf(configPath, sizeof(configPath), configDirectory, home);
+	mkdir(configPath, 0777);
+	strcat(configPath, configFile);
+	FILE *fp = fopen(configPath, "ab+");
+	fclose(fp);
+
+	// config: parse ini
+	dictionary* ini = iniparser_load(configPath);
+
+	// general: define variables
 	int M = 2048;
 	pthread_t  p_thread;
 	int        thr_id GCC_UNUSED;
-	char *inputMethod = "alsa";
-	char *outputMethod = "terminal";
-	char *modeString = "normal";
+	char *inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa");
+	char *outputMethod = (char *)iniparser_getstring(ini, "output:method", "terminal");
+	char *modeString = (char *)iniparser_getstring(ini, "general:mode", "normal");
 	int im = 1;
 	int om = 1;
 	int mode = 1;
@@ -85,21 +106,23 @@ int main(int argc, char **argv)
 	long int lpeak, hpeak;
 	int bands = 25;
 	int sleep = 0;
-	int i, n, o, bw, height, h, w, c, rest, virt, fixedbands;
+	int i, n, o, bw, height, h, w, c, rest, virt;
+	int fixedbands = iniparser_getint(ini, "general:bars", 0);
 	int autoband = 1;
 	float temp;
 	double in[2 * (M / 2 + 1)];
 	fftw_complex out[M / 2 + 1][2];
 	fftw_plan p;
-	char *color;
+	char *color = (char *)iniparser_getstring(ini, "color:foreground", "default");;
+	char *bcolor = (char *)iniparser_getstring(ini, "color:background", "default");;
 	int col = 6;
 	int bgcol = -1;
-	int sens = 100;
+	int sens = iniparser_getint(ini, "general:sensitivity", 100);
 	int fall[200];
 	float fpeak[200];
 	float k[200];
 	float g;
-	int framerate = 60;
+	int framerate = iniparser_getint(ini, "general:framerate", 60);
 	float smooth[64] = {1.5, 1.5, 1.25, 1.25, 1.5, 1.5, 1.25, 1.5, 1.5, 1.25, 1.25, 1.5, 
 						1.25, 1.25, 1.5, 2, 2, 1.75, 1.5, 1.5, 1.5, 1.5, 1.5, 
 						1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 
@@ -148,25 +171,11 @@ Options:\n\
 
 
   // general: handle command-line arguments
-	while ((c = getopt (argc, argv, "p:i:o:m:b:d:s:f:c:C:hv")) != -1)
+	while ((c = getopt (argc, argv, "p:i:o:m:b:d:s:f:c:C:hv")) != -1) {
 		switch (c) {
 			case 'i': // argument: input method
 				im = 0;
 				inputMethod = optarg;
-				if (strcmp(inputMethod, "alsa") == 0) {
-					im = 1;
-					audio.source = "hw:1,1";
-				}
-				if (strcmp(inputMethod, "fifo") == 0) {
-					im = 2;
-					audio.source =	"/tmp/mpd.fifo";
-				}
-				if (im == 0) {	
-					fprintf(stderr,
-						"input method %s is not supported, supported methods are: 'alsa' and 'fifo'\n",
-					        inputMethod);
-					exit(EXIT_FAILURE);
-				}
 				break;
 			case 'p': // argument: fifo path
 				audio.source = optarg;
@@ -174,32 +183,13 @@ Options:\n\
 			case 'o': // argument: output method
 				om = 0;
 				outputMethod = optarg;
-				if (strcmp(outputMethod, "terminal") == 0) om = 1;
-				if (strcmp(outputMethod, "circle") == 0) om = 2;
-				if (om == 0) {	
-					fprintf(stderr,
-						"output method %s is not supported, supported methods are: 'terminal', 'circle'\n",
-					        outputMethod);
-					exit(EXIT_FAILURE);
-				}
 				break;
 			case 'm': // argument: smoothing mode
 				mode = 0;
 				modeString = optarg;
-				if (strcmp(modeString, "normal") == 0) mode = 1;
-				if (strcmp(modeString, "scientific") == 0) mode = 2;
-				if (strcmp(modeString, "waves") == 0) mode = 3;
-				if (mode == 0) {	
-					fprintf(stderr,
-						"smoothing mode %s is not supported, supported modes are: 'normal', 'scientific', 'waves'\n",
-					        modeString);
-					exit(EXIT_FAILURE);
-				}
 				break;
 			case 'b': // argument: bar count
 				fixedbands = atoi(optarg);
-				autoband = 0;
-				if (fixedbands > 200)fixedbands = 200;
 				break;
 			case 'd': // argument: alsa device
 				audio.source  = optarg;
@@ -209,43 +199,14 @@ Options:\n\
 				break;
 			case 'f': // argument: framerate
 				framerate = atoi(optarg);
-				if (framerate < 0) {	
-					fprintf(stderr,
-						"framerate can't be negative!\n");
-					exit(EXIT_FAILURE);
-				}
 				break;
 			case 'c': // argument: foreground color
 				col = -2;
 				color = optarg;
-				if (strcmp(color, "black") == 0) col = 0;
-				if (strcmp(color, "red") == 0) col = 1;
-				if (strcmp(color, "green") == 0) col = 2;
-				if (strcmp(color, "yellow") == 0) col = 3;
-				if (strcmp(color, "blue") == 0) col = 4;
-				if (strcmp(color, "magenta") == 0) col = 5;
-				if (strcmp(color, "cyan") == 0) col = 6;
-				if (strcmp(color, "white") == 0) col = 7;
-				if (col == -2) {	
-					fprintf(stderr, "color %s not supported\n", color);
-					exit(EXIT_FAILURE);
-				}
 				break;
 			case 'C': // argument: background color
 				bgcol = -2;
-				color = optarg;
-				if (strcmp(color, "black") == 0) bgcol = 0;
-				if (strcmp(color, "red") == 0) bgcol = 1;
-				if (strcmp(color, "green") == 0) bgcol = 2;
-				if (strcmp(color, "yellow") == 0) bgcol = 3;
-				if (strcmp(color, "blue") == 0) bgcol = 4;
-				if (strcmp(color, "magenta") == 0) bgcol = 5;
-				if (strcmp(color, "cyan") == 0) bgcol = 6;
-				if (strcmp(color, "white") == 0) bgcol = 7;
-				if (bgcol == -2) {	
-					fprintf(stderr, "color %s not supported\n", color);
-					exit(EXIT_FAILURE);
-				}
+				bcolor = optarg;
 				break;
 			case 'h': // argument: print usage	
 				printf ("%s", usage);				
@@ -261,8 +222,79 @@ Options:\n\
 		}
 
 		n = 0;
+	}
 
+	// config: validate
 
+	// validate: input
+	if (strcmp(inputMethod, "alsa") == 0) {
+		im = 1;
+		audio.source = (char *)iniparser_getstring(ini, "input:source", "hw:1,1");
+	}
+	if (strcmp(inputMethod, "fifo") == 0) {
+		im = 2;
+		audio.source = (char *)iniparser_getstring(ini, "input:source", "/tmp/mpd.fifo");
+	}
+	if (im == 0) {	
+		fprintf(stderr,
+			"input method %s is not supported, supported methods are: 'alsa' and 'fifo'\n",
+		        inputMethod);
+		exit(EXIT_FAILURE);
+	}
+
+	// validate: output method
+	if (strcmp(outputMethod, "terminal") == 0) om = 1;
+	if (strcmp(outputMethod, "circle") == 0) om = 2;
+	if (om == 0) {	
+		fprintf(stderr,
+			"output method %s is not supported, supported methods are: 'terminal', 'circle'\n",
+		        outputMethod);
+		exit(EXIT_FAILURE);
+	}
+
+	// validate: bands
+	if (fixedbands > 0) autoband = 0;
+	if (fixedbands > 200)fixedbands = 200;
+
+	// validate: mode
+	if (strcmp(modeString, "normal") == 0) mode = 1;
+	if (strcmp(modeString, "scientific") == 0) mode = 2;
+	if (strcmp(modeString, "waves") == 0) mode = 3;
+	if (mode == 0) {	
+		fprintf(stderr,
+			"smoothing mode %s is not supported, supported modes are: 'normal', 'scientific', 'waves'\n",
+		        modeString);
+		exit(EXIT_FAILURE);
+	}
+
+	// validate: framerate
+	if (framerate < 0) {	
+		fprintf(stderr,
+			"framerate can't be negative!\n");
+		exit(EXIT_FAILURE);
+	}
+
+	// validate: color
+	if (strcmp(color, "black") == 0) col = 0;
+	if (strcmp(color, "red") == 0) col = 1;
+	if (strcmp(color, "green") == 0) col = 2;
+	if (strcmp(color, "yellow") == 0) col = 3;
+	if (strcmp(color, "blue") == 0) col = 4;
+	if (strcmp(color, "magenta") == 0) col = 5;
+	if (strcmp(color, "cyan") == 0) col = 6;
+	if (strcmp(color, "white") == 0) col = 7;
+	// default if invalid
+
+	// validate: background color
+	if (strcmp(bcolor, "black") == 0) bgcol = 0;
+	if (strcmp(bcolor, "red") == 0) bgcol = 1;
+	if (strcmp(bcolor, "green") == 0) bgcol = 2;
+	if (strcmp(bcolor, "yellow") == 0) bgcol = 3;
+	if (strcmp(bcolor, "blue") == 0) bgcol = 4;
+	if (strcmp(bcolor, "magenta") == 0) bgcol = 5;
+	if (strcmp(bcolor, "cyan") == 0) bgcol = 6;
+	if (strcmp(bcolor, "white") == 0) bgcol = 7;
+	// default if invalid
 
 	// input: wait for the input to be ready
 	if (im == 1) {

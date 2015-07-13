@@ -5,7 +5,7 @@ CC       = gcc
 CFLAGS   = -std=c99 -Wall -Wextra
 CPPFLAGS = -DPACKAGE=\"$(PACKAGE)\" -DVERSION=\"$(VERSION)\" \
            -D_POSIX_SOURCE -D _POSIX_C_SOURCE=200809L
-LDLIBS   = -lasound -lm -lfftw3 -lpthread $(shell ncursesw5-config --cflags --libs)
+LDLIBS   = ./iniparser/libiniparser.a -lasound -lm -lfftw3 -lpthread $(shell ncursesw5-config --cflags --libs)
 
 INSTALL     = install
 INSTALL_BIN = $(INSTALL) -D -m 755
@@ -19,9 +19,12 @@ ifeq ($(debug),1)
 CPPFLAGS += -DDEBUG
 endif
 
-all: cava
+all: iniparser cava
 
 cava: cava.c
+
+iniparser:
+	cd iniparser && $(MAKE)
 
 install: all
 	$(INSTALL_BIN) cava $(BINDIR)/cava
@@ -30,6 +33,7 @@ uninstall:
 	$(RM) $(BINDIR)/cava
 
 clean:
+	cd iniparser && $(MAKE) clean
 	$(RM) cava
 
-.PHONY: all clean install uninstall
+.PHONY: iniparser all clean install uninstall
