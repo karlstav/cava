@@ -64,18 +64,29 @@ void sig_handler(int sig_no)
 int main(int argc, char **argv)
 {
 	// config: location
-	char *configDirectory = "%s/.config/cava/";
 	char *configFile = "config.ini";
 	char configPath[255];
-	char *home = getenv ("HOME");
-	if (home == NULL) {
-		printf("No HOME found, exiting...");
-		exit(EXIT_FAILURE);
+	configPath[0] = '\0';
+
+	if (configPath[0] == '\0') {
+		char *configHome = getenv("XDG_CONFIG_HOME");
+		if (configHome != NULL) {
+			snprintf(configPath, sizeof(configPath), "%s/%s/", configHome, PACKAGE);
+		} else {
+			configHome = getenv("HOME");
+			if (configHome != NULL) {
+				snprintf(configPath, sizeof(configPath), "%s/%s/%s/", configHome, ".config", PACKAGE);
+			} else {
+				printf("No HOME found (ERR_HOMELESS), exiting...");
+				exit(EXIT_FAILURE);
+			}
+		}
 	}
 
-	// config: create empty file
-	snprintf(configPath, sizeof(configPath), configDirectory, home);
+	// config: create directory
 	mkdir(configPath, 0777);
+	
+	// config: create empty file
 	strcat(configPath, configFile);
 	FILE *fp = fopen(configPath, "ab+");
 	fclose(fp);
