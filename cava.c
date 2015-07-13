@@ -105,6 +105,9 @@ int main(int argc, char **argv)
 	int om = 1;
 	int mode = 1;
 	int modes = 3; // amount of smoothing modes
+	int enableMonstercat = iniparser_getboolean(ini, "smoothing:monstercat", 1);
+	int enableIntegral = iniparser_getboolean(ini, "smoothing:integral", 1);
+	double gravity = iniparser_getdouble(ini, "smoothing:gravity", 1);
 	float fc[200];
 	float fr[200];
 	int lcf[200], hcf[200];
@@ -307,6 +310,11 @@ Options:\n\
 	if (strcmp(bcolor, "white") == 0) bgcol = 7;
 	// default if invalid
 
+	// validate: gravity
+	if (gravity < 0) {
+		gravity = 0;
+	}
+
 	// input: wait for the input to be ready
 	if (im == 1) {
 		thr_id = pthread_create(&p_thread, NULL, input_alsa,
@@ -383,7 +391,7 @@ Options:\n\
 		if (bw < 1) bw = 1; //bars must have width
 
 		// process [smoothing]: calculate gravity
-		g = ((float)height / 270) * pow((60 / (float)framerate), 2.5);
+		g = gravity * ((float)height / 270) * pow((60 / (float)framerate), 2.5);
 
 		//if no bands are selected it tries to padd the default 20 if there is extra room
 		if (autoband == 1) bands = bands + ((w - (bw * bands + bands - 1)) /
@@ -518,63 +526,69 @@ Options:\n\
 			{
 
 				// process [smoothing]: monstercat-style "average"
-				int z, m_y, de;
-				float m_o = 64 / bands;
-				if (mode == 3) {
-					for (z = 0; z < bands; z++) { // waves
-						f[z] = f[z] / 1.25;
-						if (f[z] < 0.125)f[z] = 0.125;
-						for (m_y = z - 1; m_y >= 0; m_y--) {
-							de = z - m_y;
-							f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
+				if (enableMonstercat) {
+					int z, m_y, de;
+					float m_o = 64 / bands;
+					if (mode == 3) {
+						for (z = 0; z < bands; z++) { // waves
+							f[z] = f[z] / 1.25;
+							if (f[z] < 0.125)f[z] = 0.125;
+							for (m_y = z - 1; m_y >= 0; m_y--) {
+								de = z - m_y;
+								f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
+							}
+							for (m_y = z + 1; m_y < bands; m_y++) {
+								de = m_y - z;
+								f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
+							}
 						}
-						for (m_y = z + 1; m_y < bands; m_y++) {
-							de = m_y - z;
-							f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
-						}
-					}
-				} else {
-					for (z = 0; z < bands; z++) {
-						f[z] = f[z] * sm / smooth[(int)floor(z * m_o)];
-						if (f[z] < 0.125)f[z] = 0.125;
-						for (m_y = z - 1; m_y >= 0; m_y--) {
-							de = z - m_y;
-							f[m_y] = max(f[z] / pow(1.5, de), f[m_y]);
-						}
-						for (m_y = z + 1; m_y < bands; m_y++) {
-							de = m_y - z;
-							f[m_y] = max(f[z] / pow(1.5, de), f[m_y]);
+					} else {
+						for (z = 0; z < bands; z++) {
+							f[z] = f[z] * sm / smooth[(int)floor(z * m_o)];
+							if (f[z] < 0.125)f[z] = 0.125;
+							for (m_y = z - 1; m_y >= 0; m_y--) {
+								de = z - m_y;
+								f[m_y] = max(f[z] / pow(1.5, de), f[m_y]);
+							}
+							for (m_y = z + 1; m_y < bands; m_y++) {
+								de = m_y - z;
+								f[m_y] = max(f[z] / pow(1.5, de), f[m_y]);
+							}
 						}
 					}
 				}
 
 				// process [smoothing]: falloff
-				for (o = 0; o < bands; o++) {
-					temp = f[o];
+				if (g > 0) {
+					for (o = 0; o < bands; o++) {
+						temp = f[o];
 
-					if (temp < flast[o]) {
-						f[o] = fpeak[o] - (g * fall[o] * fall[o]);
-						fall[o]++;
-					} else if (temp >= flast[o]) {
-						f[o] = temp;
-						fpeak[o] = f[o];
-						fall[o] = 0;
+						if (temp < flast[o]) {
+							f[o] = fpeak[o] - (g * fall[o] * fall[o]);
+							fall[o]++;
+						} else if (temp >= flast[o]) {
+							f[o] = temp;
+							fpeak[o] = f[o];
+							fall[o] = 0;
+						}
+
+						flast[o] = f[o];
 					}
-
-					flast[o] = f[o];
 				}
 
 				// process [smoothing]: integral
-				for (o = 0; o < bands; o++) {
-					fmem[o] = fmem[o] * 0.70 + f[o];
-					f[o] = fmem[o];
+				if (enableIntegral) {
+					for (o = 0; o < bands; o++) {
+						fmem[o] = fmem[o] * 0.70 + f[o];
+						f[o] = fmem[o];
 
-					if (f[o] < 1)f[o] = 1;
+						if (f[o] < 1)f[o] = 1;
 
-					#ifdef DEBUG
-						mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
-						       lcf[o], hcf[o], peak[o], f[o]);
-					#endif
+						#ifdef DEBUG
+							mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
+							       lcf[o], hcf[o], peak[o], f[o]);
+						#endif
+					}
 				}
 
 			}
