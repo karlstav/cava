@@ -105,8 +105,8 @@ int main(int argc, char **argv)
 	int om = 1;
 	int mode = 1;
 	int modes = 3; // amount of smoothing modes
-	int enableMonstercat = iniparser_getboolean(ini, "smoothing:monstercat", 1);
-	int integral = iniparser_getdouble(ini, "smoothing:integral", 1);
+	double monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
+	double integral = 0.7 * iniparser_getdouble(ini, "smoothing:integral", 1);
 	double gravity = iniparser_getdouble(ini, "smoothing:gravity", 1);
 	float fc[200];
 	float fr[200];
@@ -546,32 +546,31 @@ Options:\n\
 				int z;
 
 				// process [smoothing]: monstercat-style "average"
-				if (enableMonstercat) {
-					int m_y, de;
-					if (mode == 3) {
-						for (z = 0; z < bands; z++) { // waves
-							f[z] = f[z] / 1.25;
-							if (f[z] < 0.125)f[z] = 0.125;
-							for (m_y = z - 1; m_y >= 0; m_y--) {
-								de = z - m_y;
-								f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
-							}
-							for (m_y = z + 1; m_y < bands; m_y++) {
-								de = m_y - z;
-								f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
-							}
+				
+				int m_y, de;
+				if (mode == 3) {
+					for (z = 0; z < bands; z++) { // waves
+						f[z] = f[z] / 1.25;
+						if (f[z] < 0.125)f[z] = 0.125;
+						for (m_y = z - 1; m_y >= 0; m_y--) {
+							de = z - m_y;
+							f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
 						}
-					} else {
-						for (z = 0; z < bands; z++) {
-							if (f[z] < 0.125)f[z] = 0.125;
-							for (m_y = z - 1; m_y >= 0; m_y--) {
-								de = z - m_y;
-								f[m_y] = max(f[z] / pow(1.5, de), f[m_y]);
-							}
-							for (m_y = z + 1; m_y < bands; m_y++) {
-								de = m_y - z;
-								f[m_y] = max(f[z] / pow(1.5, de), f[m_y]);
-							}
+						for (m_y = z + 1; m_y < bands; m_y++) {
+							de = m_y - z;
+							f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
+						}
+					}
+				} else if (monstercat > 0) {
+					for (z = 0; z < bands; z++) {
+						if (f[z] < 0.125)f[z] = 0.125;
+						for (m_y = z - 1; m_y >= 0; m_y--) {
+							de = z - m_y;
+							f[m_y] = max(f[z] / pow(monstercat, de), f[m_y]);
+						}
+						for (m_y = z + 1; m_y < bands; m_y++) {
+							de = m_y - z;
+							f[m_y] = max(f[z] / pow(monstercat, de), f[m_y]);
 						}
 					}
 				}
@@ -604,7 +603,7 @@ Options:\n\
 				// process [smoothing]: integral
 				if (integral > 0) {
 					for (o = 0; o < bands; o++) {
-						fmem[o] = fmem[o] * 0.70 * integral + f[o];
+						fmem[o] = fmem[o] * integral + f[o];
 						f[o] = fmem[o];
 
 						if (f[o] < 1)f[o] = 1;
