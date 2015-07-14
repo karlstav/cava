@@ -228,3 +228,98 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 | <kbd>m</kbd> | Swtich between smoothing modes |
 | <kbd>up</kbd> / <kbd>down</kbd>| increase/decrease sensitivity |
 | <kbd>q</kbd> or <kbd>CTRL-C</kbd>| Quit C.A.V.A. |
+
+Configuration
+-------------
+
+Configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.config/cava/config`.
+
+### Example file:
+
+    [general]
+    mode=normal
+    framerate=60
+    sensitivity=100
+    bars=0
+    
+    [input]
+    method=fifo
+    source=/tmp/mpd.fifo
+    
+    [output]
+    method=terminal
+    
+    [color]
+    background=white
+    foreground=blue
+    
+    [smoothing]
+    integral=1
+    monstercat=1
+    gravity=1
+    
+    [eq]
+    ; naming of keys doesn't matter
+    1=0.5
+    2=0.6
+    3=0.7
+    4=0.3
+    5=0.2
+
+### Sections:
+
+#### [general]
+
+* `mode` defines smoothing mode, can be `normal`, `scientific` or `waves`. Default: `normal`.
+* `framerate` is framerate (FPS). Default: `60`. Accepts only non-negative values.
+* `sensitivity` is sensitivity %. Default: `100`. Accepts only non-negative values.
+* `bars` defines the amount of bars. `0` sets it to auto. Default: `0`. Accepts only non-negative values.
+
+#### [input]
+
+* `method` may be `alsa` or `fifo`.
+* `source` is the ALSA path or FIFO path.
+
+#### [output]
+
+* `method` may be `terminal` or `circle`. Default: `terminal`.
+
+#### [color]
+
+* `background` is the background color.
+* `foreground` is the foreground (bars) color.
+
+#### [smoothing]
+
+* `integral` sets the multiplier for the integral smoothing calculations. Default: `1`. Another example: `0.5`. Accepts only non-negative values.
+* `monstercat` disables or enables the so-called "Monstercat smoothing". Default: `1`. Accepts only `0` or `1`.
+* `gravity` sets the gravity multiplier. Default: `1`. Accepts only non-negative values.
+
+#### [eq]
+
+This one is tricky. You can have as much keys as you want. More keys = more precision.
+
+**How it works:**
+
+1. Cava takes values from this section in the order of appearance (naming of the keys doesn't really matter) and puts them into an array.
+2. Visualization is divided into `x` sections (where x is the amount of values) and all bars in each of these sections are multiplied by the corresponding value from that array.
+
+**Examples:**
+
+    [eq]
+    1=0
+    2=1
+    3=0
+    4=1
+    5=0
+
+![3_138](https://cloud.githubusercontent.com/assets/6376571/8670183/a54a851e-29e8-11e5-9eff-346bf6ed91e0.png)
+
+    [eq]
+    1=2
+    2=2
+    3=1
+    4=1
+    5=0.5
+
+![3_139](https://cloud.githubusercontent.com/assets/6376571/8670181/9db0ef50-29e8-11e5-81bc-3e2bb9892da0.png)

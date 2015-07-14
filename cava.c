@@ -64,7 +64,7 @@ void sig_handler(int sig_no)
 int main(int argc, char **argv)
 {
 	// config: location
-	char *configFile = "config.ini";
+	char *configFile = "config";
 	char configPath[255];
 	configPath[0] = '\0';
 
@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 	int mode = 1;
 	int modes = 3; // amount of smoothing modes
 	int enableMonstercat = iniparser_getboolean(ini, "smoothing:monstercat", 1);
-	int enableIntegral = iniparser_getboolean(ini, "smoothing:integral", 1);
+	int integral = iniparser_getdouble(ini, "smoothing:integral", 1);
 	double gravity = iniparser_getdouble(ini, "smoothing:gravity", 1);
 	float fc[200];
 	float fr[200];
@@ -405,7 +405,9 @@ Options:\n\
 
 		if (bw < 1) bw = 1; //bars must have width
 
-		smh = (double)(((double)(smcount-1))/((double)bands));
+		if ((smcount > 0) && (bands > 0)) {
+			smh = (double)(((double)smcount)/((double)bands));	
+		}
 
 		// process [smoothing]: calculate gravity
 		g = gravity * ((float)height / 270) * pow((60 / (float)framerate), 2.5);
@@ -575,8 +577,10 @@ Options:\n\
 				}
 
 				// process [smoothing]: eq
-				for (z = 0; z < bands; z++) {
-					f[z] = f[z] * smooth[(int)floor(((double)z) * smh)];
+				if (smcount > 0) {
+					for (z = 0; z < bands; z++) {
+						f[z] = f[z] * smooth[(int)floor(((double)z) * smh)];
+					}	
 				}
 
 				// process [smoothing]: falloff
@@ -598,9 +602,9 @@ Options:\n\
 				}
 
 				// process [smoothing]: integral
-				if (enableIntegral) {
+				if (integral > 0) {
 					for (o = 0; o < bands; o++) {
-						fmem[o] = fmem[o] * 0.70 + f[o];
+						fmem[o] = fmem[o] * 0.70 * integral + f[o];
 						f[o] = fmem[o];
 
 						if (f[o] < 1)f[o] = 1;
