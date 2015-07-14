@@ -453,7 +453,7 @@ Options:\n\
 
 		// process: weigh signal to frequencies
 		for (n = 0; n < bands;
-			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000));
+			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000)) * smooth[(int)floor(((double)n) * smh)];
 																	 
 
 	
@@ -573,13 +573,6 @@ Options:\n\
 							f[m_y] = max(f[z] / pow(monstercat, de), f[m_y]);
 						}
 					}
-				}
-
-				// process [smoothing]: eq
-				if (smcount > 0) {
-					for (z = 0; z < bands; z++) {
-						f[z] = f[z] * smooth[(int)floor(((double)z) * smh)];
-					}	
 				}
 
 				// process [smoothing]: falloff
