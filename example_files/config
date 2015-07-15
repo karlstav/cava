@@ -1,0 +1,32 @@
+## Configuration file for CAVA. Default values are commented out.  Use either ; or # for commenting.
+
+[general]
+; mode = normal # defines smoothing mode, can be normal, scientific or waves.
+; framerate = 60 # Default: 60. Accepts only non-negative values.
+; sensitivity = 100 #  is sensitivity %. Accepts only non-negative values.
+; bars = 0 # defines the amount of bars. 0 sets it to auto (25 + fill up leftover space). 
+
+[input]
+; method = alsa # supported input methods are 'alsa' or 'fifo'.
+; source = hw:1,1 # ALSA device or FIFO path.
+
+[output]
+; method = terminal # may be terminal or circle.
+
+[color]
+# supported colors are: red, green, yellow, magenta, cyan, white, blue, black.
+; background = black
+; foreground = cyan
+
+[smoothing]
+; integral = 0.7 # multiplier for the integral smoothing calculations. Higher values means smoother, but less precise. 0 to disable.
+; monstercat = 1 # disables or enables the so-called "Monstercat smoothing". Default: 1. Set to 0 to disable. 
+; gravity = 1 # Set gravity multiplier for "drop off". Higher values means smoother, but less precise.  Accepts only non-negative values. Set to 0 to disable "drop off".
+
+[eq]
+# This one is tricky. You can have as much keys as you want. More keys = more precision. Look at readme.md on github for further explanations and examples.
+; 1 = 1 # base
+; 2 = 1
+; 3 = 1
+; 4 = 1
+; 5 = 1 # treble
