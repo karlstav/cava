@@ -403,11 +403,7 @@ Options:\n\
 
 		bw = (w - bands - 1) / bands;
 
-		if (bw < 1) bw = 1; //bars must have width
-
-		if ((smcount > 0) && (bands > 0)) {
-			smh = (double)(((double)smcount)/((double)bands));	
-		}
+		if (bw < 1) bw = 1; //bars must have width	
 
 		// process [smoothing]: calculate gravity
 		g = gravity * ((float)height / 270) * pow((60 / (float)framerate), 2.5);
@@ -420,6 +416,10 @@ Options:\n\
 		//checks if there is stil extra room, will use this to center
 		rest = (w - bands * bw - bands + 1) / 2;
 		if (rest < 0)rest = 0;
+
+		if ((smcount > 0) && (bands > 0)) {
+			smh = (double)(((double)smcount)/((double)bands));	
+		}
 
 		#ifdef DEBUG
 			printw("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
