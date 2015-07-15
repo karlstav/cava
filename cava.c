@@ -10,13 +10,14 @@
 #include <sys/ioctl.h>
 #include <fftw3.h>
 #define max(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a > _b ? _a : _b; })
+	 ({ __typeof__ (a) _a = (a); \
+			 __typeof__ (b) _b = (b); \
+		 _a > _b ? _a : _b; })
 #include <unistd.h>
 #include <sys/types.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <getopt.h>
 #include <pthread.h>
@@ -28,6 +29,7 @@
 #include "input/alsa.c"
 #include "input/fifo.h"
 #include "input/fifo.c"
+#include "iniparser/src/iniparser.h"
 
 
 #ifdef __GNUC__
@@ -58,21 +60,54 @@ void sig_handler(int sig_no)
 	raise(sig_no);
 }
 
-
-
 // general: entry point
 int main(int argc, char **argv)
 {
+	// config: location
+	char *configFile = "config";
+	char configPath[255];
+	configPath[0] = '\0';
+
+	if (configPath[0] == '\0') {
+		char *configHome = getenv("XDG_CONFIG_HOME");
+		if (configHome != NULL) {
+			snprintf(configPath, sizeof(configPath), "%s/%s/", configHome, PACKAGE);
+		} else {
+			configHome = getenv("HOME");
+			if (configHome != NULL) {
+				snprintf(configPath, sizeof(configPath), "%s/%s/%s/", configHome, ".config", PACKAGE);
+			} else {
+				printf("No HOME found (ERR_HOMELESS), exiting...");
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+
+	// config: create directory
+	mkdir(configPath, 0777);
+	
+	// config: create empty file
+	strcat(configPath, configFile);
+	FILE *fp = fopen(configPath, "ab+");
+	fclose(fp);
+
+	// config: parse ini
+	dictionary* ini = iniparser_load(configPath);
+
+	// general: define variables
 	int M = 2048;
 	pthread_t  p_thread;
 	int        thr_id GCC_UNUSED;
-	char *inputMethod = "alsa";
-	char *outputMethod = "terminal";
-	char *modeString = "normal";
+	char *inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa");
+	char *outputMethod = (char *)iniparser_getstring(ini, "output:method", "terminal");
+	char *modeString = (char *)iniparser_getstring(ini, "general:mode", "normal");
 	int im = 1;
 	int om = 1;
 	int mode = 1;
 	int modes = 3; // amount of smoothing modes
+	double monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
+	double integral = 0.7 * iniparser_getdouble(ini, "smoothing:integral", 1);
+	double gravity = iniparser_getdouble(ini, "smoothing:gravity", 1);
 	float fc[200];
 	float fr[200];
 	int lcf[200], hcf[200];
@@ -85,45 +120,49 @@ int main(int argc, char **argv)
 	long int lpeak, hpeak;
 	int bands = 25;
 	int sleep = 0;
-	int i, n, o, bw, height, h, w, c, rest, virt, fixedbands;
+	int i, n, o, bw, height, h, w, c, rest, virt;
+	int fixedbands = iniparser_getint(ini, "general:bars", 0);
 	int autoband = 1;
 	float temp;
 	double in[2 * (M / 2 + 1)];
 	fftw_complex out[M / 2 + 1][2];
 	fftw_plan p;
-	char *color;
+	char *color = (char *)iniparser_getstring(ini, "color:foreground", "default");;
+	char *bcolor = (char *)iniparser_getstring(ini, "color:background", "default");;
 	int col = 6;
 	int bgcol = -1;
-	int sens = 100;
+	int sens = iniparser_getint(ini, "general:sensitivity", 100);
 	int fall[200];
 	float fpeak[200];
 	float k[200];
 	float g;
-	int framerate = 60;
-	float smooth[64] = {1.5, 1.5, 1.25, 1.25, 1.5, 1.5, 1.25, 1.5, 1.5, 1.25, 1.25, 1.5, 
-						1.25, 1.25, 1.5, 2, 2, 1.75, 1.5, 1.5, 1.5, 1.5, 1.5, 
-						1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 
-						1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 
-						1.75, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-	float sm = 1.25; //min val from smooth[]
+	double smh;
+	int framerate = iniparser_getint(ini, "general:framerate", 60);
+	double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8, 
+						1, 1, 0.8, 0.6, 0.6, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8, 
+						0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 
+						0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 
+						0.7, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6};
+	double *smooth = smoothDef;
+	int smcount = 64;
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
 	char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
 Visualize audio input in terminal. \n\
 \n\
 Options:\n\
-	-b 1..(console columns/2-1) or 200	number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
-	-i 'input method'			method used for listening to audio, supports: 'alsa' and 'fifo'\n\
-	-o 'output method'			method used for outputting processed data, supports: 'terminal' and 'circle'\n\
-	-d 'alsa device'			name of alsa capture device (default 'hw:1,1')\n\
-	-p 'fifo path'				path to fifo (default '/tmp/mpd.fifo')\n\
-	-c foreground color			supported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
-	-C background color			supported colors: same as above (default: no change)\n\
-	-s sensitivity				sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...\n\
-	-f framerate 				FPS limit, if you are experiencing high CPU usage, try reducing this (default: 60)\n\
-	-m mode					set mode (normal, scientific, waves)\n\
-	-h					print the usage\n\
-	-v					print version\n\
+	-b 1..(console columns/2-1) or 200  number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
+	-i 'input method'     method used for listening to audio, supports: 'alsa' and 'fifo'\n\
+	-o 'output method'      method used for outputting processed data, supports: 'terminal' and 'circle'\n\
+	-d 'alsa device'      name of alsa capture device (default 'hw:1,1')\n\
+	-p 'fifo path'        path to fifo (default '/tmp/mpd.fifo')\n\
+	-c foreground color     supported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
+	-C background color     supported colors: same as above (default: no change)\n\
+	-s sensitivity        sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...\n\
+	-f framerate        FPS limit, if you are experiencing high CPU usage, try reducing this (default: 60)\n\
+	-m mode         set mode (normal, scientific, waves)\n\
+	-h          print the usage\n\
+	-v          print version\n\
 \n";
 	char ch;
 	struct audio_data audio;
@@ -147,26 +186,12 @@ Options:\n\
 	sigaction(SIGTERM, &action, NULL);
 
 
-  // general: handle command-line arguments
-	while ((c = getopt (argc, argv, "p:i:o:m:b:d:s:f:c:C:hv")) != -1)
+	// general: handle command-line arguments
+	while ((c = getopt (argc, argv, "p:i:o:m:b:d:s:f:c:C:hv")) != -1) {
 		switch (c) {
 			case 'i': // argument: input method
 				im = 0;
 				inputMethod = optarg;
-				if (strcmp(inputMethod, "alsa") == 0) {
-					im = 1;
-					audio.source = "hw:1,1";
-				}
-				if (strcmp(inputMethod, "fifo") == 0) {
-					im = 2;
-					audio.source =	"/tmp/mpd.fifo";
-				}
-				if (im == 0) {	
-					fprintf(stderr,
-						"input method %s is not supported, supported methods are: 'alsa' and 'fifo'\n",
-					        inputMethod);
-					exit(EXIT_FAILURE);
-				}
 				break;
 			case 'p': // argument: fifo path
 				audio.source = optarg;
@@ -174,32 +199,13 @@ Options:\n\
 			case 'o': // argument: output method
 				om = 0;
 				outputMethod = optarg;
-				if (strcmp(outputMethod, "terminal") == 0) om = 1;
-				if (strcmp(outputMethod, "circle") == 0) om = 2;
-				if (om == 0) {	
-					fprintf(stderr,
-						"output method %s is not supported, supported methods are: 'terminal', 'circle'\n",
-					        outputMethod);
-					exit(EXIT_FAILURE);
-				}
 				break;
 			case 'm': // argument: smoothing mode
 				mode = 0;
 				modeString = optarg;
-				if (strcmp(modeString, "normal") == 0) mode = 1;
-				if (strcmp(modeString, "scientific") == 0) mode = 2;
-				if (strcmp(modeString, "waves") == 0) mode = 3;
-				if (mode == 0) {	
-					fprintf(stderr,
-						"smoothing mode %s is not supported, supported modes are: 'normal', 'scientific', 'waves'\n",
-					        modeString);
-					exit(EXIT_FAILURE);
-				}
 				break;
 			case 'b': // argument: bar count
 				fixedbands = atoi(optarg);
-				autoband = 0;
-				if (fixedbands > 200)fixedbands = 200;
 				break;
 			case 'd': // argument: alsa device
 				audio.source  = optarg;
@@ -209,48 +215,19 @@ Options:\n\
 				break;
 			case 'f': // argument: framerate
 				framerate = atoi(optarg);
-				if (framerate < 0) {	
-					fprintf(stderr,
-						"framerate can't be negative!\n");
-					exit(EXIT_FAILURE);
-				}
 				break;
 			case 'c': // argument: foreground color
 				col = -2;
 				color = optarg;
-				if (strcmp(color, "black") == 0) col = 0;
-				if (strcmp(color, "red") == 0) col = 1;
-				if (strcmp(color, "green") == 0) col = 2;
-				if (strcmp(color, "yellow") == 0) col = 3;
-				if (strcmp(color, "blue") == 0) col = 4;
-				if (strcmp(color, "magenta") == 0) col = 5;
-				if (strcmp(color, "cyan") == 0) col = 6;
-				if (strcmp(color, "white") == 0) col = 7;
-				if (col == -2) {	
-					fprintf(stderr, "color %s not supported\n", color);
-					exit(EXIT_FAILURE);
-				}
 				break;
 			case 'C': // argument: background color
 				bgcol = -2;
-				color = optarg;
-				if (strcmp(color, "black") == 0) bgcol = 0;
-				if (strcmp(color, "red") == 0) bgcol = 1;
-				if (strcmp(color, "green") == 0) bgcol = 2;
-				if (strcmp(color, "yellow") == 0) bgcol = 3;
-				if (strcmp(color, "blue") == 0) bgcol = 4;
-				if (strcmp(color, "magenta") == 0) bgcol = 5;
-				if (strcmp(color, "cyan") == 0) bgcol = 6;
-				if (strcmp(color, "white") == 0) bgcol = 7;
-				if (bgcol == -2) {	
-					fprintf(stderr, "color %s not supported\n", color);
-					exit(EXIT_FAILURE);
-				}
+				bcolor = optarg;
 				break;
-			case 'h': // argument: print usage	
-				printf ("%s", usage);				
+			case 'h': // argument: print usage  
+				printf ("%s", usage);       
 				return 0;
-			case '?': // argument: print usage	
+			case '?': // argument: print usage  
 				printf ("%s", usage);
 				return 1;
 			case 'v': // argument: print version
@@ -261,13 +238,102 @@ Options:\n\
 		}
 
 		n = 0;
+	}
 
+	// config: validate
 
+	// validate: input
+	if (strcmp(inputMethod, "alsa") == 0) {
+		im = 1;
+		audio.source = (char *)iniparser_getstring(ini, "input:source", "hw:1,1");
+	}
+	if (strcmp(inputMethod, "fifo") == 0) {
+		im = 2;
+		audio.source = (char *)iniparser_getstring(ini, "input:source", "/tmp/mpd.fifo");
+	}
+	if (im == 0) {  
+		fprintf(stderr,
+			"input method %s is not supported, supported methods are: 'alsa' and 'fifo'\n",
+						inputMethod);
+		exit(EXIT_FAILURE);
+	}
+
+	// validate: output method
+	if (strcmp(outputMethod, "terminal") == 0) om = 1;
+	if (strcmp(outputMethod, "circle") == 0) om = 2;
+	if (om == 0) {  
+		fprintf(stderr,
+			"output method %s is not supported, supported methods are: 'terminal', 'circle'\n",
+						outputMethod);
+		exit(EXIT_FAILURE);
+	}
+
+	// validate: bands
+	if (fixedbands > 0) autoband = 0;
+	if (fixedbands > 200)fixedbands = 200;
+
+	// validate: mode
+	if (strcmp(modeString, "normal") == 0) mode = 1;
+	if (strcmp(modeString, "scientific") == 0) mode = 2;
+	if (strcmp(modeString, "waves") == 0) mode = 3;
+	if (mode == 0) {  
+		fprintf(stderr,
+			"smoothing mode %s is not supported, supported modes are: 'normal', 'scientific', 'waves'\n",
+						modeString);
+		exit(EXIT_FAILURE);
+	}
+
+	// validate: framerate
+	if (framerate < 0) {  
+		fprintf(stderr,
+			"framerate can't be negative!\n");
+		exit(EXIT_FAILURE);
+	}
+
+	// validate: color
+	if (strcmp(color, "black") == 0) col = 0;
+	if (strcmp(color, "red") == 0) col = 1;
+	if (strcmp(color, "green") == 0) col = 2;
+	if (strcmp(color, "yellow") == 0) col = 3;
+	if (strcmp(color, "blue") == 0) col = 4;
+	if (strcmp(color, "magenta") == 0) col = 5;
+	if (strcmp(color, "cyan") == 0) col = 6;
+	if (strcmp(color, "white") == 0) col = 7;
+	// default if invalid
+
+	// validate: background color
+	if (strcmp(bcolor, "black") == 0) bgcol = 0;
+	if (strcmp(bcolor, "red") == 0) bgcol = 1;
+	if (strcmp(bcolor, "green") == 0) bgcol = 2;
+	if (strcmp(bcolor, "yellow") == 0) bgcol = 3;
+	if (strcmp(bcolor, "blue") == 0) bgcol = 4;
+	if (strcmp(bcolor, "magenta") == 0) bgcol = 5;
+	if (strcmp(bcolor, "cyan") == 0) bgcol = 6;
+	if (strcmp(bcolor, "white") == 0) bgcol = 7;
+	// default if invalid
+
+	// validate: gravity
+	if (gravity < 0) {
+		gravity = 0;
+	}
+
+	// read & validate: eq
+	smcount = iniparser_getsecnkeys(ini, "eq");
+	if (smcount > 0) {
+		smooth = malloc(smcount*sizeof(*smooth));
+		const char *keys[smcount];
+		iniparser_getseckeys(ini, "eq", keys); 
+		for (int sk = 0; sk < smcount; sk++) {
+			smooth[sk] = iniparser_getdouble(ini, keys[sk], 1);
+		}
+	} else {
+		smcount = 64; //back to the default one
+	}
 
 	// input: wait for the input to be ready
 	if (im == 1) {
 		thr_id = pthread_create(&p_thread, NULL, input_alsa,
-		                        (void *)&audio); //starting alsamusic listener
+														(void *)&audio); //starting alsamusic listener
 		while (audio.format == -1 || audio.rate == 0) {
 			req.tv_sec = 0;
 			req.tv_nsec = 1000000;
@@ -283,14 +349,14 @@ Options:\n\
 			}
 		}
 	#ifdef DEBUG
-		printf("got format: %d and rate %d\n", format, rate);	
+		printf("got format: %d and rate %d\n", format, rate); 
 	#endif
 
 	}
 
 	if (im == 2) {
 		thr_id = pthread_create(&p_thread, NULL, input_fifo,
-		                        (void*)&audio); //starting fifomusic listener
+														(void*)&audio); //starting fifomusic listener
 		audio.rate = 44100;
 	}
 
@@ -325,11 +391,11 @@ Options:\n\
 		
 
 		// output: get terminal's geometry
-		get_terminal_dim_ncurses(&w, &h);		
+		get_terminal_dim_ncurses(&w, &h);   
 
 
 		if (bands > w / 2 - 1)bands = w / 2 -
-			                1; //handle for user setting to many bars
+											1; //handle for user setting to many bars
 
 		if (bands < 1) bands = 1; // must have at least 1 bar;
 
@@ -339,12 +405,16 @@ Options:\n\
 
 		if (bw < 1) bw = 1; //bars must have width
 
+		if ((smcount > 0) && (bands > 0)) {
+			smh = (double)(((double)smcount)/((double)bands));	
+		}
+
 		// process [smoothing]: calculate gravity
-		g = ((float)height / 270) * pow((60 / (float)framerate), 2.5);
+		g = gravity * ((float)height / 270) * pow((60 / (float)framerate), 2.5);
 
 		//if no bands are selected it tries to padd the default 20 if there is extra room
 		if (autoband == 1) bands = bands + ((w - (bw * bands + bands - 1)) /
-			                                    (bw + 1));
+																					(bw + 1));
 
 
 		//checks if there is stil extra room, will use this to center
@@ -353,38 +423,38 @@ Options:\n\
 
 		#ifdef DEBUG
 			printw("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
-			       w,
-			       h, bands, bw, rest);
+						 w,
+						 h, bands, bw, rest);
 		#endif
 
 		// process: calculate cutoff frequencies
 		for (n = 0; n < bands + 1; n++) {
 			fc[n] = 10000 * pow(10, -2.37 + ((((float)n + 1) / ((float)bands + 1)) *
-			                                 2.37)); //decided to cut it at 10k, little interesting to hear above
+																			 2.37)); //decided to cut it at 10k, little interesting to hear above
 			fr[n] = fc[n] / (audio.rate /
-			                 2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
+											 2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
 			lcf[n] = fr[n] * (M /
-			                  4); //lfc stores the lower cut frequency foo each band in the fft out buffer
+												4); //lfc stores the lower cut frequency foo each band in the fft out buffer
 
 			if (n != 0) {
 				hcf[n - 1] = lcf[n] - 1;
 				if (lcf[n] <= lcf[n - 1])lcf[n] = lcf[n - 1] +
-					                                  1; //pushing the spectrum up if the expe function gets "clumped"
+																						1; //pushing the spectrum up if the expe function gets "clumped"
 				hcf[n - 1] = lcf[n] - 1;
 			}
 
 			#ifdef DEBUG
 						if (n != 0) {
 							printw("%d: %f -> %f (%d -> %d) \n", n, fc[n - 1], fc[n], lcf[n - 1],
-							       hcf[n - 1]);
+										 hcf[n - 1]);
 						}
 			#endif
 		}
 
 		// process: weigh signal to frequencies
 		for (n = 0; n < bands;
-			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000));
-					                         
+			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000)) * smooth[(int)floor(((double)n) * smh)];
+																	 
 
 	
 		// general: main loop
@@ -394,26 +464,26 @@ Options:\n\
 			
 			ch = getch();
 			switch (ch) {
-			case 65:    // key up
-				sens += 10;
-			        break;
-			case 66:    // key down
-				sens -= 10;
-			        break;
-		    	case 67:    // key right
-		        	break;
-			case 68:    // key left
-				break;
-			case 'm':
-				if (mode == modes) {
-					mode = 1;
-				} else {
-					mode++;
-				}
-				break;
-			case 'q':
-				cleanup();
-				return EXIT_SUCCESS;
+				case 65:    // key up
+					sens += 10;
+					break;
+				case 66:    // key down
+					sens -= 10;
+					break;
+				case 67:    // key right
+					break;
+				case 68:    // key left
+					break;
+				case 'm':
+					if (mode == modes) {
+						mode = 1;
+					} else {
+						mode++;
+					}
+					break;
+				case 'q':
+					cleanup();
+					return EXIT_SUCCESS;
 			}
 		
 
@@ -473,10 +543,11 @@ Options:\n\
 			// process [smoothing]
 			if (mode != 2)
 			{
+				int z;
 
 				// process [smoothing]: monstercat-style "average"
-				int z, m_y, de;
-				float m_o = 64 / bands;
+				
+				int m_y, de;
 				if (mode == 3) {
 					for (z = 0; z < bands; z++) { // waves
 						f[z] = f[z] / 1.25;
@@ -490,48 +561,51 @@ Options:\n\
 							f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
 						}
 					}
-				} else {
+				} else if (monstercat > 0) {
 					for (z = 0; z < bands; z++) {
-						f[z] = f[z] * sm / smooth[(int)floor(z * m_o)];
 						if (f[z] < 0.125)f[z] = 0.125;
 						for (m_y = z - 1; m_y >= 0; m_y--) {
 							de = z - m_y;
-							f[m_y] = max(f[z] / pow(1.5, de), f[m_y]);
+							f[m_y] = max(f[z] / pow(monstercat, de), f[m_y]);
 						}
 						for (m_y = z + 1; m_y < bands; m_y++) {
 							de = m_y - z;
-							f[m_y] = max(f[z] / pow(1.5, de), f[m_y]);
+							f[m_y] = max(f[z] / pow(monstercat, de), f[m_y]);
 						}
 					}
 				}
 
 				// process [smoothing]: falloff
-				for (o = 0; o < bands; o++) {
-					temp = f[o];
+				if (g > 0) {
+					for (o = 0; o < bands; o++) {
+						temp = f[o];
 
-					if (temp < flast[o]) {
-						f[o] = fpeak[o] - (g * fall[o] * fall[o]);
-						fall[o]++;
-					} else if (temp >= flast[o]) {
-						f[o] = temp;
-						fpeak[o] = f[o];
-						fall[o] = 0;
+						if (temp < flast[o]) {
+							f[o] = fpeak[o] - (g * fall[o] * fall[o]);
+							fall[o]++;
+						} else if (temp >= flast[o]) {
+							f[o] = temp;
+							fpeak[o] = f[o];
+							fall[o] = 0;
+						}
+
+						flast[o] = f[o];
 					}
-
-					flast[o] = f[o];
 				}
 
 				// process [smoothing]: integral
-				for (o = 0; o < bands; o++) {
-					fmem[o] = fmem[o] * 0.70 + f[o];
-					f[o] = fmem[o];
+				if (integral > 0) {
+					for (o = 0; o < bands; o++) {
+						fmem[o] = fmem[o] * integral + f[o];
+						f[o] = fmem[o];
 
-					if (f[o] < 1)f[o] = 1;
+						if (f[o] < 1)f[o] = 1;
 
-					#ifdef DEBUG
-						mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
-						       lcf[o], hcf[o], peak[o], f[o]);
-					#endif
+						#ifdef DEBUG
+							mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
+										 lcf[o], hcf[o], peak[o], f[o]);
+						#endif
+					}
 				}
 
 			}
