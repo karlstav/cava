@@ -16,6 +16,10 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 Updates
 -------
 
+7/15/2015 - 0.3.1 - added config file
+
+7/12/2015 - 0.3.0 - Modular source code
+
 5/23/2015 - 0.2.0 - Switched to ncurses
 
 4/23/2015 - Fixed terminal window resizing, added smoothing 
@@ -27,7 +31,7 @@ Updates
 What it is
 ----------
 
-C.A.V.A. is a bar spectrum analyzer for audio using ALSA for input. Its frequency range is limited to 50-12,000Hz. I know that the human ear can hear from 20 up to 20,000 Hz (and probably "sense" even higher frequencies), but the frequencies between 50-12,000Hz seem to me to be the most distinguishable. (I believe telephones used to be limited to as low as 8kHz.)
+C.A.V.A. is a bar spectrum analyzer for audio using ALSA for input. Its frequency range is limited to 50-10,000Hz. I know that the human ear can hear from 20 up to 20,000 Hz (and probably "sense" even higher frequencies), but the frequencies between 50-12,000Hz seem to me to be the most distinguishable. (I believe telephones used to be limited to as low as 8kHz.)
 
 This program is not intended for scientific use.
 

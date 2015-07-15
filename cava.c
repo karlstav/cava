@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 	int mode = 1;
 	int modes = 3; // amount of smoothing modes
 	double monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
-	double integral = 0.7 * iniparser_getdouble(ini, "smoothing:integral", 1);
+	double integral = iniparser_getdouble(ini, "smoothing:integral", 0.7);
 	double gravity = iniparser_getdouble(ini, "smoothing:gravity", 1);
 	float fc[200];
 	float fr[200];
