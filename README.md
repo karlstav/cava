@@ -231,6 +231,7 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 | --- | ----------- |
 | <kbd>m</kbd> | Swtich between smoothing modes |
 | <kbd>up</kbd> / <kbd>down</kbd>| increase/decrease sensitivity |
+| <kbd>r</kbd> | Reload configuration |
 | <kbd>q</kbd> or <kbd>CTRL-C</kbd>| Quit C.A.V.A. |
 
 Configuration
@@ -258,9 +259,10 @@ Configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.confi
     foreground=blue
     
     [smoothing]
-    integral=1
+    integral=0.7
     monstercat=1
     gravity=1
+    ignore=0
     
     [eq]
     ; naming of keys doesn't matter
@@ -295,9 +297,10 @@ Configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.confi
 
 #### [smoothing]
 
-* `integral` sets the multiplier for the integral smoothing calculations. Default: `1`. Another example: `0.5`. Accepts only non-negative values.
+* `integral` sets the multiplier for the integral smoothing calculations. Default: `0.7`. Another example: `0.5`. Accepts only non-negative values.
 * `monstercat` disables or enables the so-called "Monstercat smoothing". Default: `1`. Accepts only `0` or `1`.
 * `gravity` sets the gravity multiplier. Default: `1`. Accepts only non-negative values.
+* `ignore` zeroes bars with height lower than this setting's value. Default: `0`. Accepts only non-negative values.
 
 #### [eq]
 
