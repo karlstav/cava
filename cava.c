@@ -21,6 +21,8 @@
 #include <time.h>
 #include <getopt.h>
 #include <pthread.h>
+#include "output/terminal_noncurses.h"
+#include "output/terminal_noncurses.c"
 #include "output/terminal_ncurses.h"
 #include "output/terminal_ncurses.c"
 #include "output/terminal_bcircle.h"
@@ -44,9 +46,10 @@ struct termios oldtio, newtio;
 int rc;
 
 // general: cleanup
-void cleanup()
+void cleanup(void)
 {
 	cleanup_terminal_ncurses();
+	cleanup_terminal_noncurses();
 }
 
 // general: handle signals
@@ -99,7 +102,7 @@ int main(int argc, char **argv)
 	pthread_t  p_thread;
 	int        thr_id GCC_UNUSED;
 	char *inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa");
-	char *outputMethod = (char *)iniparser_getstring(ini, "output:method", "terminal");
+	char *outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
 	char *modeString = (char *)iniparser_getstring(ini, "general:mode", "normal");
 	int im = 1;
 	int om = 1;
@@ -153,7 +156,7 @@ Visualize audio input in terminal. \n\
 Options:\n\
 	-b 1..(console columns/2-1) or 200  number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
 	-i 'input method'     method used for listening to audio, supports: 'alsa' and 'fifo'\n\
-	-o 'output method'      method used for outputting processed data, supports: 'terminal' and 'circle'\n\
+	-o 'output method'      method used for outputting processed data, supports: 'ncurses', 'noncurses' and 'circle'\n\
 	-d 'alsa device'      name of alsa capture device (default 'hw:1,1')\n\
 	-p 'fifo path'        path to fifo (default '/tmp/mpd.fifo')\n\
 	-c foreground color     supported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
@@ -259,8 +262,12 @@ Options:\n\
 	}
 
 	// validate: output method
-	if (strcmp(outputMethod, "terminal") == 0) om = 1;
+	if (strcmp(outputMethod, "ncurses") == 0) om = 1;
 	if (strcmp(outputMethod, "circle") == 0) om = 2;
+	if (strcmp(outputMethod, "noncurses") == 0) {
+		om = 3;
+		bgcol = 0;
+	}
 	if (om == 0) {  
 		fprintf(stderr,
 			"output method %s is not supported, supported methods are: 'terminal', 'circle'\n",
@@ -376,8 +383,15 @@ Options:\n\
 
 
 	//output: start ncurses mode
+	if (om == 1 || om ==  2) {
 	init_terminal_ncurses(col, bgcol);
+	}
 
+	//output: start noncurses mode
+	if (om == 3) {
+	get_terminal_dim_noncurses(&w, &h);  
+	init_terminal_noncurses(col, bgcol, w, h);
+	}
 
 
 	while  (1) {//jumbing back to this loop means that you resized the screen
@@ -398,7 +412,9 @@ Options:\n\
 		
 
 		// output: get terminal's geometry
-		get_terminal_dim_ncurses(&w, &h);   
+		if (om == 1 || om == 2) get_terminal_dim_ncurses(&w, &h);   
+
+		if (om == 3) get_terminal_dim_noncurses(&w, &h);  
 
 
 		if (bands > w / 2 - 1)bands = w / 2 -
@@ -441,8 +457,7 @@ Options:\n\
 			fr[n] = fc[n] / (audio.rate /
 											 2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
 			lcf[n] = fr[n] * (M /
-												4); //lfc stores the lower cut frequency foo each band in the fft out buffer
-
+												4); //lfc stores the lower cut frequency foo each band in the fft out buffer 
 			if (n != 0) {
 				hcf[n - 1] = lcf[n] - 1;
 				if (lcf[n] <= lcf[n - 1])lcf[n] = lcf[n - 1] +
@@ -450,26 +465,24 @@ Options:\n\
 				hcf[n - 1] = lcf[n] - 1;
 			}
 
-			#ifdef DEBUG
-						if (n != 0) {
+			#ifdef DEBUG 
+			 			if (n != 0) {
 							printw("%d: %f -> %f (%d -> %d) \n", n, fc[n - 1], fc[n], lcf[n - 1],
-										 hcf[n - 1]);
+					 				 hcf[n - 1]);
 						}
 			#endif
 		}
-
+	
 		// process: weigh signal to frequencies
 		for (n = 0; n < bands;
 			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000)) * smooth[(int)floor(((double)n) * smh)];
-																	 
-
-	
+											 
+   
 		// general: main loop
 		while  (1) {
 
-			// general: keyboard controls
-			
-			ch = getch();
+			// general: keyboard controls  	
+			if (om == 1 || om == 2) ch = getch();
 			switch (ch) {
 				case 65:    // key up
 					sens += 10;
@@ -625,6 +638,9 @@ Options:\n\
 						break;
 					case 2:
 						rc = draw_terminal_bcircle(virt, h, w, f);
+						break;
+					case 3:
+						rc = draw_terminal_noncurses(virt, h, w, bands, bw, rest, f, flastd);
 						break;
 				}
 

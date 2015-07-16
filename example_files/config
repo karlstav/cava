@@ -11,7 +11,7 @@
 ; source = hw:1,1 # ALSA device or FIFO path.
 
 [output]
-; method = terminal # may be terminal or circle.
+; method = ncurses # may be ncurses, noncurses or circle.
 
 [color]
 # supported colors are: red, green, yellow, magenta, cyan, white, blue, black.
