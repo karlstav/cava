@@ -111,6 +111,7 @@ int main(int argc, char **argv)
 	double monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
 	double integral = iniparser_getdouble(ini, "smoothing:integral", 0.7);
 	double gravity = iniparser_getdouble(ini, "smoothing:gravity", 1);
+	double ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
 	float fc[200];
 	float fr[200];
 	int lcf[200], hcf[200];
@@ -544,6 +545,7 @@ Options:\n\
 					peak[o] = peak[o] / (hcf[o]-lcf[o]+1); //getting average
 					temp = peak[o] * k[o] * ((float)sens / 100); //multiplying with k and adjusting to sens settings
 					if (temp > height * 8)temp = height * 8; //just in case
+					if (temp <= ignore)temp = 0;
 					f[o] = temp;
 
 					
