@@ -317,6 +317,13 @@ Options:\n\
 		gravity = 0;
 	}
 
+	// validate: integral
+	if (integral < 0) {
+		integral = 0;
+	} else if (integral > 1) {
+		integral = 0.99;
+	}
+
 	// read & validate: eq
 	smcount = iniparser_getsecnkeys(ini, "eq");
 	if (smcount > 0) {
