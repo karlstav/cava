@@ -45,6 +45,25 @@
 struct termios oldtio, newtio;
 int rc;
 
+char *inputMethod, *outputMethod, *modeString, *color, *bcolor;
+double monstercat, integral, gravity, ignore, smh;
+int fixedbands, sens, framerate;
+double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8, 
+					1, 1, 0.8, 0.6, 0.6, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8, 
+					0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 
+					0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 
+					0.7, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6};
+double *smooth = smoothDef;
+int smcount = 64;
+struct audio_data audio;
+int im = 1;
+int om = 1;
+int mode = 1;
+int col = 6;
+int bgcol = -1;
+int bands = 25;
+int autoband = 1;
+
 // general: cleanup
 void cleanup(void)
 {
@@ -63,8 +82,7 @@ void sig_handler(int sig_no)
 	raise(sig_no);
 }
 
-// general: entry point
-int main(int argc, char **argv)
+void load_config()
 {
 	// config: location
 	char *configFile = "config";
@@ -97,156 +115,33 @@ int main(int argc, char **argv)
 	// config: parse ini
 	dictionary* ini = iniparser_load(configPath);
 
-	// general: define variables
-	int M = 2048;
-	pthread_t  p_thread;
-	int        thr_id GCC_UNUSED;
-	char *inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa");
-	char *outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
-	char *modeString = (char *)iniparser_getstring(ini, "general:mode", "normal");
-	int im = 1;
-	int om = 1;
-	int mode = 1;
-	int modes = 3; // amount of smoothing modes
-	double monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
-	double integral = iniparser_getdouble(ini, "smoothing:integral", 0.7);
-	double gravity = iniparser_getdouble(ini, "smoothing:gravity", 1);
-	double ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
-	float fc[200];
-	float fr[200];
-	int lcf[200], hcf[200];
-	int f[200];
-	int fmem[200];
-	int flast[200];
-	int flastd[200];
-	float peak[201];
-	int y[M / 2 + 1];
-	long int lpeak, hpeak;
-	int bands = 25;
-	int sleep = 0;
-	int i, n, o, bw, height, h, w, c, rest, virt;
-	int fixedbands = iniparser_getint(ini, "general:bars", 0);
-	int autoband = 1;
-	float temp;
-	double in[2 * (M / 2 + 1)];
-	fftw_complex out[M / 2 + 1][2];
-	fftw_plan p;
-	char *color = (char *)iniparser_getstring(ini, "color:foreground", "default");;
-	char *bcolor = (char *)iniparser_getstring(ini, "color:background", "default");;
-	int col = 6;
-	int bgcol = -1;
-	int sens = iniparser_getint(ini, "general:sensitivity", 100);
-	int fall[200];
-	float fpeak[200];
-	float k[200];
-	float g;
-	double smh;
-	int framerate = iniparser_getint(ini, "general:framerate", 60);
-	double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8, 
-						1, 1, 0.8, 0.6, 0.6, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8, 
-						0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 
-						0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 
-						0.7, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6};
-	double *smooth = smoothDef;
-	int smcount = 64;
-	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
-	char *usage = "\n\
-Usage : " PACKAGE " [options]\n\
-Visualize audio input in terminal. \n\
-\n\
-Options:\n\
-	-b 1..(console columns/2-1) or 200  number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
-	-i 'input method'     method used for listening to audio, supports: 'alsa' and 'fifo'\n\
-	-o 'output method'      method used for outputting processed data, supports: 'ncurses', 'noncurses' and 'circle'\n\
-	-d 'alsa device'      name of alsa capture device (default 'hw:1,1')\n\
-	-p 'fifo path'        path to fifo (default '/tmp/mpd.fifo')\n\
-	-c foreground color     supported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
-	-C background color     supported colors: same as above (default: no change)\n\
-	-s sensitivity        sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...\n\
-	-f framerate        FPS limit, if you are experiencing high CPU usage, try reducing this (default: 60)\n\
-	-m mode         set mode (normal, scientific, waves)\n\
-	-h          print the usage\n\
-	-v          print version\n\
-\n";
-	char ch;
-	struct audio_data audio;
-
-	audio.format = -1;
-	audio.rate = 0;
-	audio.source = "hw:1,1";
-	
-	setlocale(LC_ALL, "");
-
-		
+	inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa");
+	outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
+	modeString = (char *)iniparser_getstring(ini, "general:mode", "normal");
+	monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
+	integral = iniparser_getdouble(ini, "smoothing:integral", 0.7);
+	gravity = iniparser_getdouble(ini, "smoothing:gravity", 1);
+	ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
+	color = (char *)iniparser_getstring(ini, "color:foreground", "default");;
+	bcolor = (char *)iniparser_getstring(ini, "color:background", "default");;
+	fixedbands = iniparser_getint(ini, "general:bars", 0);
+	sens = iniparser_getint(ini, "general:sensitivity", 100);
+	framerate = iniparser_getint(ini, "general:framerate", 60);
 
 
-	for (i = 0; i < M; i++)audio.audio_out[i] = 0;
-
-	// general: handle Ctrl+C
-	struct sigaction action;
-	memset(&action, 0, sizeof(action));
-	action.sa_handler = &sig_handler;
-	sigaction(SIGINT, &action, NULL);
-	sigaction(SIGTERM, &action, NULL);
-
-
-	// general: handle command-line arguments
-	while ((c = getopt (argc, argv, "p:i:o:m:b:d:s:f:c:C:hv")) != -1) {
-		switch (c) {
-			case 'i': // argument: input method
-				im = 0;
-				inputMethod = optarg;
-				break;
-			case 'p': // argument: fifo path
-				audio.source = optarg;
-				break;
-			case 'o': // argument: output method
-				om = 0;
-				outputMethod = optarg;
-				break;
-			case 'm': // argument: smoothing mode
-				mode = 0;
-				modeString = optarg;
-				break;
-			case 'b': // argument: bar count
-				fixedbands = atoi(optarg);
-				break;
-			case 'd': // argument: alsa device
-				audio.source  = optarg;
-				break;
-			case 's': // argument: sensitivity
-				sens = atoi(optarg);
-				break;
-			case 'f': // argument: framerate
-				framerate = atoi(optarg);
-				break;
-			case 'c': // argument: foreground color
-				col = -2;
-				color = optarg;
-				break;
-			case 'C': // argument: background color
-				bgcol = -2;
-				bcolor = optarg;
-				break;
-			case 'h': // argument: print usage  
-				printf ("%s", usage);       
-				return 0;
-			case '?': // argument: print usage  
-				printf ("%s", usage);
-				return 1;
-			case 'v': // argument: print version
-				printf (PACKAGE " " VERSION "\n");
-				return 0;
-			default:  // argument: no arguments; exit
-				abort ();
+	smcount = iniparser_getsecnkeys(ini, "eq");
+	if (smcount > 0) {
+		smooth = malloc(smcount*sizeof(*smooth));
+		const char *keys[smcount];
+		iniparser_getseckeys(ini, "eq", keys); 
+		for (int sk = 0; sk < smcount; sk++) {
+			smooth[sk] = iniparser_getdouble(ini, keys[sk], 1);
 		}
-
-		n = 0;
+	} else {
+		smcount = 64; //back to the default one
 	}
 
-	// config: validate
-
-	// validate: input
+	// config: input
 	if (strcmp(inputMethod, "alsa") == 0) {
 		im = 1;
 		audio.source = (char *)iniparser_getstring(ini, "input:source", "hw:1,1");
@@ -255,6 +150,11 @@ Options:\n\
 		im = 2;
 		audio.source = (char *)iniparser_getstring(ini, "input:source", "/tmp/mpd.fifo");
 	}
+}
+
+void validate_config()
+{
+	// validate: input method
 	if (im == 0) {  
 		fprintf(stderr,
 			"input method %s is not supported, supported methods are: 'alsa' and 'fifo'\n",
@@ -333,17 +233,134 @@ Options:\n\
 	}
 
 	// read & validate: eq
-	smcount = iniparser_getsecnkeys(ini, "eq");
-	if (smcount > 0) {
-		smooth = malloc(smcount*sizeof(*smooth));
-		const char *keys[smcount];
-		iniparser_getseckeys(ini, "eq", keys); 
-		for (int sk = 0; sk < smcount; sk++) {
-			smooth[sk] = iniparser_getdouble(ini, keys[sk], 1);
+}
+
+// general: entry point
+int main(int argc, char **argv)
+{
+	load_config();
+
+	// general: define variables
+	int M = 2048;
+	pthread_t  p_thread;
+	int        thr_id GCC_UNUSED;
+	int modes = 3; // amount of smoothing modes
+	float fc[200];
+	float fr[200];
+	int lcf[200], hcf[200];
+	int f[200];
+	int fmem[200];
+	int flast[200];
+	int flastd[200];
+	float peak[201];
+	int y[M / 2 + 1];
+	long int lpeak, hpeak;
+	int sleep = 0;
+	int i, n, o, bw, height, h, w, c, rest, virt;
+	float temp;
+	double in[2 * (M / 2 + 1)];
+	fftw_complex out[M / 2 + 1][2];
+	fftw_plan p;
+	int cont = 1;
+	int fall[200];
+	float fpeak[200];
+	float k[200];
+	float g;
+	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
+	char *usage = "\n\
+Usage : " PACKAGE " [options]\n\
+Visualize audio input in terminal. \n\
+\n\
+Options:\n\
+	-b 1..(console columns/2-1) or 200  number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
+	-i 'input method'     method used for listening to audio, supports: 'alsa' and 'fifo'\n\
+	-o 'output method'      method used for outputting processed data, supports: 'ncurses', 'noncurses' and 'circle'\n\
+	-d 'alsa device'      name of alsa capture device (default 'hw:1,1')\n\
+	-p 'fifo path'        path to fifo (default '/tmp/mpd.fifo')\n\
+	-c foreground color     supported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
+	-C background color     supported colors: same as above (default: no change)\n\
+	-s sensitivity        sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...\n\
+	-f framerate        FPS limit, if you are experiencing high CPU usage, try reducing this (default: 60)\n\
+	-m mode         set mode (normal, scientific, waves)\n\
+	-h          print the usage\n\
+	-v          print version\n\
+\n";
+	char ch;
+
+	audio.format = -1;
+	audio.rate = 0;
+	
+	setlocale(LC_ALL, "");
+
+		
+
+
+	for (i = 0; i < M; i++)audio.audio_out[i] = 0;
+
+	// general: handle Ctrl+C
+	struct sigaction action;
+	memset(&action, 0, sizeof(action));
+	action.sa_handler = &sig_handler;
+	sigaction(SIGINT, &action, NULL);
+	sigaction(SIGTERM, &action, NULL);
+
+
+	// general: handle command-line arguments
+	while ((c = getopt (argc, argv, "p:i:o:m:b:d:s:f:c:C:hv")) != -1) {
+		switch (c) {
+			case 'i': // argument: input method
+				im = 0;
+				inputMethod = optarg;
+				break;
+			case 'p': // argument: fifo path
+				audio.source = optarg;
+				break;
+			case 'o': // argument: output method
+				om = 0;
+				outputMethod = optarg;
+				break;
+			case 'm': // argument: smoothing mode
+				mode = 0;
+				modeString = optarg;
+				break;
+			case 'b': // argument: bar count
+				fixedbands = atoi(optarg);
+				break;
+			case 'd': // argument: alsa device
+				audio.source  = optarg;
+				break;
+			case 's': // argument: sensitivity
+				sens = atoi(optarg);
+				break;
+			case 'f': // argument: framerate
+				framerate = atoi(optarg);
+				break;
+			case 'c': // argument: foreground color
+				col = -2;
+				color = optarg;
+				break;
+			case 'C': // argument: background color
+				bgcol = -2;
+				bcolor = optarg;
+				break;
+			case 'h': // argument: print usage  
+				printf ("%s", usage);       
+				return 0;
+			case '?': // argument: print usage  
+				printf ("%s", usage);
+				return 1;
+			case 'v': // argument: print version
+				printf (PACKAGE " " VERSION "\n");
+				return 0;
+			default:  // argument: no arguments; exit
+				abort ();
 		}
-	} else {
-		smcount = 64; //back to the default one
+
+		n = 0;
 	}
+
+	// config: validate
+	validate_config();
 
 	// input: wait for the input to be ready
 	if (im == 1) {
@@ -478,9 +495,9 @@ Options:\n\
 		for (n = 0; n < bands;
 			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000)) * smooth[(int)floor(((double)n) * smh)];
 											 
-   
+   	cont = 1;
 		// general: main loop
-		while  (1) {
+		while  (cont) {
 
 			// general: keyboard controls  	
 			if (om == 1 || om == 2) ch = getch();
@@ -501,6 +518,11 @@ Options:\n\
 					} else {
 						mode++;
 					}
+					break;
+				case 'r': //reload config
+					load_config();
+					validate_config();
+					cont = 0;
 					break;
 				case 'q':
 					cleanup();
