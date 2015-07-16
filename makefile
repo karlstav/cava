@@ -13,7 +13,7 @@ INSTALL_BIN = $(INSTALL) -D -m 755
 PREFIX ?= /usr/local
 BINDIR  = $(DESTDIR)/$(PREFIX)/bin
 
-CONFIGDIR = $(XDG_CONFIG_HOME)/cava/config
+CONFIGDIR = $(XDG_CONFIG_HOME)/cava
 
 debug ?= 0
 
@@ -30,11 +30,12 @@ iniparser:
 
 check-env:
 ifndef XDG_CONFIG_HOME
-    CONFIGDIR = $(HOME)/.config/cava/config 
+    CONFIGDIR = $(HOME)/.config/cava
 endif
 
 copyconf:
-	cp -n example_files/config $(CONFIGDIR)  
+	mkdir -p $(CONFIGDIR)
+	cp -n example_files/config $(CONFIGDIR)/config
 
 install: all
 	$(INSTALL_BIN) cava $(BINDIR)/cava
