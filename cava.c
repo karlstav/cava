@@ -557,6 +557,7 @@ Options:\n\
 
 				// process: separate frequency bands
 				for (o = 0; o < bands; o++) {
+					flastd[o] = f[o]; //saving last value for drawing
 					peak[o] = 0;
 
 					// process: get peaks
@@ -570,7 +571,7 @@ Options:\n\
 					if (temp <= ignore)temp = 0;
 					f[o] = temp;
 
-					
+				
 				}
 
 			} else { //**if in sleep mode wait and continue**//

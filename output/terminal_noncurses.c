@@ -96,24 +96,29 @@ int draw_terminal_noncurses(int virt, int h, int w, int bands, int bw, int rest,
 		move = rest; //center adjustment
 		for (o = 0; o < bands; o++) {
 
+
 			// output: draw and move to another one, check whether we're not too far
 
 			if (f[o] != flastd[o]) { //change?
 				if (move != 0)printf("\033[%dC", move);
 				move = 0;
+
 				c = f[o] - n * 8;
 
-				for (i = 0; i < bw; i++) {
-					if (c < 1) {
-						printf(" "); //blank
-					} else if (c > 7) {
-						if (virt == 0) printf("%d", 8); //  block tty
-						else printf("\u2588"); //block
-					} else { 
-						if (virt == 0) printf("%d", c); // fractioned block tty
-						else printf("%lc", L'\u2580' + c); // fractioned block vt
-					}
+				 
+				if (c < 1) {
+					if (f[o] < flastd[o]) for (i = 0; i < bw; i++) printf(" "); //blank
+					else move += bw;
+				} else if (c > 7) {
+					if (f[o] > flastd[o]) {
+						if (virt == 0) for (i = 0; i < bw; i++) printf("%d", 8); //  block tty
+						else for (i = 0; i < bw; i++) printf("\u2588"); //block
+					} else move += bw;
+				} else { 
+					if (virt == 0) for (i = 0; i < bw; i++)  printf("%d", c); // fractioned block tty
+					else for (i = 0; i < bw; i++) printf("%lc", L'\u2580' + c); // fractioned block vt
 				}
+				
 				
 
 			} else move += bw; //no change, moving along
