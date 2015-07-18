@@ -9,7 +9,7 @@ int init_terminal_ncurses(int col, int bgcol) {
 	curs_set(0);
 	timeout(0);
 	noecho();
-	start_color();			
+	start_color();
 	use_default_colors();
 	init_pair(1, col, bgcol);
 	if(bgcol != -1)
@@ -35,8 +35,8 @@ int draw_terminal_ncurses(int virt, int h, int w, int bands, int bw, int rest, i
 	// output: check if terminal has been resized
 	if (virt != 0) {
 		if ( LINES != h || COLS != w) {
-			return -1;					
-		} 
+			return -1;
+		}
 	}
 
 	h = h - 1;
@@ -57,7 +57,7 @@ int draw_terminal_ncurses(int virt, int h, int w, int bands, int bw, int rest, i
 				else for (q = 0; q < bw; q++) mvaddwstr((h - f[i] / 8), (i * bw) + q + i + rest, bars[(f[i] % 8) - 1]);
 			}
 		}
-		flastd[i] = f[i]; //memmory for falloff func	
+		flastd[i] = f[i]; //memmory for falloff func
 	}
 
 	refresh();

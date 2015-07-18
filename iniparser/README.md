@@ -1,3 +1,18 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Iniparser 4](#iniparser-4)
+  - [I - Overview](#i---overview)
+  - [II - Building project](#ii---building-project)
+  - [III - License](#iii---license)
+  - [IV - Versions](#iv---versions)
+  - [V - FAQ](#v---faq)
+    - [Is Iniparser thread safe ?](#is-iniparser-thread-safe-)
+    - [Your build system isn't portable, let me help you...](#your-build-system-isnt-portable-let-me-help-you)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 [![Build Status](https://travis-ci.org/ndevilla/iniparser.svg?branch=master)](https://travis-ci.org/ndevilla/iniparser)
 
 # Iniparser 4 #

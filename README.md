@@ -11,10 +11,46 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 
 [Demo video](http://youtu.be/vA4RyatP064) (old)
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [C.A.V.A. ](#cava)
+  - [Updates](#updates)
+  - [What it is](#what-it-is)
+  - [Build requirements](#build-requirements)
+  - [Getting started](#getting-started)
+    - [Installing](#installing)
+    - [Uninstalling](#uninstalling)
+  - [Capturing audio](#capturing-audio)
+    - [Straight from output](#straight-from-output)
+      - [PulseAudio (easy)](#pulseaudio-easy)
+      - [ALSA (hard)](#alsa-hard)
+    - [From mpd's fifo output](#from-mpds-fifo-output)
+  - [Running via ssh](#running-via-ssh)
+  - [Font notes](#font-notes)
+    - [In ttys](#in-ttys)
+    - [In terminal emulators](#in-terminal-emulators)
+  - [Latency notes](#latency-notes)
+  - [Usage](#usage)
+    - [Controls](#controls)
+  - [Configuration](#configuration)
+    - [Example file:](#example-file)
+    - [Sections:](#sections)
+      - [[general]](#general)
+      - [[input]](#input)
+      - [[output]](#output)
+      - [[color]](#color)
+      - [[smoothing]](#smoothing)
+      - [[eq]](#eq)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 
 Updates
 -------
+
+7/16/2015 - 0.3.2 - added legacy ouput mode 'noncurses', for people experiencing issues with ncurses
 
 7/15/2015 - 0.3.1 - added config file
 
@@ -210,7 +246,7 @@ Usage
     Options:
         -b 1..(console columns/2-1) or 200  number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)
         -i 'input method'           method used for listnening to audio, supports: 'alsa' and 'fifo'
-        -o 'output method'          method used for outputting processed data, only supports 'terminal'
+        -o 'output method'          method used for outputting processed data, supports: 'ncurses', 'noncurses' and 'circle'
         -d 'alsa device'            name of alsa capture device (default 'hw:1,1')
         -p 'fifo path'              path to fifo (default '/tmp/mpd.fifo')
         -c foreground color         suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)

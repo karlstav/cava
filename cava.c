@@ -103,10 +103,9 @@ void load_config()
 			}
 		}
 	}
-
 	// config: create directory
 	mkdir(configPath, 0777);
-	
+
 	// config: create empty file
 	strcat(configPath, configFile);
 	FILE *fp = fopen(configPath, "ab+");
@@ -155,7 +154,7 @@ void load_config()
 void validate_config()
 {
 	// validate: input method
-	if (im == 0) {  
+	if (im == 0) {
 		fprintf(stderr,
 			"input method %s is not supported, supported methods are: 'alsa' and 'fifo'\n",
 						inputMethod);
@@ -169,7 +168,7 @@ void validate_config()
 		om = 3;
 		bgcol = 0;
 	}
-	if (om == 0) {  
+	if (om == 0) {
 		fprintf(stderr,
 			"output method %s is not supported, supported methods are: 'terminal', 'circle'\n",
 						outputMethod);
@@ -184,7 +183,7 @@ void validate_config()
 	if (strcmp(modeString, "normal") == 0) mode = 1;
 	if (strcmp(modeString, "scientific") == 0) mode = 2;
 	if (strcmp(modeString, "waves") == 0) mode = 3;
-	if (mode == 0) {  
+	if (mode == 0) {
 		fprintf(stderr,
 			"smoothing mode %s is not supported, supported modes are: 'normal', 'scientific', 'waves'\n",
 						modeString);
@@ -192,7 +191,7 @@ void validate_config()
 	}
 
 	// validate: framerate
-	if (framerate < 0) {  
+	if (framerate < 0) {
 		fprintf(stderr,
 			"framerate can't be negative!\n");
 		exit(EXIT_FAILURE);
@@ -289,11 +288,8 @@ Options:\n\
 
 	audio.format = -1;
 	audio.rate = 0;
-	
+
 	setlocale(LC_ALL, "");
-
-		
-
 
 	for (i = 0; i < M; i++)audio.audio_out[i] = 0;
 
@@ -343,10 +339,10 @@ Options:\n\
 				bgcol = -2;
 				bcolor = optarg;
 				break;
-			case 'h': // argument: print usage  
-				printf ("%s", usage);       
+			case 'h': // argument: print usage
+				printf ("%s", usage);
 				return 0;
-			case '?': // argument: print usage  
+			case '?': // argument: print usage
 				printf ("%s", usage);
 				return 1;
 			case 'v': // argument: print version
@@ -381,7 +377,7 @@ Options:\n\
 			}
 		}
 	#ifdef DEBUG
-		printf("got format: %d and rate %d\n", format, rate); 
+		printf("got format: %d and rate %d\n", format, rate);
 	#endif
 
 	}
@@ -405,11 +401,6 @@ Options:\n\
 	init_terminal_ncurses(col, bgcol);
 	}
 
-	//output: start noncurses mode
-	if (om == 3) {
-	get_terminal_dim_noncurses(&w, &h);  
-	init_terminal_noncurses(col, bgcol, w, h);
-	}
 
 
 	while  (1) {//jumbing back to this loop means that you resized the screen
@@ -421,18 +412,17 @@ Options:\n\
 			fmem[i] = 0;
 		}
 
-	
-	
+
 		//getting orignial numbers of bands incase of resize
 		if (autoband == 1)  {
 			bands = 25;
 		} else bands = fixedbands;
-		
+
 
 		// output: get terminal's geometry
-		if (om == 1 || om == 2) get_terminal_dim_ncurses(&w, &h);   
+		if (om == 1 || om == 2) get_terminal_dim_ncurses(&w, &h);
 
-		if (om == 3) get_terminal_dim_noncurses(&w, &h);  
+		if (om == 3) get_terminal_dim_noncurses(&w, &h);
 
 
 		if (bands > w / 2 - 1)bands = w / 2 -
@@ -459,14 +449,18 @@ Options:\n\
 		if (rest < 0)rest = 0;
 
 		if ((smcount > 0) && (bands > 0)) {
-			smh = (double)(((double)smcount)/((double)bands));	
+			smh = (double)(((double)smcount)/((double)bands));
 		}
+
 
 		#ifdef DEBUG
 			printw("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
 						 w,
 						 h, bands, bw, rest);
 		#endif
+
+		//output: start noncurses mode
+		if (om == 3) init_terminal_noncurses(col, bgcol, w, h, bw);
 
 		// process: calculate cutoff frequencies
 		for (n = 0; n < bands + 1; n++) {
@@ -475,7 +469,7 @@ Options:\n\
 			fr[n] = fc[n] / (audio.rate /
 											 2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
 			lcf[n] = fr[n] * (M /
-												4); //lfc stores the lower cut frequency foo each band in the fft out buffer 
+												4); //lfc stores the lower cut frequency foo each band in the fft out buffer
 			if (n != 0) {
 				hcf[n - 1] = lcf[n] - 1;
 				if (lcf[n] <= lcf[n - 1])lcf[n] = lcf[n - 1] +
@@ -490,16 +484,16 @@ Options:\n\
 						}
 			#endif
 		}
-	
+
 		// process: weigh signal to frequencies
 		for (n = 0; n < bands;
 			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000)) * smooth[(int)floor(((double)n) * smh)];
-											 
-   	cont = 1;
+
+	   	cont = 1;
 		// general: main loop
 		while  (cont) {
 
-			// general: keyboard controls  	
+			// general: keyboard controls
 			if (om == 1 || om == 2) ch = getch();
 			switch (ch) {
 				case 65:    // key up
@@ -528,7 +522,7 @@ Options:\n\
 					cleanup();
 					return EXIT_SUCCESS;
 			}
-		
+
 
 
 			#ifdef DEBUG
@@ -571,7 +565,6 @@ Options:\n\
 					if (temp <= ignore)temp = 0;
 					f[o] = temp;
 
-				
 				}
 
 			} else { //**if in sleep mode wait and continue**//
@@ -591,7 +584,7 @@ Options:\n\
 				int z;
 
 				// process [smoothing]: monstercat-style "average"
-				
+
 				int m_y, de;
 				if (mode == 3) {
 					for (z = 0; z < bands; z++) { // waves
@@ -670,10 +663,10 @@ Options:\n\
 				}
 
 				if (rc == -1) break; //terminal has been resized breaking to recalibrating values
-			
+
 				if (framerate <= 1) {
 					req.tv_sec = 1  / (float)framerate;
-				} else { 
+				} else {
 					req.tv_sec = 0;
 					req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
 				}
