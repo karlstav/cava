@@ -67,7 +67,7 @@ Updates
 What it is
 ----------
 
-C.A.V.A. is a bar spectrum analyzer for audio using ALSA for input. Its frequency range is limited to 50-10,000Hz. I know that the human ear can hear from 20 up to 20,000 Hz (and probably "sense" even higher frequencies), but the frequencies between 50-12,000Hz seem to me to be the most distinguishable. (I believe telephones used to be limited to as low as 8kHz.)
+C.A.V.A. is a bar spectrum analyzer for audio using ALSA for input. Its frequency range is limited to 50-10,000Hz. I know that the human ear can hear from 20 up to 20,000 Hz (and probably "sense" even higher frequencies), but the frequencies between 50-10,000Hz seem to me to be the most distinguishable. (I believe telephones used to be limited to as low as 8kHz.)
 
 This program is not intended for scientific use.
 
@@ -145,7 +145,7 @@ To create a loopback interface simply run:
 
 Hopefully your `aplay -l` should now contain a loopback interface.
 
-To make it presistent across boot add the line `snd-aloop` to "/etc/modules". To keep it form beeing loaded as the first soundcard add the line `options snd-aloop index=1` to "/etc/modprobe.d/alsa-base.conf", this will load is at '1' which is what cave uses as default. 
+To make it presistent across boot add the line `snd-aloop` to "/etc/modules". To keep it form beeing loaded as the first soundcard add the line `options snd-aloop index=1` to "/etc/modprobe.d/alsa-base.conf", this will load it at '1' which is what cava uses as default. You can replace '1' with whatever makes most senes in your audio setup, but then cava must be specified to use that index. Simply pass the -d argument or alter the config file with the loopback interface index.
 
 Playing the audio through your Loopback interface makes it possible for cava to to capture it, but there will be no sound in your speakers. :(
 
@@ -157,16 +157,14 @@ To `/etc/pulse/default.pa`, add the line `load-module module-combine-sink` (in P
 
 PulseAudio setup can also be done in paprefs (Debian: `sudo apt-get install paprefs && paprefs`): In the far right tab check the box "Simultaneous Output".
 
-An extra Output should appear in your sound options called "Simultaneous output to..." Note that when using this method if you turn down the volume on the Simultaneous output, this will effect the visualizer. To avoid this, select the actual output, then turn down the volume, then select the Simultaneous output again.
+An extra Output should appear in your sound options called "Simultaneous output to..." Note that when using this method if you turn down the volume on the Simultaneous output, this will effect the visualizer. To avoid this, select the actual output, turn down the volume, then select the Simultaneous output again.
 
 
 #### ALSA (hard)
 
-Look at the inculded example file `example_files/etc/asound.conf`. I was able to make this work on my laptop an Asus UX31 running Elementary OS. I had no luck with the ALSA method on my Rasberry PI with an USB DAC runnig Rasbian. The PulseAudio method however works perfectly on my PI.
+Look at the inculded example file `example_files/etc/asound.conf`. I was able to make this work on my laptop (an Asus UX31 running Elementary OS). I had no luck with the ALSA method on my Rasberry PI (Rasbian) with an USB DAC. The PulseAudio method however works perfectly on my PI.
 
 Read more about the ALSA method [here](http://stackoverflow.com/questions/12984089/capture-playback-on-play-only-sound-card-with-alsa).
-
-Cava defaults to using the ALSA device `hw:1,1`. If your loopback interface is not on that index, or you want to capture audio from somewhere else, simply pass the `-d` flag with the target.
 
 
 ### From mpd's fifo output
