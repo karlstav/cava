@@ -154,6 +154,12 @@ void load_config()
 void validate_config()
 {
 	// validate: input method
+	if (strcmp(inputMethod, "alsa") == 0) {
+		im = 1;
+	}
+	if (strcmp(inputMethod, "fifo") == 0) {
+		im = 2;
+	}
 	if (im == 0) {
 		fprintf(stderr,
 			"input method %s is not supported, supported methods are: 'alsa' and 'fifo'\n",
