@@ -23,7 +23,7 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
     - [Installing](#installing)
     - [Uninstalling](#uninstalling)
   - [Capturing audio](#capturing-audio)
-    - [Straight from output](#straight-from-output)
+    - [From loopback device](#from-loopback-device)
       - [PulseAudio (easy)](#pulseaudio-easy)
       - [ALSA (hard)](#alsa-hard)
     - [From mpd's fifo output](#from-mpds-fifo-output)
@@ -135,7 +135,7 @@ Or:
 Capturing audio
 ---------------
 
-### Straight from output
+### From loopback device
 
 If you want to capture audio straight fom the output (not just mic or line-in), you must create an ALSA loopback interface, then output the audio simultaneously to both the loopback and your normal interface.
 
@@ -153,6 +153,8 @@ Not to worry! There are (at least) two ways of sending the audio output to the l
 
 #### PulseAudio (easy)
 
+First create the loopback device as explained in the section above.
+
 To `/etc/pulse/default.pa`, add the line `load-module module-combine-sink` (in PulseAudio versions <1.0, the module was only called `module-combine`). Then restart PulseAudio. For some reason, I had to turn off realtime scheduling for this to work on a Raspberry Pi (set `realtime-scheduling = no` in `/etc/pulse/daemon.conf`).
 
 PulseAudio setup can also be done in paprefs (Debian: `sudo apt-get install paprefs && paprefs`): In the far right tab check the box "Simultaneous Output".
@@ -161,6 +163,8 @@ An extra Output should appear in your sound options called "Simultaneous output 
 
 
 #### ALSA (hard)
+
+First create the loopback device as explained in the section above.
 
 Look at the inculded example file `example_files/etc/asound.conf`. I was able to make this work on my laptop (an Asus UX31 running Elementary OS). I had no luck with the ALSA method on my Rasberry PI (Rasbian) with an USB DAC. The PulseAudio method however works perfectly on my PI.
 
