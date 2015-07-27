@@ -21,11 +21,11 @@ ifeq ($(debug),1)
 CPPFLAGS += -DDEBUG
 endif
 
-all: iniparser cava check-env copyconf
+all: cava check-env copyconf
 
-cava: cava.c
+cava: cava.c ./iniparser/libiniparser.a
 
-iniparser:
+iniparser/libiniparser.a:
 	cd iniparser && $(MAKE)
 
 check-env:
@@ -47,4 +47,4 @@ clean:
 	cd iniparser && $(MAKE) clean
 	$(RM) cava
 
-.PHONY: iniparser all clean install uninstall
+.PHONY: all clean install uninstall
