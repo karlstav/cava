@@ -416,6 +416,7 @@ Options:\n\
 			fall[i] = 0;
 			fpeak[i] = 0;
 			fmem[i] = 0;
+			f[i] = 0;
 		}
 
 
