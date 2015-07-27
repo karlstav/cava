@@ -93,11 +93,11 @@ void* input_alsa(void* data)
 		//sorting out one channel and only biggest octet
 		n = 0; //frame counter
 		for (i = 0; i < size ; i = i + (ladj) * 2) {
-			
+
 			//first channel
 			tempr = ((buffer[i + (radj) - 1 ] <<
 			          2)); //using the 10 upper bits this would give me a vert res of 1024, enough...
-			
+
 			lo = ((buffer[i + (radj) - 2] >> 6));
 			if (lo < 0)lo = abs(lo) + 1;
 			if (tempr >= 0)tempr = tempr + lo;
