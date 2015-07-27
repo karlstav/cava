@@ -15,7 +15,7 @@ int init_terminal_bcircle(int col, int bgcol) {
   curs_set(0);
   timeout(0);
   noecho();
-  start_color();      
+  start_color();
   use_default_colors();
   init_pair(1, col, bgcol);
   if(bgcol != -1)
@@ -40,8 +40,8 @@ int draw_terminal_bcircle(int virt, int h, int w, int f[200]) {
   // output: check if terminal has been resized
   if (virt != 0) {
     if ( LINES != h || COLS != w) {
-      return -1;          
-    } 
+      return -1;
+    }
   }
 
   float deg, width, height;
@@ -56,7 +56,7 @@ int draw_terminal_bcircle(int virt, int h, int w, int f[200]) {
   ox = COLS/2 - width/2;
   for (x = 0; x < COLS; x++) {
     for (y = 0; y < LINES; y++) {
-      mvaddstr(y,x," ");  
+      mvaddstr(y,x," ");
     }
   }
   /* Draw circle */

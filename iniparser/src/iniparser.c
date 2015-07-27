@@ -604,7 +604,7 @@ static line_status iniparser_line(
         strstrip(key);
         strlwc(key, key, len);
         strstrip(value);
-        
+
         sta = LINE_VALUE ;
     } else if (sscanf(line, "%[^=] = %[;#]", key, value)==2
            ||  sscanf(line, "%[^=] %[=]", key, value) == 2) {

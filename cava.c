@@ -48,10 +48,10 @@ int rc;
 char *inputMethod, *outputMethod, *modeString, *color, *bcolor;
 double monstercat, integral, gravity, ignore, smh;
 int fixedbands, sens, framerate;
-double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8, 
-					1, 1, 0.8, 0.6, 0.6, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8, 
-					0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 
-					0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 
+double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8,
+					1, 1, 0.8, 0.6, 0.6, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8,
+					0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8,
+					0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8,
 					0.7, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6};
 double *smooth = smoothDef;
 int smcount = 64;
@@ -132,7 +132,7 @@ void load_config()
 	if (smcount > 0) {
 		smooth = malloc(smcount*sizeof(*smooth));
 		const char *keys[smcount];
-		iniparser_getseckeys(ini, "eq", keys); 
+		iniparser_getseckeys(ini, "eq", keys);
 		for (int sk = 0; sk < smcount; sk++) {
 			smooth[sk] = iniparser_getdouble(ini, keys[sk], 1);
 		}
@@ -441,7 +441,7 @@ Options:\n\
 
 		bw = (w - bands - 1) / bands;
 
-		if (bw < 1) bw = 1; //bars must have width	
+		if (bw < 1) bw = 1; //bars must have width
 
 		// process [smoothing]: calculate gravity
 		g = gravity * ((float)height / 270) * pow((60 / (float)framerate), 2.5);
@@ -484,7 +484,7 @@ Options:\n\
 				hcf[n - 1] = lcf[n] - 1;
 			}
 
-			#ifdef DEBUG 
+			#ifdef DEBUG
 			 			if (n != 0) {
 							printw("%d: %f -> %f (%d -> %d) \n", n, fc[n - 1], fc[n], lcf[n - 1],
 					 				 hcf[n - 1]);
@@ -650,7 +650,7 @@ Options:\n\
 						#endif
 					}
 				}
-				
+
 				// zero values causes divided by zero segfault.
 				for (o = 0; o < bands; o++) {
 					if (f[o] < 1)f[o] = 1;
