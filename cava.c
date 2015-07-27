@@ -644,13 +644,16 @@ Options:\n\
 						fmem[o] = fmem[o] * integral + f[o];
 						f[o] = fmem[o];
 
-						if (f[o] < 1)f[o] = 1;
-
 						#ifdef DEBUG
 							mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
 										 lcf[o], hcf[o], peak[o], f[o]);
 						#endif
 					}
+				}
+				
+				// zero values causes divided by zero segfault.
+				for (o = 0; o < bands; o++) {
+					if (f[o] < 1)f[o] = 1;
 				}
 
 			}
