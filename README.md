@@ -113,7 +113,7 @@ For example, turning on debugging messages:
 
     make debug=1
 
-### Installing
+### Installing manually
 
 Install `cava` to default `/usr/local`:
 
@@ -131,6 +131,14 @@ Or:
 
     make PREFIX=$HOME/.local uninstall
 
+### openSUSE
+
+On openSUSE you need to add jubalh's home repository to install cava via zypper. For example for Tumbleweed do:
+
+    zypper ar -f http://download.opensuse.org/repositories/home:/jubalh/openSUSE_Tumbleweed/home:jubalh.repo
+	zypper in cava
+
+If you use 13.2 or 13.1 just replace *openSUSE_Tumbleweed* with *openSUSE_13.2*, adjust it to your version.
 
 Capturing audio
 ---------------
