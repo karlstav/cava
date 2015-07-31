@@ -2,8 +2,8 @@ PACKAGE ?= cava
 VERSION ?= $(shell git describe --always --tags --dirty)
 
 CC       = gcc
-CFLAGS   = -std=c99 -Wall -Wextra
-CPPFLAGS = -DPACKAGE=\"$(PACKAGE)\" -DVERSION=\"$(VERSION)\" \
+CFLAGS   += -std=c99 -Wall -Wextra
+CPPFLAGS += -DPACKAGE=\"$(PACKAGE)\" -DVERSION=\"$(VERSION)\" \
            -D_POSIX_SOURCE -D _POSIX_C_SOURCE=200809L
 LDLIBS   = ./iniparser/libiniparser.a -lasound -lm -lfftw3 -lpthread $(shell ncursesw5-config --cflags --libs)
 
