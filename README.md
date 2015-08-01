@@ -1,4 +1,4 @@
-C.A.V.A. 
+C.A.V.A. [![CodeHunt.io](https://img.shields.io/badge/vote-codehunt.io-02AFD1.svg)](http://codehunt.io/sub/c-a-v-a/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 ====================
 
 **C**onsole-based **A**udio **V**isualizer for **A**LSA
