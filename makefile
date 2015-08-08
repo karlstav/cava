@@ -1,11 +1,21 @@
 PACKAGE ?= cava
 VERSION ?= $(shell git describe --always --tags --dirty)
 
+ifeq ($(SYSTEM_INIPARSER),1)
+CPPFLAGS_INIPARSER = -I/usr/include/iniparser4
+LDLIBS_INIPARSER = -liniparser4
+DEP_INIPARSER =
+else
+CPPFLAGS_INIPARSER = -Iiniparser/src
+LDLIBS_INIPARSER = iniparser/libiniparser.a
+DEP_INIPARSER = iniparser/libiniparser.a
+endif
+
 CC       = gcc
 CFLAGS   += -std=c99 -Wall -Wextra
 CPPFLAGS += -DPACKAGE=\"$(PACKAGE)\" -DVERSION=\"$(VERSION)\" \
-           -D_POSIX_SOURCE -D _POSIX_C_SOURCE=200809L
-LDLIBS   = ./iniparser/libiniparser.a -lasound -lm -lfftw3 -lpthread $(shell ncursesw5-config --cflags --libs)
+           -D_POSIX_SOURCE -D _POSIX_C_SOURCE=200809L $(CPPFLAGS_INIPARSER)
+LDLIBS   = $(LDLIBS_INIPARSER) -lasound -lm -lfftw3 -lpthread $(shell ncursesw5-config --cflags --libs)
 
 INSTALL     = install
 INSTALL_BIN = $(INSTALL) -D -m 755
@@ -23,7 +33,7 @@ endif
 
 all: cava check-env copyconf
 
-cava: cava.c ./iniparser/libiniparser.a
+cava: cava.c $(DEP_INIPARSER)
 
 iniparser/libiniparser.a:
 	cd iniparser && $(MAKE)
