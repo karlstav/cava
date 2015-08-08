@@ -21,6 +21,7 @@
 #include <time.h>
 #include <getopt.h>
 #include <pthread.h>
+#include <dirent.h>
 #include "output/terminal_noncurses.h"
 #include "output/terminal_noncurses.c"
 #include "output/terminal_ncurses.h"
@@ -240,6 +241,13 @@ void validate_config()
 	// read & validate: eq
 }
 
+static bool directory_exists(const char * path) {
+	DIR * const dir = opendir(path);
+	const bool exists = dir != NULL;
+	closedir(dir);
+	return exists;
+}
+
 // general: entry point
 int main(int argc, char **argv)
 {
@@ -366,6 +374,15 @@ Options:\n\
 
 	// input: wait for the input to be ready
 	if (im == 1) {
+		if (directory_exists("/sys/")) {
+			if (! directory_exists("/sys/module/snd_aloop/")) {
+				fprintf(stderr,
+						"Linux kernel module \"snd_aloop\" does not seem to be loaded.\n"
+						"Maybe run \"sudo modprobe snd_aloop\".\n");
+				exit(EXIT_FAILURE);
+			}
+		}
+
 		thr_id = pthread_create(&p_thread, NULL, input_alsa,
 														(void *)&audio); //starting alsamusic listener
 		while (audio.format == -1 || audio.rate == 0) {
