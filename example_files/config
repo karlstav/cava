@@ -8,7 +8,7 @@
 
 [input]
 ; method = alsa # supported input methods are 'alsa' or 'fifo'.
-; source = hw:1,1 # ALSA device or FIFO path.
+; source = hw:Loopback,1 # ALSA device or FIFO path.
 
 [output]
 ; method = ncurses # may be ncurses, noncurses or circle.
