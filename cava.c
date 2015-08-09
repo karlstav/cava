@@ -144,7 +144,7 @@ void load_config()
 	// config: input
 	if (strcmp(inputMethod, "alsa") == 0) {
 		im = 1;
-		audio.source = (char *)iniparser_getstring(ini, "input:source", "hw:1,1");
+		audio.source = (char *)iniparser_getstring(ini, "input:source", "hw:Loopback,1");
 	}
 	if (strcmp(inputMethod, "fifo") == 0) {
 		im = 2;
@@ -288,7 +288,7 @@ Options:\n\
 	-b 1..(console columns/2-1) or 200  number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
 	-i 'input method'     method used for listening to audio, supports: 'alsa' and 'fifo'\n\
 	-o 'output method'      method used for outputting processed data, supports: 'ncurses', 'noncurses' and 'circle'\n\
-	-d 'alsa device'      name of alsa capture device (default 'hw:1,1')\n\
+	-d 'alsa device'      name of alsa capture device (default 'hw:Loopback,1')\n\
 	-p 'fifo path'        path to fifo (default '/tmp/mpd.fifo')\n\
 	-c foreground color     supported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
 	-C background color     supported colors: same as above (default: no change)\n\
