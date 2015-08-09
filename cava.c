@@ -241,6 +241,11 @@ void validate_config()
 	// read & validate: eq
 }
 
+static bool is_loop_device_for_sure(const char * text) {
+	const char * const LOOPBACK_DEVICE_PREFIX = "hw:Loopback,";
+	return strncmp(text, LOOPBACK_DEVICE_PREFIX, strlen(LOOPBACK_DEVICE_PREFIX)) == 0;
+}
+
 static bool directory_exists(const char * path) {
 	DIR * const dir = opendir(path);
 	const bool exists = dir != NULL;
@@ -374,12 +379,14 @@ Options:\n\
 
 	// input: wait for the input to be ready
 	if (im == 1) {
-		if (directory_exists("/sys/")) {
-			if (! directory_exists("/sys/module/snd_aloop/")) {
-				fprintf(stderr,
-						"Linux kernel module \"snd_aloop\" does not seem to be loaded.\n"
-						"Maybe run \"sudo modprobe snd_aloop\".\n");
-				exit(EXIT_FAILURE);
+		if (is_loop_device_for_sure(audio.source)) {
+			if (directory_exists("/sys/")) {
+				if (! directory_exists("/sys/module/snd_aloop/")) {
+					fprintf(stderr,
+							"Linux kernel module \"snd_aloop\" does not seem to be loaded.\n"
+							"Maybe run \"sudo modprobe snd_aloop\".\n");
+					exit(EXIT_FAILURE);
+				}
 			}
 		}
 
