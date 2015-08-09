@@ -31,7 +31,7 @@
 #include "input/alsa.c"
 #include "input/fifo.h"
 #include "input/fifo.c"
-#include "iniparser/src/iniparser.h"
+#include <iniparser.h>
 
 
 #ifdef __GNUC__
