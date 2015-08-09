@@ -21,6 +21,7 @@
 #include <time.h>
 #include <getopt.h>
 #include <pthread.h>
+#include <dirent.h>
 #include "output/terminal_noncurses.h"
 #include "output/terminal_noncurses.c"
 #include "output/terminal_ncurses.h"
@@ -143,7 +144,7 @@ void load_config()
 	// config: input
 	if (strcmp(inputMethod, "alsa") == 0) {
 		im = 1;
-		audio.source = (char *)iniparser_getstring(ini, "input:source", "hw:1,1");
+		audio.source = (char *)iniparser_getstring(ini, "input:source", "hw:Loopback,1");
 	}
 	if (strcmp(inputMethod, "fifo") == 0) {
 		im = 2;
@@ -240,6 +241,18 @@ void validate_config()
 	// read & validate: eq
 }
 
+static bool is_loop_device_for_sure(const char * text) {
+	const char * const LOOPBACK_DEVICE_PREFIX = "hw:Loopback,";
+	return strncmp(text, LOOPBACK_DEVICE_PREFIX, strlen(LOOPBACK_DEVICE_PREFIX)) == 0;
+}
+
+static bool directory_exists(const char * path) {
+	DIR * const dir = opendir(path);
+	const bool exists = dir != NULL;
+	closedir(dir);
+	return exists;
+}
+
 // general: entry point
 int main(int argc, char **argv)
 {
@@ -280,7 +293,7 @@ Options:\n\
 	-b 1..(console columns/2-1) or 200  number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
 	-i 'input method'     method used for listening to audio, supports: 'alsa' and 'fifo'\n\
 	-o 'output method'      method used for outputting processed data, supports: 'ncurses', 'noncurses' and 'circle'\n\
-	-d 'alsa device'      name of alsa capture device (default 'hw:1,1')\n\
+	-d 'alsa device'      name of alsa capture device (default 'hw:Loopback,1')\n\
 	-p 'fifo path'        path to fifo (default '/tmp/mpd.fifo')\n\
 	-c foreground color     supported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
 	-C background color     supported colors: same as above (default: no change)\n\
@@ -366,6 +379,17 @@ Options:\n\
 
 	// input: wait for the input to be ready
 	if (im == 1) {
+		if (is_loop_device_for_sure(audio.source)) {
+			if (directory_exists("/sys/")) {
+				if (! directory_exists("/sys/module/snd_aloop/")) {
+					fprintf(stderr,
+							"Linux kernel module \"snd_aloop\" does not seem to be loaded.\n"
+							"Maybe run \"sudo modprobe snd_aloop\".\n");
+					exit(EXIT_FAILURE);
+				}
+			}
+		}
+
 		thr_id = pthread_create(&p_thread, NULL, input_alsa,
 														(void *)&audio); //starting alsamusic listener
 		while (audio.format == -1 || audio.rate == 0) {
