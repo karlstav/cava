@@ -407,7 +407,7 @@ Options:\n\
 			}
 		}
 	#ifdef DEBUG
-		printf("got format: %d and rate %d\n", format, rate);
+		printf("got format: %d and rate %d\n", audio.format, audio.rate);
 	#endif
 
 	}
