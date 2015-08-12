@@ -23,29 +23,18 @@ INSTALL_BIN = $(INSTALL) -D -m 755
 PREFIX ?= /usr/local
 BINDIR  = $(DESTDIR)/$(PREFIX)/bin
 
-CONFIGDIR = $(XDG_CONFIG_HOME)/cava
-
 debug ?= 0
 
 ifeq ($(debug),1)
 CPPFLAGS += -DDEBUG
 endif
 
-all: cava check-env copyconf
+all: cava
 
 cava: cava.c $(DEP_INIPARSER)
 
 iniparser/libiniparser.a:
 	cd iniparser && $(MAKE)
-
-check-env:
-ifndef XDG_CONFIG_HOME
-    CONFIGDIR = $(HOME)/.config/cava
-endif
-
-copyconf:
-	mkdir -p $(CONFIGDIR)
-	cp -n example_files/config $(CONFIGDIR)/config
 
 install: all
 	$(INSTALL_BIN) cava $(BINDIR)/cava
