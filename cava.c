@@ -523,7 +523,7 @@ Options:\n\
 	   	cont = 1;
 		// general: main loop
 		while  (cont) {
-
+		    fprintf(stderr, "in main loop\n");
 			// general: keyboard controls
 			if (om == 1 || om == 2) ch = getch();
 			switch (ch) {
@@ -599,6 +599,7 @@ Options:\n\
 				}
 
 			} else { //**if in sleep mode wait and continue**//
+			    fprintf(stderr, "in sleep mode...\n");
 				#ifdef DEBUG
 					printw("no sound detected for 3 sec, going to sleep mode\n");
 				#endif
@@ -686,7 +687,8 @@ Options:\n\
 			#ifndef DEBUG
 				switch (om) {
 					case 1:
-						rc = draw_terminal_ncurses(virt, h, w, bands, bw, rest, f, flastd);
+					    fprintf(stderr, "drawing\n");
+					    rc = draw_terminal_ncurses(virt, h, w, bands, bw, rest, f, flastd, sens);
 						break;
 					case 2:
 						rc = draw_terminal_bcircle(virt, h, w, f);
@@ -696,6 +698,7 @@ Options:\n\
 						break;
 				}
 
+				fprintf(stderr, "done drawing\n");
 				if (rc == -1) break; //terminal has been resized breaking to recalibrating values
 
 				if (framerate <= 1) {
