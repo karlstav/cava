@@ -49,6 +49,7 @@ int rc;
 char *inputMethod, *outputMethod, *modeString, *color, *bcolor;
 double monstercat, integral, gravity, ignore, smh;
 int fixedbands, sens, framerate;
+unsigned int lowcf, highcf;
 double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8,
 					1, 1, 0.8, 0.6, 0.6, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8,
 					0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8,
@@ -127,7 +128,8 @@ void load_config()
 	fixedbands = iniparser_getint(ini, "general:bars", 0);
 	sens = iniparser_getint(ini, "general:sensitivity", 100);
 	framerate = iniparser_getint(ini, "general:framerate", 60);
-
+	lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 20);
+	highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
 
 	smcount = iniparser_getsecnkeys(ini, "eq");
 	if (smcount > 0) {
@@ -238,6 +240,13 @@ void validate_config()
 		integral = 0.99;
 	}
 
+	// validate: cutoff
+	if (lowcf == 0 ) lowcf++;
+	if (lowcf > highcf) {
+		fprintf(stderr,
+			"lower cutoff frequency can't be higher than higher cutoff frequency\n");
+		exit(EXIT_FAILURE);
+	}
 	// read & validate: eq
 }
 
@@ -407,7 +416,7 @@ Options:\n\
 			}
 		}
 	#ifdef DEBUG
-		printf("got format: %d and rate %d\n", format, rate);
+		printf("got format: %d and rate %d\n", audio.format, audio.rate);
 	#endif
 
 	}
@@ -416,6 +425,15 @@ Options:\n\
 		thr_id = pthread_create(&p_thread, NULL, input_fifo,
 														(void*)&audio); //starting fifomusic listener
 		audio.rate = 44100;
+	}
+
+
+	if (highcf > audio.rate / 2) {
+		cleanup();
+		fprintf(stderr,
+			"higher cuttoff frequency can't be higher then sample rate / 2"
+		);
+			exit(EXIT_FAILURE);
 	}
 
 	p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
@@ -493,10 +511,14 @@ Options:\n\
 		//output: start noncurses mode
 		if (om == 3) init_terminal_noncurses(col, bgcol, w, h, bw);
 
+		double freqconst = log10((float)lowcf / (float)highcf) /  ((float)1 / ((float)bands + (float)1) - 1);
+	
+		//freqconst = -2;
+
 		// process: calculate cutoff frequencies
 		for (n = 0; n < bands + 1; n++) {
-			fc[n] = 10000 * pow(10, -2.37 + ((((float)n + 1) / ((float)bands + 1)) *
-																			 2.37)); //decided to cut it at 10k, little interesting to hear above
+			fc[n] = highcf * pow(10, freqconst * (-1) + ((((float)n + 1) / ((float)bands + 1)) *
+																			 freqconst)); //decided to cut it at 10k, little interesting to hear above
 			fr[n] = fc[n] / (audio.rate /
 											 2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
 			lcf[n] = fr[n] * (M /
@@ -510,7 +532,7 @@ Options:\n\
 
 			#ifdef DEBUG
 			 			if (n != 0) {
-							printw("%d: %f -> %f (%d -> %d) \n", n, fc[n - 1], fc[n], lcf[n - 1],
+							mvprintw(n,0,"%d: %f -> %f (%d -> %d) \n", n, fc[n - 1], fc[n], lcf[n - 1],
 					 				 hcf[n - 1]);
 						}
 			#endif
@@ -557,7 +579,8 @@ Options:\n\
 
 
 			#ifdef DEBUG
-				system("clear");
+				//clear();
+				refresh();
 			#endif
 
 			// process: populate input buffer and check if input is present
@@ -669,7 +692,7 @@ Options:\n\
 						f[o] = fmem[o];
 
 						#ifdef DEBUG
-							mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%f adjpeak: %f \n", o, fc[o], fc[o + 1],
+							mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%f adjpeak: %d \n", o, fc[o], fc[o + 1],
 										 lcf[o], hcf[o], peak[o], f[o]);
 						#endif
 					}

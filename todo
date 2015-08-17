@@ -1,8 +1,8 @@
 TODO
 ----
 
+* adjustable bar width instead of bar count
 * more key controls and possiblity to save settings to config file from cava
-* custom freqency cut off
 * optional configure of sourcecode without requirement for ALSA dev files (mpd fifo only) 
 * optional framebuffer graphics
 * check possibility of grabbing audio straight from pulseaudio sink/source, and implementing such function

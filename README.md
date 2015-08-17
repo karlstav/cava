@@ -292,6 +292,8 @@ Configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.confi
     framerate=60
     sensitivity=100
     bars=0
+    lower\_cutoff\_freq = 300
+    higher\_cutoff\_freq = 15000
     
     [input]
     method=fifo
@@ -326,6 +328,8 @@ Configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.confi
 * `framerate` is framerate (FPS). Default: `60`. Accepts only non-negative values.
 * `sensitivity` is sensitivity %. Default: `100`. Accepts only non-negative values.
 * `bars` defines the amount of bars. `0` sets it to auto. Default: `0`. Accepts only non-negative values.
+* `lower_cutoff_freq` defines the lower cutof frequency for the far left bar. Default: `50`.
+* `higher_cutoff_freq` defines the higher cutoff frequency for the far right bar. Default: `10000`. Note: there is a minimum total bandwith of 43Mhz x number of bars. Cava will automaticly increase the higher cuttoff if a too low band is specified.
 
 #### [input]
 
