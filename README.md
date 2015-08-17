@@ -292,8 +292,8 @@ Configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.confi
     framerate=60
     sensitivity=100
     bars=0
-    lower\_cutoff\_freq = 300
-    higher\_cutoff\_freq = 15000
+    lower_cutoff_freq = 300
+    higher_cutoff_freq = 15000
     
     [input]
     method=fifo
