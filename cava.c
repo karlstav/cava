@@ -48,7 +48,7 @@ int rc;
 
 char *inputMethod, *outputMethod, *modeString, *color, *bcolor;
 double monstercat, integral, gravity, ignore, smh;
-int fixedbands, sens, framerate;
+int fixedbars, sens, framerate, bw, bs;
 unsigned int lowcf, highcf;
 double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8,
 					1, 1, 0.8, 0.6, 0.6, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8,
@@ -63,8 +63,8 @@ int om = 1;
 int mode = 1;
 int col = 6;
 int bgcol = -1;
-int bands = 25;
-int autoband = 1;
+int bars = 25;
+int autobars = 1;
 
 // general: cleanup
 void cleanup(void)
@@ -125,7 +125,9 @@ void load_config()
 	ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
 	color = (char *)iniparser_getstring(ini, "color:foreground", "default");;
 	bcolor = (char *)iniparser_getstring(ini, "color:background", "default");;
-	fixedbands = iniparser_getint(ini, "general:bars", 0);
+	fixedbars = iniparser_getint(ini, "general:bars", 0);
+	bw = iniparser_getint(ini, "general:bar_width", 3);
+	bs = iniparser_getint(ini, "general:bar_spacing", 1);
 	sens = iniparser_getint(ini, "general:sensitivity", 100);
 	framerate = iniparser_getint(ini, "general:framerate", 60);
 	lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 20);
@@ -184,9 +186,11 @@ void validate_config()
 		exit(EXIT_FAILURE);
 	}
 
-	// validate: bands
-	if (fixedbands > 0) autoband = 0;
-	if (fixedbands > 200)fixedbands = 200;
+	// validate: bars
+	if (fixedbars > 0) autobars = 0;
+	if (fixedbars > 200) fixedbars = 200;
+	if (bw > 200) bw = 200;
+	if (bw < 1) bw = 1;
 
 	// validate: mode
 	if (strcmp(modeString, "normal") == 0) mode = 1;
@@ -283,7 +287,7 @@ int main(int argc, char **argv)
 	int y[M / 2 + 1];
 	long int lpeak, hpeak;
 	int sleep = 0;
-	int i, n, o, bw, height, h, w, c, rest, virt;
+	int i, n, o, height, h, w, c, rest, virt;
 	float temp;
 	double in[2 * (M / 2 + 1)];
 	fftw_complex out[M / 2 + 1][2];
@@ -299,7 +303,7 @@ Usage : " PACKAGE " [options]\n\
 Visualize audio input in terminal. \n\
 \n\
 Options:\n\
-	-b 1..(console columns/2-1) or 200  number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)\n\
+	-b 1..(console columns/2-1) or 200  number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many bars)\n\
 	-i 'input method'     method used for listening to audio, supports: 'alsa' and 'fifo'\n\
 	-o 'output method'      method used for outputting processed data, supports: 'ncurses', 'noncurses' and 'circle'\n\
 	-d 'alsa device'      name of alsa capture device (default 'hw:Loopback,1')\n\
@@ -348,7 +352,8 @@ Options:\n\
 				modeString = optarg;
 				break;
 			case 'b': // argument: bar count
-				fixedbands = atoi(optarg);
+				fixedbars = atoi(optarg);
+				if (fixedbars) autobars = 0;
 				break;
 			case 'd': // argument: alsa device
 				audio.source  = optarg;
@@ -461,68 +466,63 @@ Options:\n\
 			f[i] = 0;
 		}
 
-
-		//getting orignial numbers of bands incase of resize
-		if (autoband == 1)  {
-			bands = 25;
-		} else bands = fixedbands;
-
-
+		
 		// output: get terminal's geometry
 		if (om == 1 || om == 2) get_terminal_dim_ncurses(&w, &h);
 
 		if (om == 3) get_terminal_dim_noncurses(&w, &h);
 
+ 		//handle for user setting too many bars
+		if (fixedbars) {
+			autobars = 0;
+			if (fixedbars * bw + fixedbars * bs - bs > w) autobars = 1;
+		}
 
-		if (bands > w / 2 - 1)bands = w / 2 -
-											1; //handle for user setting to many bars
+		//getting orignial numbers of barss incase of resize
+		if (autobars == 1)  {
+			bars = (w + bs) / (bw + bs);
+			//if (bs != 0) bars = (w - bars * bs + bs) / bw;
+		} else bars = fixedbars;
 
-		if (bands < 1) bands = 1; // must have at least 1 bar;
+
+		if (bars < 1) bars = 1; // must have at least 1 bar;
 
 		height = h - 1;
-
-		bw = (w - bands - 1) / bands;
-
-		if (bw < 1) bw = 1; //bars must have width
 
 		// process [smoothing]: calculate gravity
 		g = gravity * ((float)height / 270) * pow((60 / (float)framerate), 2.5);
 
-		//if no bands are selected it tries to padd the default 20 if there is extra room
-		if (autoband == 1) bands = bands + ((w - (bw * bands + bands - 1)) /
-																					(bw + 1));
-
 
 		//checks if there is stil extra room, will use this to center
-		rest = (w - bands * bw - bands + 1) / 2;
+		rest = (w - bars * bw - bars * bs + bs) / 2;
 		if (rest < 0)rest = 0;
 
-		if ((smcount > 0) && (bands > 0)) {
-			smh = (double)(((double)smcount)/((double)bands));
+		if ((smcount > 0) && (bars > 0)) {
+			smh = (double)(((double)smcount)/((double)bars));
 		}
 
 
 		#ifdef DEBUG
-			printw("hoyde: %d bredde: %d bands:%d bandbredde: %d rest: %d\n",
+			printw("height: %d width: %d bars:%d bar width: %d rest: %d\n",
 						 w,
-						 h, bands, bw, rest);
+						 h, bars, bw, rest);
 		#endif
 
 		//output: start noncurses mode
 		if (om == 3) init_terminal_noncurses(col, bgcol, w, h, bw);
 
-		double freqconst = log10((float)lowcf / (float)highcf) /  ((float)1 / ((float)bands + (float)1) - 1);
+		double freqconst = log10((float)lowcf / (float)highcf) /  ((float)1 / ((float)bars + (float)1) - 1);
 	
 		//freqconst = -2;
 
 		// process: calculate cutoff frequencies
-		for (n = 0; n < bands + 1; n++) {
-			fc[n] = highcf * pow(10, freqconst * (-1) + ((((float)n + 1) / ((float)bands + 1)) *
+		for (n = 0; n < bars + 1; n++) {
+			fc[n] = highcf * pow(10, freqconst * (-1) + ((((float)n + 1) / ((float)bars + 1)) *
 																			 freqconst)); //decided to cut it at 10k, little interesting to hear above
 			fr[n] = fc[n] / (audio.rate /
 											 2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
 			lcf[n] = fr[n] * (M /
-												4); //lfc stores the lower cut frequency foo each band in the fft out buffer
+												4); //lfc stores the lower cut frequency foo each bar in the fft out buffer
 			if (n != 0) {
 				hcf[n - 1] = lcf[n] - 1;
 				if (lcf[n] <= lcf[n - 1])lcf[n] = lcf[n - 1] +
@@ -539,7 +539,7 @@ Options:\n\
 		}
 
 		// process: weigh signal to frequencies
-		for (n = 0; n < bands;
+		for (n = 0; n < bars;
 			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000)) * smooth[(int)floor(((double)n) * smh)];
 
 	   	cont = 1;
@@ -556,8 +556,12 @@ Options:\n\
 					sens -= 10;
 					break;
 				case 67:    // key right
+					bw++;
+					cont = 0;
 					break;
 				case 68:    // key left
+					if (bw > 1) bw--;
+					cont = 0;
 					break;
 				case 'm':
 					if (mode == modes) {
@@ -576,7 +580,7 @@ Options:\n\
 					return EXIT_SUCCESS;
 			}
 
-
+			if (cont == 0) break;
 
 			#ifdef DEBUG
 				//clear();
@@ -593,8 +597,8 @@ Options:\n\
 					if (audio.audio_out[i] < lpeak) lpeak = audio.audio_out[i];
 				} else in[i] = 0;
 			}
-			peak[bands] = (hpeak + abs(lpeak));
-			if (peak[bands] == 0)sleep++;
+			peak[bars] = (hpeak + abs(lpeak));
+			if (peak[bars] == 0)sleep++;
 			else sleep = 0;
 
 			// process: if input was present for the last 5 seconds apply FFT to it
@@ -604,7 +608,7 @@ Options:\n\
 				fftw_execute(p);
 
 				// process: separate frequency bands
-				for (o = 0; o < bands; o++) {
+				for (o = 0; o < bars; o++) {
 					flastd[o] = f[o]; //saving last value for drawing
 					peak[o] = 0;
 
@@ -641,26 +645,26 @@ Options:\n\
 
 				int m_y, de;
 				if (mode == 3) {
-					for (z = 0; z < bands; z++) { // waves
+					for (z = 0; z < bars; z++) { // waves
 						f[z] = f[z] / 1.25;
 						if (f[z] < 0.125)f[z] = 0.125;
 						for (m_y = z - 1; m_y >= 0; m_y--) {
 							de = z - m_y;
 							f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
 						}
-						for (m_y = z + 1; m_y < bands; m_y++) {
+						for (m_y = z + 1; m_y < bars; m_y++) {
 							de = m_y - z;
 							f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
 						}
 					}
 				} else if (monstercat > 0) {
-					for (z = 0; z < bands; z++) {
+					for (z = 0; z < bars; z++) {
 						if (f[z] < 0.125)f[z] = 0.125;
 						for (m_y = z - 1; m_y >= 0; m_y--) {
 							de = z - m_y;
 							f[m_y] = max(f[z] / pow(monstercat, de), f[m_y]);
 						}
-						for (m_y = z + 1; m_y < bands; m_y++) {
+						for (m_y = z + 1; m_y < bars; m_y++) {
 							de = m_y - z;
 							f[m_y] = max(f[z] / pow(monstercat, de), f[m_y]);
 						}
@@ -669,7 +673,7 @@ Options:\n\
 
 				// process [smoothing]: falloff
 				if (g > 0) {
-					for (o = 0; o < bands; o++) {
+					for (o = 0; o < bars; o++) {
 						temp = f[o];
 
 						if (temp < flast[o]) {
@@ -687,7 +691,7 @@ Options:\n\
 
 				// process [smoothing]: integral
 				if (integral > 0) {
-					for (o = 0; o < bands; o++) {
+					for (o = 0; o < bars; o++) {
 						fmem[o] = fmem[o] * integral + f[o];
 						f[o] = fmem[o];
 
@@ -699,7 +703,7 @@ Options:\n\
 				}
 
 				// zero values causes divided by zero segfault.
-				for (o = 0; o < bands; o++) {
+				for (o = 0; o < bars; o++) {
 					if (f[o] < 1)f[o] = 1;
 				}
 
@@ -709,13 +713,13 @@ Options:\n\
 			#ifndef DEBUG
 				switch (om) {
 					case 1:
-						rc = draw_terminal_ncurses(virt, h, w, bands, bw, rest, f, flastd);
+						rc = draw_terminal_ncurses(virt, h, w, bars, bw, bs, rest, f, flastd);
 						break;
 					case 2:
 						rc = draw_terminal_bcircle(virt, h, w, f);
 						break;
 					case 3:
-						rc = draw_terminal_noncurses(virt, h, w, bands, bw, rest, f, flastd);
+						rc = draw_terminal_noncurses(virt, h, w, bars, bw, bs, rest, f, flastd);
 						break;
 				}
 

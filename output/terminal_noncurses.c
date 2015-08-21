@@ -105,7 +105,7 @@ void get_terminal_dim_noncurses(int *w, int *h) {
 }
 
 
-int draw_terminal_noncurses(int virt, int h, int w, int bands, int bw, int rest, int f[200], int flastd[200]) {
+int draw_terminal_noncurses(int virt, int h, int w, int bars, int bw, int bs, int rest, int f[200], int flastd[200]) {
 	int c, move, n, o;
 
 	struct winsize dim;
@@ -126,7 +126,7 @@ int draw_terminal_noncurses(int virt, int h, int w, int bands, int bw, int rest,
 	for (n = h - 2; n >= 0; n--) {
 
 		move = rest; //center adjustment
-		for (o = 0; o < bands; o++) {
+		for (o = 0; o < bars; o++) {
 
 			// output: draw and move to another one, check whether we're not too far
 
@@ -153,7 +153,7 @@ int draw_terminal_noncurses(int virt, int h, int w, int bands, int bw, int rest,
 
 			} else move += bw; //no change, moving along
 
-			move++;//move to next bar
+			move += bs;//move to next bar
 		}
 
 		printf("\n");

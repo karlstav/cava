@@ -1,12 +1,14 @@
 ## Configuration file for CAVA. Default values are commented out.  Use either ; or # for commenting.
 
 [general]
-; mode = normal # defines smoothing mode, can be normal, scientific or waves.
+; mode = normal # smoothing mode, can be normal, scientific or waves.
 ; framerate = 60 # Default: 60. Accepts only non-negative values.
 ; sensitivity = 100 #  is sensitivity %. Accepts only non-negative values.
-; bars = 0 # defines the amount of bars. 0 sets it to auto (25 + fill up leftover space). 
-; lower_cutoff_freq = 50 # defines the lower cutof frequency for the far left bar
-; higher_cutoff_freq = 10000 # defines the higher cutoff frequency for the far right bar. Note: there is a minimum total bandwith of 43Mhz x number of bars. Cava will automaticly increase the higher cuttoff if a too low band is specified.
+; bars = 0 # the number of bars. 0 sets it to auto (fil upp console). 
+; bar_width = 3 # width of bars. 
+; bar_spacing = 1 # space between bars.
+; lower_cutoff_freq = 50 # the lower cutof frequency for the far left bar
+; higher_cutoff_freq = 10000 # the higher cutoff frequency for the far right bar. Note: there is a minimum total bandwith of 43Mhz x number of bars. Cava will automaticly increase the higher cuttoff if a too low band is specified.
 
 
 
