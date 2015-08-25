@@ -1,12 +1,12 @@
 TODO
 ----
 
-* adjustable bar width instead of bar count
-* more key controls and possiblity to save settings to config file from cava
-* optional configure of sourcecode without requirement for ALSA dev files (mpd fifo only) 
-* optional framebuffer graphics
-* check possibility of grabbing audio straight from pulseaudio sink/source, and implementing such function
-* frequency distribution should be more exponential with increased number of bars
+* stereo-mirror 
+* pulseaudio and configure script with optional dependencies
+* more key controls
+* switch to libconfig
+* possibility to save settings to config file
+* openGL
+* plug-in api
+
 * new demo video
-* stereo-mirror mode
-* change to libconfig
