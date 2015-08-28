@@ -1,10 +1,12 @@
 struct audio_data {
 
-	int audio_out[2048];
+	int audio_out_r[2048];
+	int audio_out_l[2048];
 	int format;
 	unsigned int rate ;
 	char *source; //alsa device or fifo path
 	int im; //input mode alsa or fifo
+	int channels;
 };
 
 // input: ALSA
@@ -61,7 +63,7 @@ void* input_alsa(void* data)
 	else if (val > 5 && val < 10)audio->format = 24;
 	else if (val > 9)audio->format = 32;
 
-	snd_pcm_hw_params_get_rate( params, &audio->rate, &dir); //getting rate
+	snd_pcm_hw_params_get_rate(params, &audio->rate, &dir); //getting rate
 
 	snd_pcm_hw_params_get_period_size(params, &frames, &dir);
 	snd_pcm_hw_params_get_period_time(params,  &val, &dir);
@@ -72,6 +74,7 @@ void* input_alsa(void* data)
 	ladj = audio->format / 8;
 	o = 0;
 	while (1) {
+
 
 		err = snd_pcm_readi(handle, buffer, frames);
 		if (err == -EPIPE) {
@@ -92,6 +95,8 @@ void* input_alsa(void* data)
 
 		//sorting out one channel and only biggest octet
 		n = 0; //frame counter
+
+
 		for (i = 0; i < size ; i = i + (ladj) * 2) {
 
 			//first channel
@@ -110,13 +115,24 @@ void* input_alsa(void* data)
 			if (templ >= 0)templ = templ + lo;
 			else templ = templ - lo;
 
-			//adding channels and storing it in the buffer
-			audio->audio_out[o] = (tempr + templ) / 2;
+			//mono: adding channels and storing it in the buffer
+			if (audio->channels == 1) audio->audio_out_l[o] = (tempr + templ) / 2;
+
+
+			//stereo storing channels in buffer
+			if (audio->channels == 2) {
+				audio->audio_out_l[o] = templ;
+				audio->audio_out_r[o] = tempr;
+			}
+
+
 			o++;
 			if (o == 2048 - 1)o = 0;
 
 			n++;
 		}
 	}
+
+	fprintf(stderr,"test\n");
 }
 

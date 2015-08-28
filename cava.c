@@ -46,7 +46,7 @@
 struct termios oldtio, newtio;
 int rc;
 
-char *inputMethod, *outputMethod, *modeString, *color, *bcolor;
+char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style;
 double monstercat, integral, gravity, ignore, smh;
 int fixedbars, sens, framerate, bw, bs;
 unsigned int lowcf, highcf;
@@ -65,6 +65,8 @@ int col = 6;
 int bgcol = -1;
 int bars = 25;
 int autobars = 1;
+int stereo = -1;
+int M = 2048;
 
 // general: cleanup
 void cleanup(void)
@@ -132,6 +134,7 @@ void load_config()
 	framerate = iniparser_getint(ini, "general:framerate", 60);
 	lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 20);
 	highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
+        style =  (char *)iniparser_getstring(ini, "output:style", "mono");
 
 	smcount = iniparser_getsecnkeys(ini, "eq");
 	if (smcount > 0) {
@@ -185,6 +188,19 @@ void validate_config()
 						outputMethod);
 		exit(EXIT_FAILURE);
 	}
+
+	// validate: output style
+	if (strcmp(style, "mono") == 0) stereo = 0;
+	if (strcmp(style, "stereo") == 0) stereo = 1;
+	if (stereo == -1) {
+		fprintf(stderr,
+			"output style %s is not supported, supported styles are: 'mono' and 'stereo'\n",
+						style);
+		exit(EXIT_FAILURE);
+	}
+
+
+
 
 	// validate: bars
 	if (fixedbars > 0) autobars = 0;
@@ -266,32 +282,116 @@ static bool directory_exists(const char * path) {
 	return exists;
 }
 
+
+int * cava_fft(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200], int hcf[200], float k[200]) { 
+	int o,i;
+	float peak[201];
+	static int f[200];
+	int y[M / 2 + 1];
+	float temp;
+
+	// process: separate frequency bands
+	for (o = 0; o < bars; o++) {
+
+		peak[o] = 0;
+
+		// process: get peaks
+		for (i = lcf[o]; i <= hcf[o]; i++) {
+
+			y[i] =  pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5); //getting r of compex
+			peak[o] += y[i]; //adding upp band
+			
+		}
+	
+		
+		peak[o] = peak[o] / (hcf[o]-lcf[o]+1); //getting average
+		temp = peak[o] * k[o] * ((float)sens / 100); //multiplying with k and adjusting to sens settings
+		if (temp <= ignore)temp = 0;
+		f[o] = temp;
+
+
+	}
+
+	return f;
+ 
+} 
+
+
+int * monstercat_filter (int * f, int bars) {
+
+	int z;
+
+
+	// process [smoothing]: monstercat-style "average"
+
+	int m_y, de;
+	if (mode == 3) {
+		for (z = 0; z < bars; z++) { // waves
+			f[z] = f[z] / 1.25;
+			if (f[z] < 0.125)f[z] = 0.125;
+			for (m_y = z - 1; m_y >= 0; m_y--) {
+				de = z - m_y;
+				f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
+			}
+			for (m_y = z + 1; m_y < bars; m_y++) {
+				de = m_y - z;
+				f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
+			}
+		}
+	} else if (monstercat > 0) {
+		for (z = 0; z < bars; z++) {
+			if (f[z] < 0.125)f[z] = 0.125;
+			for (m_y = z - 1; m_y >= 0; m_y--) {
+				de = z - m_y;
+				f[m_y] = max(f[z] / pow(monstercat, de), f[m_y]);
+			}
+			for (m_y = z + 1; m_y < bars; m_y++) {
+				de = m_y - z;
+				f[m_y] = max(f[z] / pow(monstercat, de), f[m_y]);
+			}
+		}
+	}
+
+	return f;
+
+}
+
+
 // general: entry point
 int main(int argc, char **argv)
 {
 	load_config();
 
 	// general: define variables
-	int M = 2048;
 	pthread_t  p_thread;
 	int        thr_id GCC_UNUSED;
 	int modes = 3; // amount of smoothing modes
 	float fc[200];
-	float fr[200];
-	int lcf[200], hcf[200];
-	int f[200];
+	float fre[200];
+	int f[200], lcf[200], hcf[200];
+	int *fm, *fl, *fr;
 	int fmem[200];
 	int flast[200];
 	int flastd[200];
 	float peak[201];
-	int y[M / 2 + 1];
-	long int lpeak, hpeak;
+	long int lpeak, hpeak,lpeakl, hpeakl,lpeakr, hpeakr;
 	int sleep = 0;
 	int i, n, o, height, h, w, c, rest, virt;
 	float temp;
+
+	/* mono */
 	double in[2 * (M / 2 + 1)];
 	fftw_complex out[M / 2 + 1][2];
 	fftw_plan p;
+
+	/* stereo */
+	double inr[2 * (M / 2 + 1)];
+	fftw_complex outr[M / 2 + 1][2];
+	fftw_plan pr;
+	double inl[2 * (M / 2 + 1)];
+	fftw_complex outl[M / 2 + 1][2];
+	fftw_plan pl;
+
 	int cont = 1;
 	int fall[200];
 	float fpeak[200];
@@ -317,9 +417,11 @@ Options:\n\
 	-v          print version\n\
 \n";
 	char ch;
-
+	
 	audio.format = -1;
 	audio.rate = 0;
+	if (stereo) audio.channels = 2;
+	if (!stereo) audio.channels = 1;
 
 	setlocale(LC_ALL, "");
 
@@ -406,6 +508,9 @@ Options:\n\
 
 		thr_id = pthread_create(&p_thread, NULL, input_alsa,
 														(void *)&audio); //starting alsamusic listener
+		
+		n = 0;
+		
 		while (audio.format == -1 || audio.rate == 0) {
 			req.tv_sec = 0;
 			req.tv_nsec = 1000000;
@@ -443,6 +548,10 @@ Options:\n\
 
 	p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
 
+	if (stereo) {
+		pr =  fftw_plan_dft_r2c_1d(M, inr, *outr, FFTW_MEASURE); 
+		pl =  fftw_plan_dft_r2c_1d(M, inl, *outl, FFTW_MEASURE); 
+	}
 
 
 	virt = system("setfont cava.psf  >/dev/null 2>&1");
@@ -451,11 +560,9 @@ Options:\n\
 
 	//output: start ncurses mode
 	if (om == 1 || om ==  2) {
-	init_terminal_ncurses(col, bgcol);
+		init_terminal_ncurses(col, bgcol);
 	}
-
-
-
+				
 	while  (1) {//jumbing back to this loop means that you resized the screen
 		for (i = 0; i < 200; i++) {
 			flast[i] = 0;
@@ -465,8 +572,7 @@ Options:\n\
 			fmem[i] = 0;
 			f[i] = 0;
 		}
-
-		
+	
 		// output: get terminal's geometry
 		if (om == 1 || om == 2) get_terminal_dim_ncurses(&w, &h);
 
@@ -486,6 +592,10 @@ Options:\n\
 
 
 		if (bars < 1) bars = 1; // must have at least 1 bar;
+
+		if (stereo) {
+			if (bars%2 != 0) bars--;
+		}
 
 		height = h - 1;
 
@@ -511,6 +621,8 @@ Options:\n\
 		//output: start noncurses mode
 		if (om == 3) init_terminal_noncurses(col, bgcol, w, h, bw);
 
+		if (stereo) bars = bars / 2; // in stereo onle half number of bars per channel
+
 		double freqconst = log10((float)lowcf / (float)highcf) /  ((float)1 / ((float)bars + (float)1) - 1);
 	
 		//freqconst = -2;
@@ -519,9 +631,9 @@ Options:\n\
 		for (n = 0; n < bars + 1; n++) {
 			fc[n] = highcf * pow(10, freqconst * (-1) + ((((float)n + 1) / ((float)bars + 1)) *
 																			 freqconst)); //decided to cut it at 10k, little interesting to hear above
-			fr[n] = fc[n] / (audio.rate /
+			fre[n] = fc[n] / (audio.rate /
 											 2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
-			lcf[n] = fr[n] * (M /
+			lcf[n] = fre[n] * (M /
 												4); //lfc stores the lower cut frequency foo each bar in the fft out buffer
 			if (n != 0) {
 				hcf[n - 1] = lcf[n] - 1;
@@ -541,6 +653,8 @@ Options:\n\
 		// process: weigh signal to frequencies
 		for (n = 0; n < bars;
 			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000)) * smooth[(int)floor(((double)n) * smh)];
+	
+		if (stereo) bars = bars * 2; 	
 
 	   	cont = 1;
 		// general: main loop
@@ -588,16 +702,48 @@ Options:\n\
 			#endif
 
 			// process: populate input buffer and check if input is present
-			lpeak = 0;
-			hpeak = 0;
-			for (i = 0; i < (2 * (M / 2 + 1)); i++) {
-				if (i < M) {
-					in[i] = audio.audio_out[i];
-					if (audio.audio_out[i] > hpeak) hpeak = audio.audio_out[i];
-					if (audio.audio_out[i] < lpeak) lpeak = audio.audio_out[i];
-				} else in[i] = 0;
+			if (!stereo) {			
+
+				lpeak = 0;
+				hpeak = 0;
+				for (i = 0; i < (2 * (M / 2 + 1)); i++) {
+					if (i < M) {
+						in[i] = audio.audio_out_l[i];
+
+						if (audio.audio_out_l[i] > hpeak) hpeak = audio.audio_out_l[i];
+						if (audio.audio_out_l[i] < lpeak) lpeak = audio.audio_out_l[i];
+					} else in[i] = 0;
+				}
+				peak[bars] = (hpeak + abs(lpeak));
 			}
-			peak[bars] = (hpeak + abs(lpeak));
+
+			if (stereo) {
+
+				lpeakr = 0;
+				hpeakl = 0;
+				lpeakr = 0;
+				hpeakl = 0;
+
+				for (i = 0; i < (2 * (M / 2 + 1)); i++) {
+					if (i < M) {
+						inl[i] = audio.audio_out_l[i];
+						inr[i] = audio.audio_out_r[i];
+						
+						if (audio.audio_out_l[i] > hpeakl) hpeakl = audio.audio_out_l[i];
+						if (audio.audio_out_l[i] < lpeakl) lpeakl = audio.audio_out_l[i];
+	
+						if (audio.audio_out_r[i] > hpeakr) hpeakr = audio.audio_out_r[i];
+						if (audio.audio_out_r[i] < lpeakr) lpeakr = audio.audio_out_r[i];
+					} else {
+						inl[i] = 0;
+						inr[i] = 0;
+					}
+				}
+				peak[bars] = ((hpeakl + abs(lpeakl)) + (hpeakr + abs(lpeakr))) / 2;
+
+
+			}
+
 			if (peak[bars] == 0)sleep++;
 			else sleep = 0;
 
@@ -605,26 +751,20 @@ Options:\n\
 			if (sleep < framerate * 5) {
 
 				// process: send input to external library
-				fftw_execute(p);
-
-				// process: separate frequency bands
-				for (o = 0; o < bars; o++) {
-					flastd[o] = f[o]; //saving last value for drawing
-					peak[o] = 0;
-
-					// process: get peaks
-					for (i = lcf[o]; i <= hcf[o]; i++) {
-						y[i] =  pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5); //getting r of compex
-						peak[o] += y[i]; //adding upp band
-					}
-					peak[o] = peak[o] / (hcf[o]-lcf[o]+1); //getting average
-					temp = peak[o] * k[o] * ((float)sens / 100); //multiplying with k and adjusting to sens settings
-					if (temp > height * 8)temp = height * 8; //just in case
-					if (temp <= ignore)temp = 0;
-					f[o] = temp;
-
+				if (!stereo) {
+					fftw_execute(p);
+					fm = cava_fft(out,bars,lcf,hcf, k);
 				}
 
+				if (stereo) {
+					fftw_execute(pl);
+					fftw_execute(pr);
+
+					fl = cava_fft(outl,bars/2,lcf,hcf, k);
+					fr = cava_fft(outr,bars/2,lcf,hcf, k);
+				}	
+
+					
 			} else { //**if in sleep mode wait and continue**//
 				#ifdef DEBUG
 					printw("no sound detected for 3 sec, going to sleep mode\n");
@@ -639,37 +779,32 @@ Options:\n\
 			// process [smoothing]
 			if (mode != 2)
 			{
-				int z;
-
-				// process [smoothing]: monstercat-style "average"
-
-				int m_y, de;
-				if (mode == 3) {
-					for (z = 0; z < bars; z++) { // waves
-						f[z] = f[z] / 1.25;
-						if (f[z] < 0.125)f[z] = 0.125;
-						for (m_y = z - 1; m_y >= 0; m_y--) {
-							de = z - m_y;
-							f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
-						}
-						for (m_y = z + 1; m_y < bars; m_y++) {
-							de = m_y - z;
-							f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
-						}
+				if (monstercat) {
+					if (stereo) {
+						fl = monstercat_filter(fl, bars);
+						fr = monstercat_filter(fr, bars);	
+					} else {
+						fm = monstercat_filter(fm, bars);
 					}
-				} else if (monstercat > 0) {
-					for (z = 0; z < bars; z++) {
-						if (f[z] < 0.125)f[z] = 0.125;
-						for (m_y = z - 1; m_y >= 0; m_y--) {
-							de = z - m_y;
-							f[m_y] = max(f[z] / pow(monstercat, de), f[m_y]);
+				
+				}
+
+
+				//preperaing signal for drawing
+				for (o = 0; o < bars; o++) {
+					if (stereo) {
+						if (o < bars / 2) {
+							f[o] = fl[bars / 2 - o - 1];
+						} else {
+							f[o] = fr[o - bars / 2];
 						}
-						for (m_y = z + 1; m_y < bars; m_y++) {
-							de = m_y - z;
-							f[m_y] = max(f[z] / pow(monstercat, de), f[m_y]);
-						}
+
+					} else {
+						f[o] = fm[o];
 					}
 				}
+
+
 
 				// process [smoothing]: falloff
 				if (g > 0) {
@@ -702,11 +837,11 @@ Options:\n\
 					}
 				}
 
-				// zero values causes divided by zero segfault.
-				for (o = 0; o < bars; o++) {
-					if (f[o] < 1)f[o] = 1;
-				}
+			}
 
+			// zero values causes divided by zero segfault
+			for (o = 0; o < bars; o++) {
+				if (f[o] < 1)f[o] = 1;
 			}
 
 			// output: draw processed input
@@ -734,6 +869,10 @@ Options:\n\
 
 				nanosleep (&req, NULL);
 			#endif
+		
+			for (o = 0; o < bars; o++) {	
+				flastd[o] = f[o];
+			} 
 		}
 	}
 }
