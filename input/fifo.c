@@ -30,8 +30,9 @@ void* input_fifo(void* data)
 			nanosleep (&req, NULL);
 			t++;
 			if (t > 10) {
-				for (i = 0; i < 2048; i++)audio->audio_out[i] = 0;
-			t = 0;
+				for (i = 0; i < 2048; i++)audio->audio_out_l[i] = 0;
+				for (i = 0; i < 2048; i++)audio->audio_out_r[i] = 0;
+				t = 0;
 			}
 		} else { //if bytes read go ahead
 			t = 0;
@@ -51,7 +52,16 @@ void* input_fifo(void* data)
 				if (templ >= 0)templ = templ + lo;
 				else templ = templ - lo;
 
-				audio->audio_out[n] = (tempr + templ) / 2;
+				if (audio->channels == 1) audio->audio_out_l[n] = (tempr + 
+templ) / 
+2;
+
+
+				//stereo storing channels in buffer
+				if (audio->channels == 2) {
+					audio->audio_out_l[n] = templ;
+					audio->audio_out_r[n] = tempr;
+					}
 
 				n++;
 				if (n == 2048 - 1)n = 0;

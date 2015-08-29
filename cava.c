@@ -88,7 +88,7 @@ void sig_handler(int sig_no)
 
 void load_config()
 {
-	// config: location
+	//config: location
 	char *configFile = "config";
 	char configPath[255];
 	configPath[0] = '\0';
@@ -161,6 +161,8 @@ void load_config()
 
 void validate_config()
 {
+
+
 	// validate: input method
 	if (strcmp(inputMethod, "alsa") == 0) {
 		im = 1;
@@ -360,6 +362,7 @@ int * monstercat_filter (int * f, int bars) {
 // general: entry point
 int main(int argc, char **argv)
 {
+
 	load_config();
 
 	// general: define variables
@@ -369,29 +372,21 @@ int main(int argc, char **argv)
 	float fc[200];
 	float fre[200];
 	int f[200], lcf[200], hcf[200];
-	int *fm, *fl, *fr;
+	int *fl, *fr;
 	int fmem[200];
 	int flast[200];
 	int flastd[200];
 	float peak[201];
-	long int lpeak, hpeak,lpeakl, hpeakl,lpeakr, hpeakr;
+	long int lpeakl, hpeakl,lpeakr, hpeakr;
 	int sleep = 0;
 	int i, n, o, height, h, w, c, rest, virt;
 	float temp;
-
-	/* mono */
-	double in[2 * (M / 2 + 1)];
-	fftw_complex out[M / 2 + 1][2];
-	fftw_plan p;
-
-	/* stereo */
 	double inr[2 * (M / 2 + 1)];
 	fftw_complex outr[M / 2 + 1][2];
 	fftw_plan pr;
 	double inl[2 * (M / 2 + 1)];
 	fftw_complex outl[M / 2 + 1][2];
 	fftw_plan pl;
-
 	int cont = 1;
 	int fall[200];
 	float fpeak[200];
@@ -418,6 +413,7 @@ Options:\n\
 \n";
 	char ch;
 	
+
 	audio.format = -1;
 	audio.rate = 0;
 	if (stereo) audio.channels = 2;
@@ -425,7 +421,10 @@ Options:\n\
 
 	setlocale(LC_ALL, "");
 
-	for (i = 0; i < M; i++)audio.audio_out[i] = 0;
+	for (i = 0; i < M; i++) {
+		audio.audio_out_l[i] = 0;
+		audio.audio_out_r[i] = 0;
+	}
 
 	// general: handle Ctrl+C
 	struct sigaction action;
@@ -490,6 +489,7 @@ Options:\n\
 		n = 0;
 	}
 
+
 	// config: validate
 	validate_config();
 
@@ -545,8 +545,10 @@ Options:\n\
 		);
 			exit(EXIT_FAILURE);
 	}
-
-	p =  fftw_plan_dft_r2c_1d(M, in, *out, FFTW_MEASURE); //planning to rock
+	
+	if (!stereo) { 
+		pl =  fftw_plan_dft_r2c_1d(M, inl, *outl, FFTW_MEASURE); //planning to rock
+	}
 
 	if (stereo) {
 		pr =  fftw_plan_dft_r2c_1d(M, inr, *outr, FFTW_MEASURE); 
@@ -562,7 +564,8 @@ Options:\n\
 	if (om == 1 || om ==  2) {
 		init_terminal_ncurses(col, bgcol);
 	}
-				
+			
+
 	while  (1) {//jumbing back to this loop means that you resized the screen
 		for (i = 0; i < 200; i++) {
 			flast[i] = 0;
@@ -704,17 +707,17 @@ Options:\n\
 			// process: populate input buffer and check if input is present
 			if (!stereo) {			
 
-				lpeak = 0;
-				hpeak = 0;
+				lpeakl = 0;
+				hpeakl = 0;
 				for (i = 0; i < (2 * (M / 2 + 1)); i++) {
 					if (i < M) {
-						in[i] = audio.audio_out_l[i];
+						inl[i] = audio.audio_out_l[i];
 
-						if (audio.audio_out_l[i] > hpeak) hpeak = audio.audio_out_l[i];
-						if (audio.audio_out_l[i] < lpeak) lpeak = audio.audio_out_l[i];
-					} else in[i] = 0;
+						if (audio.audio_out_l[i] > hpeakl) hpeakl = audio.audio_out_l[i];
+						if (audio.audio_out_l[i] < lpeakl) lpeakl = audio.audio_out_l[i];
+					} else inl[i] = 0;
 				}
-				peak[bars] = (hpeak + abs(lpeak));
+				peak[bars] = (hpeakl + abs(lpeakl));
 			}
 
 			if (stereo) {
@@ -752,8 +755,8 @@ Options:\n\
 
 				// process: send input to external library
 				if (!stereo) {
-					fftw_execute(p);
-					fm = cava_fft(out,bars,lcf,hcf, k);
+					fftw_execute(pl);
+					fl = cava_fft(outl,bars,lcf,hcf, k);
 				}
 
 				if (stereo) {
@@ -781,10 +784,10 @@ Options:\n\
 			{
 				if (monstercat) {
 					if (stereo) {
-						fl = monstercat_filter(fl, bars);
-						fr = monstercat_filter(fr, bars);	
+						fl = monstercat_filter(fl, bars / 2);
+						fr = monstercat_filter(fr, bars / 2);	
 					} else {
-						fm = monstercat_filter(fm, bars);
+						fl = monstercat_filter(fl, bars);
 					}
 				
 				}
@@ -800,7 +803,7 @@ Options:\n\
 						}
 
 					} else {
-						f[o] = fm[o];
+						f[o] = fl[o];
 					}
 				}
 
