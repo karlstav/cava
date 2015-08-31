@@ -285,14 +285,14 @@ static bool directory_exists(const char * path) {
 }
 
 
-int * cava_fft(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200], int hcf[200], float k[200]) { 
+int * cava_fft(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200], int hcf[200], float k[200], int channel) { 
 	int o,i;
 	float peak[201];
-	static int *f;
+	static int fl[200];
+	static int fr[200];
 	int y[M / 2 + 1];
 	float temp;
 	
-	f = (int *) malloc(200 * sizeof(int));
 		
 	// process: separate frequency bands
 	for (o = 0; o < bars; o++) {
@@ -311,13 +311,13 @@ int * cava_fft(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200], int hcf[2
 		peak[o] = peak[o] / (hcf[o]-lcf[o]+1); //getting average
 		temp = peak[o] * k[o] * ((float)sens / 100); //multiplying with k and adjusting to sens settings
 		if (temp <= ignore)temp = 0;
-		f[o] = temp;
-
+		if (channel == 1) fl[o] = temp;
+		else fr[o] = temp;
 
 	}
 
-	return f;
- 
+	if (channel == 1) return fl;
+ 	else return fr;
 } 
 
 
@@ -671,11 +671,11 @@ Options:\n\
 				case 66:    // key down
 					sens -= 10;
 					break;
-				case 67:    // key right
+				case 68:    // key right
 					bw++;
 					cont = 0;
 					break;
-				case 68:    // key left
+				case 67:    // key left
 					if (bw > 1) bw--;
 					cont = 0;
 					break;
@@ -755,7 +755,7 @@ Options:\n\
 				// process: send input to external library
 				if (!stereo) {
 					fftw_execute(pl);
-					fl = cava_fft(outl,bars,lcf,hcf, k);
+					fl = cava_fft(outl,bars,lcf,hcf, k, 1);
 				}
 
 
@@ -764,8 +764,8 @@ Options:\n\
 					fftw_execute(pr);
 
 
-					fl = cava_fft(outl,bars/2,lcf,hcf, k);
-					fr = cava_fft(outr,bars/2,lcf,hcf, k);
+					fl = cava_fft(outl,bars/2,lcf,hcf, k, 1);
+					fr = cava_fft(outr,bars/2,lcf,hcf, k, 2);
 
 				}	
 
