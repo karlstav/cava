@@ -288,10 +288,12 @@ static bool directory_exists(const char * path) {
 int * cava_fft(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200], int hcf[200], float k[200]) { 
 	int o,i;
 	float peak[201];
-	static int f[200];
+	static int *f;
 	int y[M / 2 + 1];
 	float temp;
-
+	
+	f = (int *) malloc(200 * sizeof(int));
+		
 	// process: separate frequency bands
 	for (o = 0; o < bars; o++) {
 
@@ -546,13 +548,10 @@ Options:\n\
 			exit(EXIT_FAILURE);
 	}
 	
-	if (!stereo) { 
-		pl =  fftw_plan_dft_r2c_1d(M, inl, *outl, FFTW_MEASURE); //planning to rock
-	}
-
+	pl =  fftw_plan_dft_r2c_1d(M, inl, *outl, FFTW_MEASURE); //planning to rock
+	
 	if (stereo) {
 		pr =  fftw_plan_dft_r2c_1d(M, inr, *outr, FFTW_MEASURE); 
-		pl =  fftw_plan_dft_r2c_1d(M, inl, *outl, FFTW_MEASURE); 
 	}
 
 
@@ -759,16 +758,20 @@ Options:\n\
 					fl = cava_fft(outl,bars,lcf,hcf, k);
 				}
 
+
 				if (stereo) {
 					fftw_execute(pl);
 					fftw_execute(pr);
 
+
 					fl = cava_fft(outl,bars/2,lcf,hcf, k);
 					fr = cava_fft(outr,bars/2,lcf,hcf, k);
+
 				}	
 
-					
-			} else { //**if in sleep mode wait and continue**//
+
+			}			
+			 else { //**if in sleep mode wait and continue**//
 				#ifdef DEBUG
 					printw("no sound detected for 3 sec, going to sleep mode\n");
 				#endif
