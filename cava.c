@@ -134,7 +134,7 @@ void load_config()
 	framerate = iniparser_getint(ini, "general:framerate", 60);
 	lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 20);
 	highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
-        style =  (char *)iniparser_getstring(ini, "output:style", "mono");
+	style =  (char *)iniparser_getstring(ini, "output:style", "stereo");
 
 	smcount = iniparser_getsecnkeys(ini, "eq");
 	if (smcount > 0) {
@@ -285,7 +285,7 @@ static bool directory_exists(const char * path) {
 }
 
 
-int * cava_fft(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200], int hcf[200], float k[200], int channel) { 
+int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200], int hcf[200], float k[200], int channel) { 
 	int o,i;
 	float peak[201];
 	static int fl[200];
@@ -378,10 +378,8 @@ int main(int argc, char **argv)
 	int fmem[200];
 	int flast[200];
 	int flastd[200];
-	float peak[201];
-	long int lpeakl, hpeakl,lpeakr, hpeakr;
 	int sleep = 0;
-	int i, n, o, height, h, w, c, rest, virt;
+	int i, n, o, height, h, w, c, rest, virt, silence;
 	float temp;
 	double inr[2 * (M / 2 + 1)];
 	fftw_complex outr[M / 2 + 1][2];
@@ -609,11 +607,6 @@ Options:\n\
 		rest = (w - bars * bw - bars * bs + bs) / 2;
 		if (rest < 0)rest = 0;
 
-		if ((smcount > 0) && (bars > 0)) {
-			smh = (double)(((double)smcount)/((double)bars));
-		}
-
-
 		#ifdef DEBUG
 			printw("height: %d width: %d bars:%d bar width: %d rest: %d\n",
 						 w,
@@ -625,22 +618,23 @@ Options:\n\
 
 		if (stereo) bars = bars / 2; // in stereo onle half number of bars per channel
 
+		if ((smcount > 0) && (bars > 0)) {
+			smh = (double)(((double)smcount)/((double)bars));
+		}
+
+
 		double freqconst = log10((float)lowcf / (float)highcf) /  ((float)1 / ((float)bars + (float)1) - 1);
 	
 		//freqconst = -2;
 
 		// process: calculate cutoff frequencies
 		for (n = 0; n < bars + 1; n++) {
-			fc[n] = highcf * pow(10, freqconst * (-1) + ((((float)n + 1) / ((float)bars + 1)) *
-																			 freqconst)); //decided to cut it at 10k, little interesting to hear above
-			fre[n] = fc[n] / (audio.rate /
-											 2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
-			lcf[n] = fre[n] * (M /
-												4); //lfc stores the lower cut frequency foo each bar in the fft out buffer
+			fc[n] = highcf * pow(10, freqconst * (-1) + ((((float)n + 1) / ((float)bars + 1)) * freqconst)); //decided to cut it at 10k, little interesting to hear above
+			fre[n] = fc[n] / (audio.rate / 2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
+			lcf[n] = fre[n] * (M /4); //lfc stores the lower cut frequency foo each bar in the fft out buffer
 			if (n != 0) {
 				hcf[n - 1] = lcf[n] - 1;
-				if (lcf[n] <= lcf[n - 1])lcf[n] = lcf[n - 1] +
-																						1; //pushing the spectrum up if the expe function gets "clumped"
+				if (lcf[n] <= lcf[n - 1])lcf[n] = lcf[n - 1] + 1; //pushing the spectrum up if the expe function gets "clumped"
 				hcf[n - 1] = lcf[n] - 1;
 			}
 
@@ -703,70 +697,35 @@ Options:\n\
 				refresh();
 			#endif
 
-			// process: populate input buffer and check if input is present
-			if (!stereo) {			
-
-				lpeakl = 0;
-				hpeakl = 0;
-				for (i = 0; i < (2 * (M / 2 + 1)); i++) {
-					if (i < M) {
-						inl[i] = audio.audio_out_l[i];
-
-						if (audio.audio_out_l[i] > hpeakl) hpeakl = audio.audio_out_l[i];
-						if (audio.audio_out_l[i] < lpeakl) lpeakl = audio.audio_out_l[i];
-					} else inl[i] = 0;
+			// process: populate input buffer and check if input is present			
+			silence = 1;
+			for (i = 0; i < (2 * (M / 2 + 1)); i++) {
+				if (i < M) {
+					inl[i] = audio.audio_out_l[i];
+					if (stereo) inr[i] = audio.audio_out_r[i];
+					if (inl[i] || inr[i]) silence = 0;
+				} else {
+					inl[i] = 0;
+					if (stereo) inr[i] = 0;
 				}
-				peak[bars] = (hpeakl + abs(lpeakl));
 			}
 
-			if (stereo) {
-
-				lpeakr = 0;
-				hpeakl = 0;
-				lpeakr = 0;
-				hpeakl = 0;
-
-				for (i = 0; i < (2 * (M / 2 + 1)); i++) {
-					if (i < M) {
-						inl[i] = audio.audio_out_l[i];
-						inr[i] = audio.audio_out_r[i];
-						
-						if (audio.audio_out_l[i] > hpeakl) hpeakl = audio.audio_out_l[i];
-						if (audio.audio_out_l[i] < lpeakl) lpeakl = audio.audio_out_l[i];
-	
-						if (audio.audio_out_r[i] > hpeakr) hpeakr = audio.audio_out_r[i];
-						if (audio.audio_out_r[i] < lpeakr) lpeakr = audio.audio_out_r[i];
-					} else {
-						inl[i] = 0;
-						inr[i] = 0;
-					}
-				}
-				peak[bars] = ((hpeakl + abs(lpeakl)) + (hpeakr + abs(lpeakr))) / 2;
-
-
-			}
-
-			if (peak[bars] == 0)sleep++;
+			if (silence == 1)sleep++;
 			else sleep = 0;
 
 			// process: if input was present for the last 5 seconds apply FFT to it
 			if (sleep < framerate * 5) {
 
-				// process: send input to external library
-				if (!stereo) {
-					fftw_execute(pl);
-					fl = cava_fft(outl,bars,lcf,hcf, k, 1);
-				}
-
-
+				// process: execute FFT and sort frequency bands
 				if (stereo) {
 					fftw_execute(pl);
 					fftw_execute(pr);
 
-
-					fl = cava_fft(outl,bars/2,lcf,hcf, k, 1);
-					fr = cava_fft(outr,bars/2,lcf,hcf, k, 2);
-
+					fl = separate_freq_bands(outl,bars/2,lcf,hcf, k, 1);
+					fr = separate_freq_bands(outr,bars/2,lcf,hcf, k, 2);
+				} else {
+					fftw_execute(pl);
+					fl = separate_freq_bands(outl,bars,lcf,hcf, k, 1);
 				}	
 
 

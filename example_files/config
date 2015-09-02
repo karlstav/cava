@@ -17,7 +17,8 @@
 ; source = hw:Loopback,1 # ALSA device or FIFO path.
 
 [output]
-; method = ncurses # may be ncurses, noncurses or circle.
+; method = ncurses # method used to draw output may be ncurses, noncurses or circle.
+; style = stereo # visual styles, may be 'stereo' or 'mono'. Stereo mirrors both channels with low frequencies in center. Mono avrages both channels and outputs left to right lowest to highest frequencies
 
 [color]
 # supported colors are: red, green, yellow, magenta, cyan, white, blue, black.
