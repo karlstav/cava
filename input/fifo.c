@@ -38,16 +38,16 @@ void* input_fifo(void* data)
 			t = 0;
 			for (q = 0; q < (size / 4); q++) {
 
-				tempr = ( buf[ 4 * q - 1] << 2);
+				tempr = ( buf[ 4 * q + 3] << 2);
 
-				lo =  ( buf[4 * q ] >> 6);
+				lo =  ( buf[4 * q + 2] >> 6);
 				if (lo < 0)lo = abs(lo) + 1;
 				if (tempr >= 0)tempr = tempr + lo;
 				else tempr = tempr - lo;
 
-				templ = ( buf[ 4 * q - 3] << 2);
+				templ = ( buf[ 4 * q + 1] << 2);
 
-				lo =  ( buf[ 4 * q - 2] >> 6);
+				lo =  ( buf[ 4 * q] >> 6);
 				if (lo < 0)lo = abs(lo) + 1;
 				if (templ >= 0)templ = templ + lo;
 				else templ = templ - lo;
