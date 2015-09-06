@@ -552,10 +552,14 @@ Options:\n\
 		pr =  fftw_plan_dft_r2c_1d(M, inr, *outr, FFTW_MEASURE); 
 	}
 
+    // Check if we're running in a console
+    virt = strncmp(ttyname(0), "/dev/tty", 8);
 
-	virt = system("setfont cava.psf  >/dev/null 2>&1");
-	if (virt == 0) system("setterm -blank 0");
-
+    if (virt == 0) {
+        system("setfont cava.psf  >/dev/null 2>&1");
+        system("echo yep > /tmp/testing123");
+        system("setterm -blank 0");
+    }
 
 	//output: start ncurses mode
 	if (om == 1 || om ==  2) {
