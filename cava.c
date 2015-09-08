@@ -379,7 +379,7 @@ int main(int argc, char **argv)
 	int flast[200];
 	int flastd[200];
 	int sleep = 0;
-	int i, n, o, height, h, w, c, rest, virt, silence;
+	int i, n, o, height, h, w, c, rest, inAVirtualConsole, silence;
 	float temp;
 	double inr[2 * (M / 2 + 1)];
 	fftw_complex outr[M / 2 + 1][2];
@@ -552,10 +552,14 @@ Options:\n\
 		pr =  fftw_plan_dft_r2c_1d(M, inr, *outr, FFTW_MEASURE); 
 	}
 
+    // Check if we're running in a console
+    inAVirtualConsole = strncmp(ttyname(0), "/dev/tty", 8);
 
-	virt = system("setfont cava.psf  >/dev/null 2>&1");
-	if (virt == 0) system("setterm -blank 0");
-
+    if ( ! inAVirtualConsole) {
+        system("setfont cava.psf  >/dev/null 2>&1");
+        system("echo yep > /tmp/testing123");
+        system("setterm -blank 0");
+    }
 
 	//output: start ncurses mode
 	if (om == 1 || om ==  2) {
@@ -813,13 +817,13 @@ Options:\n\
 			#ifndef DEBUG
 				switch (om) {
 					case 1:
-						rc = draw_terminal_ncurses(virt, h, w, bars, bw, bs, rest, f, flastd);
+						rc = draw_terminal_ncurses(inAVirtualConsole, h, w, bars, bw, bs, rest, f, flastd);
 						break;
 					case 2:
-						rc = draw_terminal_bcircle(virt, h, w, f);
+						rc = draw_terminal_bcircle(inAVirtualConsole, h, w, f);
 						break;
 					case 3:
-						rc = draw_terminal_noncurses(virt, h, w, bars, bw, bs, rest, f, flastd);
+						rc = draw_terminal_noncurses(inAVirtualConsole, h, w, bars, bw, bs, rest, f, flastd);
 						break;
 				}
 
