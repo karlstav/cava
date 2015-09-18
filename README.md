@@ -50,6 +50,8 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 Updates
 -------
 
+9/18/2015 - 0.3.5 - now in stereo!
+
 8/25/2015 - 0.3.4 - added setting of bar width, bar spacing and frequency bandwidth to config file.
 
 8/9/2015 - 0.3.3 - autodetection of alsa loopback interface
@@ -279,8 +281,8 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 
 | Key | Description |
 | --- | ----------- |
-| <kbd>m</kbd> | Swtich between smoothing modes |
 | <kbd>up</kbd> / <kbd>down</kbd>| increase/decrease sensitivity |
+| <kbd>left</kbd> / <kbd>right</kbd>| increase/decrease bar width |
 | <kbd>r</kbd> | Reload configuration |
 | <kbd>q</kbd> or <kbd>CTRL-C</kbd>| Quit C.A.V.A. |
 
@@ -307,7 +309,8 @@ Configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.confi
     
     [output]
     method=ncurses
-    
+    style=stereo 
+
     [color]
     background=white
     foreground=blue
@@ -347,6 +350,7 @@ Configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.confi
 #### [output]
 
 * `method` may be `ncurses`, `noncurses` or `circle`.
+* `style` visual styles, may be 'stereo' or 'mono'. Stereo mirrors both channels with low frequencies in center. Mono avrages both channels and outputs left to right lowest to highest frequencies
 
 #### [color]
 
