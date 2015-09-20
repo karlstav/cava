@@ -9,7 +9,7 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
 thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( http://unix.stackexchange.com/questions/113695/gif-screencastng-the-unix-way).
 
-[Demo video](http://youtu.be/vA4RyatP064) (old)
+[Demo video](https://youtu.be/9PSp8VA6yjU)
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
