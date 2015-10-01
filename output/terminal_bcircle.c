@@ -3,8 +3,11 @@
 #include <wchar.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
-#define M_PI 3.141
+#ifndef M_PI
+#define M_PI 3.141592
+#endif
 #define DEGTORAD(deg) (deg * (180.0f/M_PI))
 #define DOT 0x2588
 
