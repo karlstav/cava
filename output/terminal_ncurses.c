@@ -69,6 +69,7 @@ int draw_terminal_ncurses(int virt, int h, int w, int bars, int bw, int bs, int 
 void cleanup_terminal_ncurses(void)
 {
 	echo();
+	system("setfont  >/dev/null 2>&1");
 	system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
 	system("setterm -blank 10");
 	endwin();

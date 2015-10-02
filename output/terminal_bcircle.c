@@ -80,6 +80,7 @@ int draw_terminal_bcircle(int virt, int h, int w, int f[200]) {
 void cleanup_terminal_bcircle(void)
 {
   echo();
+  system("setfont >/dev/null 2>&1");
   system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
   system("setterm -blank 10");
   endwin();
