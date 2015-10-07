@@ -338,7 +338,7 @@ Configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.confi
 * `sensitivity` is sensitivity %. Default: `100`. Accepts only non-negative values.
 * `bars` defines the amount of bars. `0` sets it to auto. Default: `0`. Accepts only non-negative values.
 * `bar_width` width of bars in chrachters. Default `3`.
-* `bar_spacing` space between bars in charachters. Default `1`.
+* `bar_spacing` space between bars in characters. Default `1`.
 * `lower_cutoff_freq` defines the lower cutof frequency for the far left bar. Default: `50`.
 * `higher_cutoff_freq` defines the higher cutoff frequency for the far right bar. Default: `10000`. Note: there is a minimum total bandwith of 43Mhz x number of bars. Cava will automaticly increase the higher cuttoff if a too low band is specified.
 
