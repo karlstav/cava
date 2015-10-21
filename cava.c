@@ -800,8 +800,8 @@ Options:\n\
 						f[o] = fmem[o];
 
 						#ifdef DEBUG
-							mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%f adjpeak: %d \n", o, fc[o], fc[o + 1],
-										 lcf[o], hcf[o], peak[o], f[o]);
+							mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%d \n", o, fc[o], fc[o + 1],
+										 lcf[o], hcf[o], f[o]);
 						#endif
 					}
 				}
