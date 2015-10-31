@@ -116,7 +116,7 @@ void load_config()
 	if (fp) {
 		fclose(fp);
 	} else {
-		print("Unable to access config '%s', exiting...\n", configPath);
+		printf("Unable to access config '%s', exiting...\n", configPath);
 		exit(EXIT_FAILURE);
 	}
 
