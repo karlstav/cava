@@ -113,12 +113,12 @@ void load_config()
 	// config: create empty file
 	strcat(configPath, configFile);
 	FILE *fp = fopen(configPath, "ab+");
-    if (fp) {
-        fclose(fp);
-    } else {
-        printf("Unable to access config '%s', exiting...\n", configPath);
+	if (fp) {
+		fclose(fp);
+	} else {
+		print("Unable to access config '%s', exiting...\n", configPath);
 		exit(EXIT_FAILURE);
-    }
+	}
 
 	// config: parse ini
 	dictionary* ini = iniparser_load(configPath);
