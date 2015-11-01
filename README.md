@@ -103,6 +103,10 @@ openSUSE:
 
     zypper install alsa-devel ncurses-devel fftw3-devel
 
+Fedora:
+
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel
+   
 
 Getting started
 ---------------
@@ -114,10 +118,13 @@ You can use the following for compilation options, value in *italic style* is th
 | Name | Value | Description |
 | ---- | ----- | ----------- |
 | `debug` | *0* or 1 | Debugging message switch |
+| `SYSTEM_INIPARSER` | *0* or 1 | Allow use of system-wide iniparser |
 
 For example, turning on debugging messages:
 
     make debug=1
+    
+System-wide iniparser is available for at least Arch, Fedore and Gentoo
 
 ### Installing manually
 
@@ -145,6 +152,19 @@ On openSUSE you need to add jubalh's home repository to install cava via zypper.
 	zypper in cava
 
 If you use 13.2 or 13.1 just replace *openSUSE_Tumbleweed* with *openSUSE_13.2*, adjust it to your version.
+
+### Fedora
+
+[RPM spec file](https://gist.github.com/sedrubal/617d40deb7452a25d004#file-cava-spec)
+
+### Arch
+
+Cava is in [AUR](https://aur.archlinux.org/packages/cava/), but is as of November 2015 slightly out of date.
+
+    yaourt -S cava
+
+
+
 
 Capturing audio
 ---------------
