@@ -51,23 +51,15 @@ dnl ######################
 dnl checking for fftw3 
 dnl ######################
 
-PKG_CHECK_MODULES([fftw3], [fftw3 >= 3], [
-	AC_SUBST(fftw3_LIBS)
-	AC_SUBST(fftw3_CFLAGS)
-	CPPFLAGS="$CPPFLAGS $fftw3_CFLAGS"
-	AC_CHECK_HEADERS([fftw3.h],
-		LIBS="$LIBS $fftw3_LIBS"
-	,
-		if test "$fftw" = "yes" ; then
-			AC_MSG_ERROR([missing fftw3.h header])
-		fi
-	)
-],
-	if test "$fftw" = "yes" ; then
-		AC_MSG_ERROR([fftw3 library is required!])
-	fi
-)
 
+AC_CHECK_LIB(fftw3,fftw_execute, have_fftw=yes, have_fftw=no)
+    if [[ $have_fftw = "yes" ]] ; then
+      LIBS="$LIBS -lfftw3"
+    fi
+
+    if [[ $have_fftw = "no" ]] ; then
+      AC_MSG_ERROR([fftw library is required!])
+    fi
 
 dnl ######################
 dnl checking for ncursesw
@@ -90,7 +82,7 @@ AC_CHECK_LIB($curses_lib, initscr,
 		LIBS="$LIBS -l$curses_lib"
 	fi
 	,
-	AC_MSG_ERROR([$curses_lib library is required])
+	AC_MSG_ERROR([ncursesw library is required!])
 	)
 AC_CHECK_HEADERS([curses.h], , AC_MSG_ERROR([missing curses.h header]))
 

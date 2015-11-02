@@ -205,10 +205,10 @@ CC = gcc -std=gnu99
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2
 CPP = gcc -E
-CPPFLAGS =    -I/usr/include/ncursesw
+CPPFLAGS =  -I/usr/include/ncursesw
 CURSES_CONFIG = /usr/bin/ncursesw5-config
 CYGPATH_W = echo
-DEFS = -DPACKAGE_NAME=\"cava\" -DPACKAGE_TARNAME=\"cava\" -DPACKAGE_VERSION=\"0.3.5\" -DPACKAGE_STRING=\"cava\ 0.3.5\" -DPACKAGE_BUGREPORT=\"karl@stavestrand.no\" -DPACKAGE_URL=\"\" -DPACKAGE=\"cava\" -DVERSION=\"0.3.5\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DLT_OBJDIR=\".libs/\" -DHAVE_PTHREAD_H=1 -DHAVE_FFTW3_H=1 -DHAVE_CURSES_H=1
+DEFS = -DPACKAGE_NAME=\"cava\" -DPACKAGE_TARNAME=\"cava\" -DPACKAGE_VERSION=\"0.3.5\" -DPACKAGE_STRING=\"cava\ 0.3.5\" -DPACKAGE_BUGREPORT=\"karl@stavestrand.no\" -DPACKAGE_URL=\"\" -DPACKAGE=\"cava\" -DVERSION=\"0.3.5\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DLT_OBJDIR=\".libs/\" -DHAVE_PTHREAD_H=1 -DHAVE_CURSES_H=1
 DEPDIR = .deps
 DLLTOOL = false
 DSYMUTIL = 
@@ -228,7 +228,7 @@ INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LD = /usr/bin/ld -m elf_x86_64
 LDFLAGS = 
 LIBOBJS = 
-LIBS =  -lpthread -lasound -lm -lfftw3   -lncursesw -ltinfo
+LIBS =  -lpthread -lasound -lm -lfftw3 -lncursesw -ltinfo
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LIPO = 
 LN_S = ln -s
@@ -250,9 +250,6 @@ PACKAGE_TARNAME = cava
 PACKAGE_URL = 
 PACKAGE_VERSION = 0.3.5
 PATH_SEPARATOR = :
-PKG_CONFIG = /usr/bin/pkg-config
-PKG_CONFIG_LIBDIR = 
-PKG_CONFIG_PATH = 
 RANLIB = ranlib
 SED = /bin/sed
 SET_MAKE = 
@@ -284,8 +281,6 @@ datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
 dvidir = ${docdir}
 exec_prefix = ${prefix}
-fftw3_CFLAGS =  
-fftw3_LIBS = -lfftw3  
 host = x86_64-unknown-linux-gnu
 host_alias = 
 host_cpu = x86_64
