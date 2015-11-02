@@ -1,11 +1,13 @@
 AC_INIT([cava], [0.3.5], [karl@stavestrand.no])
-AM_INIT_AUTOMAKE([subdir-objects])
+AM_INIT_AUTOMAKE([subdir-objects -Wall -Werror foreign])
+AC_CONFIG_MACRO_DIRS([m4])
+AM_PROG_AR
 LT_INIT
 AC_PROG_CC
+AC_PROG_CC_STDC
 
 AM_PROG_LIBTOOL
 
-AC_CONFIG_MACRO_DIRS([m4])
 
 
 dnl ######################

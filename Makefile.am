@@ -11,8 +11,7 @@ M_CPPFLAGS = -DSYSTEM_LIBINIPARSER=@SYSTEM_LIBINIPARSER@
 bin_PROGRAMS = cava
 cava_SOURCES = cava.c
 cava_LDADD = -liniparser
-cava_CPPFLAGS =
-
+cava_CPPFLAGS = -std=c99 -Wall -Wextra
 
 if !SYSTEM_LIBINIPARSER
     cava_SOURCES += iniparser/libiniparser.la
