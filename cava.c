@@ -137,7 +137,7 @@ void load_config()
 	bs = iniparser_getint(ini, "general:bar_spacing", 1);
 	sens = iniparser_getint(ini, "general:sensitivity", 100);
 	framerate = iniparser_getint(ini, "general:framerate", 60);
-	lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 20);
+	lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
 	highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
 	style =  (char *)iniparser_getstring(ini, "output:style", "stereo");
 
