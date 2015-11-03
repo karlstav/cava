@@ -86,38 +86,51 @@ void sig_handler(int sig_no)
 	raise(sig_no);
 }
 
-void load_config()
+void load_config(char configPath[255])
 {
-	//config: location
-	char *configFile = "config";
-	char configPath[255];
-	configPath[0] = '\0';
 
+FILE *fp;
+	
+	//config: creating path to default config file
 	if (configPath[0] == '\0') {
+		char *configFile = "config";
 		char *configHome = getenv("XDG_CONFIG_HOME");
 		if (configHome != NULL) {
-			snprintf(configPath, sizeof(configPath), "%s/%s/", configHome, PACKAGE);
+			sprintf(configPath,"%s/%s/", configHome, PACKAGE);
 		} else {
 			configHome = getenv("HOME");
 			if (configHome != NULL) {
-				snprintf(configPath, sizeof(configPath), "%s/%s/%s/", configHome, ".config", PACKAGE);
 			} else {
+				sprintf(configPath,"%s/%s/%s/", configHome, ".config", PACKAGE);
 				printf("No HOME found (ERR_HOMELESS), exiting...");
 				exit(EXIT_FAILURE);
 			}
 		}
-	}
-	// config: create directory
-	mkdir(configPath, 0777);
+	
+		// config: create directory
+		mkdir(configPath, 0777);
 
-	// config: create empty file
-	strcat(configPath, configFile);
-	FILE *fp = fopen(configPath, "ab+");
-	if (fp) {
-		fclose(fp);
-	} else {
-		printf("Unable to access config '%s', exiting...\n", configPath);
-		exit(EXIT_FAILURE);
+		// config: adding default filename file
+		strcat(configPath, configFile);
+		
+		fp = fopen(configPath, "ab+");
+		if (fp) {
+			fclose(fp);
+		} else {
+			printf("Unable to access config '%s', exiting...\n", configPath);
+			exit(EXIT_FAILURE);
+		}
+
+
+	} else { //opening specified file
+
+		fp = fopen(configPath, "rb+");	
+		if (fp) {
+			fclose(fp);
+		} else {
+			printf("Unable to open file '%s', exiting...\n", configPath);
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	// config: parse ini
@@ -370,7 +383,6 @@ int * monstercat_filter (int * f, int bars) {
 int main(int argc, char **argv)
 {
 
-	load_config();
 
 	// general: define variables
 	pthread_t  p_thread;
@@ -398,27 +410,18 @@ int main(int argc, char **argv)
 	float k[200];
 	float g;
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
+	char configPath[255];
 	char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
 Visualize audio input in terminal. \n\
 \n\
 Options:\n\
-	-b 1..(console columns/2-1) or 200  number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many bars)\n\
-	-i 'input method'     method used for listening to audio, supports: 'alsa' and 'fifo'\n\
-	-o 'output method'      method used for outputting processed data, supports: 'ncurses', 'noncurses' and 'circle'\n\
-	-d 'alsa device'      name of alsa capture device (default 'hw:Loopback,1')\n\
-	-p 'fifo path'        path to fifo (default '/tmp/mpd.fifo')\n\
-	-c foreground color     supported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)\n\
-	-C background color     supported colors: same as above (default: no change)\n\
-	-s sensitivity        sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...\n\
-	-f framerate        FPS limit, if you are experiencing high CPU usage, try reducing this (default: 60)\n\
-	-m mode         set mode (normal, scientific, waves)\n\
-	-h          print the usage\n\
+	-p          path to config file\n\
 	-v          print version\n\
 \n";
-	char ch;
+	char ch = '\0';
 	
-
+	configPath[0] = '\0';
 	audio.format = -1;
 	audio.rate = 0;
 	if (stereo) audio.channels = 2;
@@ -437,50 +440,17 @@ Options:\n\
 	action.sa_handler = &sig_handler;
 	sigaction(SIGINT, &action, NULL);
 	sigaction(SIGTERM, &action, NULL);
-
+	
 
 	// general: handle command-line arguments
-	while ((c = getopt (argc, argv, "p:i:o:m:b:d:s:f:c:C:hv")) != -1) {
+	while ((c = getopt (argc, argv, "p:vh")) != -1) {
 		switch (c) {
-			case 'i': // argument: input method
-				im = 0;
-				inputMethod = optarg;
-				break;
 			case 'p': // argument: fifo path
-				audio.source = optarg;
-				break;
-			case 'o': // argument: output method
-				om = 0;
-				outputMethod = optarg;
-				break;
-			case 'm': // argument: smoothing mode
-				mode = 0;
-				modeString = optarg;
-				break;
-			case 'b': // argument: bar count
-				fixedbars = atoi(optarg);
-				if (fixedbars) autobars = 0;
-				break;
-			case 'd': // argument: alsa device
-				audio.source  = optarg;
-				break;
-			case 's': // argument: sensitivity
-				sens = atoi(optarg);
-				break;
-			case 'f': // argument: framerate
-				framerate = atoi(optarg);
-				break;
-			case 'c': // argument: foreground color
-				col = -2;
-				color = optarg;
-				break;
-			case 'C': // argument: background color
-				bgcol = -2;
-				bcolor = optarg;
+				snprintf(configPath, sizeof(configPath), "%s", optarg);
 				break;
 			case 'h': // argument: print usage
 				printf ("%s", usage);
-				return 0;
+				return 1;
 			case '?': // argument: print usage
 				printf ("%s", usage);
 				return 1;
@@ -493,6 +463,8 @@ Options:\n\
 
 		n = 0;
 	}
+	
+	load_config(configPath);
 
 
 	// config: validate
@@ -690,7 +662,7 @@ Options:\n\
 					}
 					break;
 				case 'r': //reload config
-					load_config();
+					load_config(configPath);
 					validate_config();
 					cont = 0;
 					break;
