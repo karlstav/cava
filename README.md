@@ -47,29 +47,6 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 
-Updates
--------
-
-9/18/2015 - 0.3.5 - now in stereo!
-
-8/25/2015 - 0.3.4 - added setting of bar width, bar spacing and frequency bandwidth to config file.
-
-8/9/2015 - 0.3.3 - autodetection of alsa loopback interface
-
-7/16/2015 - 0.3.2 - added legacy ouput mode 'noncurses', for people experiencing issues with ncurses
-
-7/15/2015 - 0.3.1 - added config file
-
-7/12/2015 - 0.3.0 - Modular source code
-
-5/23/2015 - 0.2.0 - Switched to ncurses
-
-4/23/2015 - Fixed terminal window resizing, added smoothing 
-
-4/19/2015 - Added Monstercat style FFT easing (by [CelestialWalrus)](https://github.com/CelestialWalrus).
-
-9/22/2014 - Added support for mpd FIFO input.
-
 What it is
 ----------
 
@@ -108,24 +85,24 @@ Fedora:
     dnf install alsa-lib-devel ncurses-devel fftw3-devel
    
 
+A system-wide installation of Iniparser will also be used if it is installed, it not the bundled version will be used.
+
+
 Getting started
 ---------------
 
+    ./autogen.sh
+    ./configure
     make
 
-You can use the following for compilation options, value in *italic style* is the default value:
+You can use the following for compilation options:
 
-| Name | Value | Description |
-| ---- | ----- | ----------- |
-| `debug` | *0* or 1 | Debugging message switch |
-| `SYSTEM_INIPARSER` | *0* or 1 | Allow use of system-wide iniparser |
+    --enable-debug          enable debug messages and frequency table output
 
 For example, turning on debugging messages:
 
-    make debug=1
+    ./configure --enable-debug 
     
-System-wide iniparser is available for at least Arch, Fedore and Gentoo
-
 ### Installing manually
 
 Install `cava` to default `/usr/local`:
@@ -134,15 +111,11 @@ Install `cava` to default `/usr/local`:
 
 Or you can change `PREFIX`, for example:
 
-    make PREFIX=$HOME/.local install
+   ./configure --prefix=PREFIX
 
 ### Uninstalling
 
     make uninstall
-
-Or:
-
-    make PREFIX=$HOME/.local uninstall
 
 ### openSUSE
 
@@ -261,6 +234,8 @@ Actually, `setfont` is supposed to return the default font, but this usually isn
 
 In terminal emulators like `xterm`, the font settings is chosen in the software and cannot be changed by an application. So find your terminal settings and try out different fonts and settings. Also character spacing affects the look of the bar spectrum.
 
+Speed preformance is also different, urxvt is the best I found so far, while Gnome-terminal is quite slow.
+
 Cava also disables the terminal cursor, and turns it back on on exit, but in case it terminates unexpectedly, run `setterm -cursor on` to get it back.e
 
 Tip: Cava will look much nicer in small font sizes. Use a second terminal emulator for cava and set the font size to 1. Warning, can cause high CPU usage and latency if the terminal window is too large!
@@ -280,20 +255,12 @@ Usage
     Visualize audio input in terminal. 
 
     Options:
-        -b 1..(console columns/2-1) or 200  number of bars in the spectrum (default 25 + fills up the console), program will automatically adjust if there are too many frequency bands)
-        -i 'input method'           method used for listnening to audio, supports: 'alsa' and 'fifo'
-        -o 'output method'          method used for outputting processed data, supports: 'ncurses', 'noncurses' and 'circle'
-        -d 'alsa device'            name of alsa capture device (default 'hw:Loopback,1')
-        -p 'fifo path'              path to fifo (default '/tmp/mpd.fifo')
-        -c foreground color         suported colors: red, green, yellow, magenta, cyan, white, blue, black (default: cyan)
-        -C background color         supported colors: same as above (default: no change)
-        -s sensitivity              sensitivity percentage, 0% - no response, 50% - half, 100% - normal, etc...
-        -f framerate                FPS limit, if you are experiencing high CPU usage, try redcing this (default: 60)
-        -m mode                 set mode (normal, scientific, waves)
-        -h                  print the usage
-        -v                  print version
+    	    -p          path to config file
+    	    -v          print version
 
-Exit with ctrl+c.
+
+
+Exit with ctrl+c or q.
 
 If cava quits unexpectedly or is force killed, echo must be turned on manually with `stty -echo`.
 
@@ -311,89 +278,8 @@ Configuration
 
 Configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.config/cava/config`.
 
-### Example file:
 
-    [general]
-    mode=normal
-    framerate=60
-    sensitivity=100
-    bars=0
-    bar_width = 3
-    bar_spacing = 1
-    lower_cutoff_freq = 300
-    higher_cutoff_freq = 15000
-    
-    [input]
-    method=fifo
-    source=/tmp/mpd.fifo
-    
-    [output]
-    method=ncurses
-    style=stereo 
-
-    [color]
-    background=white
-    foreground=blue
-    
-    [smoothing]
-    integral=0.7
-    monstercat=1
-    gravity=1
-    ignore=0
-    
-    [eq]
-    ; naming of keys doesn't matter
-    1=0.5
-    2=0.6
-    3=0.7
-    4=0.3
-    5=0.2
-
-### Sections:
-
-#### [general]
-
-* `mode` defines smoothing mode, can be `normal`, `scientific` or `waves`. Default: `normal`.
-* `framerate` is framerate (FPS). Default: `60`. Accepts only non-negative values.
-* `sensitivity` is sensitivity %. Default: `100`. Accepts only non-negative values.
-* `bars` defines the amount of bars. `0` sets it to auto. Default: `0`. Accepts only non-negative values.
-* `bar_width` width of bars in chrachters. Default `3`.
-* `bar_spacing` space between bars in characters. Default `1`.
-* `lower_cutoff_freq` defines the lower cutof frequency for the far left bar. Default: `50`.
-* `higher_cutoff_freq` defines the higher cutoff frequency for the far right bar. Default: `10000`. Note: there is a minimum total bandwith of 43Mhz x number of bars. Cava will automaticly increase the higher cuttoff if a too low band is specified.
-
-#### [input]
-
-* `method` may be `alsa` or `fifo`.
-* `source` is the ALSA path or FIFO path.
-
-#### [output]
-
-* `method` may be `ncurses`, `noncurses` or `circle`.
-* `style` visual styles, may be 'stereo' or 'mono'. Stereo mirrors both channels with low frequencies in center. Mono avrages both channels and outputs left to right lowest to highest frequencies
-
-#### [color]
-
-* `background` is the background color.
-* `foreground` is the foreground (bars) color.
-
-#### [smoothing]
-
-* `integral` sets the multiplier for the integral smoothing calculations. Default: `0.7`. Another example: `0.5`. Accepts only non-negative values.
-* `monstercat` disables or enables the so-called "Monstercat smoothing". Default: `1`. Accepts only `0` or `1`.
-* `gravity` sets the gravity multiplier. Default: `1`. Accepts only non-negative values.
-* `ignore` zeroes bars with height lower than this setting's value. Default: `0`. Accepts only non-negative values.
-
-#### [eq]
-
-This one is tricky. You can have as much keys as you want. More keys = more precision.
-
-**How it works:**
-
-1. Cava takes values from this section in the order of appearance (naming of the keys doesn't really matter) and puts them into an array.
-2. Visualization is divided into `x` sections (where x is the amount of values) and all bars in each of these sections are multiplied by the corresponding value from that array.
-
-**Examples:**
+**Examples on how the equalizer works:**
 
     [eq]
     1=0

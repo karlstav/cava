@@ -8,6 +8,22 @@ AC_PROG_CC_STDC
 
 AM_PROG_LIBTOOL
 
+AC_ARG_ENABLE([debug],
+  AS_HELP_STRING([--enable-debug],
+    [enable debug messages and frequency table output])
+)
+
+AS_IF([test "x$enable_debug" = "xyes"], [
+  dnl enabling debug mode not working
+  CPPFLAGS="$CPPFLAGS -DDEBUG"
+])
+
+dnl AS_IF([test "x$enable_debug" = "xno"], [
+  dnl enabling debug mode
+dnl  CPPFLAGS=-DDEBUG
+dnl ])
+
+
 
 
 dnl ######################
