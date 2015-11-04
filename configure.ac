@@ -1,4 +1,4 @@
-AC_INIT([cava], [0.3.5], [karl@stavestrand.no])
+AC_INIT([cava], [m4_esyscmd_s([git describe --always --tags --dirty])], [karl@stavestrand.no])
 AM_INIT_AUTOMAKE([subdir-objects -Wall -Werror foreign])
 AC_CONFIG_MACRO_DIRS([m4])
 AM_PROG_AR
@@ -8,21 +8,20 @@ AC_PROG_CC_STDC
 
 AM_PROG_LIBTOOL
 
+
+dnl ############################
+dnl checking if debug is enabled
+dnl ############################
+
 AC_ARG_ENABLE([debug],
   AS_HELP_STRING([--enable-debug],
     [enable debug messages and frequency table output])
 )
 
 AS_IF([test "x$enable_debug" = "xyes"], [
-  dnl enabling debug mode not working
+  dnl enabling debug mode
   CPPFLAGS="$CPPFLAGS -DDEBUG"
 ])
-
-dnl AS_IF([test "x$enable_debug" = "xno"], [
-  dnl enabling debug mode
-dnl  CPPFLAGS=-DDEBUG
-dnl ])
-
 
 
 
