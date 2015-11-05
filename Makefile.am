@@ -1,5 +1,8 @@
 AUTOMAKE_OPTIONS = foreign
 
+PACKAGE ?= cava
+VERSION ?= $(shell git describe --always --tags --dirty)
+
 if !SYSTEM_LIBINIPARSER
     SUBDIRS = iniparser
 endif

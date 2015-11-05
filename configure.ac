@@ -1,6 +1,6 @@
 AC_INIT([cava], [m4_esyscmd_s([git describe --always --tags --dirty])], [karl@stavestrand.no])
 AM_INIT_AUTOMAKE([subdir-objects -Wall -Werror foreign])
-AC_CONFIG_MACRO_DIRS([m4])
+dnl AC_CONFIG_MACRO_DIRS([m4])
 AM_PROG_AR
 LT_INIT
 AC_PROG_CC

@@ -100,8 +100,8 @@ FILE *fp;
 		} else {
 			configHome = getenv("HOME");
 			if (configHome != NULL) {
-			} else {
 				sprintf(configPath,"%s/%s/%s/", configHome, ".config", PACKAGE);
+			} else {
 				printf("No HOME found (ERR_HOMELESS), exiting...");
 				exit(EXIT_FAILURE);
 			}
