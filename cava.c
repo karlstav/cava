@@ -529,10 +529,11 @@ Options:\n\
 		pr =  fftw_plan_dft_r2c_1d(M, inr, *outr, FFTW_MEASURE); 
 	}
 
-    // Check if we're running in a console
-    inAVirtualConsole = strncmp(ttyname(0), "/dev/tty", 8);
+    // Check if we're running in a Virtual console todo: replace virtual console with terminal emulator
+    inAVirtualConsole = 1;
+    if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0), "/dev/console") == 0) inAVirtualConsole = 0;
 
-    if ( ! inAVirtualConsole) {
+    if (!inAVirtualConsole) {
         system("setfont cava.psf  >/dev/null 2>&1");
         system("echo yep > /tmp/testing123");
         system("setterm -blank 0");
