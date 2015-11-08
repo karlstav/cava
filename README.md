@@ -15,34 +15,27 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [C.A.V.A. ](#cava)
-  - [Updates](#updates)
-  - [What it is](#what-it-is)
-  - [Build requirements](#build-requirements)
-  - [Getting started](#getting-started)
-    - [Installing](#installing)
-    - [Uninstalling](#uninstalling)
-  - [Capturing audio](#capturing-audio)
-    - [From loopback device](#from-loopback-device)
-      - [PulseAudio (easy)](#pulseaudio-easy)
-      - [ALSA (hard)](#alsa-hard)
-    - [From mpd's fifo output](#from-mpds-fifo-output)
-  - [Running via ssh](#running-via-ssh)
-  - [Font notes](#font-notes)
-    - [In ttys](#in-ttys)
-    - [In terminal emulators](#in-terminal-emulators)
-  - [Latency notes](#latency-notes)
-  - [Usage](#usage)
-    - [Controls](#controls)
-  - [Configuration](#configuration)
-    - [Example file:](#example-file)
-    - [Sections:](#sections)
-      - [[general]](#general)
-      - [[input]](#input)
-      - [[output]](#output)
-      - [[color]](#color)
-      - [[smoothing]](#smoothing)
-      - [[eq]](#eq)
+- [What it is](#what-it-is)
+- [Build requirements](#build-requirements)
+- [Getting started](#getting-started)
+  - [Installing manually](#installing-manually)
+  - [Uninstalling](#uninstalling)
+  - [openSUSE](#opensuse)
+  - [Fedora](#fedora)
+  - [Arch](#arch)
+- [Capturing audio](#capturing-audio)
+  - [From loopback device](#from-loopback-device)
+    - [PulseAudio (easy)](#pulseaudio-easy)
+    - [ALSA (hard)](#alsa-hard)
+  - [From mpd's fifo output](#from-mpds-fifo-output)
+- [Running via ssh](#running-via-ssh)
+- [Font notes](#font-notes)
+  - [In ttys](#in-ttys)
+  - [In terminal emulators](#in-terminal-emulators)
+- [Latency notes](#latency-notes)
+- [Usage](#usage)
+  - [Controls](#controls)
+- [Configuration](#configuration)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -207,7 +200,7 @@ Running via ssh
 
 To run via ssh to an external monitor, redirect output to `/dev/console`:
 
-     ~# ./cava [options] > /dev/console
+     ~# ./cava  <> /dev/console >&0 2>&1
 
 exit with ctrl+z then run 'bg' to keep it running after you log out.
 
