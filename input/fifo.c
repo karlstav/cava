@@ -1,3 +1,13 @@
+struct audio_data {
+
+        int audio_out_r[2048];
+        int audio_out_l[2048];
+        int format;
+        unsigned int rate ;
+        char *source; //alsa device or fifo path
+        int im; //input mode alsa or fifo
+        int channels;
+};
 
 
 //input: FIFO

@@ -2,6 +2,9 @@
 #include <locale.h>
 #include <wchar.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+
 
 int init_terminal_ncurses(int col, int bgcol) {
 

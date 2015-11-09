@@ -119,8 +119,6 @@ else
     AC_MSG_NOTICE([Building iniparser])
 fi
 
-dnl to do, use "noncurses mode" if no ncurses installed. use mpd fifo only if no alsa dev files found 
-
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 

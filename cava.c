@@ -6,7 +6,8 @@
 #include <stdbool.h>
 #include <termios.h>
 #include <math.h>
-#include <alsa/asoundlib.h>
+#include <fcntl.h> 
+
 #include <sys/ioctl.h>
 #include <fftw3.h>
 #define max(a,b) \
@@ -22,8 +23,6 @@
 #include <getopt.h>
 #include <pthread.h>
 #include <dirent.h>
-#include "output/terminal_noncurses.h"
-#include "output/terminal_noncurses.c"
 
 #ifdef NCURSES
 #include "output/terminal_ncurses.h"
@@ -32,10 +31,20 @@
 #include "output/terminal_bcircle.c"
 #endif
 
-#include "input/alsa.h"
-#include "input/alsa.c"
+#include "output/terminal_noncurses.h"
+#include "output/terminal_noncurses.c"
+
 #include "input/fifo.h"
 #include "input/fifo.c"
+
+#ifdef ALSA
+#include <alsa/asoundlib.h>
+#include "input/alsa.h"
+#include "input/alsa.c"
+#endif
+
+
+
 #include <iniparser.h>
 
 
@@ -142,7 +151,13 @@ FILE *fp;
 	// config: parse ini
 	dictionary* ini = iniparser_load(configPath);
 
-	inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa");
+	#ifdef ALSA
+		inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa");
+	#endif
+	#ifndef ALSA
+		inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo");
+	#endif
+
 	#ifdef NCURSES
 		outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
 	#endif
@@ -195,14 +210,26 @@ void validate_config()
 	// validate: input method
 	if (strcmp(inputMethod, "alsa") == 0) {
 		im = 1;
+		#ifndef ALSA
+		        fprintf(stderr,
+                                "cava was built without alsa support, install alsa dev files and run make clean && ./configure && make again\n");
+                        exit(EXIT_FAILURE);
+                #endif
 	}
 	if (strcmp(inputMethod, "fifo") == 0) {
 		im = 2;
 	}
 	if (im == 0) {
+		#ifdef ALSA
 		fprintf(stderr,
 			"input method %s is not supported, supported methods are: 'alsa' and 'fifo'\n",
 						inputMethod);
+		#endif
+		#ifndef ALSA
+		fprintf(stderr,
+                        "input method %s is not supported, supported methods are: 'fifo'\n",
+                                                inputMethod);
+		#endif
 		exit(EXIT_FAILURE);
 	}
 
@@ -214,7 +241,7 @@ void validate_config()
 				"cava was built without ncurses support, install ncursesw dev files and run make clean && ./configure && make again\n");
 			exit(EXIT_FAILURE);
 		#endif
-		}
+	}
 	if (strcmp(outputMethod, "circle") == 0) {
 		 om = 2;
 		#ifndef NCURSES
@@ -222,7 +249,7 @@ void validate_config()
 				"cava was built without ncurses support, install ncursesw dev files and run make clean && ./configure && make again\n");
 			exit(EXIT_FAILURE);
 		#endif
-		}
+	}
 	if (strcmp(outputMethod, "noncurses") == 0) {
 		om = 3;
 		bgcol = 0;
@@ -324,6 +351,7 @@ void validate_config()
 	// read & validate: eq
 }
 
+#ifdef ALSA
 static bool is_loop_device_for_sure(const char * text) {
 	const char * const LOOPBACK_DEVICE_PREFIX = "hw:Loopback,";
 	return strncmp(text, LOOPBACK_DEVICE_PREFIX, strlen(LOOPBACK_DEVICE_PREFIX)) == 0;
@@ -336,6 +364,7 @@ static bool directory_exists(const char * path) {
 	return exists;
 }
 
+#endif
 
 int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200], int hcf[200], float k[200], int channel) { 
 	int o,i;
@@ -504,7 +533,8 @@ Options:\n\
 	// config: validate
 	validate_config();
 
-	// input: wait for the input to be ready
+	#ifdef ALSA
+	// input_alsa: wait for the input to be ready
 	if (im == 1) {
 		if (is_loop_device_for_sure(audio.source)) {
 			if (directory_exists("/sys/")) {
@@ -541,6 +571,7 @@ Options:\n\
 	#endif
 
 	}
+	#endif
 
 	if (im == 2) {
 		thr_id = pthread_create(&p_thread, NULL, input_fifo,
