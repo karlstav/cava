@@ -145,7 +145,7 @@ To create a loopback interface simply run:
 
 Hopefully your `aplay -l` should now contain a loopback interface.
 
-To make it presistent across boot add the line `snd-aloop` to "/etc/modules". To keep it form beeing loaded as the first soundcard add the line `options snd-aloop index=1` to "/etc/modprobe.d/alsa-base.conf", this will load it at '1' which is what cava uses as default. You can replace '1' with whatever makes most senes in your audio setup, but then cava must be specified to use that index. Simply pass the -d argument or alter the config file with the loopback interface index.
+To make it presistent across boot add the line `snd-aloop` to "/etc/modules". To keep it form beeing loaded as the first soundcard add the line `options snd-aloop index=1` to "/etc/modprobe.d/alsa-base.conf", this will load it at '1'. You can replace '1' with whatever makes most senes in your audio setup.
 
 Playing the audio through your Loopback interface makes it possible for cava to to capture it, but there will be no sound in your speakers. :(
 
@@ -182,9 +182,9 @@ Add these lines in mpd:
         format                  "44100:16:2"
     }
 
-Run cava with `./cava -i fifo`.
+Uncomment and change input method to `fifo` in the config file.
 
-The path of the fifo can be specified with `-p`.
+The path of the fifo can be specified with the `source` parameter.
 
 I had some trouble with sync (the visualizer was ahead of the sound). Reducing the ALSA buffer in mpd fixed it:
 
@@ -229,7 +229,7 @@ In terminal emulators like `xterm`, the font settings is chosen in the software 
 
 Speed preformance is also different, urxvt is the best I found so far, while Gnome-terminal is quite slow.
 
-Cava also disables the terminal cursor, and turns it back on on exit, but in case it terminates unexpectedly, run `setterm -cursor on` to get it back.e
+Cava also disables the terminal cursor, and turns it back on on exit, but in case it terminates unexpectedly, run `setterm -cursor on` to get it back.
 
 Tip: Cava will look much nicer in small font sizes. Use a second terminal emulator for cava and set the font size to 1. Warning, can cause high CPU usage and latency if the terminal window is too large!
 
@@ -269,7 +269,9 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 Configuration
 -------------
 
-Configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.config/cava/config`.
+As of version 0.4.0 all options are done in the config file, no more command-line arguments!
+
+By default a configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.config/cava/config`, but cava can also be made to usa a different file with the `-p` option. Look in the default config file for details on the different options.
 
 
 **Examples on how the equalizer works:**

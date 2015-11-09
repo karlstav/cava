@@ -24,10 +24,14 @@
 #include <dirent.h>
 #include "output/terminal_noncurses.h"
 #include "output/terminal_noncurses.c"
+
+#ifdef NCURSES
 #include "output/terminal_ncurses.h"
 #include "output/terminal_ncurses.c"
 #include "output/terminal_bcircle.h"
 #include "output/terminal_bcircle.c"
+#endif
+
 #include "input/alsa.h"
 #include "input/alsa.c"
 #include "input/fifo.h"
@@ -71,7 +75,9 @@ int M = 2048;
 // general: cleanup
 void cleanup(void)
 {
+	#ifdef NCURSES
 	cleanup_terminal_ncurses();
+	#endif
 	cleanup_terminal_noncurses();
 }
 
@@ -137,7 +143,12 @@ FILE *fp;
 	dictionary* ini = iniparser_load(configPath);
 
 	inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa");
-	outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
+	#ifdef NCURSES
+		outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
+	#endif
+	#ifndef NCURSES
+		outputMethod = (char *)iniparser_getstring(ini, "output:method", "noncurses");
+	#endif
 	modeString = (char *)iniparser_getstring(ini, "general:mode", "normal");
 	monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
 	integral = iniparser_getdouble(ini, "smoothing:integral", 0.7);
@@ -196,17 +207,40 @@ void validate_config()
 	}
 
 	// validate: output method
-	if (strcmp(outputMethod, "ncurses") == 0) om = 1;
-	if (strcmp(outputMethod, "circle") == 0) om = 2;
+	if (strcmp(outputMethod, "ncurses") == 0) { 
+		om = 1;
+		#ifndef NCURSES
+			fprintf(stderr,
+				"cava was built without ncurses support, install ncursesw dev files and run make clean && ./configure && make again\n");
+			exit(EXIT_FAILURE);
+		#endif
+		}
+	if (strcmp(outputMethod, "circle") == 0) {
+		 om = 2;
+		#ifndef NCURSES
+			fprintf(stderr,
+				"cava was built without ncurses support, install ncursesw dev files and run make clean && ./configure && make again\n");
+			exit(EXIT_FAILURE);
+		#endif
+		}
 	if (strcmp(outputMethod, "noncurses") == 0) {
 		om = 3;
 		bgcol = 0;
 	}
 	if (om == 0) {
+		#ifndef NCURSES
 		fprintf(stderr,
-			"output method %s is not supported, supported methods are: 'terminal', 'circle'\n",
+			"output method %s is not supported, supported methods are: 'noncurses'\n",
 						outputMethod);
 		exit(EXIT_FAILURE);
+		#endif
+
+		#ifdef NCURSES
+                fprintf(stderr,
+                        "output method %s is not supported, supported methods are: 'ncurses' and 'noncurses'\n",
+                                                outputMethod);
+                exit(EXIT_FAILURE);
+		#endif	
 	}
 
 	// validate: output style
@@ -538,12 +572,13 @@ Options:\n\
         system("echo yep > /tmp/testing123");
         system("setterm -blank 0");
     }
-
+	#ifdef NCURSES
 	//output: start ncurses mode
 	if (om == 1 || om ==  2) {
 		init_terminal_ncurses(col, bgcol);
 	}
-			
+	#endif
+		
 
 	while  (1) {//jumbing back to this loop means that you resized the screen
 		for (i = 0; i < 200; i++) {
@@ -554,9 +589,11 @@ Options:\n\
 			fmem[i] = 0;
 			f[i] = 0;
 		}
-	
+
+		#ifdef NCURSES	
 		// output: get terminal's geometry
 		if (om == 1 || om == 2) get_terminal_dim_ncurses(&w, &h);
+		#endif
 
 		if (om == 3) get_terminal_dim_noncurses(&w, &h);
 
@@ -639,7 +676,10 @@ Options:\n\
 		while  (cont) {
 
 			// general: keyboard controls
+			#ifdef NCURSES
 			if (om == 1 || om == 2) ch = getch();
+			#endif
+
 			switch (ch) {
 				case 65:    // key up
 					sens += 10;
@@ -795,11 +835,15 @@ Options:\n\
 			#ifndef DEBUG
 				switch (om) {
 					case 1:
+						#ifdef NCURSES
 						rc = draw_terminal_ncurses(inAVirtualConsole, h, w, bars, bw, bs, rest, f, flastd);
 						break;
+						#endif
 					case 2:
+						#ifdef NCURSES
 						rc = draw_terminal_bcircle(inAVirtualConsole, h, w, f);
 						break;
+						#endif
 					case 3:
 						rc = draw_terminal_noncurses(inAVirtualConsole, h, w, bars, bw, bs, rest, f, flastd);
 						break;

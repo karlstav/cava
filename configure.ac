@@ -43,10 +43,11 @@ dnl ######################
 AC_CHECK_LIB(asound, snd_pcm_open, have_alsa=yes, have_alsa=no)
     if [[ $have_alsa = "yes" ]] ; then
       LIBS="$LIBS -lasound"
+      CPPFLAGS="$CPPFLAGS -DALSA"
     fi
 
     if [[ $have_alsa = "no" ]] ; then
-      AC_MSG_ERROR([alsa dev files library is required!])
+      AC_MSG_NOTICE([WARNING: No alsa dev files found building without alsa support])
     fi
 
 dnl ######################
@@ -65,8 +66,6 @@ AC_CHECK_LIB(m, sqrt, have_m=yes, have_m=no)
 dnl ######################
 dnl checking for fftw3 
 dnl ######################
-
-
 AC_CHECK_LIB(fftw3,fftw_execute, have_fftw=yes, have_fftw=no)
     if [[ $have_fftw = "yes" ]] ; then
       LIBS="$LIBS -lfftw3"
@@ -79,15 +78,10 @@ AC_CHECK_LIB(fftw3,fftw_execute, have_fftw=yes, have_fftw=no)
 dnl ######################
 dnl checking for ncursesw
 dnl ######################
-
-
 curses_config_bin="ncursesw6-config ncursesw5-config"
 
 AC_PATH_PROGS(CURSES_CONFIG, $curses_config_bin)
-if test "$CURSES_CONFIG" != "" ; then
-	CPPFLAGS="$CPPFLAGS `$CURSES_CONFIG --cflags`"
-	LIBS="$LIBS `$CURSES_CONFIG --libs`"
-fi
+
 AC_CHECK_LIB(ncursesw, initscr,
 	curses_lib=ncursesw
 )
@@ -95,11 +89,17 @@ AC_CHECK_LIB(ncursesw, initscr,
 AC_CHECK_LIB($curses_lib, initscr,
 	if test "$CURSES_CONFIG" = "" ; then
 		LIBS="$LIBS -l$curses_lib"
+  		CPPFLAGS="$CPPFLAGS -DNCURSES"
 	fi
+	if test "$CURSES_CONFIG" != "" ; then
+		CPPFLAGS="$CPPFLAGS `$CURSES_CONFIG --cflags` -DNCURSES"
+		LIBS="$LIBS `$CURSES_CONFIG --libs`"
+	fi
+	AC_CHECK_HEADERS([curses.h], , AC_MSG_ERROR([missing curses.h header]))
 	,
-	AC_MSG_ERROR([ncursesw library is required!])
+	AC_MSG_NOTICE([WARNING: building without ncursesw support ncursesw is recomended!])
 	)
-AC_CHECK_HEADERS([curses.h], , AC_MSG_ERROR([missing curses.h header]))
+
 
 
 dnl ######################
