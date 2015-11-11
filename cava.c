@@ -43,6 +43,10 @@
 #include "input/alsa.c"
 #endif
 
+#ifdef PULSE
+#include "input/pulse.h"
+#include "input/pulse.c"
+#endif
 
 
 #include <iniparser.h>
@@ -201,6 +205,11 @@ FILE *fp;
 		im = 2;
 		audio.source = (char *)iniparser_getstring(ini, "input:source", "/tmp/mpd.fifo");
 	}
+	if (strcmp(inputMethod, "pulse") == 0) {
+		im = 3;
+		audio.source = (char *)iniparser_getstring(ini, "input:source", "alsa_output.0.analog-stereo.monitor");
+	}
+
 }
 
 void validate_config()
@@ -218,6 +227,15 @@ void validate_config()
 	}
 	if (strcmp(inputMethod, "fifo") == 0) {
 		im = 2;
+	}
+	if (strcmp(inputMethod, "pulse") == 0) {
+		im = 3;
+		#ifndef PULSE
+		        fprintf(stderr,
+                                "cava was built without pulseaudio support, install pulseaudio dev files and run make clean && ./configure && make again\n");
+                        exit(EXIT_FAILURE);
+                #endif
+
 	}
 	if (im == 0) {
 		#ifdef ALSA
@@ -579,6 +597,13 @@ Options:\n\
 		audio.rate = 44100;
 	}
 
+	#ifdef PULSE
+	if (im == 3) {
+		thr_id = pthread_create(&p_thread, NULL, input_pulse,
+														(void*)&audio); //starting fifomusic listener
+		audio.rate = 44100;
+	}
+	#endif
 
 	if (highcf > audio.rate / 2) {
 		cleanup();

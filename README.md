@@ -58,12 +58,15 @@ Build requirements
 * [ALSA dev files](http://alsa-project.org/)
 * [FFTW](http://www.fftw.org/)
 * [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
+* [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/)
+
+Only FFTW is actually required for CAVA to compile, but for maximum usage and preformance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros then debian/ubuntu or if the are bundled in pulseaudio.
 
 This can be installed easily in all major distros:
 
 Debian/Raspbian:
 
-    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev
+    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev
 
 ArchLinux:
 
@@ -135,7 +138,19 @@ Cava is in [AUR](https://aur.archlinux.org/packages/cava/), but is as of Novembe
 Capturing audio
 ---------------
 
-### From loopback device
+### From Pulseaudio monitor source (New, easy and experimental!)
+
+First make sure you have installed pulseaudio dev files and that cava has been built with pulseaudio support.
+
+If you're lucky all you have to do is to uncomment this line in the config file under input:
+
+    method = pulse
+ 
+If nothing happens you might have to use a different source then the default. Look at the config file for help.
+
+The output is dependent on the volume setting, use the arrow up and down keys to adjust cava to the audio.
+
+### From ALSA-loopback device
 
 If you want to capture audio straight fom the output (not just mic or line-in), you must create an ALSA loopback interface, then output the audio simultaneously to both the loopback and your normal interface.
 
@@ -151,7 +166,7 @@ Playing the audio through your Loopback interface makes it possible for cava to 
 
 Not to worry! There are (at least) two ways of sending the audio output to the loopback *and* your actual audio interface at the same time:
 
-#### PulseAudio (easy)
+#### PulseAudio combined-sink (easy)
 
 First create the loopback device as explained in the section above.
 
@@ -162,7 +177,7 @@ PulseAudio setup can also be done in paprefs (Debian: `sudo apt-get install papr
 An extra Output should appear in your sound options called "Simultaneous output to..." Note that when using this method if you turn down the volume on the Simultaneous output, this will effect the visualizer. To avoid this, select the actual output, turn down the volume, then select the Simultaneous output again.
 
 
-#### ALSA (hard)
+#### ALSA multi channel (hard)
 
 First create the loopback device as explained in the section above.
 

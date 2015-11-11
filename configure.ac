@@ -50,6 +50,20 @@ AC_CHECK_LIB(asound, snd_pcm_open, have_alsa=yes, have_alsa=no)
       AC_MSG_NOTICE([WARNING: No alsa dev files found building without alsa support])
     fi
 
+
+dnl ######################
+dnl checking for pulse dev
+dnl ######################
+AC_CHECK_LIB(pulse-simple, pa_simple_new, have_pulse=yes, have_pulse=no)
+    if [[ $have_pulse = "yes" ]] ; then
+      LIBS="$LIBS -lpulse-simple -lpulse"
+      CPPFLAGS="$CPPFLAGS -DPULSE"
+    fi
+
+    if [[ $have_pulse = "no" ]] ; then
+      AC_MSG_NOTICE([WARNING: No pusleaudio dev files found building without pulseaudio support])
+    fi
+
 dnl ######################
 dnl checking for math lib
 dnl ######################

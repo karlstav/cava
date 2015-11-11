@@ -31,11 +31,24 @@
 
 [input]
 
-# method of capturing audio, supported input methods are 'alsa' or 'fifo'.
+# method of capturing audio, supported input methods are: 'pulse', 'alsa' or 'fifo'.
+#
+# for pulseaudio 'source' wil be the source. Default: 'alsa_output.0.analog-stereo.monitor'
+# all pulseaudio sinks(outputs) have 'monitor' sources(inputs) associated with them
+# if the default doesn't work try the command 'pacmd list-sources' to find the right one
+# 
 # for alsa 'source' will be the capture device. Default: 'hw:Loopback,1'
 # for fifo 'source' will be the path to fifo-file. Default: '/tmp/mpd.fifo' 
 ; method = alsa  
 ; source = hw:Loopback,1 
+
+; method = fifo
+; source = /tmp/mpd.fifo
+
+; method = pulse
+; source = alsa_output.0.analog-stereo.monitor
+
+
 
 
 [output]
