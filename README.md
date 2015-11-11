@@ -24,9 +24,10 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
   - [Fedora](#fedora)
   - [Arch](#arch)
 - [Capturing audio](#capturing-audio)
-  - [From loopback device](#from-loopback-device)
-    - [PulseAudio (easy)](#pulseaudio-easy)
-    - [ALSA (hard)](#alsa-hard)
+  - [From Pulseaudio monitor source (New, easy and experimental!)](#from-pulseaudio-monitor-source-new-easy-and-experimental)
+  - [From ALSA-loopback device](#from-alsa-loopback-device)
+    - [PulseAudio combined-sink (easy)](#pulseaudio-combined-sink-easy)
+    - [ALSA multi channel (hard)](#alsa-multi-channel-hard)
   - [From mpd's fifo output](#from-mpds-fifo-output)
 - [Running via ssh](#running-via-ssh)
 - [Font notes](#font-notes)
@@ -60,7 +61,7 @@ Build requirements
 * [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
 * [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/)
 
-Only FFTW is actually required for CAVA to compile, but for maximum usage and preformance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros then debian/ubuntu or if the are bundled in pulseaudio.
+Only FFTW is actually required for CAVA to compile, but for maximum usage and preformance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
 
 This can be installed easily in all major distros:
 
@@ -140,7 +141,7 @@ Capturing audio
 
 ### From Pulseaudio monitor source (New, easy and experimental!)
 
-First make sure you have installed pulseaudio dev files and that cava has been built with pulseaudio support.
+First make sure you have installed pulseaudio dev files and that cava has been built with pulseaudio support (it should be automatically if the dev files are found).
 
 If you're lucky all you have to do is to uncomment this line in the config file under input:
 
