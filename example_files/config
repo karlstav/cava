@@ -32,6 +32,7 @@
 [input]
 
 # method of capturing audio, supported input methods are: 'pulse', 'alsa' or 'fifo'.
+# Defaults to 'alsa'
 #
 # for pulseaudio 'source' wil be the source. Default: 'alsa_output.0.analog-stereo.monitor'
 # all pulseaudio sinks(outputs) have 'monitor' sources(inputs) associated with them

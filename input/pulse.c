@@ -22,8 +22,8 @@ void* input_pulse(void* data)
 		.channels = 2
 		};
 	static const pa_buffer_attr pb = {
-	.maxlength = 1024,
-	.fragsize = 1024
+	.maxlength = BUFSIZE * 2,
+	.fragsize = BUFSIZE
 	};
 
 	pa_simple *s = NULL;	
