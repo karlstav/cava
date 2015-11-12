@@ -1,8 +1,10 @@
 2015-11-XX - 0.4.0
 
+- added pulseadio support
 - added confg script
 - removed commanline argumets
 - added optional config path
+- added autosens feature
 - bugfixes
 
 2015-9-19 - 0.3.5 

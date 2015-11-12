@@ -1,7 +1,6 @@
 TODO
 ----
 
-* pulseaudio and configure script with optional dependencies
 * more key controls
 * switch to libconfig
 * possibility to save settings to config file

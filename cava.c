@@ -64,8 +64,8 @@ struct termios oldtio, newtio;
 int rc;
 
 char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style;
-double monstercat, integral, gravity, ignore, smh;
-int fixedbars, sens, framerate, bw, bs;
+double monstercat, integral, gravity, ignore, smh, sens;
+int fixedbars, framerate, bw, bs, autosens;
 unsigned int lowcf, highcf;
 double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8,
 					1, 1, 0.8, 0.6, 0.6, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8,
@@ -178,11 +178,13 @@ FILE *fp;
 	fixedbars = iniparser_getint(ini, "general:bars", 0);
 	bw = iniparser_getint(ini, "general:bar_width", 3);
 	bs = iniparser_getint(ini, "general:bar_spacing", 1);
-	sens = iniparser_getint(ini, "general:sensitivity", 100);
 	framerate = iniparser_getint(ini, "general:framerate", 60);
+	sens = iniparser_getint(ini, "general:sensitivity", 100);
+	autosens = iniparser_getint(ini, "general:autosens", 1);
 	lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
 	highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
 	style =  (char *)iniparser_getstring(ini, "output:style", "stereo");
+
 
 	smcount = iniparser_getsecnkeys(ini, "eq");
 	if (smcount > 0) {
@@ -366,6 +368,10 @@ void validate_config()
 			"lower cutoff frequency can't be higher than higher cutoff frequency\n");
 		exit(EXIT_FAILURE);
 	}
+	
+	//setting sens
+	sens = sens / 100;
+
 	// read & validate: eq
 }
 
@@ -408,7 +414,7 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200]
 	
 		
 		peak[o] = peak[o] / (hcf[o]-lcf[o]+1); //getting average
-		temp = peak[o] * k[o] * ((float)sens / 100); //multiplying with k and adjusting to sens settings
+		temp = peak[o] * k[o] * sens; //multiplying with k and adjusting to sens settings
 		if (temp <= ignore)temp = 0;
 		if (channel == 1) fl[o] = temp;
 		else fr[o] = temp;
@@ -738,10 +744,10 @@ Options:\n\
 
 			switch (ch) {
 				case 65:    // key up
-					sens += 10;
+					sens = sens * 1.05;
 					break;
 				case 66:    // key down
-					sens -= 10;
+					sens = sens * 0.95;
 					break;
 				case 68:    // key right
 					bw++;
@@ -885,6 +891,16 @@ Options:\n\
 			// zero values causes divided by zero segfault
 			for (o = 0; o < bars; o++) {
 				if (f[o] < 1)f[o] = 1;
+			}
+
+			//autmatic sens adjustment
+			if (autosens) {
+				for (o = 0; o < bars; o++) {
+					if (f[o] > height * 8) {
+						sens = sens * 0.99;
+						break;
+					}		
+				}
 			}
 
 			// output: draw processed input
