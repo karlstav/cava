@@ -634,13 +634,7 @@ Options:\n\
         system("echo yep > /tmp/testing123");
         system("setterm -blank 0");
     }
-	#ifdef NCURSES
-	//output: start ncurses mode
-	if (om == 1 || om ==  2) {
-		init_terminal_ncurses(col, bgcol);
-	}
-	#endif
-		
+	
 
 	while  (1) {//jumbing back to this loop means that you resized the screen
 		for (i = 0; i < 200; i++) {
@@ -652,7 +646,12 @@ Options:\n\
 			f[i] = 0;
 		}
 
-		#ifdef NCURSES	
+		#ifdef NCURSES
+		//output: start ncurses mode
+		if (om == 1 || om ==  2) {
+			init_terminal_ncurses(col, bgcol);
+		}
+		
 		// output: get terminal's geometry
 		if (om == 1 || om == 2) get_terminal_dim_ncurses(&w, &h);
 		#endif
@@ -769,6 +768,17 @@ Options:\n\
 					validate_config();
 					cont = 0;
 					break;
+				case 'c': //change forground color
+					if (col < 7) col++;
+					else col = 0;
+					cont = 0;
+					break;
+				case 'b': //change backround color
+					if (bgcol < 7) bgcol++;
+					else bgcol = 0;
+					cont = 0;
+					break;
+
 				case 'q':
 					cleanup();
 					return EXIT_SUCCESS;

@@ -279,6 +279,7 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 | --- | ----------- |
 | <kbd>up</kbd> / <kbd>down</kbd>| increase/decrease sensitivity |
 | <kbd>left</kbd> / <kbd>right</kbd>| increase/decrease bar width |
+| <kbd>c</kbd> / <kbd>b</kbd>| change background/forground color |
 | <kbd>r</kbd> | Reload configuration |
 | <kbd>q</kbd> or <kbd>CTRL-C</kbd>| Quit C.A.V.A. |
 
