@@ -209,7 +209,7 @@ FILE *fp;
 	}
 	if (strcmp(inputMethod, "pulse") == 0) {
 		im = 3;
-		audio.source = (char *)iniparser_getstring(ini, "input:source", "alsa_output.0.analog-stereo.monitor");
+		audio.source = (char *)iniparser_getstring(ini, "input:source", NULL);
 	}
 
 }
@@ -502,6 +502,7 @@ int main(int argc, char **argv)
 Usage : " PACKAGE " [options]\n\
 Visualize audio input in terminal. \n\
 \n\
+as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n\
 Options:\n\
 	-p          path to config file\n\
 	-v          print version\n\

@@ -31,7 +31,7 @@ void* input_pulse(void* data)
 
 	/* Create the recording stream   */
 	if (!(s = pa_simple_new(NULL, "cava", PA_STREAM_RECORD, audio-> source, "audio for cava", &ss, NULL, &pb, &error))) {
-		fprintf(stderr, __FILE__": pa_simple_new() failed: %s\n", pa_strerror(error));
+		fprintf(stderr, __FILE__": Could not open pulseaudio source: %s, %s. To find a list of your pulseaudio sources run 'pacmd list-sources'\n",audio->source, pa_strerror(error));
 		exit(EXIT_FAILURE);
 	}
 
