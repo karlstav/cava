@@ -502,11 +502,12 @@ int main(int argc, char **argv)
 Usage : " PACKAGE " [options]\n\
 Visualize audio input in terminal. \n\
 \n\
-as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n\
 Options:\n\
 	-p          path to config file\n\
 	-v          print version\n\
-\n";
+\n\
+as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n";
+
 	char ch = '\0';
 	
 	configPath[0] = '\0';
