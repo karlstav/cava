@@ -1,7 +1,7 @@
 C.A.V.A. 
 ====================
 
-**C**onsole-based **A**udio **V**isualizer for **A**LSA
+**C**onsole-based **A**udio **V**isualizer for **A**LSA (now also with MPD and Pulseaudio support!)
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
@@ -56,14 +56,14 @@ Any tips or comments would be much appreciated.
 Build requirements
 ------------------
 
-* [ALSA dev files](http://alsa-project.org/)
 * [FFTW](http://www.fftw.org/)
 * [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
+* [ALSA dev files](http://alsa-project.org/)
 * [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/)
 
 Only FFTW is actually required for CAVA to compile, but for maximum usage and preformance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
 
-This can be installed easily in all major distros:
+All these can be installed easily in all major distros:
 
 Debian/Raspbian:
 
@@ -82,7 +82,7 @@ Fedora:
     dnf install alsa-lib-devel ncurses-devel fftw3-devel
    
 
-A system-wide installation of Iniparser will also be used if it is installed, it not the bundled version will be used.
+A system-wide installation of Iniparser will also be used if it is installed, if not the bundled version will be used.
 
 
 Getting started
@@ -129,11 +129,12 @@ If you use 13.2 or 13.1 just replace *openSUSE_Tumbleweed* with *openSUSE_13.2*,
 
 ### Arch
 
-Cava is in [AUR](https://aur.archlinux.org/packages/cava/), but is as of November 2015 slightly out of date.
+Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
 
     yaourt -S cava
 
 
+All distro specific instalations sources might be out of date.
 
 
 Capturing audio
@@ -147,9 +148,8 @@ If you're lucky all you have to do is to uncomment this line in the config file 
 
     method = pulse
  
-If nothing happens you might have to use a different source then the default. Look at the config file for help.
+If nothing happens you might have to use a different source then the default. The default might also be your microphone. Look at the config file for help. 
 
-The output is dependent on the volume setting, use the arrow up and down keys to adjust cava to the audio.
 
 ### From ALSA-loopback device
 
