@@ -510,6 +510,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	char ch = '\0';
 	
+	// general: console title
+	printf("%c]0;%s%c", '\033', PACKAGE, '\007');
+	
 	configPath[0] = '\0';
 	audio.format = -1;
 	audio.rate = 0;
