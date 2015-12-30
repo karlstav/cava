@@ -55,7 +55,6 @@ Any tips or comments would be much appreciated.
 
 Build requirements
 ------------------
-
 * [FFTW](http://www.fftw.org/)
 * [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
 * [ALSA dev files](http://alsa-project.org/)
@@ -83,6 +82,8 @@ Fedora:
    
 
 A system-wide installation of Iniparser will also be used if it is installed, if not the bundled version will be used.
+
+To run the autogen script you will also need `automake`, `libtool` and `git`.
 
 
 Getting started
