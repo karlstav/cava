@@ -59,6 +59,12 @@ void* input_pulse(void* data)
                                 n++;
                                 if (n == 2048 - 1)n = 0;
                         }
+
+		if (audio->terminate == 1) {
+			pa_simple_free(s);
+			break;
+		}
         }
 
+	return 0;
 }

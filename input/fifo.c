@@ -4,9 +4,10 @@ struct audio_data {
         int audio_out_l[2048];
         int format;
         unsigned int rate ;
-        char *source; //alsa device or fifo path
-        int im; //input mode alsa or fifo
+        char *source; //alsa device, fifo path or pulse source
+        int im; //input mode alsa, fifo or pulse
         int channels;
+	int terminate; // shared variable used to terminate audio thread
 };
 
 
@@ -77,6 +78,13 @@ templ) /
 				if (n == 2048 - 1)n = 0;
 			}
 		}
+
+		if (audio->terminate == 1) {
+			close(fd);
+			break;
+		}
+
 	}
-	close(fd);
+
+	return 0;
 }

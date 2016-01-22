@@ -85,6 +85,8 @@ int autobars = 1;
 int stereo = -1;
 int M = 2048;
 
+
+
 // general: cleanup
 void cleanup(void)
 {
@@ -491,7 +493,7 @@ int main(int argc, char **argv)
 	double inl[2 * (M / 2 + 1)];
 	fftw_complex outl[M / 2 + 1][2];
 	fftw_plan pl;
-	int cont = 1;
+	//int cont = 1;
 	int fall[200];
 	float fpeak[200];
 	float k[200];
@@ -514,17 +516,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	printf("%c]0;%s%c", '\033', PACKAGE, '\007');
 	
 	configPath[0] = '\0';
-	audio.format = -1;
-	audio.rate = 0;
-	if (stereo) audio.channels = 2;
-	if (!stereo) audio.channels = 1;
 
 	setlocale(LC_ALL, "");
-
-	for (i = 0; i < M; i++) {
-		audio.audio_out_l[i] = 0;
-		audio.audio_out_r[i] = 0;
-	}
 
 	// general: handle Ctrl+C
 	struct sigaction action;
@@ -555,12 +548,38 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		n = 0;
 	}
+
+	// Check if we're running in a Virtual console todo: replace virtual console with terminal emulator
+	inAVirtualConsole = 1;
+	if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0), "/dev/console") == 0) inAVirtualConsole = 0;
 	
+	if (!inAVirtualConsole) {
+		system("setfont cava.psf  >/dev/null 2>&1");
+		system("echo yep > /tmp/testing123");
+		system("setterm -blank 0");
+	}
+
+	
+	
+	// general: main loop
+	while (1) {
+
+	//config: load & validate
 	load_config(configPath);
-
-
-	// config: validate
 	validate_config();
+
+
+	//input: init
+	audio.format = -1;
+	audio.rate = 0;
+	audio.terminate = 0;
+	if (stereo) audio.channels = 2;
+	if (!stereo) audio.channels = 1;
+
+	for (i = 0; i < M; i++) {
+		audio.audio_out_l[i] = 0;
+		audio.audio_out_r[i] = 0;
+	}
 
 	#ifdef ALSA
 	// input_alsa: wait for the input to be ready
@@ -630,18 +649,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		pr =  fftw_plan_dft_r2c_1d(M, inr, *outr, FFTW_MEASURE); 
 	}
 
-    // Check if we're running in a Virtual console todo: replace virtual console with terminal emulator
-    inAVirtualConsole = 1;
-    if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0), "/dev/console") == 0) inAVirtualConsole = 0;
-
-    if (!inAVirtualConsole) {
-        system("setfont cava.psf  >/dev/null 2>&1");
-        system("echo yep > /tmp/testing123");
-        system("setterm -blank 0");
-    }
+	bool reloadConf = FALSE;
 	
-
-	while  (1) {//jumbing back to this loop means that you resized the screen
+	while  (!reloadConf) {//jumbing back to this loop means that you resized the screen
 		for (i = 0; i < 200; i++) {
 			flast[i] = 0;
 			flastd[i] = 0;
@@ -737,9 +747,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	
 		if (stereo) bars = bars * 2; 	
 
-	   	cont = 1;
-		// general: main loop
-		while  (cont) {
+	   	bool resizeTerminal = FALSE;
+
+		while  (!resizeTerminal) {
 
 			// general: keyboard controls
 			#ifdef NCURSES
@@ -755,11 +765,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					break;
 				case 68:    // key right
 					bw++;
-					cont = 0;
+					resizeTerminal = TRUE;
 					break;
 				case 67:    // key left
 					if (bw > 1) bw--;
-					cont = 0;
+					resizeTerminal = TRUE;
 					break;
 				case 'm':
 					if (mode == modes) {
@@ -769,19 +779,22 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					}
 					break;
 				case 'r': //reload config
-					load_config(configPath);
-					validate_config();
-					cont = 0;
+					//**telling audio thread to terminate**//					
+					audio.terminate = 1;
+					pthread_join( p_thread, NULL);
+	
+					reloadConf = TRUE;
+					resizeTerminal = TRUE;
 					break;
 				case 'c': //change forground color
 					if (col < 7) col++;
 					else col = 0;
-					cont = 0;
+					resizeTerminal = TRUE;
 					break;
 				case 'b': //change backround color
 					if (bgcol < 7) bgcol++;
 					else bgcol = 0;
-					cont = 0;
+					resizeTerminal = TRUE;
 					break;
 
 				case 'q':
@@ -789,7 +802,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					return EXIT_SUCCESS;
 			}
 
-			if (cont == 0) break;
+			//if (cont == 0) break;
 
 			#ifdef DEBUG
 				//clear();
@@ -936,7 +949,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						break;
 				}
 
-				if (rc == -1) break; //terminal has been resized breaking to recalibrating values
+				if (rc == -1) resizeTerminal = TRUE; //terminal has been resized breaking to recalibrating values
 
 				if (framerate <= 1) {
 					req.tv_sec = 1  / (float)framerate;
@@ -952,5 +965,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				flastd[o] = f[o];
 			} 
 		}
+	}//reloading config
+	req.tv_sec = 1; //waiting a second to free audio streams
+	req.tv_nsec = 0;
+	nanosleep (&req, NULL);
 	}
 }

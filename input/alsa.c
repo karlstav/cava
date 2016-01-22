@@ -120,8 +120,14 @@ void* input_alsa(void* data)
 
 			n++;
 		}
+
+		if (audio->terminate == 1) {
+			free(buffer);
+			snd_pcm_close(handle);
+			break;
+		}
 	}
 
-	fprintf(stderr,"test\n");
+	return 0;
 }
 
