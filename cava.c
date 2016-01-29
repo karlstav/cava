@@ -75,7 +75,7 @@ double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8,
 double *smooth = smoothDef;
 int smcount = 64;
 struct audio_data audio;
-int im = 1;
+int im = 0;
 int om = 1;
 int mode = 1;
 int col = 6;
@@ -211,7 +211,7 @@ FILE *fp;
 	}
 	if (strcmp(inputMethod, "pulse") == 0) {
 		im = 3;
-		audio.source = (char *)iniparser_getstring(ini, "input:source", NULL);
+		audio.source = (char *)iniparser_getstring(ini, "input:source", "auto");
 	}
 
 }
@@ -234,6 +234,9 @@ void validate_config()
 	}
 	if (strcmp(inputMethod, "pulse") == 0) {
 		im = 3;
+		#ifdef PULSE
+			if (strcmp(audio.source, "auto") == 0) getPulseDefaultSink((void*)&audio);
+                #endif
 		#ifndef PULSE
 		        fprintf(stderr,
                                 "cava was built without pulseaudio support, install pulseaudio dev files and run make clean && ./configure && make again\n");
@@ -242,21 +245,28 @@ void validate_config()
 
 	}
 	if (im == 0) {
+		#ifdef PULSE
+		fprintf(stderr,
+			"input method '%s' is not supported, supported methods are: 'pulse', 'alsa' and 'fifo'\n",
+						inputMethod);
+		#endif
+		#ifndef PULSE
 		#ifdef ALSA
 		fprintf(stderr,
-			"input method %s is not supported, supported methods are: 'alsa' and 'fifo'\n",
+			"input method '%s' is not supported, supported methods are: 'alsa' and 'fifo'\n",
 						inputMethod);
+		#endif
 		#endif
 		#ifndef ALSA
 		fprintf(stderr,
-                        "input method %s is not supported, supported methods are: 'fifo'\n",
+                        "input method '%s' is not supported, supported methods are: 'fifo'\n",
                                                 inputMethod);
 		#endif
 		exit(EXIT_FAILURE);
 	}
 
 	// validate: output method
-	if (strcmp(outputMethod, "ncurses") == 0) { 
+	if (strcmp(outputMethod, "ncurses") == 0) {
 		om = 1;
 		#ifndef NCURSES
 			fprintf(stderr,
@@ -392,7 +402,7 @@ static bool directory_exists(const char * path) {
 
 #endif
 
-int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200], int hcf[200], float k[200], int channel) { 
+int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200], int hcf[200], float k[200], int channel) {
 	int o,i;
 	float peak[201];
 	static int fl[200];
@@ -475,7 +485,7 @@ int main(int argc, char **argv)
 
 	// general: define variables
 	pthread_t  p_thread;
-	int        thr_id GCC_UNUSED;
+	int thr_id GCC_UNUSED;
 	int modes = 3; // amount of smoothing modes
 	float fc[200];
 	float fre[200];
