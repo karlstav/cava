@@ -1,7 +1,7 @@
-C.A.V.A. 
+C.A.V.A. (M.P.)
 ====================
 
-**C**onsole-based **A**udio **V**isualizer for **A**LSA (now also with MPD and Pulseaudio support!)
+**C**onsole-based **A**udio **V**isualizer for **A**LSA (**M**PD and **P**ulseaudio)
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
@@ -141,7 +141,7 @@ All distro specific instalations sources might be out of date.
 Capturing audio
 ---------------
 
-### From Pulseaudio monitor source (New, easy and experimental!)
+### From Pulseaudio monitor source (Easy, default if supported)
 
 First make sure you have installed pulseaudio dev files and that cava has been built with pulseaudio support (it should be automatically if the dev files are found).
 
@@ -152,7 +152,7 @@ If you're lucky all you have to do is to uncomment this line in the config file 
 If nothing happens you might have to use a different source then the default. The default might also be your microphone. Look at the config file for help. 
 
 
-### From ALSA-loopback device
+### From ALSA-loopback device (Tricky)
 
 If you want to capture audio straight fom the output (not just mic or line-in), you must create an ALSA loopback interface, then output the audio simultaneously to both the loopback and your normal interface.
 
@@ -311,3 +311,14 @@ By default a configuration file is located in `$XDG_CONFIG_HOME/cava/config` or 
     5=0.5
 
 ![3_139](https://cloud.githubusercontent.com/assets/6376571/8670181/9db0ef50-29e8-11e5-81bc-3e2bb9892da0.png)
+
+Thanks
+------
+
+Contributors:
+* [Karl Stavestrand](mailto:karl@stavestrand.no) - creator
+* [CelestialWalrus](https://github.com/CelestialWalrus)
+* [anko](https://github.com/anko)
+* [livibetter](https://github.com/livibetter)
+
+Also thanks to [dpayne](https://github.com/dpayne/) for figuring out how to find the pulseaudio default sink name.

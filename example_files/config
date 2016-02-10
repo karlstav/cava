@@ -34,8 +34,8 @@
 
 [input]
 
-# method of capturing audio, supported input methods are: 'pulse', 'alsa' or 'fifo'.
-# Defaults to 'alsa'
+# method of capturing audio, possible methods are: 'pulse', 'alsa' or 'fifo'.
+# Defaults to 'pulse', 'alsa' or 'fifo', in that order, dependent on what support cava was built with
 #
 # All input methods uses the same config variable 'source' 
 # to define where it should get the audio.
@@ -45,15 +45,14 @@
 # 
 # for alsa 'source' will be the capture device. Default: 'hw:Loopback,1'
 # for fifo 'source' will be the path to fifo-file. Default: '/tmp/mpd.fifo' 
+; method = pulse
+; source = auto
+
 ; method = alsa  
 ; source = hw:Loopback,1 
 
 ; method = fifo
 ; source = /tmp/mpd.fifo
-
-; method = pulse
-; source = auto
-
 
 
 

@@ -1,3 +1,15 @@
+2016-02-10 - 0.4.1
+
+new features:
+- added auto pulseaudio source mode 
+- pulsaudio is now default
+- cava is now cavamp
+- pushing 'r' now reloads audio
+- Added console title
+
+bugfixes:
+- Error on Raspbian at run-time when running from installed path
+
 2015-11-22 - 0.4.0
 
 - added pulseadio support

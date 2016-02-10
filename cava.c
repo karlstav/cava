@@ -84,6 +84,7 @@ int bars = 25;
 int autobars = 1;
 int stereo = -1;
 int M = 2048;
+char supportedInput[255] = "'fifo'";
 
 
 
@@ -157,12 +158,21 @@ FILE *fp;
 	// config: parse ini
 	dictionary* ini = iniparser_load(configPath);
 
+	//setting fifo to defaualt if no other input modes supported
+	inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo"); 
+
+	//setting alsa to defaualt if supported
 	#ifdef ALSA
-		inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa");
+		strcat(supportedInput,", 'alsa'");
+		inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa"); 
 	#endif
-	#ifndef ALSA
-		inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo");
+
+	//setting pulse to defaualt if supported
+	#ifdef PULSE
+		strcat(supportedInput,", 'pulse'");
+		inputMethod = (char *)iniparser_getstring(ini, "input:method", "pulse");
 	#endif
+
 
 	#ifdef NCURSES
 		outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
@@ -245,23 +255,9 @@ void validate_config()
 
 	}
 	if (im == 0) {
-		#ifdef PULSE
 		fprintf(stderr,
-			"input method '%s' is not supported, supported methods are: 'pulse', 'alsa' and 'fifo'\n",
-						inputMethod);
-		#endif
-		#ifndef PULSE
-		#ifdef ALSA
-		fprintf(stderr,
-			"input method '%s' is not supported, supported methods are: 'alsa' and 'fifo'\n",
-						inputMethod);
-		#endif
-		#endif
-		#ifndef ALSA
-		fprintf(stderr,
-                        "input method '%s' is not supported, supported methods are: 'fifo'\n",
-                                                inputMethod);
-		#endif
+			"input method '%s' is not supported, supported methods are: %s\n",
+						inputMethod, supportedInput);
 		exit(EXIT_FAILURE);
 	}
 
