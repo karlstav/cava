@@ -149,7 +149,7 @@ If you're lucky all you have to do is to uncomment this line in the config file 
 
     method = pulse
  
-If nothing happens you might have to use a different source then the default. The default might also be your microphone. Look at the config file for help. 
+If nothing happens you might have to use a different source than the default. The default might also be your microphone. Look at the config file for help. 
 
 
 ### From ALSA-loopback device (Tricky)
@@ -256,7 +256,7 @@ Latency notes
 
 If you see latency issues (sound before image) in a terminal emulator, try increasing the font size. This will reduce the number of characters that have to be shown.
 
-If your audio device has a huge buffer, you might experience that cava is actually faster then the audio you hear. This reduces the experience of the visualization. To fix this, you try decreasing the buffer settings in your audio playing software.
+If your audio device has a huge buffer, you might experience that cava is actually faster than the audio you hear. This reduces the experience of the visualization. To fix this, you try decreasing the buffer settings in your audio playing software.
 
 Usage
 -----
