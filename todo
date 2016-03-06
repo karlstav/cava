@@ -1,10 +1,11 @@
 TODO
 ----
 
-* more key controls
 * switch to libconfig
 * possibility to save settings to config file
 * openGL
 * plug-in api
+* 256 colors (https://github.com/dpayne/cli-visualizer#256-colors)
+* explore possibilities of true colors (https://gist.github.com/XVilka/8346728)
 
 * new demo video
