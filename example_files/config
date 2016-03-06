@@ -16,8 +16,8 @@
 # Autosens will atempt to decrease sensitivity if cava peaks. 1 = on, 0 = off
 ; autosens = 1
 
-# The number of bars. 0 (default) sets it to auto (fil upp console).
-# width of bras and space between bars in number of characters. Default witdth 3 and space 1.
+# The number of bars. 0 (default) sets it to auto (fill up console).
+# width of bars and space between bars in number of characters. Default witdth 3 and space 1.
 ; bars = 0 
 ; bar_width = 3
 ; bar_spacing = 1
