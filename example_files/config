@@ -9,24 +9,24 @@
 # Framerate Default: 60. Accepts only non-negative values.
 ; framerate = 60 
 
-# Sensitivity in  %. If you think the bars are to low/response is to littei, try
+# Sensitivity in  %. If you think the bars are to low/response is to little, try
 # increasing this value 200 means double height. Accepts only non-negative values.
 ; sensitivity = 100
 
-# Autosens will atempt to decrease sensitivity if cava peaks. 1 = on, 0 = off
+# Autosens will attempt to decrease sensitivity if cava peaks. 1 = on, 0 = off
 ; autosens = 1
 
 # The number of bars. 0 (default) sets it to auto (fill up console).
-# width of bars and space between bars in number of characters. Default witdth 3 and space 1.
+# width of bars and space between bars in number of characters. Default width 3 and space 1.
 ; bars = 0 
 ; bar_width = 3
 ; bar_spacing = 1
 
 
-# Lower cutoff freq for lowest bar and higheset for highest bar
+# Lower and higher cutoff frequencies for lowest and highest bars
 # the bandwith of the visualizer, defaults to 50 - 10000 Hz
 # Note: there is a minimum total bandwith of 43Mhz x number of bars. 
-# Cava will automaticly increase the higher cuttoff if a too low band is specified.
+# Cava will automatically increase the higher cuttoff if a too low band is specified.
 ; lower_cutoff_freq = 50 
 ; higher_cutoff_freq = 10000 
 
@@ -40,7 +40,7 @@
 # All input methods uses the same config variable 'source' 
 # to define where it should get the audio.
 #
-# for pulseaudio 'source' wil be the source. Default: 'auto', which uses the monitor source of the default sink
+# for pulseaudio 'source' will be the source. Default: 'auto', which uses the monitor source of the default sink
 # (all pulseaudio sinks(outputs) have 'monitor' sources(inputs) associated with them)
 # 
 # for alsa 'source' will be the capture device. Default: 'hw:Loopback,1'
@@ -63,7 +63,7 @@
 
 # visual styles, may be 'stereo' or 'mono'. 
 # Stereo mirrors both channels with low frequencies in center.
-# Mono avrages both channels and outputs left to right lowest to highest frequencies
+# Mono averages both channels and outputs left to right lowest to highest frequencies
 ; style = stereo 
 
 
@@ -88,7 +88,7 @@
 ; gravity = 1  
 
 
-# In bar height, bars that whould have been lower that this will not be drawn.
+# In bar height, bars that would have been lower that this will not be drawn.
 ; ignore = 0 
 
 
