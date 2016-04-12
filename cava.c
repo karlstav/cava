@@ -86,6 +86,8 @@ int stereo = -1;
 int M = 2048;
 char supportedInput[255] = "'fifo'";
 
+// whether we should reload the config or not
+int should_reload = 0;
 
 
 // general: cleanup
@@ -100,6 +102,11 @@ void cleanup(void)
 // general: handle signals
 void sig_handler(int sig_no)
 {
+	if (sig_no == SIGUSR1) {
+		should_reload = 1;
+		return;
+	}
+
 	cleanup();
 	if (sig_no == SIGINT) {
 		printf("CTRL-C pressed -- goodbye\n");
@@ -531,7 +538,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	action.sa_handler = &sig_handler;
 	sigaction(SIGINT, &action, NULL);
 	sigaction(SIGTERM, &action, NULL);
-	
+	sigaction(SIGUSR1, &action, NULL);
 
 	// general: handle command-line arguments
 	while ((c = getopt (argc, argv, "p:vh")) != -1) {
@@ -628,15 +635,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	#endif
 
 	if (im == 2) {
-		thr_id = pthread_create(&p_thread, NULL, input_fifo,
-														(void*)&audio); //starting fifomusic listener
+		thr_id = pthread_create(&p_thread, NULL, input_fifo, (void*)&audio); //starting fifomusic listener
 		audio.rate = 44100;
 	}
 
 	#ifdef PULSE
 	if (im == 3) {
-		thr_id = pthread_create(&p_thread, NULL, input_pulse,
-														(void*)&audio); //starting fifomusic listener
+		thr_id = pthread_create(&p_thread, NULL, input_pulse, (void*)&audio); //starting fifomusic listener
 		audio.rate = 44100;
 	}
 	#endif
@@ -785,12 +790,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					}
 					break;
 				case 'r': //reload config
-					//**telling audio thread to terminate**//					
-					audio.terminate = 1;
-					pthread_join( p_thread, NULL);
-	
-					reloadConf = TRUE;
-					resizeTerminal = TRUE;
+					should_reload = 1;
 					break;
 				case 'c': //change forground color
 					if (col < 7) col++;
@@ -806,6 +806,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				case 'q':
 					cleanup();
 					return EXIT_SUCCESS;
+			}
+
+			if (should_reload) {
+				//**telling audio thread to terminate**//
+				audio.terminate = 1;
+				pthread_join( p_thread, NULL);
+
+				reloadConf = TRUE;
+				resizeTerminal = TRUE;
+				should_reload = 0;
+
 			}
 
 			//if (cont == 0) break;
