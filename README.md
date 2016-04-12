@@ -291,10 +291,10 @@ As of version 0.4.0 all options are done in the config file, no more command-lin
 
 By default a configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.config/cava/config`, but cava can also be made to use a different file with the `-p` option. Look in the default config file for details on the different options.
 
-Sending cava a SIGUSR1 signal, will force cava to reload its configuration file. Thus, it behaves as if the user pressed <kbd>r</kbd> in the terminal. One might send a SIGUSR1 signal using `pgrep` or `killall`.
+Sending cava a SIGUSR1 signal, will force cava to reload its configuration file. Thus, it behaves as if the user pressed <kbd>r</kbd> in the terminal. One might send a SIGUSR1 signal using `pkill` or `killall`.
 For example:
 ```
-$ pgrep -USR1 cava
+$ pkill -USR1 cava
 ```
 
 
