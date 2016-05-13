@@ -34,6 +34,7 @@
 #include "output/terminal_noncurses.h"
 #include "output/terminal_noncurses.c"
 
+
 #include "input/fifo.h"
 #include "input/fifo.c"
 
@@ -63,7 +64,7 @@
 struct termios oldtio, newtio;
 int rc;
 
-char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style;
+char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style, *raw_target;
 double monstercat, integral, gravity, ignore, smh, sens;
 int fixedbars, framerate, bw, bs, autosens;
 unsigned int lowcf, highcf;
@@ -203,8 +204,9 @@ FILE *fp;
 	lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
 	highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
 	style =  (char *)iniparser_getstring(ini, "output:style", "stereo");
+	raw_target = (char *)iniparser_getstring(ini, "output:raw_target", "/dev/stdout");
 
-
+	// read & validate: eq
 	smcount = iniparser_getsecnkeys(ini, "eq");
 	if (smcount > 0) {
 		smooth = malloc(smcount*sizeof(*smooth));
@@ -288,6 +290,10 @@ void validate_config()
 	if (strcmp(outputMethod, "noncurses") == 0) {
 		om = 3;
 		bgcol = 0;
+	}
+	if (strcmp(outputMethod, "raw") == 0) {
+		om = 4;
+		autosens = 0;
 	}
 	if (om == 0) {
 		#ifndef NCURSES
@@ -387,7 +393,7 @@ void validate_config()
 	//setting sens
 	sens = sens / 100;
 
-	// read & validate: eq
+
 }
 
 #ifdef ALSA
@@ -498,7 +504,7 @@ int main(int argc, char **argv)
 	int flast[200];
 	int flastd[200];
 	int sleep = 0;
-	int i, n, o, height, h, w, c, rest, inAVirtualConsole, silence;
+	int i, n, o, height, h, w, c, rest, inAVirtualConsole, silence, fp;
 	float temp;
 	double inr[2 * (M / 2 + 1)];
 	fftw_complex outr[M / 2 + 1][2];
@@ -677,12 +683,28 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		if (om == 1 || om ==  2) {
 			init_terminal_ncurses(col, bgcol);
 		}
-		
+	
 		// output: get terminal's geometry
 		if (om == 1 || om == 2) get_terminal_dim_ncurses(&w, &h);
 		#endif
 
 		if (om == 3) get_terminal_dim_noncurses(&w, &h);
+
+		if ( om == 4) {
+
+			if (strcmp(raw_target,"stdout") != 0) {
+
+				fp=open(raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
+				printf("open file %s for writing\n",raw_target);
+				if (fp == 0) {
+					printf("could not open file %s for writing\n",raw_target);
+					exit(1);
+				}
+			}
+
+			h = 112;
+			w = 200;	
+		}
 
  		//handle for user setting too many bars
 		if (fixedbars) {
@@ -699,9 +721,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		if (bars < 1) bars = 1; // must have at least 1 bar;
 
-		if (stereo) {
+		if (stereo) { //stereo must have even numbers of bars
 			if (bars%2 != 0) bars--;
 		}
+
+		
 
 		height = h - 1;
 
@@ -721,6 +745,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		//output: start noncurses mode
 		if (om == 3) init_terminal_noncurses(col, bgcol, w, h, bw);
+
+		
 
 		if (stereo) bars = bars / 2; // in stereo onle half number of bars per channel
 
@@ -935,7 +961,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 			// zero values causes divided by zero segfault
 			for (o = 0; o < bars; o++) {
-				if (f[o] < 1)f[o] = 1;
+				if (f[o] < 1) {
+					f[o] = 1;
+					if (om == 4) f[o] = 0;
+				}
 			}
 
 			//autmatic sens adjustment
@@ -964,6 +993,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					case 3:
 						rc = draw_terminal_noncurses(inAVirtualConsole, h, w, bars, bw, bs, rest, f, flastd);
 						break;
+					case 4:
+						for (i = 0; i <  bars; i++) write(fp, &f[i],sizeof(int));
+						break;
 				}
 
 				if (rc == -1) resizeTerminal = TRUE; //terminal has been resized breaking to recalibrating values
@@ -986,5 +1018,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	req.tv_sec = 1; //waiting a second to free audio streams
 	req.tv_nsec = 0;
 	nanosleep (&req, NULL);
+	//fclose(fp);
 	}
 }

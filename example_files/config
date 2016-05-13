@@ -58,8 +58,13 @@
 
 [output]
 
-# method used to draw output may be ncurses, noncurses.
+# ouput method may be ncurses, noncurses or raw. noncurses if for system that does not suport ncurses. 
+# raw is 16bit data stream of the bar heights that can be used to send to other systems
+# raw defaults to 200 bars, can be adjusted in the bars option above
 ; method = ncurses
+
+# raw output target defaults to stdout
+; raw_target = /dev/stdout
 
 # visual styles, may be 'stereo' or 'mono'. 
 # Stereo mirrors both channels with low frequencies in center.
