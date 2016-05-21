@@ -58,12 +58,12 @@
 
 [output]
 
-# ouput method may be ncurses, noncurses or raw. noncurses if for system that does not suport ncurses. 
-# raw is 16bit data stream of the bar heights that can be used to send to other systems
+# ouput method may be ncurses, noncurses or raw. noncurses is for systems that does not suport ncurses. 
+# raw is a 16 bit data stream of the bar heights that can be used to send to other applications
 # raw defaults to 200 bars, can be adjusted in the bars option above
 ; method = ncurses
 
-# raw output target defaults to stdout
+# raw output target defaults to stdout, a fifo will be created if target does not exist
 ; raw_target = /dev/stdout
 
 # visual styles, may be 'stereo' or 'mono'. 

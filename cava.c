@@ -24,6 +24,7 @@
 #include <pthread.h>
 #include <dirent.h>
 
+
 #ifdef NCURSES
 #include "output/terminal_ncurses.h"
 #include "output/terminal_ncurses.c"
@@ -504,7 +505,7 @@ int main(int argc, char **argv)
 	int flast[200];
 	int flastd[200];
 	int sleep = 0;
-	int i, n, o, height, h, w, c, rest, inAVirtualConsole, silence, fp;
+	int i, n, o, height, h, w, c, rest, inAVirtualConsole, silence, fp, fptest;
 	float temp;
 	double inr[2 * (M / 2 + 1)];
 	fftw_complex outr[M / 2 + 1][2];
@@ -530,6 +531,7 @@ Options:\n\
 as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n";
 
 	char ch = '\0';
+	//FILE *fptest;
 	
 	// general: console title
 	printf("%c]0;%s%c", '\033', PACKAGE, '\007');
@@ -690,16 +692,36 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		if (om == 3) get_terminal_dim_noncurses(&w, &h);
 
+		// output open file/fifo for raw output
 		if ( om == 4) {
 
-			if (strcmp(raw_target,"stdout") != 0) {
+			if (strcmp(raw_target,"/dev/stdout") != 0) {
 
-				fp=open(raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
-				printf("open file %s for writing\n",raw_target);
-				if (fp == 0) {
+				//checking if file exists
+				if( access( raw_target, F_OK ) != -1 ) {
+					fptest = open(raw_target, O_RDONLY | O_NONBLOCK, 0644);	//testopening in case it's a fifo
+					if (fptest == -1) {
+						printf("could not open file %s for writing\n",raw_target);
+						exit(1);
+					}
+				} else {
+					printf("creating fifo %s\n",raw_target);
+					if (mkfifo(raw_target, 0664) == -1) {
+						printf("could not create fifo %s\n",raw_target);
+						exit(1);
+					}
+					fptest = open(raw_target, O_RDONLY | O_NONBLOCK, 0644); //fifo needs to be open for reading in order to write to it
+				}
+		
+
+				fp = open(raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
+				if (fp == -1) {
 					printf("could not open file %s for writing\n",raw_target);
 					exit(1);
 				}
+				printf("open file %s for writing raw ouput\n",raw_target);		
+
+				
 			}
 
 			h = 112;
@@ -994,6 +1016,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						rc = draw_terminal_noncurses(inAVirtualConsole, h, w, bars, bw, bs, rest, f, flastd);
 						break;
 					case 4:
+//						printf("xxx\n");
 						for (i = 0; i <  bars; i++) write(fp, &f[i],sizeof(int));
 						break;
 				}
