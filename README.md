@@ -328,7 +328,9 @@ To cross-compile the project for ARM CPUs we're going to use this Docker project
 ```
 docker run sdt4docker/raspberry-pi-cross-compiler > rpxc
 chmod +x rpxc
-./build.sh
+./build-custom-docker-image-for-cava.sh
+# this command might sometime require root access
+# run it then with sudo
 ./rpxc --image rpxc-with-extras bash -c "./autogen.sh && ./configure --host=arm-linux-gnueabihf && make"
 ```
 
