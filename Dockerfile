@@ -7,7 +7,3 @@ RUN apt-get update && \
         build-essential libtool automake \
         ;
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        #libc6-dev \
-        aptitude \
-        ;
