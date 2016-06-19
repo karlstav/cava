@@ -208,12 +208,13 @@ FILE *fp;
 	smcount = iniparser_getsecnkeys(ini, "eq");
 	if (smcount > 0) {
 		smooth = malloc(smcount*sizeof(*smooth));
-		const char *keys[smcount];
 		#ifndef LEGACYINIPARSER
+		const char *keys[smcount];
 		iniparser_getseckeys(ini, "eq", keys);
 		#endif
 		#ifdef LEGACYINIPARSER
-		keys = iniparser_getseckeys(ini, "eq");
+		char *keys[smcount];
+		memcpy(keys, iniparser_getseckeys(ini, "eq"), smcount*sizeof(*smooth));
 		#endif
 		for (int sk = 0; sk < smcount; sk++) {
 			smooth[sk] = iniparser_getdouble(ini, keys[sk], 1);
