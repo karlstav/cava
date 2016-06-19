@@ -133,8 +133,30 @@ else
     AC_MSG_NOTICE([Building iniparser])
 fi
 
+
+
+dnl ############################
+dnl checking if legacy iniparser is enabled
+dnl ############################
+
+AC_ARG_ENABLE([legacy_iniparser],
+  AS_HELP_STRING([--enable-legacy_iniparser],
+    [enable legacy iniparser mode nesceseary to build cava with iniparser < 4.0])
+)
+
+AS_IF([test "x$enable_legacy_iniparser" = "xyes"], [
+  dnl enabling legacy-iniparser mode
+  CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"
+])
+
+
+
+
+
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
+
+
 
 
 
