@@ -141,7 +141,7 @@ dnl ############################
 
 AC_ARG_ENABLE([legacy_iniparser],
   AS_HELP_STRING([--enable-legacy_iniparser],
-    [enable legacy iniparser mode nesceseary to build cava with iniparser < 4.0])
+    [enable legacy iniparser mode necessary to build cava with iniparser < 4.0])
 )
 
 AS_IF([test "x$enable_legacy_iniparser" = "xyes"], [

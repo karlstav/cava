@@ -44,13 +44,9 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 What it is
 ----------
 
-C.A.V.A. is a bar spectrum analyzer for audio using ALSA for input. Its frequency range is limited to 50-10,000Hz. I know that the human ear can hear from 20 up to 20,000 Hz (and probably "sense" even higher frequencies), but the frequencies between 50-10,000Hz seem to me to be the most distinguishable. (I believe telephones used to be limited to as low as 8kHz.)
+C.A.V.A. is a bar spectrum audio visualizer for the Linux terminal using ALSA, pulseaudio or fifo buffer for input.
 
-This program is not intended for scientific use.
-
-This is my first published code. I am not a professional programmer so the source code is probably, by all conventions, a complete mess. Please excuse all the typos as I am both dyslexic and foreign.
-
-Any tips or comments would be much appreciated.
+This program is not intended for scientific use. It's written to look responsive and aesthetic when used to visualize music. 
 
 
 Build requirements
@@ -62,7 +58,7 @@ Build requirements
 
 Only FFTW is actually required for CAVA to compile, but for maximum usage and preformance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
 
-All these can be installed easily in all major distros:
+All the requirements can be installed easily in all major distros:
 
 Debian/Raspbian:
 
@@ -81,7 +77,7 @@ Fedora:
     dnf install alsa-lib-devel ncurses-devel fftw3-devel
    
 
-A system-wide installation of Iniparser will also be used if it is installed, if not the bundled version will be used.
+Iniparser is also required, but if it is not allready installed a bundled version will be used.
 
 To run the autogen script you will also need `automake`, `libtool` and `git`.
 
@@ -95,7 +91,8 @@ Getting started
 
 You can use the following for compilation options:
 
-    --enable-debug          enable debug messages and frequency table output
+    --enable-debug          	enable debug messages and frequency table output
+    --enable-legacy_iniparser	enable legacy iniparser mode necessary to build cava with iniparser < 4.0
 
 For example, turning on debugging messages:
 
@@ -154,7 +151,13 @@ If nothing happens you might have to use a different source than the default. Th
 
 ### From ALSA-loopback device (Tricky)
 
-If you want to capture audio straight fom the output (not just mic or line-in), you must create an ALSA loopback interface, then output the audio simultaneously to both the loopback and your normal interface.
+Set
+
+    method = alsa
+
+in config file
+
+ALSA can be difficult because there is no native way to grap audio from an output. If you want to capture audio straight fom the output (not just mic or line-in), you must create an ALSA loopback interface, then output the audio simultaneously to both the loopback and your normal interface.
 
 To create a loopback interface simply run:
 
@@ -164,29 +167,17 @@ Hopefully your `aplay -l` should now contain a loopback interface.
 
 To make it presistent across boot add the line `snd-aloop` to "/etc/modules". To keep it form beeing loaded as the first soundcard add the line `options snd-aloop index=1` to "/etc/modprobe.d/alsa-base.conf", this will load it at '1'. You can replace '1' with whatever makes most senes in your audio setup.
 
-Playing the audio through your Loopback interface makes it possible for cava to to capture it, but there will be no sound in your speakers. :(
+Playing the audio through your Loopback interface makes it possible for cava to to capture it, but there will be no sound in your speakers. In order to play audio on the loopback interface and your actual interface you must make use of the ALSA multi channel.
 
-Not to worry! There are (at least) two ways of sending the audio output to the loopback *and* your actual audio interface at the same time:
-
-#### PulseAudio combined-sink (easy)
-
-First create the loopback device as explained in the section above.
-
-To `/etc/pulse/default.pa`, add the line `load-module module-combine-sink` (in PulseAudio versions <1.0, the module was only called `module-combine`). Then restart PulseAudio. For some reason, I had to turn off realtime scheduling for this to work on a Raspberry Pi (set `realtime-scheduling = no` in `/etc/pulse/daemon.conf`).
-
-PulseAudio setup can also be done in paprefs (Debian: `sudo apt-get install paprefs && paprefs`): In the far right tab check the box "Simultaneous Output".
-
-An extra Output should appear in your sound options called "Simultaneous output to..." Note that when using this method if you turn down the volume on the Simultaneous output, this will effect the visualizer. To avoid this, select the actual output, turn down the volume, then select the Simultaneous output again.
-
-
-#### ALSA multi channel (hard)
-
-First create the loopback device as explained in the section above.
-
-Look at the inculded example file `example_files/etc/asound.conf`. I was able to make this work on my laptop (an Asus UX31 running Elementary OS). I had no luck with the ALSA method on my Rasberry PI (Rasbian) with an USB DAC. The PulseAudio method however works perfectly on my PI.
+Look at the inculded example file `example_files/etc/asound.conf`. I was able to make this work on my laptop (an Asus UX31 running Ubuntu). I had no luck with the ALSA method on my Rasberry PI (Rasbian) with an USB DAC. The PulseAudio method however works perfectly on my PI. 
 
 Read more about the ALSA method [here](http://stackoverflow.com/questions/12984089/capture-playback-on-play-only-sound-card-with-alsa).
 
+If you are having problems with the alsa method on Rasberry PI, try enabling `mmap` by addin the following line to `/boot/config.txt` and reboot:
+
+```
+dtoverlay=i2s-mmap
+```
 
 ### From mpd's fifo output
 

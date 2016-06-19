@@ -213,8 +213,7 @@ FILE *fp;
 		iniparser_getseckeys(ini, "eq", keys);
 		#endif
 		#ifdef LEGACYINIPARSER
-		char *keys[smcount];
-		memcpy(keys, iniparser_getseckeys(ini, "eq"), smcount*sizeof(*smooth));
+		char **keys = iniparser_getseckeys(ini, "eq");
 		#endif
 		for (int sk = 0; sk < smcount; sk++) {
 			smooth[sk] = iniparser_getdouble(ini, keys[sk], 1);
