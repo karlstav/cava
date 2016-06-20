@@ -24,10 +24,8 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
   - [Fedora](#fedora)
   - [Arch](#arch)
 - [Capturing audio](#capturing-audio)
-  - [From Pulseaudio monitor source (New, easy and experimental!)](#from-pulseaudio-monitor-source-new-easy-and-experimental)
-  - [From ALSA-loopback device](#from-alsa-loopback-device)
-    - [PulseAudio combined-sink (easy)](#pulseaudio-combined-sink-easy)
-    - [ALSA multi channel (hard)](#alsa-multi-channel-hard)
+  - [From Pulseaudio monitor source (Easy, default if supported)](#from-pulseaudio-monitor-source-easy-default-if-supported)
+  - [From ALSA-loopback device (Tricky)](#from-alsa-loopback-device-tricky)
   - [From mpd's fifo output](#from-mpds-fifo-output)
 - [Running via ssh](#running-via-ssh)
 - [Font notes](#font-notes)
@@ -37,6 +35,7 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 - [Usage](#usage)
   - [Controls](#controls)
 - [Configuration](#configuration)
+- [Thanks](#thanks)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
