@@ -23,6 +23,7 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
   - [openSUSE](#opensuse)
   - [Fedora](#fedora)
   - [Arch](#arch)
+  - [Ubuntu](#ubuntu)
 - [Capturing audio](#capturing-audio)
   - [From Pulseaudio monitor source (Easy, default if supported)](#from-pulseaudio-monitor-source-easy-default-if-supported)
   - [From ALSA-loopback device (Tricky)](#from-alsa-loopback-device-tricky)
@@ -74,7 +75,7 @@ openSUSE:
 Fedora:
 
     dnf install alsa-lib-devel ncurses-devel fftw3-devel
-   
+
 
 Iniparser is also required, but if it is not allready installed a bundled version will be used.
 
@@ -129,6 +130,15 @@ If you use 13.2 or 13.1 just replace *openSUSE_Tumbleweed* with *openSUSE_13.2*,
 Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
 
     yaourt -S cava
+
+### Ubuntu
+
+Michael Nguyen has added CAVA to his PPA, it can be installed with:
+
+    sudo add-apt-repository ppa:tehtotalpwnage/ppa
+    sudo apt-get update
+    sudo apt-get install cava
+    
 
 
 All distro specific instalations sources might be out of date.
