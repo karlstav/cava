@@ -35,6 +35,9 @@
 #include "output/terminal_noncurses.h"
 #include "output/terminal_noncurses.c"
 
+#include "output/raw.h"
+#include "output/raw.c"
+
 
 #include "input/fifo.h"
 #include "input/fifo.c"
@@ -65,7 +68,8 @@
 struct termios oldtio, newtio;
 int rc;
 
-char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style, *raw_target;
+char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style, *raw_target, *data_format;
+// *bar_delim, *frame_delim ;
 double monstercat, integral, gravity, ignore, smh, sens;
 int fixedbars, framerate, bw, bs, autosens;
 unsigned int lowcf, highcf;
@@ -87,6 +91,11 @@ int autobars = 1;
 int stereo = -1;
 int M = 2048;
 char supportedInput[255] = "'fifo'";
+int is_bin = 1;
+char bar_delim = ';';
+char frame_delim = '\n';
+int ascii_range = 1000;
+int bit_format = 16;
 
 // whether we should reload the config or not
 int should_reload = 0;
@@ -190,12 +199,15 @@ FILE *fp;
 		outputMethod = (char *)iniparser_getstring(ini, "output:method", "noncurses");
 	#endif
 	modeString = (char *)iniparser_getstring(ini, "general:mode", "normal");
+
 	monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
 	integral = iniparser_getdouble(ini, "smoothing:integral", 0.7);
 	gravity = iniparser_getdouble(ini, "smoothing:gravity", 1);
 	ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
-	color = (char *)iniparser_getstring(ini, "color:foreground", "default");;
-	bcolor = (char *)iniparser_getstring(ini, "color:background", "default");;
+
+	color = (char *)iniparser_getstring(ini, "color:foreground", "default");
+	bcolor = (char *)iniparser_getstring(ini, "color:background", "default");
+
 	fixedbars = iniparser_getint(ini, "general:bars", 0);
 	bw = iniparser_getint(ini, "general:bar_width", 3);
 	bs = iniparser_getint(ini, "general:bar_spacing", 1);
@@ -204,8 +216,15 @@ FILE *fp;
 	autosens = iniparser_getint(ini, "general:autosens", 1);
 	lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
 	highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
+
+    // config: output
 	style =  (char *)iniparser_getstring(ini, "output:style", "stereo");
 	raw_target = (char *)iniparser_getstring(ini, "output:raw_target", "/dev/stdout");
+	data_format = (char *)iniparser_getstring(ini, "output:data_format", "binary");
+	//bar_delim = (char *)iniparser_getstring(ini, "output:bar_delimiter", ";");
+	//frame_delim = (char *)iniparser_getstring(ini, "output:frame_delimiter", "\n");
+	ascii_range = iniparser_getint(ini, "output:ascii_max_range", 1000);
+	bit_format = iniparser_getint(ini, "output:bit_format", 16);
 
 	// read & validate: eq
 	smcount = iniparser_getsecnkeys(ini, "eq");
@@ -292,9 +311,38 @@ void validate_config()
 		om = 3;
 		bgcol = 0;
 	}
-	if (strcmp(outputMethod, "raw") == 0) {
+	if (strcmp(outputMethod, "raw") == 0) {//raw:
 		om = 4;
 		autosens = 0;
+		
+		//checking data format
+		if (strcmp(data_format, "binary") == 0) {
+			is_bin = 1;
+			//checking bit format:
+			if (bit_format != 16 && bit_format != 16 ) {
+			fprintf(stderr,
+				"bit format  %d is not supported, supported data formats are: '8' and '16'\n",
+							bit_format );
+			exit(EXIT_FAILURE);
+		
+			}
+		} else if (strcmp(data_format, "ascii") == 0) {
+			is_bin = 0;
+			if (ascii_range < 1 ) {
+			fprintf(stderr,
+				"ascii max value must be a positive integer\n");
+			exit(EXIT_FAILURE);
+			}
+		} else {
+		fprintf(stderr,
+			"data format %s is not supported, supported data formats are: 'binary' and 'ascii'\n",
+						data_format);
+		exit(EXIT_FAILURE);
+		
+		}
+
+
+
 	}
 	if (om == 0) {
 		#ifndef NCURSES
@@ -531,8 +579,9 @@ Options:\n\
 as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n";
 
 	char ch = '\0';
-	//FILE *fptest;
 	
+	//int maxvalue = 0;
+
 	// general: console title
 	printf("%c]0;%s%c", '\033', PACKAGE, '\007');
 	
@@ -987,10 +1036,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					f[o] = 1;
 					if (om == 4) f[o] = 0;
 				}
+				//if(f[o] > maxvalue) maxvalue = f[o]; 
 			}
 
+			//printf("%d\n",maxvalue); //checking maxvalue I keep forgetting its about 10000
+
 			//autmatic sens adjustment
-			if (autosens) {
+			if (autosens && om != 4) {
 				for (o = 0; o < bars; o++) {
 					if (f[o] > height * 8) {
 						sens = sens * 0.99;
@@ -1016,8 +1068,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						rc = draw_terminal_noncurses(inAVirtualConsole, h, w, bars, bw, bs, rest, f, flastd);
 						break;
 					case 4:
-//						printf("xxx\n");
-						for (i = 0; i <  bars; i++) write(fp, &f[i],sizeof(int));
+						rc = print_raw_out(bars, fp, is_bin, bit_format, ascii_range, bar_delim, frame_delim,f);
 						break;
 				}
 

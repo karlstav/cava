@@ -63,13 +63,29 @@
 # raw defaults to 200 bars, can be adjusted in the bars option above
 ; method = ncurses
 
-# raw output target defaults to stdout, a fifo will be created if target does not exist
-; raw_target = /dev/stdout
-
 # visual styles, may be 'stereo' or 'mono'. 
 # Stereo mirrors both channels with low frequencies in center.
 # Mono averages both channels and outputs left to right lowest to highest frequencies
 ; style = stereo 
+
+# raw output target defaults to stdout, a fifo will be created if target does not exist
+; raw_target = /dev/stdout
+
+# raw data format, can be binary or ascii
+; data_format = binary
+
+# binary bit format, can be 8bit (0-255) or 16bit (0-65530)
+; bit_format = 16bit
+
+# ascii max value, in ascii mode range will run from 0 to value specified here
+; ascii_max_range = 1000
+
+# ascii delimiters, in ascii format each bar and frame is seperated by a delimiters
+# can be any charachter, frame delimiter can also be '\n' i.e. newline (default)
+; bar_delimiter = ';'
+; frame_delimiter = '\n'
+
+
 
 
 [color]
