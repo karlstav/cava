@@ -16,7 +16,7 @@
 # Autosens will attempt to decrease sensitivity if cava peaks. 1 = on, 0 = off
 ; autosens = 1
 
-# The number of bars. 0 (default) sets it to auto (fill up console).
+# The number of bars (0-200). 0 (default) sets it to auto (fill up console).
 # width of bars and space between bars in number of characters. Default width 3 and space 1.
 ; bars = 0 
 ; bar_width = 3
@@ -74,16 +74,16 @@
 # raw data format, can be binary or ascii
 ; data_format = binary
 
-# binary bit format, can be 8bit (0-255) or 16bit (0-65530)
+# binary bit format, can be '8bit' (0-255) or '16bit' (0-65530) 
 ; bit_format = 16bit
 
 # ascii max value, in ascii mode range will run from 0 to value specified here
 ; ascii_max_range = 1000
 
-# ascii delimiters, in ascii format each bar and frame is seperated by a delimiters
-# can be any charachter, frame delimiter can also be '\n' i.e. newline (default)
-; bar_delimiter = ';'
-; frame_delimiter = '\n'
+# ascii delimiters, in ascii format each bar and frame is seperated by a delimiters.
+# use decimal value in ascii table (i.e. 59 = ';' and 10 = '\n' (line feed)) 
+; bar_delimiter = 59
+; frame_delimiter = 10
 
 
 

@@ -221,8 +221,8 @@ FILE *fp;
 	style =  (char *)iniparser_getstring(ini, "output:style", "stereo");
 	raw_target = (char *)iniparser_getstring(ini, "output:raw_target", "/dev/stdout");
 	data_format = (char *)iniparser_getstring(ini, "output:data_format", "binary");
-	//bar_delim = (char *)iniparser_getstring(ini, "output:bar_delimiter", ";");
-	//frame_delim = (char *)iniparser_getstring(ini, "output:frame_delimiter", "\n");
+	bar_delim = (char)iniparser_getint(ini, "output:bar_delimiter", 59);
+	frame_delim = (char)iniparser_getint(ini, "output:frame_delimiter", 10);
 	ascii_range = iniparser_getint(ini, "output:ascii_max_range", 1000);
 	bit_format = iniparser_getint(ini, "output:bit_format", 16);
 
