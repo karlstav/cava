@@ -24,6 +24,7 @@
 #include <pthread.h>
 #include <dirent.h>
 
+
 #ifdef NCURSES
 #include "output/terminal_ncurses.h"
 #include "output/terminal_ncurses.c"
@@ -33,6 +34,10 @@
 
 #include "output/terminal_noncurses.h"
 #include "output/terminal_noncurses.c"
+
+#include "output/raw.h"
+#include "output/raw.c"
+
 
 #include "input/fifo.h"
 #include "input/fifo.c"
@@ -63,7 +68,8 @@
 struct termios oldtio, newtio;
 int rc;
 
-char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style;
+char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style, *raw_target, *data_format;
+// *bar_delim, *frame_delim ;
 double monstercat, integral, gravity, ignore, smh, sens;
 int fixedbars, framerate, bw, bs, autosens;
 unsigned int lowcf, highcf;
@@ -85,6 +91,11 @@ int autobars = 1;
 int stereo = -1;
 int M = 2048;
 char supportedInput[255] = "'fifo'";
+int is_bin = 1;
+char bar_delim = ';';
+char frame_delim = '\n';
+int ascii_range = 1000;
+int bit_format = 16;
 
 // whether we should reload the config or not
 int should_reload = 0;
@@ -188,12 +199,15 @@ FILE *fp;
 		outputMethod = (char *)iniparser_getstring(ini, "output:method", "noncurses");
 	#endif
 	modeString = (char *)iniparser_getstring(ini, "general:mode", "normal");
+
 	monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
 	integral = iniparser_getdouble(ini, "smoothing:integral", 0.7);
 	gravity = iniparser_getdouble(ini, "smoothing:gravity", 1);
 	ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
-	color = (char *)iniparser_getstring(ini, "color:foreground", "default");;
-	bcolor = (char *)iniparser_getstring(ini, "color:background", "default");;
+
+	color = (char *)iniparser_getstring(ini, "color:foreground", "default");
+	bcolor = (char *)iniparser_getstring(ini, "color:background", "default");
+
 	fixedbars = iniparser_getint(ini, "general:bars", 0);
 	bw = iniparser_getint(ini, "general:bar_width", 3);
 	bs = iniparser_getint(ini, "general:bar_spacing", 1);
@@ -202,9 +216,17 @@ FILE *fp;
 	autosens = iniparser_getint(ini, "general:autosens", 1);
 	lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
 	highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
+
+    // config: output
 	style =  (char *)iniparser_getstring(ini, "output:style", "stereo");
+	raw_target = (char *)iniparser_getstring(ini, "output:raw_target", "/dev/stdout");
+	data_format = (char *)iniparser_getstring(ini, "output:data_format", "binary");
+	bar_delim = (char)iniparser_getint(ini, "output:bar_delimiter", 59);
+	frame_delim = (char)iniparser_getint(ini, "output:frame_delimiter", 10);
+	ascii_range = iniparser_getint(ini, "output:ascii_max_range", 1000);
+	bit_format = iniparser_getint(ini, "output:bit_format", 16);
 
-
+	// read & validate: eq
 	smcount = iniparser_getsecnkeys(ini, "eq");
 	if (smcount > 0) {
 		smooth = malloc(smcount*sizeof(*smooth));
@@ -293,6 +315,39 @@ void validate_config()
 	if (strcmp(outputMethod, "noncurses") == 0) {
 		om = 3;
 		bgcol = 0;
+	}
+	if (strcmp(outputMethod, "raw") == 0) {//raw:
+		om = 4;
+		autosens = 0;
+		
+		//checking data format
+		if (strcmp(data_format, "binary") == 0) {
+			is_bin = 1;
+			//checking bit format:
+			if (bit_format != 16 && bit_format != 16 ) {
+			fprintf(stderr,
+				"bit format  %d is not supported, supported data formats are: '8' and '16'\n",
+							bit_format );
+			exit(EXIT_FAILURE);
+		
+			}
+		} else if (strcmp(data_format, "ascii") == 0) {
+			is_bin = 0;
+			if (ascii_range < 1 ) {
+			fprintf(stderr,
+				"ascii max value must be a positive integer\n");
+			exit(EXIT_FAILURE);
+			}
+		} else {
+		fprintf(stderr,
+			"data format %s is not supported, supported data formats are: 'binary' and 'ascii'\n",
+						data_format);
+		exit(EXIT_FAILURE);
+		
+		}
+
+
+
 	}
 	if (om == 0) {
 		#ifndef NCURSES
@@ -392,7 +447,7 @@ void validate_config()
 	//setting sens
 	sens = sens / 100;
 
-	// read & validate: eq
+
 }
 
 #ifdef ALSA
@@ -503,7 +558,7 @@ int main(int argc, char **argv)
 	int flast[200];
 	int flastd[200];
 	int sleep = 0;
-	int i, n, o, height, h, w, c, rest, inAVirtualConsole, silence;
+	int i, n, o, height, h, w, c, rest, inAVirtualConsole, silence, fp, fptest;
 	float temp;
 	double inr[2 * (M / 2 + 1)];
 	fftw_complex outr[M / 2 + 1][2];
@@ -530,6 +585,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	char ch = '\0';
 	
+	//int maxvalue = 0;
+
 	// general: console title
 	printf("%c]0;%s%c", '\033', PACKAGE, '\007');
 	
@@ -682,12 +739,48 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		if (om == 1 || om ==  2) {
 			init_terminal_ncurses(col, bgcol);
 		}
-		
+	
 		// output: get terminal's geometry
 		if (om == 1 || om == 2) get_terminal_dim_ncurses(&w, &h);
 		#endif
 
 		if (om == 3) get_terminal_dim_noncurses(&w, &h);
+
+		// output open file/fifo for raw output
+		if ( om == 4) {
+
+			if (strcmp(raw_target,"/dev/stdout") != 0) {
+
+				//checking if file exists
+				if( access( raw_target, F_OK ) != -1 ) {
+					fptest = open(raw_target, O_RDONLY | O_NONBLOCK, 0644);	//testopening in case it's a fifo
+					if (fptest == -1) {
+						printf("could not open file %s for writing\n",raw_target);
+						exit(1);
+					}
+				} else {
+					printf("creating fifo %s\n",raw_target);
+					if (mkfifo(raw_target, 0664) == -1) {
+						printf("could not create fifo %s\n",raw_target);
+						exit(1);
+					}
+					fptest = open(raw_target, O_RDONLY | O_NONBLOCK, 0644); //fifo needs to be open for reading in order to write to it
+				}
+		
+
+				fp = open(raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
+				if (fp == -1) {
+					printf("could not open file %s for writing\n",raw_target);
+					exit(1);
+				}
+				printf("open file %s for writing raw ouput\n",raw_target);		
+
+				
+			}
+
+			h = 112;
+			w = 200;	
+		}
 
  		//handle for user setting too many bars
 		if (fixedbars) {
@@ -704,9 +797,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		if (bars < 1) bars = 1; // must have at least 1 bar;
 
-		if (stereo) {
+		if (stereo) { //stereo must have even numbers of bars
 			if (bars%2 != 0) bars--;
 		}
+
+		
 
 		height = h - 1;
 
@@ -726,6 +821,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		//output: start noncurses mode
 		if (om == 3) init_terminal_noncurses(col, bgcol, w, h, bw);
+
+		
 
 		if (stereo) bars = bars / 2; // in stereo onle half number of bars per channel
 
@@ -940,11 +1037,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 			// zero values causes divided by zero segfault
 			for (o = 0; o < bars; o++) {
-				if (f[o] < 1)f[o] = 1;
+				if (f[o] < 1) {
+					f[o] = 1;
+					if (om == 4) f[o] = 0;
+				}
+				//if(f[o] > maxvalue) maxvalue = f[o]; 
 			}
 
+			//printf("%d\n",maxvalue); //checking maxvalue I keep forgetting its about 10000
+
 			//autmatic sens adjustment
-			if (autosens) {
+			if (autosens && om != 4) {
 				for (o = 0; o < bars; o++) {
 					if (f[o] > height * 8) {
 						sens = sens * 0.99;
@@ -969,6 +1072,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					case 3:
 						rc = draw_terminal_noncurses(inAVirtualConsole, h, w, bars, bw, bs, rest, f, flastd);
 						break;
+					case 4:
+						rc = print_raw_out(bars, fp, is_bin, bit_format, ascii_range, bar_delim, frame_delim,f);
+						break;
 				}
 
 				if (rc == -1) resizeTerminal = TRUE; //terminal has been resized breaking to recalibrating values
@@ -991,5 +1097,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	req.tv_sec = 1; //waiting a second to free audio streams
 	req.tv_nsec = 0;
 	nanosleep (&req, NULL);
+	//fclose(fp);
 	}
 }
