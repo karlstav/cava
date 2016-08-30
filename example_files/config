@@ -80,7 +80,7 @@
 # ascii max value, in ascii mode range will run from 0 to value specified here
 ; ascii_max_range = 1000
 
-# ascii delimiters, in ascii format each bar and frame is seperated by a delimiters.
+# ascii delimiters, in ascii format each bar and frame is separated by a delimiters.
 # use decimal value in ascii table (i.e. 59 = ';' and 10 = '\n' (line feed)) 
 ; bar_delimiter = 59
 ; frame_delimiter = 10
