@@ -14,12 +14,14 @@
 ; sensitivity = 100
 
 # Autosens will attempt to decrease sensitivity if cava peaks. 1 = on, 0 = off
+# overshoot allows bars to overshoot (in % of terminal height) without initiating autosens
 ; autosens = 1
+; overshoot = 20
 
 # The number of bars (0-200). 0 (default) sets it to auto (fill up console).
 # width of bars and space between bars in number of characters. Default width 3 and space 1.
 ; bars = 0 
-; bar_width = 3
+; bar_width = 2
 ; bar_spacing = 1
 
 

@@ -71,7 +71,7 @@ int rc;
 char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style, *raw_target, *data_format;
 // *bar_delim, *frame_delim ;
 double monstercat, integral, gravity, ignore, smh, sens;
-int fixedbars, framerate, bw, bs, autosens;
+int fixedbars, framerate, bw, bs, autosens, overshoot;
 unsigned int lowcf, highcf;
 double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8,
 					1, 1, 0.8, 0.6, 0.6, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8,
@@ -209,11 +209,12 @@ FILE *fp;
 	bcolor = (char *)iniparser_getstring(ini, "color:background", "default");
 
 	fixedbars = iniparser_getint(ini, "general:bars", 0);
-	bw = iniparser_getint(ini, "general:bar_width", 3);
+	bw = iniparser_getint(ini, "general:bar_width", 2);
 	bs = iniparser_getint(ini, "general:bar_spacing", 1);
 	framerate = iniparser_getint(ini, "general:framerate", 60);
 	sens = iniparser_getint(ini, "general:sensitivity", 100);
 	autosens = iniparser_getint(ini, "general:autosens", 1);
+	overshoot = iniparser_getint(ini, "general:overshoot", 20);
 	lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
 	highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
 
@@ -723,7 +724,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	}
 
 	bool reloadConf = FALSE;
-	
+	bool senseLow = TRUE;
+
 	while  (!reloadConf) {//jumbing back to this loop means that you resized the screen
 		for (i = 0; i < 200; i++) {
 			flast[i] = 0;
@@ -1049,10 +1051,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			//autmatic sens adjustment
 			if (autosens && om != 4) {
 				for (o = 0; o < bars; o++) {
-					if (f[o] > height * 8) {
+					if (f[o] > height * 8 + height * 8 * overshoot / 100) {
+						senseLow = FALSE;
 						sens = sens * 0.99;
 						break;
-					}		
+					}
+					if (senseLow) sens = sens * 1.01;		
 				}
 			}
 
