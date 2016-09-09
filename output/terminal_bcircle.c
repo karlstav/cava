@@ -36,12 +36,12 @@ void get_terminal_dim_bcircle(int *w, int *h) {
 }
 
 
-int draw_terminal_bcircle(int virt, int h, int w, int f[200]) {
+int draw_terminal_bcircle(int tty, int h, int w, int f[200]) {
 
   const wchar_t* bars[] = {L"\u2581", L"\u2582", L"\u2583", L"\u2584", L"\u2585", L"\u2586", L"\u2587", L"\u2588"};
 
   // output: check if terminal has been resized
-  if (virt != 0) {
+  if (!tty) {
     if ( LINES != h || COLS != w) {
       return -1;
     }

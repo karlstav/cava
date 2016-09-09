@@ -559,7 +559,7 @@ int main(int argc, char **argv)
 	int flast[200];
 	int flastd[200];
 	int sleep = 0;
-	int i, n, o, height, h, w, c, rest, inAVirtualConsole, silence, fp, fptest;
+	int i, n, o, height, h, w, c, rest, inAtty, silence, fp, fptest;
 	float temp;
 	double inr[2 * (M / 2 + 1)];
 	fftw_complex outr[M / 2 + 1][2];
@@ -625,15 +625,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		n = 0;
 	}
 
-	// Check if we're running in a Virtual console todo: replace virtual console with terminal emulator
-	inAVirtualConsole = 1;
-	if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0), "/dev/console") == 0) inAVirtualConsole = 0;
-	
-	if (!inAVirtualConsole) {
-		system("setfont cava.psf  >/dev/null 2>&1");
-		system("echo yep > /tmp/testing123");
-		system("setterm -blank 0");
-	}
+
 
 	
 	
@@ -643,6 +635,19 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	//config: load & validate
 	load_config(configPath);
 	validate_config();
+
+
+	if (om != 4) { 
+		// Check if we're running in a Virtual console todo: replace virtual console with terminal emulator
+		inAtty = 0;
+		if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0), "/dev/console") == 0) inAtty = 1;
+	
+		if (inAtty) {
+			system("setfont cava.psf  >/dev/null 2>&1");
+			system("echo yep > /tmp/testing123");
+			system("setterm -blank 0");
+		}
+	}
 
 
 	//input: init
@@ -740,10 +745,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		//output: start ncurses mode
 		if (om == 1 || om ==  2) {
 			init_terminal_ncurses(col, bgcol);
+			get_terminal_dim_ncurses(&w, &h);
 		}
-	
-		// output: get terminal's geometry
-		if (om == 1 || om == 2) get_terminal_dim_ncurses(&w, &h);
 		#endif
 
 		if (om == 3) get_terminal_dim_noncurses(&w, &h);
@@ -1065,16 +1068,16 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				switch (om) {
 					case 1:
 						#ifdef NCURSES
-						rc = draw_terminal_ncurses(inAVirtualConsole, h, w, bars, bw, bs, rest, f, flastd);
+						rc = draw_terminal_ncurses(inAtty, h, w, bars, bw, bs, rest, f, flastd);
 						break;
 						#endif
 					case 2:
 						#ifdef NCURSES
-						rc = draw_terminal_bcircle(inAVirtualConsole, h, w, f);
+						rc = draw_terminal_bcircle(inAtty, h, w, f);
 						break;
 						#endif
 					case 3:
-						rc = draw_terminal_noncurses(inAVirtualConsole, h, w, bars, bw, bs, rest, f, flastd);
+						rc = draw_terminal_noncurses(inAtty, h, w, bars, bw, bs, rest, f, flastd);
 						break;
 					case 4:
 						rc = print_raw_out(bars, fp, is_bin, bit_format, ascii_range, bar_delim, frame_delim,f);

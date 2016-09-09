@@ -105,14 +105,14 @@ void get_terminal_dim_noncurses(int *w, int *h) {
 }
 
 
-int draw_terminal_noncurses(int virt, int h, int w, int bars, int bw, int bs, int rest, int f[200], int flastd[200]) {
+int draw_terminal_noncurses(int tty, int h, int w, int bars, int bw, int bs, int rest, int f[200], int flastd[200]) {
 	int c, move, n, o;
 
 	struct winsize dim;
 
 
 	// output: check if terminal has been resized
-	if (virt != 0) {
+	if (!tty) {
 
 		ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
 
@@ -142,11 +142,11 @@ int draw_terminal_noncurses(int virt, int h, int w, int bars, int bw, int bs, in
 					else move += bw;
 				} else if (c > 7) {
 					if (n > flastd[o] / 8 - 1) {
-						if (virt == 0) printf("%d", ttybarstring[7]); //  block tty
+						if (tty) printf("%d", ttybarstring[7]); //  block tty
 						else  printf("%ls", barstring[0]); //block
 					} else move += bw;
 				} else {
-					if (virt == 0) printf("%d", ttybarstring[c - 1]); // fractioned block tty
+					if (tty) printf("%d", ttybarstring[c - 1]); // fractioned block tty
 					else  printf("%ls", barstring[c] ); // fractioned block vt
 				}
 
