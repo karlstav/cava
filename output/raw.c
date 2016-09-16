@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 
 int print_raw_out(int bars, int fp, int is_bin, int bit_format, int ascii_range, char bar_delim, char frame_delim, int f[200]) {
