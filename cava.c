@@ -78,6 +78,7 @@
 struct termios oldtio, newtio;
 int rc;
 
+dictionary *ini;
 char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style, *raw_target, *data_format;
 // *bar_delim, *frame_delim ;
 double monstercat, integral, gravity, ignore, smh, sens;
@@ -222,7 +223,7 @@ FILE *fp;
 	}
 
 	// config: parse ini
-	dictionary* ini = iniparser_load(configPath);
+	ini = iniparser_load(configPath);
 
 	//setting fifo to defaualt if no other input modes supported
 	inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo"); 
@@ -256,9 +257,9 @@ FILE *fp;
 	color = (char *)iniparser_getstring(ini, "color:foreground", "default");
 	bcolor = (char *)iniparser_getstring(ini, "color:background", "default");
 
+	w = iniparser_getint(ini, "general:window_width", 640);
+	h = iniparser_getint(ini, "general:window_height", 480);
 	fixedbars = iniparser_getint(ini, "general:bars", 0);
-	w = iniparser_getint(ini, "general:screen_width", 640);
-	h = iniparser_getint(ini, "general:screen_height", 480);
 	bw = iniparser_getint(ini, "general:bar_width", 2);
 	bs = iniparser_getint(ini, "general:bar_spacing", 1);
 	framerate = iniparser_getint(ini, "general:framerate", 60);
@@ -308,7 +309,6 @@ FILE *fp;
 		im = 3;
 		audio.source = (char *)iniparser_getstring(ini, "input:source", "auto");
 	}
-
 }
 
 void validate_config()
@@ -471,10 +471,9 @@ void validate_config()
 		exit(EXIT_FAILURE);
 	}
 
-	// validate: color
 	if((om != 5) && (om != 6))
 	{
-		// do this only if the output modes are console ones
+		// validate: color
 		if (strcmp(color, "black") == 0) col = 0;
 		if (strcmp(color, "red") == 0) col = 1;
 		if (strcmp(color, "green") == 0) col = 2;
@@ -483,27 +482,10 @@ void validate_config()
 		if (strcmp(color, "magenta") == 0) col = 5;
 		if (strcmp(color, "cyan") == 0) col = 6;
 		if (strcmp(color, "white") == 0) col = 7;
-	}
-	else if(om == 5)
-	{
-		sscanf(color, "%x", &col);
-	}
-	else if(om == 6)
-	{
-		char *tempString = (char *)malloc(sizeof(color) + 1);
-		if(tempString == NULL){
-			fprintf(stderr, "memory error!\n");
-			exit(EXIT_FAILURE);
-		}
-		sprintf(tempString, "#%s", color);
-		color = tempString;
-	}
-	// default if invalid
-
-	// validate: background color
-	if((om != 5) && (om != 6))
-	{
-		// do this only if the output modes are console ones
+		
+		// default if invalid
+		
+		// validate: background color
 		if (strcmp(bcolor, "black") == 0) bgcol = 0;
 		if (strcmp(bcolor, "red") == 0) bgcol = 1;
 		if (strcmp(bcolor, "green") == 0) bgcol = 2;
@@ -515,11 +497,63 @@ void validate_config()
 	}
 	else if(om == 5)
 	{
-		sscanf(bcolor, "%x", &bgcol);
+		// validating foreground color
+		if (strcmp(color, "black") == 0) col = 0x000000;
+		else if (strcmp(color, "red") == 0) col = 0xFF0000;
+		else if (strcmp(color, "green") == 0) col = 0x00FF00;
+		else if (strcmp(color, "yellow") == 0) col = 0xFFFF00;
+		else if (strcmp(color, "blue") == 0) col = 0x0000FF;
+		else if (strcmp(color, "magenta") == 0) col = 0xFF00FF;
+		else if (strcmp(color, "cyan") == 0) col = 0x00FFFF;
+		else if (strcmp(color, "white") == 0) col = 0xFFFFFF;
+		else if (strcmp(color, "default") == 0) col = 0xFFFFFF;
+		else sscanf(color, "%x", &col);
+
+		// validating background color
+		if (strcmp(bcolor, "black") == 0) bgcol = 0x000000;
+		else if (strcmp(bcolor, "red") == 0) bgcol = 0xFF0000;
+		else if (strcmp(bcolor, "green") == 0) bgcol = 0x00FF00;
+		else if (strcmp(bcolor, "yellow") == 0) bgcol = 0xFFFF00;
+		else if (strcmp(bcolor, "blue") == 0) bgcol = 0x0000FF;
+		else if (strcmp(bcolor, "magenta") == 0) bgcol = 0xFF00FF;
+		else if (strcmp(bcolor, "cyan") == 0) bgcol = 0x00FFFF;
+		else if (strcmp(bcolor, "white") == 0) bgcol = 0xFFFFFF;
+		else if (strcmp(bcolor, "default") == 0) bgcol = 0x000000;
+		else sscanf(bcolor, "%x", &bgcol);
 	}
 	else if(om == 6)
 	{
-		char *tempString = (char *)malloc(sizeof(bcolor) + 1);
+		if (strcmp(color, "black") == 0) color = "000000";
+		else if (strcmp(color, "red") == 0) color = "FF0000";
+		else if (strcmp(color, "green") == 0) color = "00FF00";
+		else if (strcmp(color, "yellow") == 0) color = "FFFF00";
+		else if (strcmp(color, "blue") == 0) color = "0000FF";
+		else if (strcmp(color, "magenta") == 0) color = "FF00FF";
+		else if (strcmp(color, "cyan") == 0) color = "00FFFF";
+		else if (strcmp(color, "white") == 0) color = "FFFFFF";
+		else if (strcmp(color, "default") == 0) color = "FFFFFF";
+
+		if (strcmp(bcolor, "black") == 0) bcolor = "000000";
+		else if (strcmp(bcolor, "red") == 0) bcolor = "FF0000";
+		else if (strcmp(bcolor, "green") == 0) bcolor = "00FF00";
+		else if (strcmp(bcolor, "yellow") == 0) bcolor = "FFFF00";
+		else if (strcmp(bcolor, "blue") == 0) bcolor = "0000FF";
+		else if (strcmp(bcolor, "magenta") == 0) bcolor = "FF00FF";
+		else if (strcmp(bcolor, "cyan") == 0) bcolor = "00FFFF";
+		else if (strcmp(bcolor, "white") == 0) bcolor = "FFFFFF";
+		else if (strcmp(bcolor, "default") == 0) bcolor = "000000";
+		
+		// validating foreground color
+		char *tempString = (char *)malloc(sizeof(color) + 1);
+		if(tempString == NULL){
+			fprintf(stderr, "memory error!\n");
+			exit(EXIT_FAILURE);
+		}
+		sprintf(tempString, "#%s", color);
+		color = tempString;
+
+		// validating background color
+		tempString = (char *)malloc(sizeof(bcolor) + 1);
 		if(tempString == NULL){
 			fprintf(stderr, "memory error!\n");
 			exit(EXIT_FAILURE);
@@ -527,6 +561,7 @@ void validate_config()
 		sprintf(tempString, "#%s", bcolor);
 		bcolor = tempString;
 	}
+
 	// default if invalid
 
 	// validate: gravity
@@ -552,7 +587,12 @@ void validate_config()
 	//setting sens
 	sens = sens / 100;
 
-
+	// load extra options
+	if((om == 6) | (om == 5))
+	{
+		bw = iniparser_getint(ini, "general:win_bar_width", 20);
+		bs = iniparser_getint(ini, "general:win_bar_spacing", 4);
+	}
 }
 
 #ifdef ALSA
@@ -1188,6 +1228,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 								break;
 							case XK_r: //reload config
 								should_reload = 1;
+								cleanup();
 								break;
 							case XK_q:
 								cleanup();
@@ -1431,6 +1472,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						// draw bars on the X11 window
 						for(int i = 0; i < bars; i++)
 						{
+							// this fixes a rendering bug
+							if(f[i] > h) f[i] = h;
+							
 							if(f[i] > flastd[i]){
 								XSetForeground(cavaXDisplay, cavaXGraphics, xcol.pixel);
 								XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bs+bw), h - f[i], bw, f[i] - flastd[i]);

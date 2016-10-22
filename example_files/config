@@ -23,7 +23,13 @@
 ; bars = 0 
 ; bar_width = 2
 ; bar_spacing = 1
+# Options below are bar width and spacing for the graphics modes
+; win_bar_width = 20
+; win_bar_height = 4
 
+# The window height and width, used only with graphics modes
+; window_width = 640
+; window_height = 480
 
 # Lower and higher cutoff frequencies for lowest and highest bars
 # the bandwith of the visualizer, defaults to 50 - 10000 Hz
@@ -94,7 +100,7 @@
 [color]
 
 # supported colors are: red, green, yellow, magenta, cyan, white, blue, black.
-# if you are running in a window mode, please use hex values
+# if you are running in a window mode you can also use hex colors
 ; background = black
 ; foreground = cyan
 
