@@ -53,6 +53,8 @@ Build requirements
 ------------------
 * [FFTW](http://www.fftw.org/)
 * [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
+* [SDL2 dev files](http://libsdl.org/)
+* [Xlib/X11 dev files](http://x.org/)
 * [ALSA dev files](http://alsa-project.org/)
 * [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/)
 
@@ -62,19 +64,19 @@ All the requirements can be installed easily in all major distros:
 
 Debian/Raspbian:
 
-    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev
+    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libsdl2-dev libx11-dev
 
 ArchLinux:
 
-    pacman -S base-devel fftw ncurses
+    pacman -S base-devel fftw ncurses sdl2 libx11
 
 openSUSE:
 
-    zypper install alsa-devel ncurses-devel fftw3-devel
+    zypper install alsa-devel ncurses-devel fftw3-devel libSDL2-devel libX11-devel
 
 Fedora:
 
-    dnf install alsa-lib-devel ncurses-devel fftw3-devel
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel SDL2-devel xorg-x11-devel
 
 
 Iniparser is also required, but if it is not allready installed a bundled version will be used.
@@ -229,6 +231,7 @@ Font notes
 ----------
 
 Since the graphics are simply based on characters, performance is dependent on the terminal font.
+Unless you are running in sdl or x mode, the performance is pixel/resolution-based.
 
 ### In ttys
 
@@ -255,6 +258,7 @@ Latency notes
 -------------
 
 If you see latency issues (sound before image) in a terminal emulator, try increasing the font size. This will reduce the number of characters that have to be shown.
+But if you are running in x or sdl mode, you can shrink the window.
 
 If your audio device has a huge buffer, you might experience that cava is actually faster than the audio you hear. This reduces the experience of the visualization. To fix this, you try decreasing the buffer settings in your audio playing software.
 
