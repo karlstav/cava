@@ -16,7 +16,7 @@ Comment=Audio spectrum visualizer
 Exec=cava
 
 # The name of the icon that will be used to display this entry
-Icon=/usr/share/cava-gui/icon.png
+Icon=/usr/share/cava/icon.png
 
 # Describes whether this application needs to be run in a terminal or not
 Terminal=false
