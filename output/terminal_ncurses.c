@@ -3,19 +3,89 @@
 #include <wchar.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+struct cols {
+	int col;
+	int R;
+	int G;
+	int B;
+};
 
+#define DEFAULTCOL 6
+#define DEFAULTBGCOL -1
 
-int init_terminal_ncurses(int col, int bgcol) {
+struct cols parse_color(char *col) {
+	struct cols ret;
+	// Hexvalues
+	if (col[0] == '#') {
+		// Set to -2 to indicate color_redefinition
+		ret.col = -2;
+		++col;
+		sscanf(col, "%02x%02x%02x", &ret.R, &ret.G, &ret.B);
+		return ret;
+	}
 
+	// validate: color
+	if (strcmp(col, "black") == 0) ret.col = 0;
+	if (strcmp(col, "red") == 0) ret.col = 1;
+	if (strcmp(col, "green") == 0) ret.col = 2;
+	if (strcmp(col, "yellow") == 0) ret.col = 3;
+	if (strcmp(col, "blue") == 0) ret.col = 4;
+	if (strcmp(col, "magenta") == 0) ret.col = 5;
+	if (strcmp(col, "cyan") == 0) ret.col = 6;
+	if (strcmp(col, "white") == 0) ret.col = 7;
+	// Set to -1 to indicate default values
+	if (strcmp(col, "default") == 0) ret.col = -1;
+
+	return ret;
+}
+
+int init_terminal_ncurses(char *color, char *bcolor) {
+	struct cols col, bgcol;
 	initscr();
 	curs_set(0);
 	timeout(0);
 	noecho();
 	start_color();
 	use_default_colors();
-	init_pair(1, col, bgcol);
-	if(bgcol != -1)
+
+	double magic = 1000 / 255.0;
+	int colp = 0, bgcolp = 0;
+
+	col = parse_color(color);
+	bgcol = parse_color(bcolor);
+	if (col.col == -2) {
+		init_color(1, (int)(col.R * magic), (int)(col.G * magic), (int)(col.B * magic));
+	}
+	if (bgcol.col == -2) {
+		init_color(2, (int)(bgcol.R * magic), (int)(bgcol.G * magic), (int)(bgcol.B * magic));
+	}
+
+	switch (col.col) {
+		case -2:
+			colp = 1;
+			break;
+		case -1:
+			colp = DEFAULTCOL;
+			break;
+		default:
+			colp = col.col;
+	}
+
+	switch (bgcol.col) {
+		case -2:
+			bgcolp = 2;
+			break;
+		case -1:
+			bgcolp = DEFAULTBGCOL;
+			break;
+		default:
+			bgcolp = bgcol.col;
+	}
+
+	init_pair(1, colp, bgcolp);
+	if (bgcolp != -1)
 		bkgd(COLOR_PAIR(1));
 	attron(COLOR_PAIR(1));
 //	attron(A_BOLD);

@@ -23,6 +23,7 @@
 #include <getopt.h>
 #include <pthread.h>
 #include <dirent.h>
+#include <ctype.h>
 
 
 #ifdef NCURSES
@@ -261,6 +262,42 @@ FILE *fp;
 
 }
 
+int validate_color(char *checkColor, int om)
+{
+	int validColor = 0;
+	if (checkColor[0] == '#' && strlen(checkColor) == 7) {
+		// If the output mode is not ncurses, tell the user to use a named colour instead of hex colours.
+		if (om != 1 && om != 2) {
+			fprintf(stderr, "Only 'ncurses' output method supports HTML colors. Please change the colours or the output method.\n");
+			exit(EXIT_FAILURE);
+		}
+		// 0 to 9 and a to f
+		for (int i = 1; checkColor[i]; ++i) {
+			if (!isdigit(checkColor[i])) {
+				if (tolower(checkColor[i]) >= 'a' && tolower(checkColor[i]) <= 'f') {
+					validColor = 1;
+				} else {
+					validColor = 0;
+					break;
+				}
+			} else {
+				validColor = 1;
+			}
+		}
+	} else {
+		if ((strcmp(checkColor, "black") == 0) || \
+			(strcmp(checkColor, "red") == 0) || \
+			(strcmp(checkColor, "green") == 0) || \
+			(strcmp(checkColor, "yellow") == 0) || \
+			(strcmp(checkColor, "blue") == 0) || \
+			(strcmp(checkColor, "magenta") == 0) || \
+			(strcmp(checkColor, "cyan") == 0) || \
+			(strcmp(checkColor, "white") == 0) || \
+			(strcmp(checkColor, "default") == 0)) validColor = 1;
+	}
+	return validColor;
+}
+
 void validate_config()
 {
 
@@ -404,26 +441,41 @@ void validate_config()
 	}
 
 	// validate: color
-	if (strcmp(color, "black") == 0) col = 0;
-	if (strcmp(color, "red") == 0) col = 1;
-	if (strcmp(color, "green") == 0) col = 2;
-	if (strcmp(color, "yellow") == 0) col = 3;
-	if (strcmp(color, "blue") == 0) col = 4;
-	if (strcmp(color, "magenta") == 0) col = 5;
-	if (strcmp(color, "cyan") == 0) col = 6;
-	if (strcmp(color, "white") == 0) col = 7;
-	// default if invalid
+	if (!validate_color(color, om)) {
+		fprintf(stderr, "The value for 'foreground' is invalid. It can be either one of the 7 named colors or a HTML color of the form '#xxxxxx'.\n");
+		exit(EXIT_FAILURE);
+	}
 
 	// validate: background color
-	if (strcmp(bcolor, "black") == 0) bgcol = 0;
-	if (strcmp(bcolor, "red") == 0) bgcol = 1;
-	if (strcmp(bcolor, "green") == 0) bgcol = 2;
-	if (strcmp(bcolor, "yellow") == 0) bgcol = 3;
-	if (strcmp(bcolor, "blue") == 0) bgcol = 4;
-	if (strcmp(bcolor, "magenta") == 0) bgcol = 5;
-	if (strcmp(bcolor, "cyan") == 0) bgcol = 6;
-	if (strcmp(bcolor, "white") == 0) bgcol = 7;
-	// default if invalid
+	if (!validate_color(bcolor, om)) {
+		fprintf(stderr, "The value for 'background' is invalid. It can be either one of the 7 named colors or a HTML color of the form '#xxxxxx'.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	// If any mode other than ncurses, set bgcol and col to proper values
+	if (om != 1 && om != 2) {
+		// validate: color
+		if (strcmp(color, "black") == 0) col = 0;
+		if (strcmp(color, "red") == 0) col = 1;
+		if (strcmp(color, "green") == 0) col = 2;
+		if (strcmp(color, "yellow") == 0) col = 3;
+		if (strcmp(color, "blue") == 0) col = 4;
+		if (strcmp(color, "magenta") == 0) col = 5;
+		if (strcmp(color, "cyan") == 0) col = 6;
+		if (strcmp(color, "white") == 0) col = 7;
+		// default if invalid
+
+		// validate: background color
+		if (strcmp(bcolor, "black") == 0) bgcol = 0;
+		if (strcmp(bcolor, "red") == 0) bgcol = 1;
+		if (strcmp(bcolor, "green") == 0) bgcol = 2;
+		if (strcmp(bcolor, "yellow") == 0) bgcol = 3;
+		if (strcmp(bcolor, "blue") == 0) bgcol = 4;
+		if (strcmp(bcolor, "magenta") == 0) bgcol = 5;
+		if (strcmp(bcolor, "cyan") == 0) bgcol = 6;
+		if (strcmp(bcolor, "white") == 0) bgcol = 7;
+		// default if invalid
+	}
 
 	// validate: gravity
 	if (gravity < 0) {
@@ -744,7 +796,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		#ifdef NCURSES
 		//output: start ncurses mode
 		if (om == 1 || om ==  2) {
-			init_terminal_ncurses(col, bgcol);
+			init_terminal_ncurses(color, bcolor);
 			get_terminal_dim_ncurses(&w, &h);
 		}
 		#endif
