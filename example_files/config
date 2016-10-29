@@ -25,7 +25,7 @@
 ; bar_spacing = 1
 # Options below are bar width and spacing for the graphics modes
 ; win_bar_width = 20
-; win_bar_height = 4
+; win_bar_spacing = 4
 
 # The window height and width, used only with graphics modes
 ; window_width = 640
