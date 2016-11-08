@@ -17,12 +17,20 @@ struct cols {
 
 struct cols parse_color(char *col) {
 	struct cols ret;
-	// Hexvalues
-	if (col[0] == '#') {
+	int has_colors = 0;
+	if (has_colors() == TRUE) {
+		has_colors = 1;
+	}
+	// Only use the hexvalues if we are certain that the terminal
+	// supports color redefinition, otherwise use default colours.
+	if (col[0] == '#' && has_colors == 1) {
 		// Set to -2 to indicate color_redefinition
 		ret.col = -2;
 		++col;
 		sscanf(col, "%02x%02x%02x", &ret.R, &ret.G, &ret.B);
+		return ret;
+	} else if (col[0] == '#' && has_colors == 0) {
+		ret.col = -1;
 		return ret;
 	}
 
