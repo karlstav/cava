@@ -153,6 +153,8 @@ void cleanup_terminal_ncurses(void)
 	system("setfont  >/dev/null 2>&1");
 	system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
 	system("setterm -blank 10");
+	init_color(1, 1000, 0, 0);
+	init_color(2, 0, 1000, 0);
 	endwin();
 	system("clear");
 }
