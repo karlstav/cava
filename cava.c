@@ -452,30 +452,29 @@ void validate_config()
 		exit(EXIT_FAILURE);
 	}
 
-	// If any mode other than ncurses, set bgcol and col to proper values
-	if (om != 1 && om != 2) {
-		// validate: color
-		if (strcmp(color, "black") == 0) col = 0;
-		if (strcmp(color, "red") == 0) col = 1;
-		if (strcmp(color, "green") == 0) col = 2;
-		if (strcmp(color, "yellow") == 0) col = 3;
-		if (strcmp(color, "blue") == 0) col = 4;
-		if (strcmp(color, "magenta") == 0) col = 5;
-		if (strcmp(color, "cyan") == 0) col = 6;
-		if (strcmp(color, "white") == 0) col = 7;
-		// default if invalid
+	// In case color is not html format set bgcol and col to predefinedint values
 
-		// validate: background color
-		if (strcmp(bcolor, "black") == 0) bgcol = 0;
-		if (strcmp(bcolor, "red") == 0) bgcol = 1;
-		if (strcmp(bcolor, "green") == 0) bgcol = 2;
-		if (strcmp(bcolor, "yellow") == 0) bgcol = 3;
-		if (strcmp(bcolor, "blue") == 0) bgcol = 4;
-		if (strcmp(bcolor, "magenta") == 0) bgcol = 5;
-		if (strcmp(bcolor, "cyan") == 0) bgcol = 6;
-		if (strcmp(bcolor, "white") == 0) bgcol = 7;
-		// default if invalid
-	}
+	if (strcmp(color, "black") == 0) col = 0;
+	if (strcmp(color, "red") == 0) col = 1;
+	if (strcmp(color, "green") == 0) col = 2;
+	if (strcmp(color, "yellow") == 0) col = 3;
+	if (strcmp(color, "blue") == 0) col = 4;
+	if (strcmp(color, "magenta") == 0) col = 5;
+	if (strcmp(color, "cyan") == 0) col = 6;
+	if (strcmp(color, "white") == 0) col = 7;
+	// default if invalid
+
+	// validate: background color
+	if (strcmp(bcolor, "black") == 0) bgcol = 0;
+	if (strcmp(bcolor, "red") == 0) bgcol = 1;
+	if (strcmp(bcolor, "green") == 0) bgcol = 2;
+	if (strcmp(bcolor, "yellow") == 0) bgcol = 3;
+	if (strcmp(bcolor, "blue") == 0) bgcol = 4;
+	if (strcmp(bcolor, "magenta") == 0) bgcol = 5;
+	if (strcmp(bcolor, "cyan") == 0) bgcol = 6;
+	if (strcmp(bcolor, "white") == 0) bgcol = 7;
+	// default if invalid
+	
 
 	// validate: gravity
 	if (gravity < 0) {
@@ -796,7 +795,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		#ifdef NCURSES
 		//output: start ncurses mode
 		if (om == 1 || om ==  2) {
-			init_terminal_ncurses(color, bcolor);
+			init_terminal_ncurses(color, bcolor, col, bgcol);
 			get_terminal_dim_ncurses(&w, &h);
 		}
 		#endif

@@ -34,22 +34,13 @@ struct cols parse_color(char *col) {
 		return ret;
 	}
 
-	// validate: color
-	if (strcmp(col, "black") == 0) ret.col = 0;
-	if (strcmp(col, "red") == 0) ret.col = 1;
-	if (strcmp(col, "green") == 0) ret.col = 2;
-	if (strcmp(col, "yellow") == 0) ret.col = 3;
-	if (strcmp(col, "blue") == 0) ret.col = 4;
-	if (strcmp(col, "magenta") == 0) ret.col = 5;
-	if (strcmp(col, "cyan") == 0) ret.col = 6;
-	if (strcmp(col, "white") == 0) ret.col = 7;
-	// Set to -1 to indicate default values
-	if (strcmp(col, "default") == 0) ret.col = -1;
+	//using predefined colors
+	ret.col = 0;
 
 	return ret;
 }
 
-int init_terminal_ncurses(char *color, char *bcolor) {
+int init_terminal_ncurses(char *color, char *bcolor, int predefcol, int predefbgcol) {
 	struct cols col, bgcol;
 	initscr();
 	curs_set(0);
@@ -78,7 +69,7 @@ int init_terminal_ncurses(char *color, char *bcolor) {
 			colp = DEFAULTCOL;
 			break;
 		default:
-			colp = col.col;
+			colp = predefcol;
 	}
 
 	switch (bgcol.col) {
@@ -89,7 +80,7 @@ int init_terminal_ncurses(char *color, char *bcolor) {
 			bgcolp = DEFAULTBGCOL;
 			break;
 		default:
-			bgcolp = bgcol.col;
+			bgcolp = predefbgcol;
 	}
 
 	init_pair(1, colp, bgcolp);
