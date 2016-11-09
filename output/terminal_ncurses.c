@@ -18,9 +18,9 @@ struct cols {
 struct cols parse_color(char *col) {
 	struct cols ret;
 	int has_colors = 0;
-	if (has_colors() == TRUE) {
+	//if (has_colors() == TRUE) {
 		has_colors = 1;
-	}
+	//}
 	// Only use the hexvalues if we are certain that the terminal
 	// supports color redefinition, otherwise use default colours.
 	if (col[0] == '#' && has_colors == 1) {
