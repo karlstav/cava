@@ -19,10 +19,10 @@ struct cols parse_color(char *col) {
 	struct cols ret;
 
 	if (col[0] == '#') {
-		if (has_colors() != TRUE) {
+		if (can_change_color() != TRUE) {
 			cleanup_terminal_ncurses();
 			fprintf(stderr,
-				"Your terminal can not manipulate colors, please use one of the predefined ones.\n");
+				"Your terminal can not change color definitions, please use one of the predefined colors.\n");
 			exit(EXIT_FAILURE);
 		}
 
