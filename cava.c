@@ -107,7 +107,7 @@ char bar_delim = ';';
 char frame_delim = '\n';
 int ascii_range = 1000;
 int bit_format = 16;
-int w, h;
+int w, h, fs;
 
 // these are needed for the Xlib and SDL2 outputs
 #ifdef SDL
@@ -124,6 +124,13 @@ Colormap cavaXColormap;
 int cavaXDisplayNumber;
 XColor xbgcol, xcol;
 XEvent cavaXEvent;
+Atom wm_delete_window;
+
+// Needed for fullscreen to function
+#define _NET_WM_STATE_REMOVE 0;
+#define _NET_WM_STATE_ADD 1;
+#define _NET_WM_STATE_TOGGLE 2;
+
 #endif
 
 
@@ -259,6 +266,7 @@ FILE *fp;
 
 	w = iniparser_getint(ini, "general:window_width", 640);
 	h = iniparser_getint(ini, "general:window_height", 480);
+	fs = iniparser_getint(ini, "general:window_fullscreen", 0);
 	fixedbars = iniparser_getint(ini, "general:bars", 0);
 	bw = iniparser_getint(ini, "general:bar_width", 2);
 	bs = iniparser_getint(ini, "general:bar_spacing", 1);
@@ -590,6 +598,10 @@ void validate_config()
 	// load extra options
 	if((om == 6) | (om == 5))
 	{
+		if(fs > 2 | fs < 0){
+			fprintf(stderr, "fullscreen can only be 0 or 1");
+			exit(EXIT_FAILURE);
+		}
 		bw = iniparser_getint(ini, "general:win_bar_width", 20);
 		bs = iniparser_getint(ini, "general:win_bar_spacing", 4);
 	}
@@ -884,7 +896,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	}
 
 	// create window
-	cavaSDLWindow = SDL_CreateWindow("CAVA", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+	cavaSDLWindow = SDL_CreateWindow("CAVA", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, (SDL_WINDOW_FULLSCREEN & fs) | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
 	if(!cavaSDLWindow)
 	{
 		fprintf(stderr, "SDL window cannot be created: %s\n", SDL_GetError());
@@ -919,6 +931,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		XAllocColor(cavaXDisplay, cavaXColormap, &xbgcol);
 		XParseColor(cavaXDisplay, cavaXColormap, color, &xcol);
 		XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
+
+		// fix for error while closing window
+		wm_delete_window = XInternAtom (cavaXDisplay, "WM_DELETE_WINDOW", FALSE);
+		XSetWMProtocols(cavaXDisplay, cavaXWindow, &wm_delete_window, 1);
 	}
 	#endif
 
@@ -982,6 +998,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		#ifdef SDL
 		if(om == 5)
 		{
+			// toggle fullscreen
+			if(fs)
+				SDL_SetWindowFullscreen(cavaSDLWindow, SDL_WINDOW_FULLSCREEN);
+			else
+				SDL_SetWindowFullscreen(cavaSDLWindow, 0);
+
 			cavaSDLWindowSurface = SDL_GetWindowSurface(cavaSDLWindow);
 			// Appearently SDL uses multithreading so this avoids invalid access
 			SDL_Delay(100);
@@ -993,6 +1015,30 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		#ifdef XLIB
 		if(om == 6)
 		{
+			// Gets the monitors resolution
+			if(fs){
+				w = DisplayWidth(cavaXDisplay, cavaXDisplayNumber);
+				h = DisplayHeight(cavaXDisplay, cavaXDisplayNumber);
+			}
+
+			// Setting the fullscreen options
+			Atom wmState = XInternAtom(cavaXDisplay, "_NET_WM_STATE", FALSE);
+			Atom fullScreen = XInternAtom(cavaXDisplay, "_NET_WM_STATE_FULLSCREEN", FALSE);
+			
+			XEvent xev;
+			xev.xclient.type=ClientMessage;
+			xev.xclient.serial = 0;
+			xev.xclient.send_event = TRUE;
+			xev.xclient.window = cavaXWindow;
+			xev.xclient.message_type = wmState;
+			xev.xclient.format = 32;
+			if(fs) {xev.xclient.data.l[0] = _NET_WM_STATE_ADD;}
+			else {xev.xclient.data.l[0] = _NET_WM_STATE_REMOVE;}
+			xev.xclient.data.l[1] = fullScreen;
+			xev.xclient.data.l[2] = 0;
+			XSendEvent(cavaXDisplay, DefaultRootWindow(cavaXDisplay), FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+			
+			// do the usual stuff :P
 			XSetForeground(cavaXDisplay, cavaXGraphics, xbgcol.pixel);
 			XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, 0, 0, w, h);
 		}
@@ -1136,6 +1182,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					case SDL_KEYDOWN:
 						switch(cavaSDLEvent.key.keysym.sym)
 						{
+							case SDLK_ESCAPE:
+								cleanup();
+								return EXIT_SUCCESS;
+							case SDLK_f: // fullscreen
+								fs = !fs;
+								resizeTerminal = TRUE;
+								break;
 							case SDLK_UP: // key up
 								sens = sens * 1.05;
 								break;
@@ -1148,6 +1201,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 								break;
 							case SDLK_LEFT: // key left
 								if(bw > 1) bw--;
+								resizeTerminal = TRUE;
 								break;
 							case SDLK_m:
 								if(mode == modes){
@@ -1193,87 +1247,99 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			#ifdef XLIB
 			if(om == 6)
 			{
-				// get events
-				if(XEventsQueued(cavaXDisplay, QueuedAfterFlush) > 0)
+				// WASTE ALL THE EVENTS >:D
+				while(XEventsQueued(cavaXDisplay, QueuedAfterFlush) > 0){
 					XNextEvent(cavaXDisplay, &cavaXEvent);
-				
-				switch(cavaXEvent.type)
-				{
-					case KeyPress:
-					//case KeyRelease:
+					
+					switch(cavaXEvent.type)
 					{
-						KeySym key_symbol = XKeycodeToKeysym(cavaXDisplay, cavaXEvent.xkey.keycode, 0);
-						switch(key_symbol)
+						case KeyPress:
+						//case KeyRelease:
 						{
-							case XK_Up:
-								sens = sens * 1.05;
-								break;
-							case XK_Down:
-								sens = sens * 0.95;
-								break;
-							case XK_Right:
-								bw++;
-								resizeTerminal = TRUE;
-								break;
-							case XK_Left:
-								if (bw > 1) bw--;
-								resizeTerminal = TRUE;
-								break;
-							case XK_m:
-								if (mode == modes) {
-									mode = 1;
-								} else {
-									mode++;
-								}
-								break;
-							case XK_r: //reload config
-								should_reload = 1;
-								cleanup();
-								break;
-							case XK_q:
-								cleanup();
-								return EXIT_SUCCESS;
-							case XK_Escape:
-								cleanup();
-								return EXIT_SUCCESS;
-							case XK_b:
-								srand(time(NULL));
-								free(bcolor);
-								bcolor = (char *) malloc(8*sizeof(char));
-								sprintf(bcolor, "#%hhx%hhx%hhx", (rand() % 0x100), (rand() % 0x100), (rand() % 0x100));
-								XParseColor(cavaXDisplay, cavaXColormap, bcolor, &xbgcol);
-								XAllocColor(cavaXDisplay, cavaXColormap, &xbgcol);
-								resizeTerminal = TRUE;
-								break;
-							case XK_c:
-								srand(time(NULL));
-								free(color);
-								color = (char *) malloc(8*sizeof(char));
-								sprintf(color, "#%hhx%hhx%hhx", (rand() % 0x100), (rand() % 0x100), (rand() % 0x100));
-								XParseColor(cavaXDisplay, cavaXColormap, color, &xcol);
-								XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
-								resizeTerminal = TRUE;
-								break;
+							KeySym key_symbol = XKeycodeToKeysym(cavaXDisplay, cavaXEvent.xkey.keycode, 0);
+							switch(key_symbol)
+							{
+								case XK_f: // fullscreen
+									fs = !fs;
+									resizeTerminal = TRUE;
+									break;
+								case XK_Up:
+									sens = sens * 1.05;
+									break;
+								case XK_Down:
+									sens = sens * 0.95;
+									break;
+								case XK_Right:
+									bw++;
+									resizeTerminal = TRUE;
+									break;
+								case XK_Left:
+									if (bw > 1) bw--;
+									resizeTerminal = TRUE;
+									break;
+								case XK_m:
+									if (mode == modes) {
+										mode = 1;
+									} else {
+										mode++;
+									}
+									break;
+								case XK_r: //reload config
+									should_reload = 1;
+									cleanup();
+									break;
+								case XK_q:
+									cleanup();
+									return EXIT_SUCCESS;
+								case XK_Escape:
+									cleanup();
+									return EXIT_SUCCESS;
+								case XK_b:
+									srand(time(NULL));
+									free(bcolor);
+									bcolor = (char *) malloc(8*sizeof(char));
+									sprintf(bcolor, "#%hhx%hhx%hhx", (rand() % 0x100), (rand() % 0x100), (rand() % 0x100));
+									XParseColor(cavaXDisplay, cavaXColormap, bcolor, &xbgcol);
+									XAllocColor(cavaXDisplay, cavaXColormap, &xbgcol);
+									resizeTerminal = TRUE;
+									break;
+								case XK_c:
+									srand(time(NULL));
+									free(color);
+									color = (char *) malloc(8*sizeof(char));
+									sprintf(color, "#%hhx%hhx%hhx", (rand() % 0x100), (rand() % 0x100), (rand() % 0x100));
+									XParseColor(cavaXDisplay, cavaXColormap, color, &xcol);
+									XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
+									resizeTerminal = TRUE;
+									break;
+							}
+							break;
 						}
-						break;
-					}
-					case ConfigureNotify:
-					{
-						// This is needed to track the window size
-						XConfigureEvent trackedCavaXWindow;
-						trackedCavaXWindow = cavaXEvent.xconfigure;
-	
-						if(w != trackedCavaXWindow.width || h != trackedCavaXWindow.height)
+						case ConfigureNotify:
 						{
+							// This is needed to track the window size
+							XConfigureEvent trackedCavaXWindow;
+							trackedCavaXWindow = cavaXEvent.xconfigure;
+		
+							if(w != trackedCavaXWindow.width || h != trackedCavaXWindow.height)
+							{
+								resizeTerminal = TRUE;
+								w = trackedCavaXWindow.width;
+								h = trackedCavaXWindow.height;
+							}
+							break;
+						}
+						case Expose:
 							resizeTerminal = TRUE;
-							w = trackedCavaXWindow.width;
-							h = trackedCavaXWindow.height;
-						}
-						break;
+							break;
+						case ClientMessage:
+							if((Atom)cavaXEvent.xclient.data.l[0] == wm_delete_window)
+							{
+								cleanup();
+								return EXIT_SUCCESS;
+							}
+							break;
 					}
-					case ClientMessage:
-						cleanup();
-						return EXIT_SUCCESS;
 				}
 			}
 			#endif

@@ -31,6 +31,9 @@
 ; window_width = 640
 ; window_height = 480
 
+# The window fullscreen toggle (can be either 0 or 1)
+; window_fullscreen = 0
+
 # Lower and higher cutoff frequencies for lowest and highest bars
 # the bandwith of the visualizer, defaults to 50 - 10000 Hz
 # Note: there is a minimum total bandwith of 43Mhz x number of bars. 
