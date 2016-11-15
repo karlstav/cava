@@ -47,7 +47,7 @@ if [[ $have_xlib = "yes" ]] ; then
 	CPPFLAGS="$CPPFLAGS -DXLIB"
 fi
 
-if [[ $have_xlib= "no" ]] ; then
+if [[ $have_xlib = "no" ]] ; then
 	AC_MSG_NOTICE([WARNING: No xlib dev files found building without xlib support])
 fi
 
