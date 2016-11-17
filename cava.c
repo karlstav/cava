@@ -1110,7 +1110,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						sens = sens * 0.99;
 						break;
 					}
-					if (senseLow) sens = sens * 1.01;		
+					if (senseLow && !silence) sens = sens * 1.01;		
 				}
 			}
 
