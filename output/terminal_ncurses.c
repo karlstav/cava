@@ -3,19 +3,88 @@
 #include <wchar.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+struct cols {
+	int col;
+	int R;
+	int G;
+	int B;
+};
 
+#define DEFAULTCOL 6
+#define DEFAULTBGCOL -1
 
-int init_terminal_ncurses(int col, int bgcol) {
+struct cols parse_color(char *col) {
+	struct cols ret;
 
+	if (col[0] == '#') {
+		if (can_change_color() != TRUE) {
+			cleanup_terminal_ncurses();
+			fprintf(stderr,
+				"Your terminal can not change color definitions, please use one of the predefined colors.\n");
+			exit(EXIT_FAILURE);
+		}
+
+		// Set to -2 to indicate color_redefinition
+		ret.col = -2;
+		++col;
+		sscanf(col, "%02x%02x%02x", &ret.R, &ret.G, &ret.B);
+		return ret;
+	} else {
+
+	//using predefined colors
+	ret.col = 0;
+
+	return ret;
+	}
+}
+
+int init_terminal_ncurses(char *color, char *bcolor, int predefcol, int predefbgcol) {
+	struct cols col, bgcol;
 	initscr();
 	curs_set(0);
 	timeout(0);
 	noecho();
 	start_color();
 	use_default_colors();
-	init_pair(1, col, bgcol);
-	if(bgcol != -1)
+
+	double magic = 1000 / 255.0;
+	int colp = 0, bgcolp = 0;
+
+	col = parse_color(color);
+	bgcol = parse_color(bcolor);
+	if (col.col == -2) {
+		init_color(1, (int)(col.R * magic), (int)(col.G * magic), (int)(col.B * magic));
+	}
+	if (bgcol.col == -2) {
+		init_color(2, (int)(bgcol.R * magic), (int)(bgcol.G * magic), (int)(bgcol.B * magic));
+	}
+
+	switch (col.col) {
+		case -2:
+			colp = 1;
+			break;
+		case -1:
+			colp = DEFAULTCOL;
+			break;
+		default:
+			colp = predefcol;
+	}
+
+	switch (bgcol.col) {
+		case -2:
+			bgcolp = 2;
+			break;
+		case -1:
+			bgcolp = DEFAULTBGCOL;
+			break;
+		default:
+			bgcolp = predefbgcol;
+	}
+
+	init_pair(1, colp, bgcolp);
+	if (bgcolp != -1)
 		bkgd(COLOR_PAIR(1));
 	attron(COLOR_PAIR(1));
 //	attron(A_BOLD);
@@ -75,6 +144,8 @@ void cleanup_terminal_ncurses(void)
 	system("setfont  >/dev/null 2>&1");
 	system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
 	system("setterm -blank 10");
+	init_color(1, 1000, 0, 0);
+	init_color(2, 0, 1000, 0);
 	endwin();
 	system("clear");
 }

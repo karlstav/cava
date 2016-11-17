@@ -23,6 +23,7 @@
 #include <getopt.h>
 #include <pthread.h>
 #include <dirent.h>
+#include <ctype.h>
 
 
 #ifdef NCURSES
@@ -51,10 +52,6 @@
 #ifdef PULSE
 #include "input/pulse.h"
 #include "input/pulse.c"
-#endif
-
-#ifdef SDL
-#include <SDL2/SDL.h>
 #endif
 
 #ifdef XLIB
@@ -109,12 +106,7 @@ int ascii_range = 1000;
 int bit_format = 16;
 int w, h, fs;
 
-// these are needed for the Xlib and SDL2 outputs
-#ifdef SDL
-SDL_Window *cavaSDLWindow;
-SDL_Surface *cavaSDLWindowSurface;
-SDL_Event cavaSDLEvent;
-#endif
+// these are needed for the Xlib output
 
 #ifdef XLIB
 Display *cavaXDisplay;
@@ -142,7 +134,7 @@ int should_reload = 0;
 // general: cleanup
 void cleanup(void)
 {
-	if((om != 5) && (om != 6))
+	if(om != 5)
 	{
 		#ifdef NCURSES
 		cleanup_terminal_ncurses();
@@ -150,14 +142,6 @@ void cleanup(void)
 		cleanup_terminal_noncurses();
 	}
 	else if (om == 5)
-	{
-		#ifdef SDL
-		SDL_FreeSurface(cavaSDLWindowSurface);
-		SDL_DestroyWindow(cavaSDLWindow);
-		SDL_Quit();
-		#endif
-	}
-	else if (om == 6)
 	{
 		#ifdef XLIB
 		XDestroyWindow(cavaXDisplay, cavaXWindow);
@@ -319,6 +303,42 @@ FILE *fp;
 	}
 }
 
+int validate_color(char *checkColor, int om)
+{
+	int validColor = 0;
+	if (checkColor[0] == '#' && strlen(checkColor) == 7) {
+		// If the output mode is not ncurses, tell the user to use a named colour instead of hex colours.
+		if (om != 1 && om != 2 && om != 5 && om != 6) {
+			fprintf(stderr, "Only 'ncurses' and 'x' output method supports HTML colors. Please change the colours or the output method.\n");
+			exit(EXIT_FAILURE);
+		}
+		// 0 to 9 and a to f
+		for (int i = 1; checkColor[i]; ++i) {
+			if (!isdigit(checkColor[i])) {
+				if (tolower(checkColor[i]) >= 'a' && tolower(checkColor[i]) <= 'f') {
+					validColor = 1;
+				} else {
+					validColor = 0;
+					break;
+				}
+			} else {
+				validColor = 1;
+			}
+		}
+	} else {
+		if ((strcmp(checkColor, "black") == 0) || \
+			(strcmp(checkColor, "red") == 0) || \
+			(strcmp(checkColor, "green") == 0) || \
+			(strcmp(checkColor, "yellow") == 0) || \
+			(strcmp(checkColor, "blue") == 0) || \
+			(strcmp(checkColor, "magenta") == 0) || \
+			(strcmp(checkColor, "cyan") == 0) || \
+			(strcmp(checkColor, "white") == 0) || \
+			(strcmp(checkColor, "default") == 0)) validColor = 1;
+	}
+	return validColor;
+}
+
 void validate_config()
 {
 
@@ -405,18 +425,9 @@ void validate_config()
 		
 		}
 	}
-	if(strcmp(outputMethod, "sdl") == 0)
-	{
-		om = 5;
-		#ifndef SDL
-			fprintf(stderr,
-				"cava was built without SDL support, install SDL2 dev files and run make clean && ./configure && make again\n");
-			exit(EXIT_FAILURE);
-		#endif
-	}
 	if(strcmp(outputMethod, "x") == 0)
 	{
-		om = 6;
+		om = 5;
 		#ifndef XLIB
 			fprintf(stderr,
 				"cava was built without Xlib support, install Xlib dev files and run make clean && ./configure && make again\n");
@@ -427,9 +438,6 @@ void validate_config()
 		fprintf(stderr,
 			"output method %s is not supported, supported methods are: 'noncurses'",
 						outputMethod);
-		#ifdef SDL
-			fprintf(stderr, ", 'sdl'");
-		#endif
 		#ifdef XLIB
 			fprintf(stderr, ", 'x'");
 		#endif
@@ -479,98 +487,41 @@ void validate_config()
 		exit(EXIT_FAILURE);
 	}
 
-	if((om != 5) && (om != 6))
-	{
-		// validate: color
-		if (strcmp(color, "black") == 0) col = 0;
-		if (strcmp(color, "red") == 0) col = 1;
-		if (strcmp(color, "green") == 0) col = 2;
-		if (strcmp(color, "yellow") == 0) col = 3;
-		if (strcmp(color, "blue") == 0) col = 4;
-		if (strcmp(color, "magenta") == 0) col = 5;
-		if (strcmp(color, "cyan") == 0) col = 6;
-		if (strcmp(color, "white") == 0) col = 7;
-		
-		// default if invalid
-		
-		// validate: background color
-		if (strcmp(bcolor, "black") == 0) bgcol = 0;
-		if (strcmp(bcolor, "red") == 0) bgcol = 1;
-		if (strcmp(bcolor, "green") == 0) bgcol = 2;
-		if (strcmp(bcolor, "yellow") == 0) bgcol = 3;
-		if (strcmp(bcolor, "blue") == 0) bgcol = 4;
-		if (strcmp(bcolor, "magenta") == 0) bgcol = 5;
-		if (strcmp(bcolor, "cyan") == 0) bgcol = 6;
-		if (strcmp(bcolor, "white") == 0) bgcol = 7;
+	// validate: color
+	if (!validate_color(color, om)) {
+		fprintf(stderr, "The value for 'foreground' is invalid. It can be either one of the 7 named colors or a HTML color of the form '#xxxxxx'.\n");
+		exit(EXIT_FAILURE);
 	}
-	else if(om == 5)
-	{
-		// validating foreground color
-		if (strcmp(color, "black") == 0) col = 0x000000;
-		else if (strcmp(color, "red") == 0) col = 0xFF0000;
-		else if (strcmp(color, "green") == 0) col = 0x00FF00;
-		else if (strcmp(color, "yellow") == 0) col = 0xFFFF00;
-		else if (strcmp(color, "blue") == 0) col = 0x0000FF;
-		else if (strcmp(color, "magenta") == 0) col = 0xFF00FF;
-		else if (strcmp(color, "cyan") == 0) col = 0x00FFFF;
-		else if (strcmp(color, "white") == 0) col = 0xFFFFFF;
-		else if (strcmp(color, "default") == 0) col = 0xFFFFFF;
-		else sscanf(color, "%x", &col);
 
-		// validating background color
-		if (strcmp(bcolor, "black") == 0) bgcol = 0x000000;
-		else if (strcmp(bcolor, "red") == 0) bgcol = 0xFF0000;
-		else if (strcmp(bcolor, "green") == 0) bgcol = 0x00FF00;
-		else if (strcmp(bcolor, "yellow") == 0) bgcol = 0xFFFF00;
-		else if (strcmp(bcolor, "blue") == 0) bgcol = 0x0000FF;
-		else if (strcmp(bcolor, "magenta") == 0) bgcol = 0xFF00FF;
-		else if (strcmp(bcolor, "cyan") == 0) bgcol = 0x00FFFF;
-		else if (strcmp(bcolor, "white") == 0) bgcol = 0xFFFFFF;
-		else if (strcmp(bcolor, "default") == 0) bgcol = 0x000000;
-		else sscanf(bcolor, "%x", &bgcol);
+	// validate: background color
+	if (!validate_color(bcolor, om)) {
+		fprintf(stderr, "The value for 'background' is invalid. It can be either one of the 7 named colors or a HTML color of the form '#xxxxxx'.\n");
+		exit(EXIT_FAILURE);
 	}
-	else if(om == 6)
-	{
-		if (strcmp(color, "black") == 0) color = "000000";
-		else if (strcmp(color, "red") == 0) color = "FF0000";
-		else if (strcmp(color, "green") == 0) color = "00FF00";
-		else if (strcmp(color, "yellow") == 0) color = "FFFF00";
-		else if (strcmp(color, "blue") == 0) color = "0000FF";
-		else if (strcmp(color, "magenta") == 0) color = "FF00FF";
-		else if (strcmp(color, "cyan") == 0) color = "00FFFF";
-		else if (strcmp(color, "white") == 0) color = "FFFFFF";
-		else if (strcmp(color, "default") == 0) color = "FFFFFF";
 
-		if (strcmp(bcolor, "black") == 0) bcolor = "000000";
-		else if (strcmp(bcolor, "red") == 0) bcolor = "FF0000";
-		else if (strcmp(bcolor, "green") == 0) bcolor = "00FF00";
-		else if (strcmp(bcolor, "yellow") == 0) bcolor = "FFFF00";
-		else if (strcmp(bcolor, "blue") == 0) bcolor = "0000FF";
-		else if (strcmp(bcolor, "magenta") == 0) bcolor = "FF00FF";
-		else if (strcmp(bcolor, "cyan") == 0) bcolor = "00FFFF";
-		else if (strcmp(bcolor, "white") == 0) bcolor = "FFFFFF";
-		else if (strcmp(bcolor, "default") == 0) bcolor = "000000";
-		
-		// validating foreground color
-		char *tempString = (char *)malloc(sizeof(color) + 1);
-		if(tempString == NULL){
-			fprintf(stderr, "memory error!\n");
-			exit(EXIT_FAILURE);
-		}
-		sprintf(tempString, "#%s", color);
-		color = tempString;
+	// In case color is not html format set bgcol and col to predefinedint values
+	if (strcmp(color, "black") == 0) col = 0;
+	if (strcmp(color, "red") == 0) col = 1;
+	if (strcmp(color, "green") == 0) col = 2;
+	if (strcmp(color, "yellow") == 0) col = 3;
+	if (strcmp(color, "blue") == 0) col = 4;
+	if (strcmp(color, "magenta") == 0) col = 5;
+	if (strcmp(color, "cyan") == 0) col = 6;
+	if (strcmp(color, "white") == 0) col = 7;
+	// default if invalid
 
-		// validating background color
-		tempString = (char *)malloc(sizeof(bcolor) + 1);
-		if(tempString == NULL){
-			fprintf(stderr, "memory error!\n");
-			exit(EXIT_FAILURE);
-		}
-		sprintf(tempString, "#%s", bcolor);
-		bcolor = tempString;
-	}
+	// validate: background color
+	if (strcmp(bcolor, "black") == 0) bgcol = 0;
+	if (strcmp(bcolor, "red") == 0) bgcol = 1;
+	if (strcmp(bcolor, "green") == 0) bgcol = 2;
+	if (strcmp(bcolor, "yellow") == 0) bgcol = 3;
+	if (strcmp(bcolor, "blue") == 0) bgcol = 4;
+	if (strcmp(bcolor, "magenta") == 0) bgcol = 5;
+	if (strcmp(bcolor, "cyan") == 0) bgcol = 6;
+	if (strcmp(bcolor, "white") == 0) bgcol = 7;
 
 	// default if invalid
+	
 
 	// validate: gravity
 	if (gravity < 0) {
@@ -596,7 +547,7 @@ void validate_config()
 	sens = sens / 100;
 
 	// load extra options
-	if((om == 6) | (om == 5))
+	if(om == 5)
 	{
 		if(fs > 2 | fs < 0){
 			fprintf(stderr, "fullscreen can only be 0 or 1");
@@ -793,7 +744,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	validate_config();
 
 
-	if ((om != 4) && (om != 5) && (om != 6)) { 
+	if ((om != 4) && (om != 5)) { 
 		// Check if we're running in a Virtual console todo: replace virtual console with terminal emulator
 		inAtty = 0;
 		if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0), "/dev/console") == 0) inAtty = 1;
@@ -887,27 +838,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	bool reloadConf = FALSE;
 	bool senseLow = TRUE;
 
-	// SDL2
-	#ifdef SDL
-	if(om == 5){
-	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0){
-		fprintf(stderr, "unable to initilize SDL2: %s\n", SDL_GetError());
-		exit(1);
-	}
-
-	// create window
-	cavaSDLWindow = SDL_CreateWindow("CAVA", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, (SDL_WINDOW_FULLSCREEN & fs) | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
-	if(!cavaSDLWindow)
-	{
-		fprintf(stderr, "SDL window cannot be created: %s\n", SDL_GetError());
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR", "cannot create SDL window", NULL);
-		SDL_Quit();
-		exit(1);
-	}}
-	#endif
 	// open XLIB window and set everything up
 	#ifdef XLIB
-	if(om == 6)
+	if(om == 5)
 	{
 		// connect to the X server
 		cavaXDisplay = XOpenDisplay(NULL);
@@ -927,6 +860,63 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		// get colormap
 		cavaXColormap = DefaultColormap(cavaXDisplay, cavaXDisplayNumber);
 		// allocate colors
+		if(color[0] != '#')
+		switch(col)
+		{
+			case 0:
+				color = "#000000";
+				break;
+			case 1:
+				color = "#FF0000";
+				break;
+			case 2:
+				color = "#00FF00";
+				break;
+			case 3:
+				color = "#FFFF00";
+				break;
+			case 4:
+				color = "#0000FF";
+				break;
+			case 5:
+				color = "#FF00FF";
+				break;
+			case 6:
+				color = "#00FFFF";
+				break;
+			case 7:
+				color = "#FFFFFF";
+				break;
+		}
+		
+		if(bcolor[0] != '#')
+		switch(bgcol)
+		{
+			case 0:
+				bcolor = "#000000";
+				break;
+			case 1:
+				bcolor = "#FF0000";
+				break;
+			case 2:
+				bcolor = "#00FF00";
+				break;
+			case 3:
+				bcolor = "#FFFF00";
+				break;
+			case 4:
+				bcolor = "#0000FF";
+				break;
+			case 5:
+				bcolor = "#FF00FF";
+				break;
+			case 6:
+				bcolor = "#00FFFF";
+				break;
+			case 7:
+				bcolor = "#FFFFFF";
+				break;
+		}
 		XParseColor(cavaXDisplay, cavaXColormap, bcolor, &xbgcol);
 		XAllocColor(cavaXDisplay, cavaXColormap, &xbgcol);
 		XParseColor(cavaXDisplay, cavaXColormap, color, &xcol);
@@ -951,7 +941,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		#ifdef NCURSES
 		//output: start ncurses mode
 		if (om == 1 || om ==  2) {
-			init_terminal_ncurses(col, bgcol);
+			init_terminal_ncurses(color, bcolor, col, bgcol);
 			get_terminal_dim_ncurses(&w, &h);
 		}
 		#endif
@@ -994,26 +984,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			w = 200;	
 		}
 
-		// get SDL2 surface and draw background
-		#ifdef SDL
-		if(om == 5)
-		{
-			// toggle fullscreen
-			if(fs)
-				SDL_SetWindowFullscreen(cavaSDLWindow, SDL_WINDOW_FULLSCREEN);
-			else
-				SDL_SetWindowFullscreen(cavaSDLWindow, 0);
-
-			cavaSDLWindowSurface = SDL_GetWindowSurface(cavaSDLWindow);
-			// Appearently SDL uses multithreading so this avoids invalid access
-			SDL_Delay(100);
-			SDL_FillRect(cavaSDLWindowSurface, NULL, bgcol);
-		}
-		#endif
-
 		// draw X11 background
 		#ifdef XLIB
-		if(om == 6)
+		if(om == 5)
 		{
 			// Gets the monitors resolution
 			if(fs){
@@ -1127,7 +1100,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		while  (!resizeTerminal) {
 
 			// general: keyboard controls
-			if((om != 5) && (om != 6)){
+			if(om != 5){
 				#ifdef NCURSES
 				if (om == 1 || om == 2) ch = getch();
 				#endif
@@ -1173,82 +1146,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						return EXIT_SUCCESS;
 				}
 			}
-			#ifdef SDL
-			else if(om == 5)
-			{
-				SDL_PollEvent(&cavaSDLEvent);
-				switch(cavaSDLEvent.type)
-				{
-					case SDL_KEYDOWN:
-						switch(cavaSDLEvent.key.keysym.sym)
-						{
-							case SDLK_ESCAPE:
-								cleanup();
-								return EXIT_SUCCESS;
-							case SDLK_f: // fullscreen
-								fs = !fs;
-								resizeTerminal = TRUE;
-								break;
-							case SDLK_UP: // key up
-								sens = sens * 1.05;
-								break;
-							case SDLK_DOWN: // key down
-								sens = sens * 0.95;
-								break;
-							case SDLK_RIGHT: // key right
-								bw++;
-								resizeTerminal = TRUE;
-								break;
-							case SDLK_LEFT: // key left
-								if(bw > 1) bw--;
-								resizeTerminal = TRUE;
-								break;
-							case SDLK_m:
-								if(mode == modes){
-									mode = 1;
-								} else {
-									mode++;
-								}
-								break;
-							case SDLK_r: // reload config
-								should_reload = 1;
-								break;
-							case SDLK_c: // change foreground color
-								srand(time(NULL));
-								col = ((rand() % 0x100) * (2^24)) + ((rand() % 0x100) * (2^16)) + ((rand() % 0x100) * (2^8)) + 255;
-								resizeTerminal = TRUE;
-								break;
-							case SDLK_b: // change background color
-								srand(time(NULL));
-								bgcol = ((rand() % 0x100) * (2^24)) + ((rand() % 0x100) * (2^16)) + ((rand() % 0x100) * (2^8)) + 255;
-								resizeTerminal = TRUE;
-								break;
-							case SDLK_q:
-								cleanup();
-								return EXIT_SUCCESS;
-						}
-						break;
-					case SDL_WINDOWEVENT:
-						if(cavaSDLEvent.window.event == SDL_WINDOWEVENT_CLOSE){
-							// if the user closed the window
-							cleanup();
-							return EXIT_SUCCESS;
-						}
-						else if(cavaSDLEvent.window.event == SDL_WINDOWEVENT_RESIZED){
-							// if the user resized the window
-							w = cavaSDLEvent.window.data1;
-							h = cavaSDLEvent.window.data2;
-							resizeTerminal = TRUE;
-						}
-						break;
-				}
-			}
-			#endif
 			#ifdef XLIB
-			if(om == 6)
+			if(om == 5)
 			{
-				// WASTE ALL THE EVENTS >:D
-				while(XEventsQueued(cavaXDisplay, QueuedAfterFlush) > 0){
+				while(!should_reload && (XEventsQueued(cavaXDisplay, QueuedAfterFlush) > 0)){
 					XNextEvent(cavaXDisplay, &cavaXEvent);
 					
 					switch(cavaXEvent.type)
@@ -1487,7 +1388,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						sens = sens * 0.99;
 						break;
 					}
-					if (senseLow) sens = sens * 1.01;		
+					if (senseLow && !silence) sens = sens * 1.01;		
 				}
 			}
 
@@ -1511,24 +1412,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						rc = print_raw_out(bars, fp, is_bin, bit_format, ascii_range, bar_delim, frame_delim,f);
 						break;
 					case 5:
-					{
-						#ifdef SDL
-						for(int i = 0; i < bars; i++)
-						{
-							SDL_Rect current_bar;
-							if(f[i] > flastd[i]){
-								current_bar = (SDL_Rect) {rest + i*(bs+bw), h - f[i], bw, f[i] - flastd[i]};
-								SDL_FillRect(cavaSDLWindowSurface, &current_bar, col);
-							} else if(f[i] < flastd[i]) {
-								current_bar = (SDL_Rect) {rest + i*(bs+bw), h - flastd[i], bw, flastd[i] - f[i]};
-								SDL_FillRect(cavaSDLWindowSurface, &current_bar, bgcol);
-							}
-						}
-						SDL_UpdateWindowSurface(cavaSDLWindow);
-						break;
-						#endif
-					}
-					case 6:
 					{
 						#ifdef XLIB
 						// this prevents invalid access

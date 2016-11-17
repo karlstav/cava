@@ -69,8 +69,8 @@
 
 [output]
 
-# ouput method may be ncurses, noncurses, x, sdl or raw. noncurses is for systems that does not suport ncurses. 
-# x is for systems that use the x windowing system, sdl is a another option for x windowing systems. See which one works the best
+# ouput method may be ncurses, noncurses, x or raw. noncurses is for systems that does not suport ncurses. 
+# x is for systems that use the x windowing system
 # raw is a 16 bit data stream of the bar heights that can be used to send to other applications
 # raw defaults to 200 bars, can be adjusted in the bars option above
 ; method = ncurses
@@ -103,7 +103,7 @@
 [color]
 
 # supported colors are: red, green, yellow, magenta, cyan, white, blue, black.
-# if you are running in a window mode you can also use hex colors
+# or defined by hex code '#xxxxxx' (hex code must be within '')
 ; background = black
 ; foreground = cyan
 
