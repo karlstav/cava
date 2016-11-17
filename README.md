@@ -5,7 +5,7 @@ C.A.V.A. (M.P.)
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
-Now with more colors! Use hex codes in config, for example::
+Now with more colors! Use hex codes in config, for example:
 ```
 background = '#253552'
 foreground = '#FF479C'
