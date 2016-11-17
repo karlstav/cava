@@ -93,7 +93,7 @@
 [color]
 
 # colors can one of seven predefined: red, green, yellow, magenta, cyan, white, blue, black.
-# or defined by html code '#xxxxxx' (html code must be within '')
+# or defined by hex code '#xxxxxx' (hex code must be within '')
 ; background = black
 ; foreground = cyan
 

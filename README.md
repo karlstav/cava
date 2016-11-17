@@ -5,6 +5,13 @@ C.A.V.A. (M.P.)
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
+Now with more colors! Use hex codes in config, for example::
+```
+background = '#253552'
+foreground = '#FF479C'
+```
+(hex code must be within '')
+
 ![spectrum](https://cloud.githubusercontent.com/assets/5231746/7368413/7d7ca93e-ed9f-11e4-842f-61c54fc03dbe.gif "spectrum")
 
 thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( http://unix.stackexchange.com/questions/113695/gif-screencastng-the-unix-way).
