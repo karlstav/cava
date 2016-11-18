@@ -861,61 +861,77 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		cavaXColormap = DefaultColormap(cavaXDisplay, cavaXDisplayNumber);
 		// allocate colors
 		if(color[0] != '#')
-		switch(col)
 		{
-			case 0:
-				color = "#000000";
-				break;
-			case 1:
-				color = "#FF0000";
-				break;
-			case 2:
-				color = "#00FF00";
-				break;
-			case 3:
-				color = "#FFFF00";
-				break;
-			case 4:
-				color = "#0000FF";
-				break;
-			case 5:
-				color = "#FF00FF";
-				break;
-			case 6:
-				color = "#00FFFF";
-				break;
-			case 7:
-				color = "#FFFFFF";
-				break;
+			color = (char *)malloc((char)8); // default hex color string
+			if(color == NULL)
+			{
+				fprintf(stderr, "memory error\n");
+				exit(EXIT_FAILURE);
+			}
+			switch(col)
+			{
+				case 0:
+					strcpy(color, "#000000");
+					break;
+				case 1:
+					strcpy(color, "#FF0000");
+					break;
+				case 2:
+					strcpy(color, "#00FF00");
+					break;
+				case 3:
+					strcpy(color, "#FFFF00");
+					break;
+				case 4:
+					strcpy(color, "#0000FF");
+					break;
+				case 5:
+					strcpy(color, "#FF00FF");
+					break;
+				case 6:
+					strcpy(color, "#00FFFF");
+					break;
+				case 7:
+					strcpy(color, "#FFFFFF");
+					break;
+			}
 		}
 		
 		if(bcolor[0] != '#')
-		switch(bgcol)
 		{
-			case 0:
-				bcolor = "#000000";
-				break;
-			case 1:
-				bcolor = "#FF0000";
-				break;
-			case 2:
-				bcolor = "#00FF00";
-				break;
-			case 3:
-				bcolor = "#FFFF00";
-				break;
-			case 4:
-				bcolor = "#0000FF";
-				break;
-			case 5:
-				bcolor = "#FF00FF";
-				break;
-			case 6:
-				bcolor = "#00FFFF";
-				break;
-			case 7:
-				bcolor = "#FFFFFF";
-				break;
+			bcolor = (char *)malloc((char)8); // default hex color string
+			if(bcolor == NULL)
+			{
+				fprintf(stderr, "memory error\n");
+				exit(EXIT_FAILURE);
+			}
+			switch(bgcol)
+			{
+				case 0:
+					strcpy(bcolor, "#000000");
+					break;
+				case 1:
+					strcpy(bcolor, "#FF0000");
+					break;
+				case 2:
+					strcpy(bcolor, "#00FF00");
+					break;
+				case 3:
+					strcpy(bcolor, "#FFFF00");
+					break;
+				case 4:
+					strcpy(bcolor, "#0000FF");
+					break;
+				case 5:
+					strcpy(bcolor, "#FF00FF");
+					break;
+				case 6:
+					strcpy(bcolor, "#00FFFF");
+					break;
+				case 7:
+					strcpy(bcolor, "#FFFFFF");
+					break;
+			}
 		}
 		XParseColor(cavaXDisplay, cavaXColormap, bcolor, &xbgcol);
 		XAllocColor(cavaXDisplay, cavaXColormap, &xbgcol);
