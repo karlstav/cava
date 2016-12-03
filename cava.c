@@ -1284,6 +1284,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				#endif
 
 				switch (ch) {
+					case 'a':
+						if(bs > 0) bs--;
+						resizeTerminal = TRUE;
+						break;
+					case 's':
+						bs++;
+						resizeTerminal = TRUE;
+						break;
 					case 65:    // key up
 						sens = sens * 1.05;
 						break;
@@ -1338,6 +1346,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 							key_symbol = XKeycodeToKeysym(cavaXDisplay, cavaXEvent.xkey.keycode, 0);
 							switch(key_symbol)
 							{
+								case XK_s:
+									bs++;
+									resizeTerminal = TRUE;
+									break;
+								case XK_a:
+									if(bs > 0) bs--;
+									resizeTerminal = TRUE;
+									break;
 								case XK_f: // fullscreen
 									fs = !fs;
 									resizeTerminal = TRUE;
@@ -1431,6 +1447,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					case SDL_KEYDOWN:
 						switch(cavaSDLEvent.key.keysym.sym)
 						{
+							case SDLK_s:
+								bs++;
+								resizeTerminal = TRUE;
+								break;
+							case SDLK_a:
+								if(bs > 0) bs--;
+								resizeTerminal = TRUE;
+								break;
 							case SDLK_ESCAPE:
 								cleanup();
 								return EXIT_SUCCESS;
