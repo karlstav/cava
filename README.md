@@ -61,6 +61,7 @@ Build requirements
 * [FFTW](http://www.fftw.org/)
 * [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
 * [Xlib/X11 dev files](http://x.org/)
+* [SDL2 dev files](https://libsdl.org/)
 * [ALSA dev files](http://alsa-project.org/)
 * [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/)
 
@@ -70,19 +71,19 @@ All the requirements can be installed easily in all major distros:
 
 Debian/Raspbian:
 
-    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libx11-dev
+    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libx11-dev libsdl2-dev
 
 ArchLinux:
 
-    pacman -S base-devel fftw ncurses libx11
+    pacman -S base-devel fftw ncurses libx11 sdl2
 
 openSUSE:
 
-    zypper install alsa-devel ncurses-devel fftw3-devel libX11-devel
+    zypper install alsa-devel ncurses-devel fftw3-devel libX11-devel libSDL2-devel
 
 Fedora:
 
-    dnf install alsa-lib-devel ncurses-devel fftw3-devel xorg-x11-devel
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel xorg-x11-devel SDL2-devel
 
 
 Iniparser is also required, but if it is not allready installed a bundled version will be used.
