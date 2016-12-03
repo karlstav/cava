@@ -992,6 +992,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		XParseColor(cavaXDisplay, cavaXColormap, color, &xcol);
 		XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
 
+		// add titlebar name
+		XStoreName(cavaXDisplay, cavaXWindow, "CAVA");
+
 		// fix for error while closing window
 		wm_delete_window = XInternAtom (cavaXDisplay, "WM_DELETE_WINDOW", FALSE);
 		XSetWMProtocols(cavaXDisplay, cavaXWindow, &wm_delete_window, 1);
@@ -1693,18 +1696,21 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					case 6:
 					{
 						#ifdef SDL
-						for(int i = 0; i < bars; i++)
+						if(!resizeTerminal)
 						{
-							SDL_Rect current_bar;
-							if(f[i] > flastd[i]){
-								current_bar = (SDL_Rect) {rest + i*(bs+bw), h - f[i], bw, f[i] - flastd[i]};
-								SDL_FillRect(cavaSDLWindowSurface, &current_bar, SDL_MapRGB(cavaSDLWindowSurface->format, col / 0x10000 % 0x100, col / 0x100 % 0x100, col % 0x100));
-							} else if(f[i] < flastd[i]) {
-								current_bar = (SDL_Rect) {rest + i*(bs+bw), h - flastd[i], bw, flastd[i] - f[i]};
-								SDL_FillRect(cavaSDLWindowSurface, &current_bar, SDL_MapRGB(cavaSDLWindowSurface->format, bgcol / 0x10000 % 0x100, bgcol / 0x100 % 0x100, bgcol % 0x100));
+							for(int i = 0; i < bars; i++)
+							{
+								SDL_Rect current_bar;
+								if(f[i] > flastd[i]){
+									current_bar = (SDL_Rect) {rest + i*(bs+bw), h - f[i], bw, f[i] - flastd[i]};
+									SDL_FillRect(cavaSDLWindowSurface, &current_bar, SDL_MapRGB(cavaSDLWindowSurface->format, col / 0x10000 % 0x100, col / 0x100 % 0x100, col % 0x100));
+								} else if(f[i] < flastd[i]) {
+									current_bar = (SDL_Rect) {rest + i*(bs+bw), h - flastd[i], bw, flastd[i] - f[i]};
+									SDL_FillRect(cavaSDLWindowSurface, &current_bar, SDL_MapRGB(cavaSDLWindowSurface->format, bgcol / 0x10000 % 0x100, bgcol / 0x100 % 0x100, bgcol % 0x100));
+								}
 							}
+							SDL_UpdateWindowSurface(cavaSDLWindow);
 						}
-						SDL_UpdateWindowSurface(cavaSDLWindow);
 						break;
 						#endif
 					}
