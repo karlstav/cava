@@ -1284,11 +1284,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				#endif
 
 				switch (ch) {
-					case 'a':
+					case 's':
 						if(bs > 0) bs--;
 						resizeTerminal = TRUE;
 						break;
-					case 's':
+					case 'a':
 						bs++;
 						resizeTerminal = TRUE;
 						break;
@@ -1346,11 +1346,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 							key_symbol = XKeycodeToKeysym(cavaXDisplay, cavaXEvent.xkey.keycode, 0);
 							switch(key_symbol)
 							{
-								case XK_s:
+								case XK_a:
 									bs++;
 									resizeTerminal = TRUE;
 									break;
-								case XK_a:
+								case XK_s:
 									if(bs > 0) bs--;
 									resizeTerminal = TRUE;
 									break;
@@ -1364,11 +1364,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 								case XK_Down:
 									sens = sens * 0.95;
 									break;
-								case XK_Right:
+								case XK_Left:
 									bw++;
 									resizeTerminal = TRUE;
 									break;
-								case XK_Left:
+								case XK_Right:
 									if (bw > 1) bw--;
 									resizeTerminal = TRUE;
 									break;
@@ -1447,11 +1447,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					case SDL_KEYDOWN:
 						switch(cavaSDLEvent.key.keysym.sym)
 						{
-							case SDLK_s:
+							case SDLK_a:
 								bs++;
 								resizeTerminal = TRUE;
 								break;
-							case SDLK_a:
+							case SDLK_s:
 								if(bs > 0) bs--;
 								resizeTerminal = TRUE;
 								break;
@@ -1468,11 +1468,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 							case SDLK_DOWN: // key down
 								sens = sens * 0.95;
 								break;
-							case SDLK_RIGHT: // key right
+							case SDLK_LEFT: // key left
 								bw++;
 								resizeTerminal = TRUE;
 								break;
-							case SDLK_LEFT: // key left
+							case SDLK_RIGHT: // key right
 								if(bw > 1) bw--;
 								resizeTerminal = TRUE;
 								break;
