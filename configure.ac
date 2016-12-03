@@ -36,6 +36,35 @@ AC_CHECK_HEADERS([pthread.h],
 	AC_MSG_ERROR([no pthread.h header header file found])
 )
 
+dnl ######################
+dnl checking for SDL2
+dnl ######################
+
+AC_CHECK_LIB(SDL2, SDL_Init, have_sdl=yes, have_sdl=no)
+	
+if [[ $have_sdl = "yes" ]] ; then
+	LIBS="$LIBS -lSDL2"
+	CPPFLAGS="$CPPFLAGS -DSDL"
+fi
+
+if [[ $have_sdl = "no" ]] ; then
+	AC_MSG_NOTICE([WARNING: No SDL2 dev files found building without SDL support])
+fi
+
+dnl ######################
+dnl checking for Xlib
+dnl ######################
+
+AC_CHECK_LIB(X11, XOpenDisplay, have_xlib=yes, have_xlib=no)
+
+if [[ $have_xlib = "yes" ]] ; then
+	LIBS="$LIBS -lX11"
+	CPPFLAGS="$CPPFLAGS -DXLIB"
+fi
+
+if [[ $have_xlib = "no" ]] ; then
+	AC_MSG_NOTICE([WARNING: No xlib dev files found building without xlib support])
+fi
 
 dnl ######################
 dnl checking for alsa dev
