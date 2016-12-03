@@ -292,7 +292,7 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 | <kbd>up</kbd> / <kbd>down</kbd>| increase/decrease sensitivity |
 | <kbd>left</kbd> / <kbd>right</kbd>| increase/decrease bar width |
 | <kbd>a</kbd> / <kbd>s</kbd> | decrease/increase bar spacing |
-| <kbd>f</kbd> | toggle fullscreen |
+| <kbd>f</kbd> | toggle fullscreen (only in X and sdl modes) |
 | <kbd>c</kbd> / <kbd>b</kbd>| change forground/background color |
 | <kbd>r</kbd> | Reload configuration |
 | <kbd>q</kbd> or <kbd>CTRL-C</kbd>| Quit C.A.V.A. |
