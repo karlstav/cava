@@ -61,6 +61,10 @@
 #include <X11/Xresource.h>
 #endif
 
+#ifdef SDL
+#include <SDL2/SDL.h>
+#endif
+
 #include <iniparser.h>
 
 
@@ -125,7 +129,12 @@ Atom wm_delete_window;
 
 #endif
 
-
+// and these are needed for SDL2 output
+#ifdef SDL
+SDL_Window *cavaSDLWindow;
+SDL_Surface *cavaSDLWindowSurface;
+SDL_Event cavaSDLEvent;
+#endif
 
 // whether we should reload the config or not
 int should_reload = 0;
@@ -134,7 +143,7 @@ int should_reload = 0;
 // general: cleanup
 void cleanup(void)
 {
-	if(om != 5)
+	if(om != 5 && om != 6)
 	{
 		#ifdef NCURSES
 		cleanup_terminal_ncurses();
@@ -146,6 +155,14 @@ void cleanup(void)
 		#ifdef XLIB
 		XDestroyWindow(cavaXDisplay, cavaXWindow);
 		XCloseDisplay(cavaXDisplay);
+		#endif
+	}
+	else if (om == 6)
+	{
+		#ifdef SDL
+		SDL_FreeSurface(cavaSDLWindowSurface);
+		SDL_DestroyWindow(cavaSDLWindow);
+		SDL_Quit();
 		#endif
 	}
 }
@@ -434,12 +451,24 @@ void validate_config()
 			exit(EXIT_FAILURE);
 		#endif
 	}
+	if(strcmp(outputMethod, "sdl") == 0)
+	{
+		om = 6;
+		#ifndef SDL
+			fprintf(stderr,
+				"cava was build without SDL2 support, install SDL2 dev files and run make clean && ./configure && make again\n");
+			exit(EXIT_FAILURE);
+		#endif
+	}
 	if (om == 0) {
 		fprintf(stderr,
 			"output method %s is not supported, supported methods are: 'noncurses'",
 						outputMethod);
 		#ifdef XLIB
 			fprintf(stderr, ", 'x'");
+		#endif
+		#ifdef SDL
+			fprintf(stderr, ", 'sdl'");
 		#endif
 		#ifdef NCURSES
 			fprintf(stderr, ", 'ncurses'");
@@ -547,9 +576,9 @@ void validate_config()
 	sens = sens / 100;
 
 	// load extra options
-	if(om == 5)
+	if(om == 5 || om == 6)
 	{
-		if(fs > 2 | fs < 0){
+		if((fs > 2) | (fs < 0)){
 			fprintf(stderr, "fullscreen can only be 0 or 1");
 			exit(EXIT_FAILURE);
 		}
@@ -896,6 +925,18 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					break;
 			}
 		}
+		else
+		{
+			// because iniparser makes strings consts -_-
+			char *temp = (char *)malloc((char)8);
+			if(temp == NULL)
+			{
+				fprintf(stderr, "memory error\n");
+				exit(EXIT_FAILURE);
+			}
+			strcpy(temp, color);
+			color = temp;
+		}
 		
 		if(bcolor[0] != '#')
 		{
@@ -933,14 +974,119 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					break;
 			}
 		}
+		else
+		{
+			// because iniparser makes strings consts -_-
+			char *temp = (char *)malloc((char)8);
+			if(temp == NULL)
+			{
+				fprintf(stderr, "memory error\n");
+				exit(EXIT_FAILURE);
+			}
+			strcpy(temp, bcolor);
+			bcolor = temp;
+		}
+
 		XParseColor(cavaXDisplay, cavaXColormap, bcolor, &xbgcol);
 		XAllocColor(cavaXDisplay, cavaXColormap, &xbgcol);
 		XParseColor(cavaXDisplay, cavaXColormap, color, &xcol);
 		XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
 
+		// add titlebar name
+		XStoreName(cavaXDisplay, cavaXWindow, "CAVA");
+
 		// fix for error while closing window
 		wm_delete_window = XInternAtom (cavaXDisplay, "WM_DELETE_WINDOW", FALSE);
 		XSetWMProtocols(cavaXDisplay, cavaXWindow, &wm_delete_window, 1);
+	}
+	#endif
+
+	// setting up sdl
+	#ifdef SDL
+	if(om == 6)
+	{
+		// initilizing sdl2
+		if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
+		{
+			fprintf(stderr, "unable to initilize SDL2: %s\n", SDL_GetError());
+			exit(1);
+		}
+
+		// creating a window
+		cavaSDLWindow = SDL_CreateWindow("CAVA", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, (SDL_WINDOW_FULLSCREEN & fs) | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+		if(!cavaSDLWindow)
+		{
+			fprintf(stderr, "SDL window cannot be created: %s\n", SDL_GetError());
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR", "cannot create SDL window", NULL);
+			SDL_Quit();
+			exit(1);
+		}
+
+		if(color[0] != '#')
+		{
+			switch(col)
+			{
+				case 0:
+					col = 0x000000;
+					break;
+				case 1:
+					col = 0xFF0000;
+					break;
+				case 2:
+					col = 0x00FF00;
+					break;
+				case 3:
+					col = 0xFFFF00;
+					break;
+				case 4:
+					col = 0x0000FF;
+					break;
+				case 5:
+					col = 0xFF00FF;
+					break;
+				case 6:
+					col = 0x00FFFF;
+					break;
+				case 7:
+					col = 0xFFFFFF;
+					break;
+			}
+		}
+		else
+			sscanf(color+1, "%x", &col);
+
+		if(bcolor[0] != '#')
+		{
+			switch(bgcol)
+			{
+				case 0:
+					bgcol = 0x000000;
+					break;
+				case 1:
+					bgcol = 0xFF0000;
+					break;
+				case 2:
+					bgcol = 0x00FF00;
+					break;
+				case 3:
+					bgcol = 0xFFFF00;
+					break;
+				case 4:
+					bgcol = 0x0000FF;
+					break;
+				case 5:
+					bgcol = 0xFF00FF;
+					break;
+				case 6:
+					bgcol = 0x00FFFF;
+					break;
+				case 7:
+					bgcol = 0xFFFFFF;
+					break;
+			}
+		}
+		else
+			sscanf(bcolor, "%x", &bgcol);
 	}
 	#endif
 
@@ -1032,6 +1178,22 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, 0, 0, w, h);
 		}
 		#endif
+		#ifdef SDL
+		if(om == 6)
+		{
+			// toggle fullscreen
+			if(fs)
+				SDL_SetWindowFullscreen(cavaSDLWindow, SDL_WINDOW_FULLSCREEN);
+			else
+				SDL_SetWindowFullscreen(cavaSDLWindow, 0);
+
+			cavaSDLWindowSurface = SDL_GetWindowSurface(cavaSDLWindow);
+			// Appearently SDL uses multithreading so this avoids invalid access
+			// If I had a job, here's what I would be fired for xD
+			SDL_Delay(100);
+			SDL_FillRect(cavaSDLWindowSurface, NULL, SDL_MapRGB(cavaSDLWindowSurface->format, bgcol / 0x10000 % 0x100, bgcol / 0x100 % 0x100, bgcol % 0x100));
+		}
+		#endif
 
  		//handle for user setting too many bars
 		if (fixedbars) {
@@ -1116,12 +1278,20 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		while  (!resizeTerminal) {
 
 			// general: keyboard controls
-			if(om != 5){
+			if(om != 5 || om != 6){
 				#ifdef NCURSES
 				if (om == 1 || om == 2) ch = getch();
 				#endif
 
 				switch (ch) {
+					case 's':
+						if(bs > 0) bs--;
+						resizeTerminal = TRUE;
+						break;
+					case 'a':
+						bs++;
+						resizeTerminal = TRUE;
+						break;
 					case 65:    // key up
 						sens = sens * 1.05;
 						break;
@@ -1171,11 +1341,19 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					switch(cavaXEvent.type)
 					{
 						case KeyPress:
-						//case KeyRelease:
 						{
-							KeySym key_symbol = XKeycodeToKeysym(cavaXDisplay, cavaXEvent.xkey.keycode, 0);
+							KeySym key_symbol;
+							key_symbol = XKeycodeToKeysym(cavaXDisplay, cavaXEvent.xkey.keycode, 0);
 							switch(key_symbol)
 							{
+								case XK_a:
+									bs++;
+									resizeTerminal = TRUE;
+									break;
+								case XK_s:
+									if(bs > 0) bs--;
+									resizeTerminal = TRUE;
+									break;
 								case XK_f: // fullscreen
 									fs = !fs;
 									resizeTerminal = TRUE;
@@ -1186,11 +1364,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 								case XK_Down:
 									sens = sens * 0.95;
 									break;
-								case XK_Right:
+								case XK_Left:
 									bw++;
 									resizeTerminal = TRUE;
 									break;
-								case XK_Left:
+								case XK_Right:
 									if (bw > 1) bw--;
 									resizeTerminal = TRUE;
 									break;
@@ -1257,6 +1435,90 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 							}
 							break;
 					}
+				}
+			}
+			#endif
+			#ifdef SDL
+			if(om == 6)
+			{
+				SDL_PollEvent(&cavaSDLEvent);
+				switch(cavaSDLEvent.type)
+				{
+					case SDL_KEYDOWN:
+						switch(cavaSDLEvent.key.keysym.sym)
+						{
+							case SDLK_a:
+								bs++;
+								resizeTerminal = TRUE;
+								break;
+							case SDLK_s:
+								if(bs > 0) bs--;
+								resizeTerminal = TRUE;
+								break;
+							case SDLK_ESCAPE:
+								cleanup();
+								return EXIT_SUCCESS;
+							case SDLK_f: // fullscreen
+								fs = !fs;
+								resizeTerminal = TRUE;
+								break;
+							case SDLK_UP: // key up
+								sens = sens * 1.05;
+								break;
+							case SDLK_DOWN: // key down
+								sens = sens * 0.95;
+								break;
+							case SDLK_LEFT: // key left
+								bw++;
+								resizeTerminal = TRUE;
+								break;
+							case SDLK_RIGHT: // key right
+								if(bw > 1) bw--;
+								resizeTerminal = TRUE;
+								break;
+							case SDLK_m:
+								if(mode == modes){
+									mode = 1;
+								} else {
+									mode++;
+								}
+								break;
+							case SDLK_r: // reload config
+								should_reload = 1;
+								cleanup();
+								break;
+							case SDLK_c: // change foreground color
+								srand(time(NULL));
+								col = rand() % 0x100;
+								col = col << 16;
+								col += rand();
+								resizeTerminal = TRUE;
+								break;
+							case SDLK_b: // change background color
+								srand(time(NULL));
+								bgcol = rand() % 0x100;
+								bgcol = bgcol << 16;
+								bgcol += rand();
+								resizeTerminal = TRUE;
+								break;
+							case SDLK_q:
+								cleanup();
+								return EXIT_SUCCESS;
+						}
+						break;
+					case SDL_WINDOWEVENT:
+						if(cavaSDLEvent.window.event == SDL_WINDOWEVENT_CLOSE){
+							// if the user closed the window
+							cleanup();
+							return EXIT_SUCCESS;
+						}
+						else if(cavaSDLEvent.window.event == SDL_WINDOWEVENT_RESIZED){
+							// if the user resized the window
+							w = cavaSDLEvent.window.data1;
+							h = cavaSDLEvent.window.data2;
+							resizeTerminal = TRUE;
+						}
+						break;
 				}
 			}
 			#endif
@@ -1452,6 +1714,27 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						
 						// update the screem
 						XSync(cavaXDisplay, 1);
+						break;
+						#endif
+					}
+					case 6:
+					{
+						#ifdef SDL
+						if(!resizeTerminal)
+						{
+							for(int i = 0; i < bars; i++)
+							{
+								SDL_Rect current_bar;
+								if(f[i] > flastd[i]){
+									current_bar = (SDL_Rect) {rest + i*(bs+bw), h - f[i], bw, f[i] - flastd[i]};
+									SDL_FillRect(cavaSDLWindowSurface, &current_bar, SDL_MapRGB(cavaSDLWindowSurface->format, col / 0x10000 % 0x100, col / 0x100 % 0x100, col % 0x100));
+								} else if(f[i] < flastd[i]) {
+									current_bar = (SDL_Rect) {rest + i*(bs+bw), h - flastd[i], bw, flastd[i] - f[i]};
+									SDL_FillRect(cavaSDLWindowSurface, &current_bar, SDL_MapRGB(cavaSDLWindowSurface->format, bgcol / 0x10000 % 0x100, bgcol / 0x100 % 0x100, bgcol % 0x100));
+								}
+							}
+							SDL_UpdateWindowSurface(cavaSDLWindow);
+						}
 						break;
 						#endif
 					}

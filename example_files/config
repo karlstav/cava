@@ -70,7 +70,9 @@
 [output]
 
 # ouput method may be ncurses, noncurses, x or raw. noncurses is for systems that does not suport ncurses. 
-# x is for systems that use the x windowing system
+# x is for systems that use the x windowing system and if by any chance you're running wayland or mir
+# or trying to get this to work on windows or macOS there is a sdl option
+# however performance difference is drastic so beware
 # raw is a 16 bit data stream of the bar heights that can be used to send to other applications
 # raw defaults to 200 bars, can be adjusted in the bars option above
 ; method = ncurses
