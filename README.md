@@ -140,6 +140,8 @@ Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
 
     yaourt -S cava
 
+The GUI branch is also now in [AUR](https://aur.archlinux.org/packages/cava-gui/).
+
 ### Ubuntu
 
 Michael Nguyen has added CAVA to his PPA, it can be installed with:
