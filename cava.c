@@ -433,7 +433,7 @@ void validate_config()
 		if (strcmp(data_format, "binary") == 0) {
 			is_bin = 1;
 			//checking bit format:
-			if (bit_format != 16 && bit_format != 16 ) {
+			if (bit_format != 8 && bit_format != 16 ) {
 			fprintf(stderr,
 				"bit format  %d is not supported, supported data formats are: '8' and '16'\n",
 							bit_format );
