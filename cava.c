@@ -108,7 +108,7 @@ char bar_delim = ';';
 char frame_delim = '\n';
 int ascii_range = 1000;
 int bit_format = 16;
-int w, h, fs;
+int w, h, fs, borderFlag;
 
 // these are needed for the Xlib output
 
@@ -122,7 +122,19 @@ XColor xbgcol, xcol;
 XEvent cavaXEvent;
 Atom wm_delete_window;
 
-// Needed for fullscreen to function
+/**
+	The following struct is needed for
+	passing window flags (aka. talking to the window manager)
+**/
+struct mwmHints {
+    unsigned long flags;
+    unsigned long functions;
+    unsigned long decorations;
+    long input_mode;
+    unsigned long status;
+};
+
+// Some window manager definitions
 #define _NET_WM_STATE_REMOVE 0;
 #define _NET_WM_STATE_ADD 1;
 #define _NET_WM_STATE_TOGGLE 2;
@@ -268,6 +280,7 @@ FILE *fp;
 	w = iniparser_getint(ini, "general:window_width", 640);
 	h = iniparser_getint(ini, "general:window_height", 480);
 	fs = iniparser_getint(ini, "general:window_fullscreen", 0);
+	borderFlag = iniparser_getint(ini, "general:window_border", 1);
 	fixedbars = iniparser_getint(ini, "general:bars", 0);
 	bw = iniparser_getint(ini, "general:bar_width", 2);
 	bs = iniparser_getint(ini, "general:bar_spacing", 1);
@@ -420,7 +433,7 @@ void validate_config()
 		if (strcmp(data_format, "binary") == 0) {
 			is_bin = 1;
 			//checking bit format:
-			if (bit_format != 16 && bit_format != 16 ) {
+			if (bit_format != 8 && bit_format != 16 ) {
 			fprintf(stderr,
 				"bit format  %d is not supported, supported data formats are: '8' and '16'\n",
 							bit_format );
@@ -548,9 +561,7 @@ void validate_config()
 	if (strcmp(bcolor, "magenta") == 0) bgcol = 5;
 	if (strcmp(bcolor, "cyan") == 0) bgcol = 6;
 	if (strcmp(bcolor, "white") == 0) bgcol = 7;
-
 	// default if invalid
-	
 
 	// validate: gravity
 	if (gravity < 0) {
@@ -575,11 +586,19 @@ void validate_config()
 	//setting sens
 	sens = sens / 100;
 
-	// load extra options
+	// validate: window settings
 	if(om == 5 || om == 6)
 	{
+		// validate: fullscreen
 		if((fs > 2) | (fs < 0)){
 			fprintf(stderr, "fullscreen can only be 0 or 1");
+			exit(EXIT_FAILURE);
+		}
+		
+		// validate: border
+		if((borderFlag > 1) | (borderFlag < 0))
+		{
+			fprintf(stderr, "border can only be 0 or 1 (FALSE/TRUE)\n");
 			exit(EXIT_FAILURE);
 		}
 		bw = iniparser_getint(ini, "general:win_bar_width", 20);
@@ -883,6 +902,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		cavaXWindow = XCreateSimpleWindow(cavaXDisplay, RootWindow(cavaXDisplay, cavaXDisplayNumber), 10, 10, w, h, 1, WhitePixel(cavaXDisplay, cavaXDisplayNumber), BlackPixel(cavaXDisplay, cavaXDisplayNumber));
 		// add inputs
 		XSelectInput(cavaXDisplay, cavaXWindow, StructureNotifyMask | ExposureMask | KeyPressMask | KeymapNotify);
+		// set the current window as active (mapping windows)		
 		XMapWindow(cavaXDisplay, cavaXWindow);
 		// get graphics context
 		cavaXGraphics = XCreateGC(cavaXDisplay, cavaXWindow, 0, NULL);
@@ -1013,7 +1033,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		}
 
 		// creating a window
-		cavaSDLWindow = SDL_CreateWindow("CAVA", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, (SDL_WINDOW_FULLSCREEN & fs) | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+		Uint32 windowFlags = SDL_WINDOW_RESIZABLE;
+		if(fs) windowFlags |= SDL_WINDOW_FULLSCREEN;
+		if(!borderFlag) windowFlags |= SDL_WINDOW_BORDERLESS;
+		cavaSDLWindow = SDL_CreateWindow("CAVA", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, windowFlags);
 		if(!cavaSDLWindow)
 		{
 			fprintf(stderr, "SDL window cannot be created: %s\n", SDL_GetError());
@@ -1156,9 +1179,16 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				h = DisplayHeight(cavaXDisplay, cavaXDisplayNumber);
 			}
 
-			// Setting the fullscreen options
+			// Window manager options (atoms)
 			Atom wmState = XInternAtom(cavaXDisplay, "_NET_WM_STATE", FALSE);
 			Atom fullScreen = XInternAtom(cavaXDisplay, "_NET_WM_STATE_FULLSCREEN", FALSE);
+			Atom mwmHintsProperty = XInternAtom(cavaXDisplay, "_MOTIF_WM_HINTS", FALSE);
+			
+			// Setting window options			
+			struct mwmHints hints;
+			hints.flags = (1L << 1);
+			hints.decorations = borderFlag;		// setting the window border here
+			XChangeProperty(cavaXDisplay, cavaXWindow, mwmHintsProperty, mwmHintsProperty, 32, PropModeReplace, (unsigned char *)&hints, 5);
 			
 			XEvent xev;
 			xev.xclient.type=ClientMessage;
@@ -1182,10 +1212,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		if(om == 6)
 		{
 			// toggle fullscreen
-			if(fs)
-				SDL_SetWindowFullscreen(cavaSDLWindow, SDL_WINDOW_FULLSCREEN);
-			else
-				SDL_SetWindowFullscreen(cavaSDLWindow, 0);
+			SDL_SetWindowFullscreen(cavaSDLWindow, SDL_WINDOW_FULLSCREEN & fs);
 
 			cavaSDLWindowSurface = SDL_GetWindowSurface(cavaSDLWindow);
 			// Appearently SDL uses multithreading so this avoids invalid access
