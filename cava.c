@@ -57,6 +57,7 @@
 #ifdef XLIB
 #include <X11/X.h>
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
 #endif
@@ -80,7 +81,7 @@ struct termios oldtio, newtio;
 int rc;
 
 dictionary *ini;
-char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style, *raw_target, *data_format;
+char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style, *raw_target, *data_format, *windowAlignment;
 // *bar_delim, *frame_delim ;
 double monstercat, integral, gravity, ignore, smh, sens;
 int fixedbars, framerate, bw, bs, autosens, overshoot;
@@ -108,16 +109,20 @@ char bar_delim = ';';
 char frame_delim = '\n';
 int ascii_range = 1000;
 int bit_format = 16;
-int w, h, fs, borderFlag;
+int w, h, windowX, windowY;
+unsigned char fs, borderFlag, transparentFlag;
 
 // these are needed for the Xlib output
 
 #ifdef XLIB
+XVisualInfo cavaVInfo;
+XSetWindowAttributes cavaAttr;
 Display *cavaXDisplay;
+Screen *cavaXScreen;
 Window cavaXWindow;
 GC cavaXGraphics;
 Colormap cavaXColormap;
-int cavaXDisplayNumber;
+int cavaXScreenNumber;
 XColor xbgcol, xcol;
 XEvent cavaXEvent;
 Atom wm_delete_window;
@@ -134,6 +139,18 @@ struct mwmHints {
     unsigned long status;
 };
 
+enum {
+    MWM_HINTS_FUNCTIONS = (1L << 0),
+    MWM_HINTS_DECORATIONS =  (1L << 1),
+
+    MWM_FUNC_ALL = (1L << 0),
+    MWM_FUNC_RESIZE = (1L << 1),
+    MWM_FUNC_MOVE = (1L << 2),
+    MWM_FUNC_MINIMIZE = (1L << 3),
+    MWM_FUNC_MAXIMIZE = (1L << 4),
+    MWM_FUNC_CLOSE = (1L << 5)
+};
+
 // Some window manager definitions
 #define _NET_WM_STATE_REMOVE 0;
 #define _NET_WM_STATE_ADD 1;
@@ -146,6 +163,7 @@ struct mwmHints {
 SDL_Window *cavaSDLWindow;
 SDL_Surface *cavaSDLWindowSurface;
 SDL_Event cavaSDLEvent;
+SDL_DisplayMode cavaSDLVInfo;
 #endif
 
 // whether we should reload the config or not
@@ -198,7 +216,7 @@ void sig_handler(int sig_no)
 void load_config(char configPath[255])
 {
 
-FILE *fp;
+	FILE *fp;
 	
 	//config: creating path to default config file
 	if (configPath[0] == '\0') {
@@ -279,8 +297,12 @@ FILE *fp;
 
 	w = iniparser_getint(ini, "general:window_width", 640);
 	h = iniparser_getint(ini, "general:window_height", 480);
-	fs = iniparser_getint(ini, "general:window_fullscreen", 0);
-	borderFlag = iniparser_getint(ini, "general:window_border", 1);
+	windowAlignment = (char *)iniparser_getstring(ini, "general:window_alignment", "none");
+	windowX = iniparser_getint(ini, "general:window_x_padding", 0);
+	windowY = iniparser_getint(ini, "general:window_y_padding", 0);
+	fs = iniparser_getboolean(ini, "general:window_fullscreen", FALSE);
+	transparentFlag = iniparser_getboolean(ini, "general:window_transparency", FALSE);
+	borderFlag = iniparser_getboolean(ini, "general:window_border", TRUE);
 	fixedbars = iniparser_getint(ini, "general:bars", 0);
 	bw = iniparser_getint(ini, "general:bar_width", 2);
 	bs = iniparser_getint(ini, "general:bar_spacing", 1);
@@ -339,7 +361,7 @@ int validate_color(char *checkColor, int om)
 	if (checkColor[0] == '#' && strlen(checkColor) == 7) {
 		// If the output mode is not ncurses, tell the user to use a named colour instead of hex colours.
 		if (om != 1 && om != 2 && om != 5 && om != 6) {
-			fprintf(stderr, "Only 'ncurses' and 'x' output method supports HTML colors. Please change the colours or the output method.\n");
+			fprintf(stderr, "Only 'ncurses', 'sdl' and 'x' output method supports HTML colors. Please change the colours or the output method.\n");
 			exit(EXIT_FAILURE);
 		}
 		// 0 to 9 and a to f
@@ -589,18 +611,20 @@ void validate_config()
 	// validate: window settings
 	if(om == 5 || om == 6)
 	{
-		// validate: fullscreen
-		if((fs > 2) | (fs < 0)){
-			fprintf(stderr, "fullscreen can only be 0 or 1");
-			exit(EXIT_FAILURE);
-		}
-		
-		// validate: border
-		if((borderFlag > 1) | (borderFlag < 0))
-		{
-			fprintf(stderr, "border can only be 0 or 1 (FALSE/TRUE)\n");
-			exit(EXIT_FAILURE);
-		}
+		// validate: alignment
+		if(strcmp(windowAlignment, "top_left"))
+		if(strcmp(windowAlignment, "top_right"))
+		if(strcmp(windowAlignment, "bottom_left"))
+		if(strcmp(windowAlignment, "bottom_right"))
+		if(strcmp(windowAlignment, "left"))
+		if(strcmp(windowAlignment, "right"))
+		if(strcmp(windowAlignment, "top"))
+		if(strcmp(windowAlignment, "bottom"))
+		if(strcmp(windowAlignment, "center"))
+		if(strcmp(windowAlignment, "none"))
+			fprintf(stderr, "The value for alignment is invalid, '%s'!", windowAlignment);
+
+		// Get bar settings
 		bw = iniparser_getint(ini, "general:win_bar_width", 20);
 		bs = iniparser_getint(ini, "general:win_bar_spacing", 4);
 	}
@@ -896,18 +920,64 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			fprintf(stderr, "cannot open X display\n");
 			exit(1);
 		}
+		// get the screen
+		cavaXScreen = DefaultScreenOfDisplay(cavaXDisplay);
 		// get the display number
-		cavaXDisplayNumber = DefaultScreen(cavaXDisplay);
+		cavaXScreenNumber = DefaultScreen(cavaXDisplay);
+		
+		// calculate x and y
+		if(!strcmp(windowAlignment, "top")){
+			windowX = (cavaXScreen->width - w) / 2 + windowX;
+		}else if(!strcmp(windowAlignment, "bottom")){
+			windowX = (cavaXScreen->width - w) / 2 + windowX;
+			windowY = (cavaXScreen->height - h) + (-1*windowY);
+		}else if(!strcmp(windowAlignment, "top_left")){
+			// Nothing to do here :P
+		}else if(!strcmp(windowAlignment, "top_right")){
+			windowX = (cavaXScreen->width - w) + (-1*windowX);
+		}else if(!strcmp(windowAlignment, "left")){
+			windowY = (cavaXScreen->height - h) / 2;
+		}else if(!strcmp(windowAlignment, "right")){
+			windowX = (cavaXScreen->width - w) + (-1*windowX);
+			windowY = (cavaXScreen->height - h) / 2 + windowY;
+		}else if(!strcmp(windowAlignment, "bottom_left")){
+			windowY = (cavaXScreen->height - h) + (-1*windowY);
+		}else if(!strcmp(windowAlignment, "bottom_right")){
+			windowX = (cavaXScreen->width - w) + (-1*windowX);
+			windowY = (cavaXScreen->height - h) + (-1*windowY);
+		}else if(!strcmp(windowAlignment, "center")){
+			windowX = (cavaXScreen->width - w) / 2 + windowX;
+			windowY = (cavaXScreen->height - h) / 2 + windowY;
+		}
+		// Some error checking
+		#ifdef DEBUG
+			if(windowX > cavaXScreen->width - w) printf("Warning: Screen out of bounds (X axis)!");
+			if(windowY > cavaXScreen->width - w) printf("Warning: Screen out of bounds (Y axis)!");
+		#endif
+
 		// create X window
-		cavaXWindow = XCreateSimpleWindow(cavaXDisplay, RootWindow(cavaXDisplay, cavaXDisplayNumber), 10, 10, w, h, 1, WhitePixel(cavaXDisplay, cavaXDisplayNumber), BlackPixel(cavaXDisplay, cavaXDisplayNumber));
+		if(transparentFlag)
+		{	
+			// Set the window to 32 bit mode (if supported), and also set the screen to a blank pixel
+			XMatchVisualInfo(cavaXDisplay, cavaXScreenNumber, 32, TrueColor, &cavaVInfo);
+			cavaAttr.colormap = XCreateColormap(cavaXDisplay, DefaultRootWindow(cavaXDisplay), cavaVInfo.visual, AllocNone);
+			cavaAttr.border_pixel = 0;
+			cavaAttr.background_pixel = 0;
+
+			// Now create a window using those options
+			cavaXWindow = XCreateWindow(cavaXDisplay, DefaultRootWindow(cavaXDisplay), windowX, windowY, w, h, 0, cavaVInfo.depth, InputOutput, cavaVInfo.visual, CWColormap | CWBorderPixel | CWBackPixel, &cavaAttr);
+		}
+		else
+			cavaXWindow = XCreateSimpleWindow(cavaXDisplay, RootWindow(cavaXDisplay, cavaXScreenNumber), windowX, windowY, w, h, 1, WhitePixel(cavaXDisplay, cavaXScreenNumber), BlackPixel(cavaXDisplay, cavaXScreenNumber));
 		// add inputs
 		XSelectInput(cavaXDisplay, cavaXWindow, StructureNotifyMask | ExposureMask | KeyPressMask | KeymapNotify);
 		// set the current window as active (mapping windows)		
 		XMapWindow(cavaXDisplay, cavaXWindow);
 		// get graphics context
-		cavaXGraphics = XCreateGC(cavaXDisplay, cavaXWindow, 0, NULL);
+		cavaXGraphics = XCreateGC(cavaXDisplay, cavaXWindow, 0, 0);
 		// get colormap
-		cavaXColormap = DefaultColormap(cavaXDisplay, cavaXDisplayNumber);
+		if(transparentFlag) cavaXColormap = cavaAttr.colormap; 
+		else cavaXColormap = DefaultColormap(cavaXDisplay, cavaXScreenNumber);
 		// allocate colors
 		if(color[0] != '#')
 		{
@@ -1013,7 +1083,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
 
 		// add titlebar name
-		XStoreName(cavaXDisplay, cavaXWindow, "CAVA");
+		if(borderFlag)
+			XStoreName(cavaXDisplay, cavaXWindow, "CAVA");
 
 		// fix for error while closing window
 		wm_delete_window = XInternAtom (cavaXDisplay, "WM_DELETE_WINDOW", FALSE);
@@ -1031,12 +1102,40 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			fprintf(stderr, "unable to initilize SDL2: %s\n", SDL_GetError());
 			exit(1);
 		}
+		// calculating window x and y position
+		if(SDL_GetCurrentDisplayMode(0, &cavaSDLVInfo)){
+			fprintf(stderr, "Error opening display! %s\n", SDL_GetError());
+			exit(1);
+		}
+		if(!strcmp(windowAlignment, "top")){
+			windowX = (cavaSDLVInfo.w - w) / 2 + windowX;
+		}else if(!strcmp(windowAlignment, "bottom")){
+			windowX = (cavaSDLVInfo.w - w) / 2 + windowX;
+			windowY = (cavaSDLVInfo.h - h) + (-1*windowY);
+		}else if(!strcmp(windowAlignment, "top_left")){
+			// Nothing to do here :P
+		}else if(!strcmp(windowAlignment, "top_right")){
+			windowX = (cavaSDLVInfo.w - w) + (-1*windowX);
+		}else if(!strcmp(windowAlignment, "left")){
+			windowY = (cavaSDLVInfo.h - h) / 2;
+		}else if(!strcmp(windowAlignment, "right")){
+			windowX = (cavaSDLVInfo.w - w) + (-1*windowX);
+			windowY = (cavaSDLVInfo.h - h) / 2 + windowY;
+		}else if(!strcmp(windowAlignment, "bottom_left")){
+			windowY = (cavaSDLVInfo.h - h) + (-1*windowY);
+		}else if(!strcmp(windowAlignment, "bottom_right")){
+			windowX = (cavaSDLVInfo.w - w) + (-1*windowX);
+			windowY = (cavaSDLVInfo.h - h) + (-1*windowY);
+		}else if(!strcmp(windowAlignment, "center")){
+			windowX = (cavaSDLVInfo.w - w) / 2 + windowX;
+			windowY = (cavaSDLVInfo.h - h) / 2 + windowY;
+		}
 
 		// creating a window
 		Uint32 windowFlags = SDL_WINDOW_RESIZABLE;
 		if(fs) windowFlags |= SDL_WINDOW_FULLSCREEN;
 		if(!borderFlag) windowFlags |= SDL_WINDOW_BORDERLESS;
-		cavaSDLWindow = SDL_CreateWindow("CAVA", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, windowFlags);
+		cavaSDLWindow = SDL_CreateWindow("CAVA", windowX, windowY, w, h, windowFlags);
 		if(!cavaSDLWindow)
 		{
 			fprintf(stderr, "SDL window cannot be created: %s\n", SDL_GetError());
@@ -1175,21 +1274,21 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		{
 			// Gets the monitors resolution
 			if(fs){
-				w = DisplayWidth(cavaXDisplay, cavaXDisplayNumber);
-				h = DisplayHeight(cavaXDisplay, cavaXDisplayNumber);
+				w = DisplayWidth(cavaXDisplay, cavaXScreenNumber);
+				h = DisplayHeight(cavaXDisplay, cavaXScreenNumber);
 			}
 
 			// Window manager options (atoms)
 			Atom wmState = XInternAtom(cavaXDisplay, "_NET_WM_STATE", FALSE);
 			Atom fullScreen = XInternAtom(cavaXDisplay, "_NET_WM_STATE_FULLSCREEN", FALSE);
 			Atom mwmHintsProperty = XInternAtom(cavaXDisplay, "_MOTIF_WM_HINTS", FALSE);
-			
+
 			// Setting window options			
 			struct mwmHints hints;
 			hints.flags = (1L << 1);
 			hints.decorations = borderFlag;		// setting the window border here
 			XChangeProperty(cavaXDisplay, cavaXWindow, mwmHintsProperty, mwmHintsProperty, 32, PropModeReplace, (unsigned char *)&hints, 5);
-			
+
 			XEvent xev;
 			xev.xclient.type=ClientMessage;
 			xev.xclient.serial = 0;
@@ -1202,10 +1301,21 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			xev.xclient.data.l[1] = fullScreen;
 			xev.xclient.data.l[2] = 0;
 			XSendEvent(cavaXDisplay, DefaultRootWindow(cavaXDisplay), FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+
+			// move the window in case it didn't by default
+			XWindowAttributes xwa;
+			XGetWindowAttributes(cavaXDisplay, cavaXWindow, &xwa);
+			if(strcmp(windowAlignment, "none"))
+				XMoveWindow(cavaXDisplay, cavaXWindow, windowX - xwa.x, windowY - xwa.y);
 			
 			// do the usual stuff :P
-			XSetForeground(cavaXDisplay, cavaXGraphics, xbgcol.pixel);
-			XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, 0, 0, w, h);
+			if(!transparentFlag)
+			{
+				XSetForeground(cavaXDisplay, cavaXGraphics, xbgcol.pixel);
+				XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, 0, 0, w, h);
+			}
+			else
+				XClearWindow(cavaXDisplay, cavaXWindow);
 		}
 		#endif
 		#ifdef SDL
@@ -1688,12 +1798,25 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			//autmatic sens adjustment
 			if (autosens && om != 4) {
 				for (o = 0; o < bars; o++) {
-					if (f[o] > height * 8 + height * 8 * overshoot / 100) {
-						senseLow = FALSE;
-						sens = sens * 0.99;
-						break;
+					// Sens for graphical modes
+					if((om == 5) | (om == 6)){
+						if (f[o] > height + height * overshoot / 100) {
+							senseLow = FALSE;
+							sens = sens * 0.99;
+							break;
+						}
+						if (senseLow && !silence) sens = sens * 1.01;
 					}
-					if (senseLow && !silence) sens = sens * 1.01;		
+					else
+					{
+						// Sens for console modes
+						if (f[o] > height * 8 + height * 8 * overshoot / 100) {
+							senseLow = FALSE;
+							sens = sens * 0.99;
+							break;
+						}
+						if (senseLow && !silence) sens = sens * 1.01;
+					}
 				}
 			}
 
@@ -1725,7 +1848,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 						// draw bars on the X11 window
 						for(int i = 0; i < bars; i++)
-						{
+						{	
 							// this fixes a rendering bug
 							if(f[i] > h) f[i] = h;
 							
@@ -1734,8 +1857,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 								XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bs+bw), h - f[i], bw, f[i] - flastd[i]);
 							}
 							else if (f[i] < flastd[i]){
-								XSetForeground(cavaXDisplay, cavaXGraphics, xbgcol.pixel);
-								XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bs+bw), h - flastd[i], bw, flastd[i] - f[i]);
+								if(transparentFlag)
+								{
+									XClearArea(cavaXDisplay, cavaXWindow, rest + i*(bs+bw), h - flastd[i], bw, flastd[i] - f[i], FALSE);
+								}
+								else
+								{
+									XSetForeground(cavaXDisplay, cavaXGraphics, xbgcol.pixel);
+									XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bs+bw), h - flastd[i], bw, flastd[i] - f[i]);
+								}
 							}
 						}
 						
