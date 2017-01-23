@@ -351,10 +351,11 @@ Or preferably:
     
     output = sdl
 
-Just a bit of explination. X11/Xlib utilizes hardware drawing (if availble), while SDL2 utilizes software drawing (this could be changed in the future, however). The only reason why SDL2 is kept as a option is that it works on non X11 display servers (Wayland and such).
-
+Just a bit of explination. X11/Xlib utilizes hardware drawing (if availble), while SDL2 utilizes software drawing (this could be changed in the future, however). The only reason why SDL2 is kept as a option is that it works on non X11 display servers (Wayland and such), whereas X doesn't.
 
 In the graphical modes you also have some other features, such as:
+
+
 Options that are unique to 'sdl' and 'x' modes alone:
 
 Toggle fullscreen:
@@ -368,8 +369,6 @@ Toggle window border:
 As a cross-compatibility issue, for 'x' and 'sdl' output modes please use:
     
     win_bar_width = (specify value)
-
-and
     
     win_bar_spacing = (specify value)
 
@@ -377,9 +376,7 @@ instead of
 
     bar_width = (specify value)
 
-and
-
-    bar_height = (specify value)
+    bar_spacing = (specify value)
 
 for changing bar geometry, because 'sdl' and 'x' use pixel geometry rather than font based ones.
 
@@ -395,12 +392,13 @@ In addition to window aligment you can adjust the window using the following opt
 
     window_y_padding = (specify value)
 
+NOTE: These options don't apply if "window_aligment" is set to 'none'.
 
 But there is a feature that is unique for the 'x' mode alone, and that is enabling the background to be transparent. However, you'll need a window composite manager running on your system (WARNING: generally causes slowdowns). This can be enabled by:
      
      window_transparency = (0 disable, 1 enable)
 
-A quick demo showing off what can be done by using the transparency and borderless modes together:
+A quick demo showing off what can be done by enabling both the transparency and borderless window modes:
 ![transparency](http://i.imgur.com/QscuEh8.gif "transparency")
 
 Thanks
