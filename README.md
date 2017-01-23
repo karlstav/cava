@@ -398,7 +398,7 @@ But there is a feature that is unique for the 'x' mode alone, and that is enabli
      
      window_transparency = (0 disable, 1 enable)
 
-A quick demo showing off what can be done by enabling both the transparency and borderless window modes:
+A quick demo showing off what can be done by enabling transparency and disabling window borders:
 ![transparency](http://i.imgur.com/QscuEh8.gif "transparency")
 
 Thanks
