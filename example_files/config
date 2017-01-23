@@ -31,11 +31,23 @@
 ; window_width = 640
 ; window_height = 480
 
-# The window fullscreen toggle (can be either 0 or 1)
+# The window fullscreen toggle
 ; window_fullscreen = 0
 
-# Enables or disables window borders (can be either 0 or 1)
+# Enables or disables window borders
 ; window_border = 1
+
+# In X mode, you can enable window transparency, I suggest combining it with no window borders
+; window_transparency = 0
+
+# This positions the window on the desired part of the screen,
+# which are the following: top_left, top, top_right, left, center, right,
+# bottom_left, bottom, bottom_right and none if you don't want automatic positioning
+; window_alignment = 'none'
+
+# For added effect we can pad the window if it obscures some other elements
+; window_x_padding = 0
+; window_y_padding = 0
 
 # Lower and higher cutoff frequencies for lowest and highest bars
 # the bandwith of the visualizer, defaults to 50 - 10000 Hz

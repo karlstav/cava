@@ -333,6 +333,9 @@ $ pkill -USR1 cava
 
 ![3_139](https://cloud.githubusercontent.com/assets/6376571/8670181/9db0ef50-29e8-11e5-81bc-3e2bb9892da0.png)
 
+Cava (atleast the GUI branch :P), can now be ran in transparent mode, as demonstrated here:
+![transparency](http://i.imgur.com/QscuEh8.gif "transparency")
+
 Thanks
 ------
 
