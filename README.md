@@ -43,6 +43,7 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 - [Usage](#usage)
   - [Controls](#controls)
 - [Configuration](#configuration)
+  - [GUI Options](#gui)
 - [Thanks](#thanks)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -267,7 +268,7 @@ Latency notes
 -------------
 
 If you see latency issues (sound before image) in a terminal emulator, try increasing the font size. This will reduce the number of characters that have to be shown.
-But if you are running in x, you can shrink the window.
+But if you are running in either in the graphical modes, you can shrink the window.
 
 If your audio device has a huge buffer, you might experience that cava is actually faster than the audio you hear. This reduces the experience of the visualization. To fix this, you try decreasing the buffer settings in your audio playing software.
 
@@ -333,7 +334,71 @@ $ pkill -USR1 cava
 
 ![3_139](https://cloud.githubusercontent.com/assets/6376571/8670181/9db0ef50-29e8-11e5-81bc-3e2bb9892da0.png)
 
-Cava (atleast the GUI branch :P), can now be ran in transparent mode, as demonstrated here:
+### GUI
+
+Cava (atleast the GUI itself) can now run in grapical modes.
+
+NOTE: All of these options are in the config file (usually) at ~/.config/cava/config
+
+2nd NOTE: Remember to remove ';' in front of the options if you want to change them.
+
+
+To achieve this you can change the following value to:
+
+    output = x
+
+Or preferably:
+    
+    output = sdl
+
+Just a bit of explination. X11/Xlib utilizes hardware drawing (if availble), while SDL2 utilizes software drawing (this could be changed in the future, however). The only reason why SDL2 is kept as a option is that it works on non X11 display servers (Wayland and such), whereas X doesn't.
+
+In the graphical modes you also have some other features, such as:
+
+
+Options that are unique to 'sdl' and 'x' modes alone:
+
+Toggle fullscreen:
+    
+    window_fullscreen = (1 for on and 0 for off)
+
+Toggle window border:
+    
+    window_border = (1 to enable and 0 to disable)
+
+As a cross-compatibility issue, for 'x' and 'sdl' output modes please use:
+    
+    win_bar_width = (specify value)
+    
+    win_bar_spacing = (specify value)
+
+instead of
+
+    bar_width = (specify value)
+
+    bar_spacing = (specify value)
+
+for changing bar geometry, because 'sdl' and 'x' use pixel geometry rather than font based ones.
+
+Align the window to a part of the screen using:
+    
+    window_alignment = 'value'
+
+Possible values are: 'top_left', 'top', 'top_right'. 'left', 'center', 'right', 'bottom_left', 'bottom', 'bottom_right' and 'none' if you don't want to position the window automaticly.
+
+In addition to window aligment you can adjust the window using the following options:
+    
+    window_x_padding = (specify value)
+
+    window_y_padding = (specify value)
+
+NOTE: These options don't apply if "window_aligment" is set to 'none'.
+
+But there is a feature that is unique for the 'x' mode alone, and that is enabling the background to be transparent. However, you'll need a window composite manager running on your system (WARNING: generally causes slowdowns). This can be enabled by:
+     
+     window_transparency = (0 disable, 1 enable)
+
+A quick demo showing off what can be done by enabling transparency and disabling window borders:
 ![transparency](http://i.imgur.com/QscuEh8.gif "transparency")
 
 Thanks
