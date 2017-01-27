@@ -978,8 +978,88 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		// get colormap
 		if(transparentFlag) cavaXColormap = cavaAttr.colormap; 
 		else cavaXColormap = DefaultColormap(cavaXDisplay, cavaXScreenNumber);
-		// allocate colors
-		if(color[0] != '#')
+		// Get the color
+		if(!strcmp(color, "default"))
+		{
+			/**
+				A bit of description.
+				Because it can get confusing, I know.
+
+				This chunk of code grabs sums the desktop background and makes an average color,
+				but of course we can't do the whole desktop because optimization.
+
+				So we instead use precision, the higher the better is the color we get.
+				However, if the precision is too high it takes a long time to load, so be careful.
+				Just remember, SCREEN WIDTH / XPRECISION AND SCREEN HEIGHT / YPRECISION MUST BE
+				A WHOLE NUMBER OTHERWISE THIS WHOLE FUNCTION BREAKS. There's a workaround below,
+				but I don't think it could always work.
+			**/
+
+			// First we get the background
+			XImage *background = XGetImage (cavaXDisplay, RootWindow (cavaXDisplay, cavaXScreenNumber), 0, 0, cavaXScreen->width, cavaXScreen->height, AllPlanes, XYPixmap);
+			// Color sums
+			unsigned long redSum = 0, greenSum = 0, blueSum = 0;
+			// A color variable a.k.a foobar
+			XColor tempColor;
+			// Our precision variables (the higher they are the slower the calculation will get)
+			int xPrecision = 20, yPrecision = 20;
+
+			// Making sure that xPrecision is a whole number
+			while(1){
+				if(((double)cavaXScreen->width / (double)xPrecision) == ((int)cavaXScreen->width / (int)xPrecision)) break;
+				else xPrecision++;
+			}
+
+			// Making sure that yPrecision is a whole number
+			while(1){
+				if(((double)cavaXScreen->height / (double)yPrecision) == ((int)cavaXScreen->height / (int)yPrecision)) break;
+				else yPrecision++;
+			}
+
+			// Our screen width
+			for(unsigned short i = 0; i < cavaXScreen->width; i+=(cavaXScreen->width / xPrecision))
+			{
+				// Our screen height
+				for(unsigned short I = 0; I < cavaXScreen->height; I+=(cavaXScreen->height / yPrecision))
+				{
+					// This captures the pixel
+					tempColor.pixel = XGetPixel (background, i, I);
+					// This saves it
+					XQueryColor(cavaXDisplay, cavaXColormap, &tempColor);
+
+					// Because colors in Xlib are 48bit for some reason
+					redSum += tempColor.red / 256;
+					greenSum += tempColor.green / 256;
+					blueSum += tempColor.blue / 256;
+				}
+			}
+
+			// Now turn the sums into averages
+			redSum /= xPrecision * yPrecision;
+			greenSum /= xPrecision * yPrecision;
+			blueSum /= xPrecision * yPrecision;
+
+			// Nuke the leftovers
+			XDestroyImage(background);
+
+			// In case the background image is too bright or dark
+			if(redSum < 0x10) redSum += 0x10;
+			else if(redSum > 0xF0) redSum -= 0x10;
+			if(greenSum < 0x10) greenSum += 0x10;
+			else if(greenSum > 0xF0) greenSum -= 0x10;
+			if(blueSum < 0x10) blueSum += 0x10;
+			else if(blueSum > 0xF0) blueSum -= 0x10;
+
+			// Again 48bit colors
+			xcol.red = redSum * 256;
+			xcol.green = greenSum * 256;
+			xcol.blue = blueSum * 256;
+			// Set the color channels
+			xcol.flags = DoRed | DoGreen | DoBlue;
+			// Save it
+			XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
+		}
+		else if(color[0] != '#')
 		{
 			color = (char *)malloc((char)8); // default hex color string
 			if(color == NULL)
@@ -1082,6 +1162,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		XParseColor(cavaXDisplay, cavaXColormap, color, &xcol);
 		XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
 
+		if(strcmp(color, "default"))
+		{
+			XParseColor(cavaXDisplay, cavaXColormap, color, &xcol);
+			XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
+		}
+		
 		// add titlebar name
 		if(borderFlag)
 			XStoreName(cavaXDisplay, cavaXWindow, "CAVA");

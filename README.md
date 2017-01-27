@@ -394,9 +394,17 @@ In addition to window aligment you can adjust the window using the following opt
 
 NOTE: These options don't apply if "window_aligment" is set to 'none'.
 
-But there is a feature that is unique for the 'x' mode alone, and that is enabling the background to be transparent. However, you'll need a window composite manager running on your system (WARNING: generally causes slowdowns). This can be enabled by:
+But there are features that are unique for the 'x' mode alone, and one of them is enabling the background to be transparent. However, you'll need a window composite manager running on your system (WARNING: generally causes slowdowns). This can be enabled by:
      
      window_transparency = (0 disable, 1 enable)
+
+A another feature is when you set the foreground color to 'default' in x mode. It will automaticly get the average desktop color and blend in with your background, looks really nice with transparency+no borders.
+To enable this you just have to change:
+     
+    foreground = 'default'
+
+A screenshot with the 'default' foreground option with transparency+no borders (in X):
+![blendin](http://i.imgur.com/9K2o4K8.png)
 
 A quick demo showing off what can be done by enabling transparency and disabling window borders:
 ![transparency](http://i.imgur.com/QscuEh8.gif "transparency")
