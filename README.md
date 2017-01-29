@@ -62,6 +62,7 @@ Build requirements
 * [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
 * [ALSA dev files](http://alsa-project.org/)
 * [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/)
+* libtool
 
 Only FFTW is actually required for CAVA to compile, but for maximum usage and preformance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
 
@@ -69,7 +70,7 @@ All the requirements can be installed easily in all major distros:
 
 Debian/Raspbian:
 
-    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev
+    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool
 
 ArchLinux:
 
