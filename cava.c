@@ -1393,7 +1393,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			XSendEvent(cavaXDisplay, DefaultRootWindow(cavaXDisplay), FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 
 			// also use them to keep the window at the bottom of the stack
-			XClientMessageEvent xclient;
 			/**
 				This is how a XEvent should look like:
 				

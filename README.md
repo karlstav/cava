@@ -409,7 +409,7 @@ A screenshot with the 'default' foreground option with transparency+no borders (
 A quick demo showing off what can be done by enabling transparency and disabling window borders:
 ![transparency](http://i.imgur.com/QscuEh8.gif "transparency")
 
-NOTE: If you have issues with overlapping windoow, (fxp. if you click on the window, and it overlaps the previous one) you can change the following:
+NOTE: If you have issues with overlapping other windows, (fxp. if you click on the window, and it overlaps the previous one) you can change the following:
     
     window_keep_below = 1
 
