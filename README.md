@@ -336,7 +336,7 @@ $ pkill -USR1 cava
 
 ### GUI
 
-Cava (atleast the GUI itself) can now run in grapical modes.
+Cava (atleast the GUI branch) can now run in grapical modes.
 
 NOTE: All of these options are in the config file (usually) at ~/.config/cava/config
 
@@ -408,6 +408,12 @@ A screenshot with the 'default' foreground option with transparency+no borders (
 
 A quick demo showing off what can be done by enabling transparency and disabling window borders:
 ![transparency](http://i.imgur.com/QscuEh8.gif "transparency")
+
+NOTE: If you have issues with overlapping windoow, (fxp. if you click on the window, and it overlaps the previous one) you can change the following:
+    
+    window_keep_below = 1
+
+However, this only works in X mode.
 
 Thanks
 ------

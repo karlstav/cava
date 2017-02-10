@@ -110,7 +110,7 @@ char frame_delim = '\n';
 int ascii_range = 1000;
 int bit_format = 16;
 int w, h, windowX, windowY;
-unsigned char fs, borderFlag, transparentFlag;
+unsigned char fs, borderFlag, transparentFlag, keepInBottom;
 
 // these are needed for the Xlib output
 
@@ -303,6 +303,7 @@ void load_config(char configPath[255])
 	fs = iniparser_getboolean(ini, "general:window_fullscreen", FALSE);
 	transparentFlag = iniparser_getboolean(ini, "general:window_transparency", FALSE);
 	borderFlag = iniparser_getboolean(ini, "general:window_border", TRUE);
+	keepInBottom = iniparser_getboolean(ini, "general:window_keep_below", FALSE);
 	fixedbars = iniparser_getint(ini, "general:bars", 0);
 	bw = iniparser_getint(ini, "general:bar_width", 2);
 	bs = iniparser_getint(ini, "general:bar_spacing", 1);
@@ -1175,6 +1176,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		// fix for error while closing window
 		wm_delete_window = XInternAtom (cavaXDisplay, "WM_DELETE_WINDOW", FALSE);
 		XSetWMProtocols(cavaXDisplay, cavaXWindow, &wm_delete_window, 1);
+
 	}
 	#endif
 
@@ -1368,6 +1370,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			Atom wmState = XInternAtom(cavaXDisplay, "_NET_WM_STATE", FALSE);
 			Atom fullScreen = XInternAtom(cavaXDisplay, "_NET_WM_STATE_FULLSCREEN", FALSE);
 			Atom mwmHintsProperty = XInternAtom(cavaXDisplay, "_MOTIF_WM_HINTS", FALSE);
+			Atom wmStateBelow = XInternAtom(cavaXDisplay, "_NET_WM_STATE_BELOW", TRUE);
 
 			// Setting window options			
 			struct mwmHints hints;
@@ -1375,6 +1378,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			hints.decorations = borderFlag;		// setting the window border here
 			XChangeProperty(cavaXDisplay, cavaXWindow, mwmHintsProperty, mwmHintsProperty, 32, PropModeReplace, (unsigned char *)&hints, 5);
 
+			// use XEvents to toggle fullscreen
 			XEvent xev;
 			xev.xclient.type=ClientMessage;
 			xev.xclient.serial = 0;
@@ -1388,6 +1392,34 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			xev.xclient.data.l[2] = 0;
 			XSendEvent(cavaXDisplay, DefaultRootWindow(cavaXDisplay), FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 
+			// also use them to keep the window at the bottom of the stack
+			XClientMessageEvent xclient;
+			/**
+				This is how a XEvent should look like:
+				
+				window  = the respective client window
+				message_type = _NET_WM_STATE
+				format = 32
+				data.l[0] = the action, as listed below
+				data.l[1] = first property to alter
+				data.l[2] = second property to alter
+				data.l[3] = source indication (0-unk,1-normal app,2-pager)
+				other data.l[] elements = 0
+			**/
+
+			xev.xclient.type = ClientMessage;
+			xev.xclient.window = cavaXWindow;
+			xev.xclient.message_type = wmState;
+			xev.xclient.format = 32;
+			if(keepInBottom) {xev.xclient.data.l[0] = _NET_WM_STATE_ADD;}
+			else {xev.xclient.data.l[0] = _NET_WM_STATE_REMOVE;}
+			xev.xclient.data.l[1] = wmStateBelow; // Keeps the window below duh
+			xev.xclient.data.l[2] = 0;
+			xev.xclient.data.l[3] = 0;
+			xev.xclient.data.l[4] = 0;
+			// Push the event
+			XSendEvent(cavaXDisplay, DefaultRootWindow(cavaXDisplay), FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+  			
 			// move the window in case it didn't by default
 			XWindowAttributes xwa;
 			XGetWindowAttributes(cavaXDisplay, cavaXWindow, &xwa);
@@ -1955,7 +1987,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 							}
 						}
 						
-						// update the screem
+						// update the screen
 						XSync(cavaXDisplay, 1);
 						break;
 						#endif
