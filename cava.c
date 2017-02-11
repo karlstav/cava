@@ -110,7 +110,7 @@ char frame_delim = '\n';
 int ascii_range = 1000;
 int bit_format = 16;
 int w, h, windowX, windowY;
-unsigned char fs, borderFlag, transparentFlag;
+unsigned char fs, borderFlag, transparentFlag, keepInBottom;
 
 // these are needed for the Xlib output
 
@@ -303,6 +303,7 @@ void load_config(char configPath[255])
 	fs = iniparser_getboolean(ini, "general:window_fullscreen", FALSE);
 	transparentFlag = iniparser_getboolean(ini, "general:window_transparency", FALSE);
 	borderFlag = iniparser_getboolean(ini, "general:window_border", TRUE);
+	keepInBottom = iniparser_getboolean(ini, "general:window_keep_below", FALSE);
 	fixedbars = iniparser_getint(ini, "general:bars", 0);
 	bw = iniparser_getint(ini, "general:bar_width", 2);
 	bs = iniparser_getint(ini, "general:bar_spacing", 1);
@@ -978,8 +979,88 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		// get colormap
 		if(transparentFlag) cavaXColormap = cavaAttr.colormap; 
 		else cavaXColormap = DefaultColormap(cavaXDisplay, cavaXScreenNumber);
-		// allocate colors
-		if(color[0] != '#')
+		// Get the color
+		if(!strcmp(color, "default"))
+		{
+			/**
+				A bit of description.
+				Because it can get confusing, I know.
+
+				This chunk of code grabs sums the desktop background and makes an average color,
+				but of course we can't do the whole desktop because optimization.
+
+				So we instead use precision, the higher the better is the color we get.
+				However, if the precision is too high it takes a long time to load, so be careful.
+				Just remember, SCREEN WIDTH / XPRECISION AND SCREEN HEIGHT / YPRECISION MUST BE
+				A WHOLE NUMBER OTHERWISE THIS WHOLE FUNCTION BREAKS. There's a workaround below,
+				but I don't think it could always work.
+			**/
+
+			// First we get the background
+			XImage *background = XGetImage (cavaXDisplay, RootWindow (cavaXDisplay, cavaXScreenNumber), 0, 0, cavaXScreen->width, cavaXScreen->height, AllPlanes, XYPixmap);
+			// Color sums
+			unsigned long redSum = 0, greenSum = 0, blueSum = 0;
+			// A color variable a.k.a foobar
+			XColor tempColor;
+			// Our precision variables (the higher they are the slower the calculation will get)
+			int xPrecision = 20, yPrecision = 20;
+
+			// Making sure that xPrecision is a whole number
+			while(1){
+				if(((double)cavaXScreen->width / (double)xPrecision) == ((int)cavaXScreen->width / (int)xPrecision)) break;
+				else xPrecision++;
+			}
+
+			// Making sure that yPrecision is a whole number
+			while(1){
+				if(((double)cavaXScreen->height / (double)yPrecision) == ((int)cavaXScreen->height / (int)yPrecision)) break;
+				else yPrecision++;
+			}
+
+			// Our screen width
+			for(unsigned short i = 0; i < cavaXScreen->width; i+=(cavaXScreen->width / xPrecision))
+			{
+				// Our screen height
+				for(unsigned short I = 0; I < cavaXScreen->height; I+=(cavaXScreen->height / yPrecision))
+				{
+					// This captures the pixel
+					tempColor.pixel = XGetPixel (background, i, I);
+					// This saves it
+					XQueryColor(cavaXDisplay, cavaXColormap, &tempColor);
+
+					// Because colors in Xlib are 48bit for some reason
+					redSum += tempColor.red / 256;
+					greenSum += tempColor.green / 256;
+					blueSum += tempColor.blue / 256;
+				}
+			}
+
+			// Now turn the sums into averages
+			redSum /= xPrecision * yPrecision;
+			greenSum /= xPrecision * yPrecision;
+			blueSum /= xPrecision * yPrecision;
+
+			// Nuke the leftovers
+			XDestroyImage(background);
+
+			// In case the background image is too bright or dark
+			if(redSum < 0x10) redSum += 0x10;
+			else if(redSum > 0xF0) redSum -= 0x10;
+			if(greenSum < 0x10) greenSum += 0x10;
+			else if(greenSum > 0xF0) greenSum -= 0x10;
+			if(blueSum < 0x10) blueSum += 0x10;
+			else if(blueSum > 0xF0) blueSum -= 0x10;
+
+			// Again 48bit colors
+			xcol.red = redSum * 256;
+			xcol.green = greenSum * 256;
+			xcol.blue = blueSum * 256;
+			// Set the color channels
+			xcol.flags = DoRed | DoGreen | DoBlue;
+			// Save it
+			XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
+		}
+		else if(color[0] != '#')
 		{
 			color = (char *)malloc((char)8); // default hex color string
 			if(color == NULL)
@@ -1082,6 +1163,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		XParseColor(cavaXDisplay, cavaXColormap, color, &xcol);
 		XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
 
+		if(strcmp(color, "default"))
+		{
+			XParseColor(cavaXDisplay, cavaXColormap, color, &xcol);
+			XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
+		}
+		
 		// add titlebar name
 		if(borderFlag)
 			XStoreName(cavaXDisplay, cavaXWindow, "CAVA");
@@ -1089,6 +1176,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		// fix for error while closing window
 		wm_delete_window = XInternAtom (cavaXDisplay, "WM_DELETE_WINDOW", FALSE);
 		XSetWMProtocols(cavaXDisplay, cavaXWindow, &wm_delete_window, 1);
+
 	}
 	#endif
 
@@ -1282,6 +1370,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			Atom wmState = XInternAtom(cavaXDisplay, "_NET_WM_STATE", FALSE);
 			Atom fullScreen = XInternAtom(cavaXDisplay, "_NET_WM_STATE_FULLSCREEN", FALSE);
 			Atom mwmHintsProperty = XInternAtom(cavaXDisplay, "_MOTIF_WM_HINTS", FALSE);
+			Atom wmStateBelow = XInternAtom(cavaXDisplay, "_NET_WM_STATE_BELOW", TRUE);
 
 			// Setting window options			
 			struct mwmHints hints;
@@ -1289,6 +1378,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			hints.decorations = borderFlag;		// setting the window border here
 			XChangeProperty(cavaXDisplay, cavaXWindow, mwmHintsProperty, mwmHintsProperty, 32, PropModeReplace, (unsigned char *)&hints, 5);
 
+			// use XEvents to toggle fullscreen
 			XEvent xev;
 			xev.xclient.type=ClientMessage;
 			xev.xclient.serial = 0;
@@ -1302,6 +1392,33 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			xev.xclient.data.l[2] = 0;
 			XSendEvent(cavaXDisplay, DefaultRootWindow(cavaXDisplay), FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 
+			// also use them to keep the window at the bottom of the stack
+			/**
+				This is how a XEvent should look like:
+				
+				window  = the respective client window
+				message_type = _NET_WM_STATE
+				format = 32
+				data.l[0] = the action, as listed below
+				data.l[1] = first property to alter
+				data.l[2] = second property to alter
+				data.l[3] = source indication (0-unk,1-normal app,2-pager)
+				other data.l[] elements = 0
+			**/
+
+			xev.xclient.type = ClientMessage;
+			xev.xclient.window = cavaXWindow;
+			xev.xclient.message_type = wmState;
+			xev.xclient.format = 32;
+			if(keepInBottom) {xev.xclient.data.l[0] = _NET_WM_STATE_ADD;}
+			else {xev.xclient.data.l[0] = _NET_WM_STATE_REMOVE;}
+			xev.xclient.data.l[1] = wmStateBelow; // Keeps the window below duh
+			xev.xclient.data.l[2] = 0;
+			xev.xclient.data.l[3] = 0;
+			xev.xclient.data.l[4] = 0;
+			// Push the event
+			XSendEvent(cavaXDisplay, DefaultRootWindow(cavaXDisplay), FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+  			
 			// move the window in case it didn't by default
 			XWindowAttributes xwa;
 			XGetWindowAttributes(cavaXDisplay, cavaXWindow, &xwa);
@@ -1869,7 +1986,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 							}
 						}
 						
-						// update the screem
+						// update the screen
 						XSync(cavaXDisplay, 1);
 						break;
 						#endif

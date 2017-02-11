@@ -40,6 +40,10 @@
 # In X mode, you can enable window transparency, I suggest combining it with no window borders
 ; window_transparency = 0
 
+# In case you have issues with overlapping windows, you can change:
+; window_keep_below = 0
+# this will force the window below any other (aka. keep it in the bottom of the window stack)
+
 # This positions the window on the desired part of the screen,
 # which are the following: top_left, top, top_right, left, center, right,
 # bottom_left, bottom, bottom_right and none if you don't want automatic positioning
