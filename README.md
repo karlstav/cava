@@ -65,6 +65,7 @@ Build requirements
 * [SDL2 dev files](https://libsdl.org/)
 * [ALSA dev files](http://alsa-project.org/)
 * [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/)
+* libtool
 
 Only FFTW is actually required for CAVA to compile, but for maximum usage and preformance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
 
@@ -72,7 +73,7 @@ All the requirements can be installed easily in all major distros:
 
 Debian/Raspbian:
 
-    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libx11-dev libsdl2-dev
+    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool libx11-dev libsdl2-dev
 
 ArchLinux:
 
@@ -359,7 +360,7 @@ In the graphical modes you also have some other features, such as:
 Options that are unique to 'sdl' and 'x' modes alone:
 
 Toggle fullscreen:
-    
+     
     window_fullscreen = (1 for on and 0 for off)
 
 Toggle window border:
@@ -389,7 +390,7 @@ Possible values are: 'top_left', 'top', 'top_right'. 'left', 'center', 'right', 
 In addition to window aligment you can adjust the window using the following options:
     
     window_x_padding = (specify value)
-
+    
     window_y_padding = (specify value)
 
 NOTE: These options don't apply if "window_aligment" is set to 'none'.
@@ -400,7 +401,7 @@ But there are features that are unique for the 'x' mode alone, and one of them i
 
 A another feature is when you set the foreground color to 'default' in x mode. It will automaticly get the average desktop color and blend in with your background, looks really nice with transparency+no borders.
 To enable this you just have to change:
-     
+    
     foreground = 'default'
 
 A screenshot with the 'default' foreground option with transparency+no borders (in X):
