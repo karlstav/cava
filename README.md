@@ -142,7 +142,9 @@ Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
 
     yaourt -S cava
 
-The GUI branch is also now in [AUR](https://aur.archlinux.org/packages/cava-gui-git/).
+The GUI branch (this) is also now in [AUR](https://aur.archlinux.org/packages/cava-gui-git/).
+
+    yaourt -S cava-gui-git
 
 ### Ubuntu
 
