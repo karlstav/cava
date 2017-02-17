@@ -85,17 +85,16 @@ int flastd[200]) {
 			return TERMINAL_RESIZED;
 		}
 	}
-	int height = terminal_height - 1;
-	int n;
+	const int height = terminal_height - 1;
 	#define CURRENT_COLUMN bar*bar_width + width + bar*bar_spacing + rest
 	for (int bar = 0; bar < bars_count; bar++) {
 		if (f[bar] > flastd[bar]) { // higher then last one
 			if (is_tty) {
-				for (n = flastd[bar] / 8; n < f[bar] / 8; n++)
+				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++)
 					for (int width = 0; width < bar_width; width++)
 						mvprintw((height - n), CURRENT_COLUMN, "%d", 8);
 			} else {
-				for (n = flastd[bar] / 8; n < f[bar] / 8; n++)
+				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++)
 					for (int width = 0; width < bar_width; width++)
 						mvaddwstr((height - n), CURRENT_COLUMN,
 								bar_heights[LAST]);
@@ -103,16 +102,16 @@ int flastd[200]) {
 			if (f[bar] % 8) {
 				if (is_tty) {
 					for (int width = 0; width < bar_width; width++)
-						mvprintw((height - n), CURRENT_COLUMN, "%d",
+						mvprintw((height - f[bar] / 8), CURRENT_COLUMN, "%d",
 								(f[bar] % 8));
 				} else {
 					for (int width = 0; width < bar_width; width++)
-						mvaddwstr((height - n), CURRENT_COLUMN,
+						mvaddwstr((height - f[bar] / 8), CURRENT_COLUMN,
 								bar_heights[(f[bar] % 8) - 1]);
 				}
 			}
 		} else if(f[bar] < flastd[bar]) { // lower then last one
-			for (n = f[bar] / 8; n < flastd[bar]/8 + 1; n++)
+			for (int n = f[bar] / 8; n < flastd[bar]/8 + 1; n++)
 				for (int width = 0; width < bar_width; width++)
 					mvaddstr((height - n), CURRENT_COLUMN, " ");
 			if (f[bar] % 8) {
