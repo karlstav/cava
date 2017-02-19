@@ -31,7 +31,7 @@ static void parse_color(char* color_string, struct colors* color) {
 
 static NCURSES_COLOR_T change_color_definition(NCURSES_COLOR_T color_number,
 char* const color_string, NCURSES_COLOR_T predef_color) {
-	struct colors color;
+	struct colors color = { 0 };
 	parse_color(color_string, &color);
 	NCURSES_COLOR_T return_color_number = predef_color;
 	if (color.color == COLOR_REDEFINITION) {
