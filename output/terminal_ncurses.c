@@ -62,6 +62,7 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color) {
 	if (bg_color_number != -1)
 		bkgd(COLOR_PAIR(color_pair_number));
 	attron(COLOR_PAIR(color_pair_number));
+	refresh();
 }
 
 
