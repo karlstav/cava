@@ -11,6 +11,11 @@ struct colors {
 
 #define COLOR_REDEFINITION -2
 
+#define MAX_COLOR_REDEFINITION 2
+
+static struct colors the_color_redefinitions[MAX_COLOR_REDEFINITION];
+
+
 static void parse_color(char* color_string, struct colors* color) {
 	if (color_string[0] == '#') {
 		if (!can_change_color()) {
@@ -21,6 +26,17 @@ static void parse_color(char* color_string, struct colors* color) {
 		}
 		color->color = COLOR_REDEFINITION;
 		sscanf(++color_string, "%02hx%02hx%02hx", &color->R, &color->G, &color->B);
+	}
+}
+
+static void remember_color_definition(NCURSES_COLOR_T color_number) {
+	int index = color_number - 1; // array starts from zero and colors - not
+	if(the_color_redefinitions[index].color == 0) {
+		the_color_redefinitions[index].color = color_number;
+		color_content(color_number,
+			&the_color_redefinitions[index].R,
+			&the_color_redefinitions[index].G,
+			&the_color_redefinitions[index].B);
 	}
 }
 
@@ -35,6 +51,7 @@ char* const color_string, NCURSES_COLOR_T predef_color) {
 	parse_color(color_string, &color);
 	NCURSES_COLOR_T return_color_number = predef_color;
 	if (color.color == COLOR_REDEFINITION) {
+		remember_color_definition(color_number);
 		init_color(color_number, COLORS_STRUCT_NORMALIZE(color));
 		return_color_number = color_number;
 	}
@@ -55,6 +72,8 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color) {
 
 	NCURSES_COLOR_T bg_color_number;
 	bg_color_number = change_color_definition(2, bg_color_string, predef_bg_color);
+	// do not forget to increase MAX_COLOR_REDEFINITION if you change more color
+	// definitions
 
 	NCURSES_COLOR_T color_pair_number = 1;
 	init_pair(color_pair_number, fg_color_number, bg_color_number);
@@ -64,7 +83,6 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color) {
 	attron(COLOR_PAIR(color_pair_number));
 	refresh();
 }
-
 
 void get_terminal_dim_ncurses(int* width, int* height) {
 	getmaxyx(stdscr, *height, *width);
@@ -134,15 +152,20 @@ int flastd[200]) {
 	return 0;
 }
 
-
 // general: cleanup
 void cleanup_terminal_ncurses(void) {
 	echo();
 	system("setfont  >/dev/null 2>&1");
 	system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
 	system("setterm -blank 10");
-	init_color(1, 1000, 0, 0);
-	init_color(2, 0, 1000, 0);
+	for(int i = 0; i < MAX_COLOR_REDEFINITION; ++i) {
+		if(the_color_redefinitions[i].color) {
+			init_color(the_color_redefinitions[i].color,
+				the_color_redefinitions[i].R,
+				the_color_redefinitions[i].G,
+				the_color_redefinitions[i].B);
+		}
+	}
 	endwin();
 	system("clear");
 }
