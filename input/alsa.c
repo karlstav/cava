@@ -4,7 +4,7 @@
 #define CHANNELS_COUNT 2
 #define SAMPLE_RATE 44100
 
-void initialize_audio_parameters(snd_pcm_t** handle, struct audio_data* audio,
+static void initialize_audio_parameters(snd_pcm_t** handle, struct audio_data* audio,
 snd_pcm_uframes_t* frames) {
 	// alsa: open device to capture audio
 	int err = snd_pcm_open(handle, audio->source, SND_PCM_STREAM_CAPTURE, 0);
@@ -49,7 +49,7 @@ snd_pcm_uframes_t* frames) {
 	// snd_pcm_hw_params_get_period_time(params, &sample_rate, &dir);
 }
 
-int get_certain_frame(signed char* buffer, int buffer_index, int adjustment) {
+static int get_certain_frame(signed char* buffer, int buffer_index, int adjustment) {
 	// using the 10 upper bits this would give me a vert res of 1024, enough...
 	int temp = buffer[buffer_index + adjustment - 1] << 2;
 	int lo = buffer[buffer_index + adjustment - 2] >> 6;
@@ -62,7 +62,7 @@ int get_certain_frame(signed char* buffer, int buffer_index, int adjustment) {
 	return temp;
 }
 
-void fill_audio_outs(struct audio_data* audio, signed char* buffer,
+static void fill_audio_outs(struct audio_data* audio, signed char* buffer,
 const int size) {
 	int radj = audio->format / 4; // adjustments for interleaved
 	int ladj = audio->format / 8;
@@ -82,8 +82,8 @@ const int size) {
 			audio->audio_out_r[audio_out_buffer_index] = tempr;
 		}
 
-		if (++audio_out_buffer_index == 2048 - 1)
-			audio_out_buffer_index = 0;
+		++audio_out_buffer_index;
+		audio_out_buffer_index %= 2048;
 	}
 }
 
