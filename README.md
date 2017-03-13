@@ -82,7 +82,7 @@ openSUSE:
 
 Fedora:
 
-    dnf install alsa-lib-devel ncurses-devel fftw3-devel
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool
 
 
 Iniparser is also required, but if it is not already installed, a bundled version will be used.
