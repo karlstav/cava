@@ -9,14 +9,14 @@
 # Framerate Default: 60. Accepts only non-negative values.
 ; framerate = 60 
 
-# Sensitivity in  %. If you think the bars are to low/response is to little, try
-# increasing this value 200 means double height. Accepts only non-negative values.
-; sensitivity = 100
-
-# Autosens will attempt to decrease sensitivity if cava peaks. 1 = on, 0 = off
+# Autosens will attempt to decrease sensitivity if the bars peak. 1 = on, 0 = off
 # overshoot allows bars to overshoot (in % of terminal height) without initiating autosens
 ; autosens = 1
 ; overshoot = 20
+
+# Manual sensitivity in  %. Autosens must be turned off for this to take effect.
+# 200 means double height. Accepts only non-negative values.
+; sensitivity = 100
 
 # The number of bars (0-200). 0 (default) sets it to auto (fill up console).
 # width of bars and space between bars in number of characters. Default width 3 and space 1.
