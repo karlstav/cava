@@ -16,6 +16,9 @@ cava_CPPFLAGS = -DPACKAGE=\"$(PACKAGE)\" -DVERSION=\"$(VERSION)\" \
            -D_POSIX_SOURCE -D _POSIX_C_SOURCE=200809L
 cava_CFLAGS = -std=c99 -Wall -Wextra -Wno-unused-result -Wno-maybe-uninitialized 
 
+cava_font_dir = /usr/share/consolefonts
+cava_font__DATA = cava.psf
+
 if !SYSTEM_LIBINIPARSER
     cava_SOURCES += iniparser/libiniparser.la
     cava_LDADD += -Liniparser/.libs
