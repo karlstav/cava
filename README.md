@@ -78,7 +78,7 @@ ArchLinux:
 
 openSUSE:
 
-    zypper install alsa-devel ncurses-devel fftw3-devel
+    zypper install alsa-devel ncurses-devel fftw3-devel libpulse-devel libtool
 
 Fedora:
 
