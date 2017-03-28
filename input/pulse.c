@@ -7,62 +7,65 @@
 #include <pulse/pulseaudio.h>
 #define BUFSIZE 1024
 
+pa_mainloop *m_pulseaudio_mainloop;
+
+void cb(__attribute__((unused)) pa_context *pulseaudio_context, const pa_server_info *i, void *userdata){
+
+	//getting default sink name
+    struct audio_data *audio = (struct audio_data *)userdata;
+	audio->source = malloc(sizeof(char) * 1024);
+
+	strcpy(audio->source,i->default_sink_name);
+
+	//appending .monitor suufix
+	audio->source = strcat(audio->source, ".monitor");
+
+	//quiting mainloop
+	pa_mainloop_quit(m_pulseaudio_mainloop, 0);
+}
+
+
+void pulseaudio_context_state_callback(pa_context *pulseaudio_context,
+                                                  void *userdata) {
+
+	//make sure loop is ready	
+	switch (pa_context_get_state(pulseaudio_context))
+	{
+	case PA_CONTEXT_UNCONNECTED:
+	//printf("UNCONNECTED\n");
+	break;
+	case PA_CONTEXT_CONNECTING:
+	//printf("CONNECTING\n");
+	break;
+	case PA_CONTEXT_AUTHORIZING:
+	//printf("AUTHORIZING\n");
+	break;
+	case PA_CONTEXT_SETTING_NAME:
+	//printf("SETTING_NAME\n");
+	break;
+	case PA_CONTEXT_READY://extract default sink name
+	//printf("READY\n");
+	pa_operation_unref(pa_context_get_server_info(
+	pulseaudio_context, cb, userdata));
+	break;
+	case PA_CONTEXT_FAILED:
+	//printf("FAILED\n");
+	break;
+	case PA_CONTEXT_TERMINATED:
+	//printf("TERMINATED\n");
+    pa_mainloop_quit(m_pulseaudio_mainloop, 0);
+	break;	  
+	}
+}
+
+
 void getPulseDefaultSink(void* data) {
 
-        struct audio_data *audio = (struct audio_data *)data;
+
+    struct audio_data *audio = (struct audio_data *)data;
 	pa_mainloop_api *mainloop_api;
 	pa_context *pulseaudio_context;
-	pa_mainloop *m_pulseaudio_mainloop;
 	int ret;
-
-
-	void cb(__attribute__((unused)) pa_context *pulseaudio_context,const pa_server_info *i,__attribute__((unused)) void *userdata){
-
-		//getting default sink name
-		audio->source = malloc(sizeof(char) * 1024);
-		strcpy(audio->source,i->default_sink_name);
-
-		//appending .monitor suufix
-		audio->source = strcat(audio->source, ".monitor");
-
-		//quiting mainloop
-		pa_mainloop_quit(m_pulseaudio_mainloop, 0);
-	}
-
-
-	void pulseaudio_context_state_callback(__attribute__((unused)) pa_context *c,
-                                                      void *userdata) {
-
-		//make sure loop is ready	
-		switch (pa_context_get_state(pulseaudio_context))
-		{
-		case PA_CONTEXT_UNCONNECTED:
-		//printf("UNCONNECTED\n");
-		break;
-		case PA_CONTEXT_CONNECTING:
-		//printf("CONNECTING\n");
-		break;
-		case PA_CONTEXT_AUTHORIZING:
-		//printf("AUTHORIZING\n");
-		break;
-		case PA_CONTEXT_SETTING_NAME:
-		//printf("ETTING_NAM\n");
-		break;
-		case PA_CONTEXT_READY://extract default sink name
-		//printf("READY\n");
-		pa_operation_unref(pa_context_get_server_info(
-		pulseaudio_context, cb, userdata));
-		break;
-		case PA_CONTEXT_FAILED:
-		//printf("FAILED\n");
-		break;
-		case PA_CONTEXT_TERMINATED:
-		//printf("TERMINATED\n");
-		break;	  
-		}
-	}
-
-
 
 	// Create a mainloop API and connection to the default server
 	m_pulseaudio_mainloop = pa_mainloop_new();
@@ -78,7 +81,7 @@ void getPulseDefaultSink(void* data) {
 	//This function defines a callback so the server will tell us its state.
 	pa_context_set_state_callback(pulseaudio_context,
 			                  pulseaudio_context_state_callback,
-			                  NULL);
+			                  (void*)audio);
 
 	//starting a mainloop to get default sink
 	if (pa_mainloop_run(m_pulseaudio_mainloop, &ret) < 0)
