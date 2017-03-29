@@ -149,6 +149,14 @@ AS_IF([test "x$enable_legacy_iniparser" = "xyes"], [
   CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"
 ])
 
+dnl ############################
+dnl Set font directory
+dnl ############################
+DEFAULT_FONT_DIR="/usr/share/consolefonts"
+AC_ARG_VAR(FONT_DIR, [Directory where the font will be installed.])
+if test -z "$FONT_DIR" ; then
+  FONT_DIR="$DEFAULT_FONT_DIR"
+fi
 
 
 
