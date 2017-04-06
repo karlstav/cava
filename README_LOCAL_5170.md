@@ -67,7 +67,7 @@ Build requirements
 * [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/)
 * libtool
 
-Only FFTW is actually required for CAVA to compile, but for maximum usage and performance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
+Only FFTW is actually required for CAVA to compile, but for maximum usage and preformance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
 
 All the requirements can be installed easily in all major distros:
 
@@ -81,14 +81,14 @@ ArchLinux:
 
 openSUSE:
 
-    zypper install alsa-devel ncurses-devel fftw3-devel libX11-devel libSDL2-devel libtool
+    zypper install alsa-devel ncurses-devel fftw3-devel libX11-devel libSDL2-devel
 
 Fedora:
 
-    dnf install alsa-lib-devel ncurses-devel fftw3-devel xorg-x11-devel SDL2-devel pulseaudio-libs-devel libtool
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel xorg-x11-devel SDL2-devel
 
 
-Iniparser is also required, but if it is not already installed, a bundled version will be used.
+Iniparser is also required, but if it is not allready installed a bundled version will be used.
 
 To run the autogen script you will also need `automake`, `libtool` and `git`.
 
@@ -179,9 +179,9 @@ Set
 
     method = alsa
 
-in the config file.
+in config file
 
-ALSA can be difficult because there is no native way to grab audio from an output. If you want to capture audio straight fom the output (not just mic or line-in), you must create an ALSA loopback interface, then output the audio simultaneously to both the loopback and your normal interface.
+ALSA can be difficult because there is no native way to grap audio from an output. If you want to capture audio straight fom the output (not just mic or line-in), you must create an ALSA loopback interface, then output the audio simultaneously to both the loopback and your normal interface.
 
 To create a loopback interface simply run:
 
@@ -189,15 +189,15 @@ To create a loopback interface simply run:
 
 Hopefully your `aplay -l` should now contain a loopback interface.
 
-To make it presistent across boot add the line `snd-aloop` to "/etc/modules". To keep it form beeing loaded as the first soundcard add the line `options snd-aloop index=1` to "/etc/modprobe.d/alsa-base.conf", this will load it at '1'. You can replace '1' with whatever makes most sense in your audio setup.
+To make it presistent across boot add the line `snd-aloop` to "/etc/modules". To keep it form beeing loaded as the first soundcard add the line `options snd-aloop index=1` to "/etc/modprobe.d/alsa-base.conf", this will load it at '1'. You can replace '1' with whatever makes most senes in your audio setup.
 
 Playing the audio through your Loopback interface makes it possible for cava to to capture it, but there will be no sound in your speakers. In order to play audio on the loopback interface and your actual interface you must make use of the ALSA multi channel.
 
-Look at the included example file `example_files/etc/asound.conf` on how to use the multi channel. I was able to make this work on my laptop (an Asus UX31 running Ubuntu), but I had no luck with the ALSA method on my Rasberry PI (Rasbian) with an USB DAC. The PulseAudio method however works perfectly on my PI. 
+Look at the inculded example file `example_files/etc/asound.conf` on how to use the multi channel. I was able to make this work on my laptop (an Asus UX31 running Ubuntu). But i had no luck with the ALSA method on my Rasberry PI (Rasbian) with an USB DAC. The PulseAudio method however works perfectly on my PI. 
 
 Read more about the ALSA method [here](http://stackoverflow.com/questions/12984089/capture-playback-on-play-only-sound-card-with-alsa).
 
-If you are having problems with the alsa method on Rasberry PI, try enabling `mmap` by adding the following line to `/boot/config.txt` and reboot:
+If you are having problems with the alsa method on Rasberry PI, try enabling `mmap` by addin the following line to `/boot/config.txt` and reboot:
 
 ```
 dtoverlay=i2s-mmap
@@ -260,7 +260,7 @@ Actually, `setfont` is supposed to return the default font, but this usually isn
 
 In terminal emulators like `xterm`, the font settings is chosen in the software and cannot be changed by an application. So find your terminal settings and try out different fonts and settings. Also character spacing affects the look of the bar spectrum.
 
-Performance is also different, urxvt is the best I found so far, while Gnome-terminal is quite slow.
+Speed preformance is also different, urxvt is the best I found so far, while Gnome-terminal is quite slow.
 
 Cava also disables the terminal cursor, and turns it back on on exit, but in case it terminates unexpectedly, run `setterm -cursor on` to get it back.
 
@@ -273,7 +273,7 @@ Latency notes
 If you see latency issues (sound before image) in a terminal emulator, try increasing the font size. This will reduce the number of characters that have to be shown.
 But if you are running in either in the graphical modes, you can shrink the window.
 
-If your audio device has a huge buffer, you might experience that cava is actually faster than the audio you hear. This reduces the experience of the visualization. To fix this, try decreasing the buffer settings in your audio playing software.
+If your audio device has a huge buffer, you might experience that cava is actually faster than the audio you hear. This reduces the experience of the visualization. To fix this, you try decreasing the buffer settings in your audio playing software.
 
 Usage
 -----
@@ -351,7 +351,7 @@ To achieve this you can change the following value to:
     output = x
 
 Or preferably:
-	
+    
     output = sdl
 
 Just a bit of explination. X11/Xlib utilizes hardware drawing (if availble), while SDL2 utilizes software drawing (this could be changed in the future, however). The only reason why SDL2 is kept as a option is that it works on non X11 display servers (Wayland and such), whereas X doesn't.

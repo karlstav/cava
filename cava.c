@@ -824,7 +824,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	
 		if (inAtty) {
 			system("setfont cava.psf  >/dev/null 2>&1");
-			system("echo yep > /tmp/testing123");
 			system("setterm -blank 0");
 		}
 	}

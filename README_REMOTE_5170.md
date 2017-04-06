@@ -43,7 +43,6 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 - [Usage](#usage)
   - [Controls](#controls)
 - [Configuration](#configuration)
-  - [GUI Options](#gui)
 - [Thanks](#thanks)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -61,8 +60,6 @@ Build requirements
 ------------------
 * [FFTW](http://www.fftw.org/)
 * [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
-* [Xlib/X11 dev files](http://x.org/)
-* [SDL2 dev files](https://libsdl.org/)
 * [ALSA dev files](http://alsa-project.org/)
 * [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/)
 * libtool
@@ -73,19 +70,19 @@ All the requirements can be installed easily in all major distros:
 
 Debian/Raspbian:
 
-    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool libx11-dev libsdl2-dev
+    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool
 
 ArchLinux:
 
-    pacman -S base-devel fftw ncurses libx11 sdl2
+    pacman -S base-devel fftw ncurses
 
 openSUSE:
 
-    zypper install alsa-devel ncurses-devel fftw3-devel libX11-devel libSDL2-devel libtool
+    zypper install alsa-devel ncurses-devel fftw3-devel libpulse-devel libtool
 
 Fedora:
 
-    dnf install alsa-lib-devel ncurses-devel fftw3-devel xorg-x11-devel SDL2-devel pulseaudio-libs-devel libtool
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool
 
 
 Iniparser is also required, but if it is not already installed, a bundled version will be used.
@@ -141,10 +138,6 @@ If you use 13.2 or 13.1 just replace *openSUSE_Tumbleweed* with *openSUSE_13.2*,
 Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
 
     yaourt -S cava
-
-The GUI branch (this) is also now in [AUR](https://aur.archlinux.org/packages/cava-gui-git/).
-
-    yaourt -S cava-gui-git
 
 ### Ubuntu
 
@@ -244,7 +237,6 @@ Font notes
 ----------
 
 Since the graphics are simply based on characters, performance is dependent on the terminal font.
-Unless you are running in x mode, the performance is pixel/resolution-based.
 
 ### In ttys
 
@@ -271,7 +263,6 @@ Latency notes
 -------------
 
 If you see latency issues (sound before image) in a terminal emulator, try increasing the font size. This will reduce the number of characters that have to be shown.
-But if you are running in either in the graphical modes, you can shrink the window.
 
 If your audio device has a huge buffer, you might experience that cava is actually faster than the audio you hear. This reduces the experience of the visualization. To fix this, try decreasing the buffer settings in your audio playing software.
 
@@ -297,8 +288,6 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 | --- | ----------- |
 | <kbd>up</kbd> / <kbd>down</kbd>| increase/decrease sensitivity |
 | <kbd>left</kbd> / <kbd>right</kbd>| increase/decrease bar width |
-| <kbd>a</kbd> / <kbd>s</kbd> | increase/decrease bar spacing |
-| <kbd>f</kbd> | toggle fullscreen (only in X and sdl modes) |
 | <kbd>c</kbd> / <kbd>b</kbd>| change forground/background color |
 | <kbd>r</kbd> | Reload configuration |
 | <kbd>q</kbd> or <kbd>CTRL-C</kbd>| Quit C.A.V.A. |
@@ -336,87 +325,6 @@ $ pkill -USR1 cava
     5=0.5
 
 ![3_139](https://cloud.githubusercontent.com/assets/6376571/8670181/9db0ef50-29e8-11e5-81bc-3e2bb9892da0.png)
-
-### GUI
-
-Cava (atleast the GUI branch) can now run in grapical modes.
-
-NOTE: All of these options are in the config file (usually) at ~/.config/cava/config
-
-2nd NOTE: Remember to remove ';' in front of the options if you want to change them.
-
-
-To achieve this you can change the following value to:
-
-    output = x
-
-Or preferably:
-	
-    output = sdl
-
-Just a bit of explination. X11/Xlib utilizes hardware drawing (if availble), while SDL2 utilizes software drawing (this could be changed in the future, however). The only reason why SDL2 is kept as a option is that it works on non X11 display servers (Wayland and such), whereas X doesn't.
-
-In the graphical modes you also have some other features, such as:
-
-
-Options that are unique to 'sdl' and 'x' modes alone:
-
-Toggle fullscreen:
-     
-    window_fullscreen = (1 for on and 0 for off)
-
-Toggle window border:
-    
-    window_border = (1 to enable and 0 to disable)
-
-As a cross-compatibility issue, for 'x' and 'sdl' output modes please use:
-    
-    win_bar_width = (specify value)
-    
-    win_bar_spacing = (specify value)
-
-instead of
-
-    bar_width = (specify value)
-
-    bar_spacing = (specify value)
-
-for changing bar geometry, because 'sdl' and 'x' use pixel geometry rather than font based ones.
-
-Align the window to a part of the screen using:
-    
-    window_alignment = 'value'
-
-Possible values are: 'top_left', 'top', 'top_right'. 'left', 'center', 'right', 'bottom_left', 'bottom', 'bottom_right' and 'none' if you don't want to position the window automaticly.
-
-In addition to window aligment you can adjust the window using the following options:
-    
-    window_x_padding = (specify value)
-    
-    window_y_padding = (specify value)
-
-NOTE: These options don't apply if "window_aligment" is set to 'none'.
-
-But there are features that are unique for the 'x' mode alone, and one of them is enabling the background to be transparent. However, you'll need a window composite manager running on your system (WARNING: generally causes slowdowns). This can be enabled by:
-     
-     window_transparency = (0 disable, 1 enable)
-
-A another feature is when you set the foreground color to 'default' in x mode. It will automaticly get the average desktop color and blend in with your background, looks really nice with transparency+no borders.
-To enable this you just have to change:
-    
-    foreground = 'default'
-
-A screenshot with the 'default' foreground option with transparency+no borders (in X):
-![blendin](http://i.imgur.com/9K2o4K8.png)
-
-A quick demo showing off what can be done by enabling transparency and disabling window borders:
-![transparency](http://i.imgur.com/QscuEh8.gif "transparency")
-
-NOTE: If you have issues with overlapping other windows, (fxp. if you click on the window, and it overlaps the previous one) you can change the following:
-    
-    window_keep_below = 1
-
-However, this only works in X mode.
 
 Thanks
 ------

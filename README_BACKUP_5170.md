@@ -81,11 +81,19 @@ ArchLinux:
 
 openSUSE:
 
-    zypper install alsa-devel ncurses-devel fftw3-devel libX11-devel libSDL2-devel libtool
+<<<<<<< HEAD
+    zypper install alsa-devel ncurses-devel fftw3-devel libX11-devel libSDL2-devel
 
 Fedora:
 
-    dnf install alsa-lib-devel ncurses-devel fftw3-devel xorg-x11-devel SDL2-devel pulseaudio-libs-devel libtool
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel xorg-x11-devel SDL2-devel
+=======
+    zypper install alsa-devel ncurses-devel fftw3-devel libpulse-devel libtool
+
+Fedora:
+
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool
+>>>>>>> upstream/master
 
 
 Iniparser is also required, but if it is not already installed, a bundled version will be used.
@@ -351,7 +359,7 @@ To achieve this you can change the following value to:
     output = x
 
 Or preferably:
-	
+    
     output = sdl
 
 Just a bit of explination. X11/Xlib utilizes hardware drawing (if availble), while SDL2 utilizes software drawing (this could be changed in the future, however). The only reason why SDL2 is kept as a option is that it works on non X11 display servers (Wayland and such), whereas X doesn't.

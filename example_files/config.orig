@@ -88,12 +88,19 @@
 
 [output]
 
-# Ouput method. Can be 'ncurses', 'noncurses', 'raw', 'sdl' or 'x'. 
+<<<<<<< HEAD
+# ouput method may be ncurses, noncurses, x or raw. noncurses is for systems that does not suport ncurses. 
+# x is for systems that use the x windowing system and if by any chance you're running wayland or mir
+# or trying to get this to work on windows or macOS there is a sdl option
+# however performance difference is drastic so beware
+# raw is a 16 bit data stream of the bar heights that can be used to send to other applications
+# raw defaults to 200 bars, can be adjusted in the bars option above
+=======
+# Ouput method. Can be 'ncurses', 'noncurses' or 'raw'. 
 # 'noncurses' is for systems that does not suport ncurses.
 # 'raw' is a 16 bit data stream of the bar heights that can be used to send to other applications.
 # 'raw' defaults to 200 bars, which can be adjusted in the 'bars' option above.
-# 'sdl' is for a graphical window using OpenGL
-# 'x' is for a graphical window using XRender (usually faster, unsupported in wayland however)
+>>>>>>> upstream/master
 ; method = ncurses
 
 # Visual styles. Can be 'stereo' or 'mono'.
@@ -122,10 +129,13 @@
 
 [color]
 
+<<<<<<< HEAD
+# supported colors are: red, green, yellow, magenta, cyan, white, blue, black.
+# or defined by hex code '#xxxxxx' (hex code must be within '')
+=======
 # Colors can be one of seven predefined: black, blue, cyan, green, magenta, red, white, yellow.
 # Or defined by hex code '#xxxxxx' (hex code must be within '').
-# Or in case you're running in 'x' you could use the default option
-
+>>>>>>> upstream/master
 ; background = black
 ; foreground = cyan
 
