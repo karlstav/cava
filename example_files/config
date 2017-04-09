@@ -20,38 +20,10 @@
 
 # The number of bars (0-200). 0 sets it to auto (fill up console).
 # Bars' width and space between bars in number of characters.
+# These options DO NOT apply if you're using 'sdl' or 'x' modes.
 ; bars = 0
 ; bar_width = 2
 ; bar_spacing = 1
-# Options below are bar width and spacing for the graphics modes
-; win_bar_width = 20
-; win_bar_spacing = 4
-
-# The window height and width, used only with graphics modes
-; window_width = 640
-; window_height = 480
-
-# The window fullscreen toggle
-; window_fullscreen = 0
-
-# Enables or disables window borders
-; window_border = 1
-
-# In X mode, you can enable window transparency, I suggest combining it with no window borders
-; window_transparency = 0
-
-# In case you have issues with overlapping windows, you can change:
-; window_keep_below = 0
-# this will force the window below any other (aka. keep it in the bottom of the window stack)
-
-# This positions the window on the desired part of the screen,
-# which are the following: top_left, top, top_right, left, center, right,
-# bottom_left, bottom, bottom_right and none if you don't want automatic positioning
-; window_alignment = 'none'
-
-# For added effect we can pad the window if it obscures some other elements
-; window_x_padding = 0
-; window_y_padding = 0
 
 # Lower and higher cutoff frequencies for lowest and highest bars
 # the bandwidth of the visualizer.
@@ -59,6 +31,42 @@
 # Cava will automatically increase the higher cutoff if a too low band is specified.
 ; lower_cutoff_freq = 50
 ; higher_cutoff_freq = 10000
+
+
+
+[window]
+
+# Bars' width and space between bars in pixels.
+# Doesn't apply to terminal or serial modes.
+; bar_width = 20
+; bar_spacing = 4
+
+# Window width and height
+; width = 640
+; height = 480
+
+# Fullscreen toggle (1 = on, 0 = off)
+; fullscreen = 0
+
+# Enables or disables window borders (1 = on, 0 = off)
+; border = 1
+
+# Window transparency toggle (works under X ONLY) (same applies)
+; transparency = 0
+
+# Keeps the window under any other (works under X ONLY) (again, same applies)
+; keep_below = 0
+
+# This allows for the window to be positioned a bit easier
+# by putting the window to the part of the screen, which are:
+# top_left, top, top_right, left, center, right, bottom_left,
+# bottom, bottom_right and none if you don't want automatic positioning
+; alignment = 'none'
+
+# Additionally we can move the window from the already set
+# part of the screen (units are in pixels)
+; x_padding = 0
+; y_padding = 0
 
 
 
