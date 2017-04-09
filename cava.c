@@ -850,7 +850,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		} else bars = fixedbars;
 
 
-		if (bars < 1) bars = 1; // must have at least 1 bar;
+		if (bars < 1) bars = 1; // must have at least 1 bars
+        if (bars > 200) bars = 200; // cant have more than 200 bars
 
 		if (stereo) { //stereo must have even numbers of bars
 			if (bars%2 != 0) bars--;
