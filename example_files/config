@@ -97,6 +97,16 @@
 ; background = black
 ; foreground = cyan
 
+#
+; rainbow = 0
+; rainbow_color_1 = '#3366ff'
+; rainbow_color_2 = '#6666ff'
+; rainbow_color_3 = '#9966ff'
+; rainbow_color_4 = '#cc33ff'
+; rainbow_color_5 = '#ff00ff'
+; rainbow_color_6 = '#cc0099'
+; rainbow_color_7 = '#990099'
+
 
 [smoothing]
 

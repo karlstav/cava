@@ -11,7 +11,7 @@ struct colors {
 
 #define COLOR_REDEFINITION -2
 
-#define MAX_COLOR_REDEFINITION 2
+#define MAX_COLOR_REDEFINITION 8
 
 static struct colors the_color_redefinitions[MAX_COLOR_REDEFINITION];
 
@@ -59,7 +59,7 @@ char* const color_string, NCURSES_COLOR_T predef_color) {
 }
 
 void init_terminal_ncurses(char* const fg_color_string,
-char* const bg_color_string, int predef_fg_color, int predef_bg_color) {
+char* const bg_color_string, int predef_fg_color, int predef_bg_color, int rainbow, char* const rainbow_colors[7]) {
 	initscr();
 	curs_set(0);
 	timeout(0);
@@ -71,17 +71,42 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color) {
 	fg_color_number = change_color_definition(1, fg_color_string, predef_fg_color);
 
 	NCURSES_COLOR_T bg_color_number;
-	bg_color_number = change_color_definition(2, bg_color_string, predef_bg_color);
+	bg_color_number = change_color_definition(0, bg_color_string, predef_bg_color);
 	// do not forget to increase MAX_COLOR_REDEFINITION if you change more color
 	// definitions
 
 	NCURSES_COLOR_T color_pair_number = 1;
 	init_pair(color_pair_number, fg_color_number, bg_color_number);
+    
+    if (rainbow) {
+        init_pair(1, COLOR_RED, 0);
+        init_pair(2, COLOR_GREEN, 0);
+        init_pair(3, COLOR_YELLOW, 0);
+        init_pair(4, COLOR_BLUE, 0);
+        init_pair(5, COLOR_MAGENTA, 0);
+        init_pair(6, COLOR_CYAN, 0);
+        init_pair(7, COLOR_WHITE, 0);
+        bkgd(COLOR_PAIR(1));
+
+        for (int n = 0; n < 7; n++)
+            change_color_definition(n + 1, rainbow_colors[n], n + 1);
+
+    }
 
 	if (bg_color_number != -1)
 		bkgd(COLOR_PAIR(color_pair_number));
 	attron(COLOR_PAIR(color_pair_number));
 	refresh();
+}
+
+void change_colors(int cur_height, int tot_height) {
+    if (cur_height >= 0 && cur_height < tot_height / 7) attron(COLOR_PAIR(1));
+    else if (cur_height >= tot_height / 7 && cur_height < tot_height * 2 / 7) attron(COLOR_PAIR(2));
+    else if (cur_height >= tot_height * 2 / 7 && cur_height < tot_height * 3 / 7) attron(COLOR_PAIR(3));
+    else if (cur_height >= tot_height * 3 / 7 && cur_height < tot_height * 4 / 7) attron(COLOR_PAIR(4));
+    else if (cur_height >= tot_height * 4 / 7 && cur_height < tot_height * 5 / 7) attron(COLOR_PAIR(5));
+    else if (cur_height >= tot_height * 5 / 7 && cur_height < tot_height * 6 / 7) attron(COLOR_PAIR(6));
+    else if (cur_height >= tot_height * 6 / 7 && cur_height <= tot_height * 7 / 7) attron(COLOR_PAIR(7));
 }
 
 void get_terminal_dim_ncurses(int* width, int* height) {
@@ -93,7 +118,8 @@ void get_terminal_dim_ncurses(int* width, int* height) {
 
 int draw_terminal_ncurses(int is_tty, int terminal_height, int terminal_width,
 int bars_count, int bar_width, int bar_spacing, int rest, const int f[200],
-int flastd[200]) {
+int flastd[200], int rainbow) {
+
 	const wchar_t* bar_heights[] = {L"\u2581", L"\u2582", L"\u2583",
 		L"\u2584", L"\u2585", L"\u2586", L"\u2587", L"\u2588"};
 	#define LAST ((sizeof(bar_heights) / sizeof(bar_heights[0])) - 1)
@@ -107,17 +133,22 @@ int flastd[200]) {
 	const int height = terminal_height - 1;
 	#define CURRENT_COLUMN bar*bar_width + width + bar*bar_spacing + rest
 	for (int bar = 0; bar < bars_count; bar++) {
-		if (f[bar] > flastd[bar]) { // higher then last one
+		if (f[bar] > flastd[bar]) { // higher then last frame
 			if (is_tty) {
-				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++)
+				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++) {
+                    if (rainbow) change_colors(n, height); 
 					for (int width = 0; width < bar_width; width++)
 						mvprintw((height - n), CURRENT_COLUMN, "%d", 8);
+                }
 			} else {
-				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++)
+				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++) {                                 
+                    if (rainbow) change_colors(n, height); 
 					for (int width = 0; width < bar_width; width++)
 						mvaddwstr((height - n), CURRENT_COLUMN,
 								bar_heights[LAST]);
+                }
 			}
+            if (rainbow) change_colors(f[bar] / 8, height); 
 			if (f[bar] % 8) {
 				if (is_tty) {
 					for (int width = 0; width < bar_width; width++)
@@ -129,11 +160,12 @@ int flastd[200]) {
 								bar_heights[(f[bar] % 8) - 1]);
 				}
 			}
-		} else if(f[bar] < flastd[bar]) { // lower then last one
+		} else if(f[bar] < flastd[bar]) { // lower then last frame
 			for (int n = f[bar] / 8; n < flastd[bar]/8 + 1; n++)
 				for (int width = 0; width < bar_width; width++)
 					mvaddstr((height - n), CURRENT_COLUMN, " ");
 			if (f[bar] % 8) {
+                 if (rainbow) change_colors(f[bar] / 8, height); 
 				if (is_tty) {
 					for (int width = 0; width < bar_width; width++)
 						mvprintw((height - f[bar] / 8), CURRENT_COLUMN, "%d",
@@ -151,6 +183,8 @@ int flastd[200]) {
 	refresh();
 	return 0;
 }
+
+
 
 // general: cleanup
 void cleanup_terminal_ncurses(void) {
