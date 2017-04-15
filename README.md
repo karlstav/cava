@@ -67,7 +67,7 @@ Build requirements
 * [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/)
 * libtool
 
-Only FFTW is actually required for CAVA to compile, but for maximum usage and preformance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
+Only FFTW is actually required for CAVA to compile, but for maximum usage and performance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
 
 All the requirements can be installed easily in all major distros:
 
@@ -81,14 +81,14 @@ ArchLinux:
 
 openSUSE:
 
-    zypper install alsa-devel ncurses-devel fftw3-devel libX11-devel libSDL2-devel
+    zypper install alsa-devel ncurses-devel fftw3-devel libX11-devel libSDL2-devel libtool
 
 Fedora:
 
-    dnf install alsa-lib-devel ncurses-devel fftw3-devel xorg-x11-devel SDL2-devel
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel xorg-x11-devel SDL2-devel pulseaudio-libs-devel libtool
 
 
-Iniparser is also required, but if it is not allready installed a bundled version will be used.
+Iniparser is also required, but if it is not already installed, a bundled version will be used.
 
 To run the autogen script you will also need `automake`, `libtool` and `git`.
 
@@ -142,7 +142,9 @@ Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
 
     yaourt -S cava
 
-The GUI branch is also now in [AUR](https://aur.archlinux.org/packages/cava-gui-git/).
+The GUI branch (this) is also in [AUR](https://aur.archlinux.org/packages/cava-gui-git/).
+
+    yaourt -S cava-gui-git
 
 ### Ubuntu
 
@@ -177,9 +179,9 @@ Set
 
     method = alsa
 
-in config file
+in the config file.
 
-ALSA can be difficult because there is no native way to grap audio from an output. If you want to capture audio straight fom the output (not just mic or line-in), you must create an ALSA loopback interface, then output the audio simultaneously to both the loopback and your normal interface.
+ALSA can be difficult because there is no native way to grab audio from an output. If you want to capture audio straight fom the output (not just mic or line-in), you must create an ALSA loopback interface, then output the audio simultaneously to both the loopback and your normal interface.
 
 To create a loopback interface simply run:
 
@@ -187,15 +189,15 @@ To create a loopback interface simply run:
 
 Hopefully your `aplay -l` should now contain a loopback interface.
 
-To make it presistent across boot add the line `snd-aloop` to "/etc/modules". To keep it form beeing loaded as the first soundcard add the line `options snd-aloop index=1` to "/etc/modprobe.d/alsa-base.conf", this will load it at '1'. You can replace '1' with whatever makes most senes in your audio setup.
+To make it presistent across boot add the line `snd-aloop` to "/etc/modules". To keep it form beeing loaded as the first soundcard add the line `options snd-aloop index=1` to "/etc/modprobe.d/alsa-base.conf", this will load it at '1'. You can replace '1' with whatever makes most sense in your audio setup.
 
 Playing the audio through your Loopback interface makes it possible for cava to to capture it, but there will be no sound in your speakers. In order to play audio on the loopback interface and your actual interface you must make use of the ALSA multi channel.
 
-Look at the inculded example file `example_files/etc/asound.conf` on how to use the multi channel. I was able to make this work on my laptop (an Asus UX31 running Ubuntu). But i had no luck with the ALSA method on my Rasberry PI (Rasbian) with an USB DAC. The PulseAudio method however works perfectly on my PI. 
+Look at the included example file `example_files/etc/asound.conf` on how to use the multi channel. I was able to make this work on my laptop (an Asus UX31 running Ubuntu), but I had no luck with the ALSA method on my Rasberry PI (Rasbian) with an USB DAC. The PulseAudio method however works perfectly on my PI. 
 
 Read more about the ALSA method [here](http://stackoverflow.com/questions/12984089/capture-playback-on-play-only-sound-card-with-alsa).
 
-If you are having problems with the alsa method on Rasberry PI, try enabling `mmap` by addin the following line to `/boot/config.txt` and reboot:
+If you are having problems with the alsa method on Rasberry PI, try enabling `mmap` by adding the following line to `/boot/config.txt` and reboot:
 
 ```
 dtoverlay=i2s-mmap
@@ -258,7 +260,7 @@ Actually, `setfont` is supposed to return the default font, but this usually isn
 
 In terminal emulators like `xterm`, the font settings is chosen in the software and cannot be changed by an application. So find your terminal settings and try out different fonts and settings. Also character spacing affects the look of the bar spectrum.
 
-Speed preformance is also different, urxvt is the best I found so far, while Gnome-terminal is quite slow.
+Performance is also different, urxvt is the best I found so far, while Gnome-terminal is quite slow.
 
 Cava also disables the terminal cursor, and turns it back on on exit, but in case it terminates unexpectedly, run `setterm -cursor on` to get it back.
 
@@ -271,7 +273,7 @@ Latency notes
 If you see latency issues (sound before image) in a terminal emulator, try increasing the font size. This will reduce the number of characters that have to be shown.
 But if you are running in either in the graphical modes, you can shrink the window.
 
-If your audio device has a huge buffer, you might experience that cava is actually faster than the audio you hear. This reduces the experience of the visualization. To fix this, you try decreasing the buffer settings in your audio playing software.
+If your audio device has a huge buffer, you might experience that cava is actually faster than the audio you hear. This reduces the experience of the visualization. To fix this, try decreasing the buffer settings in your audio playing software.
 
 Usage
 -----
@@ -296,7 +298,7 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 | <kbd>up</kbd> / <kbd>down</kbd>| increase/decrease sensitivity |
 | <kbd>left</kbd> / <kbd>right</kbd>| increase/decrease bar width |
 | <kbd>a</kbd> / <kbd>s</kbd> | increase/decrease bar spacing |
-| <kbd>f</kbd> | toggle fullscreen (only in X and sdl modes) |
+| <kbd>f</kbd> | toggle fullscreen (only in window modes) |
 | <kbd>c</kbd> / <kbd>b</kbd>| change forground/background color |
 | <kbd>r</kbd> | Reload configuration |
 | <kbd>q</kbd> or <kbd>CTRL-C</kbd>| Quit C.A.V.A. |
@@ -337,7 +339,7 @@ $ pkill -USR1 cava
 
 ### GUI
 
-Cava (atleast the GUI branch) can now run in grapical modes.
+CAVA (this branch) can now run in grapical modes.
 
 NOTE: All of these options are in the config file (usually) at ~/.config/cava/config
 
@@ -349,7 +351,7 @@ To achieve this you can change the following value to:
     output = x
 
 Or preferably:
-    
+	
     output = sdl
 
 Just a bit of explination. X11/Xlib utilizes hardware drawing (if availble), while SDL2 utilizes software drawing (this could be changed in the future, however). The only reason why SDL2 is kept as a option is that it works on non X11 display servers (Wayland and such), whereas X doesn't.
@@ -357,47 +359,53 @@ Just a bit of explination. X11/Xlib utilizes hardware drawing (if availble), whi
 In the graphical modes you also have some other features, such as:
 
 
-Options that are unique to 'sdl' and 'x' modes alone:
+Options that are unique to 'sdl' and 'x':
+
+```
+Please use window category instead of general category. As those are NOT compatible
+```
 
 Toggle fullscreen:
      
-    window_fullscreen = (1 for on and 0 for off)
+    fullscreen = (1 for on and 0 for off)
 
 Toggle window border:
     
-    window_border = (1 to enable and 0 to disable)
+    border = (1 to enable and 0 to disable)
 
-As a cross-compatibility issue, for 'x' and 'sdl' output modes please use:
+Change bar width/height (units are in pixels rather than characters):
     
-    win_bar_width = (specify value)
-    
-    win_bar_spacing = (specify value)
-
-instead of
-
     bar_width = (specify value)
-
-    bar_spacing = (specify value)
-
-for changing bar geometry, because 'sdl' and 'x' use pixel geometry rather than font based ones.
-
-Align the window to a part of the screen using:
     
-    window_alignment = 'value'
+    bar_spacing = (specify value)
+    
 
-Possible values are: 'top_left', 'top', 'top_right'. 'left', 'center', 'right', 'bottom_left', 'bottom', 'bottom_right' and 'none' if you don't want to position the window automaticly.
+
+Assign the window to a specific part of the screen by changing:
+    
+    alignment = 'value'
+
+Possible values are:
+
+```
+'top_left', 'top', 'top_right'. 'left', 'center', 'right', 'bottom_left', 'bottom', 'bottom_right' and 'none' if you don't want to position the window automaticly.
+```
 
 In addition to window aligment you can adjust the window using the following options:
     
-    window_x_padding = (specify value)
+    x_padding = (specify value)
     
-    window_y_padding = (specify value)
+    y_padding = (specify value)
 
-NOTE: These options don't apply if "window_aligment" is set to 'none'.
+NOTE: These options don't apply if "aligment" is set to 
+```
+'none'
+```
+.
 
-But there are features that are unique for the 'x' mode alone, and one of them is enabling the background to be transparent. However, you'll need a window composite manager running on your system (WARNING: generally causes slowdowns). This can be enabled by:
+But there are features that are unique for the 'x' mode alone, and one of them is enabling the window background to be transparent. However, you'll need a window composite manager running on your system (WARNING: generally causes slowdowns). This can be enabled by:
      
-     window_transparency = (0 disable, 1 enable)
+     transparency = (0 disable, 1 enable)
 
 A another feature is when you set the foreground color to 'default' in x mode. It will automaticly get the average desktop color and blend in with your background, looks really nice with transparency+no borders.
 To enable this you just have to change:
@@ -410,11 +418,13 @@ A screenshot with the 'default' foreground option with transparency+no borders (
 A quick demo showing off what can be done by enabling transparency and disabling window borders:
 ![transparency](http://i.imgur.com/QscuEh8.gif "transparency")
 
-NOTE: If you have issues with overlapping other windows, (fxp. if you click on the window, and it overlaps the previous one) you can change the following:
-    
-    window_keep_below = 1
+NOTE: To keep the window below any other (fxp. you want it to run in the background).
 
-However, this only works in X mode.
+You can use:
+    
+    keep_below = 1
+
+This only works in X mode, however.
 
 Thanks
 ------

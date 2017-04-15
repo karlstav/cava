@@ -1,85 +1,93 @@
-## Configuration file for CAVA. Default values are commented out.  Use either ; or # for commenting.
+## Configuration file for CAVA. Default values are commented out. Use either ';' or '#' for commenting.
 
 
 [general]
 
-# smoothing mode, can be normal, scientific or waves.
+# Smoothing mode. Can be 'normal', 'scientific' or 'waves'.
 ; mode = normal
  
-# Framerate Default: 60. Accepts only non-negative values.
-; framerate = 60 
+# Accepts only non-negative values.
+; framerate = 60
 
-# Sensitivity in  %. If you think the bars are to low/response is to little, try
-# increasing this value 200 means double height. Accepts only non-negative values.
-; sensitivity = 100
-
-# Autosens will attempt to decrease sensitivity if cava peaks. 1 = on, 0 = off
-# overshoot allows bars to overshoot (in % of terminal height) without initiating autosens
+# 'autosens' will attempt to decrease sensitivity if the bars peak. 1 = on, 0 = off
+# 'overshoot' allows bars to overshoot (in % of terminal height) without initiating autosens.
 ; autosens = 1
 ; overshoot = 20
 
-# The number of bars (0-200). 0 (default) sets it to auto (fill up console).
-# width of bars and space between bars in number of characters. Default width 3 and space 1.
-; bars = 0 
+# Manual sensitivity in %. Autosens must be turned off for this to take effect.
+# 200 means double height. Accepts only non-negative values.
+; sensitivity = 100
+
+# The number of bars (0-200). 0 sets it to auto (fill up console).
+# Bars' width and space between bars in number of characters.
+# These options DO NOT apply if you're using 'sdl' or 'x' modes.
+; bars = 0
 ; bar_width = 2
 ; bar_spacing = 1
-# Options below are bar width and spacing for the graphics modes
-; win_bar_width = 20
-; win_bar_spacing = 4
-
-# The window height and width, used only with graphics modes
-; window_width = 640
-; window_height = 480
-
-# The window fullscreen toggle
-; window_fullscreen = 0
-
-# Enables or disables window borders
-; window_border = 1
-
-# In X mode, you can enable window transparency, I suggest combining it with no window borders
-; window_transparency = 0
-
-# In case you have issues with overlapping windows, you can change:
-; window_keep_below = 0
-# this will force the window below any other (aka. keep it in the bottom of the window stack)
-
-# This positions the window on the desired part of the screen,
-# which are the following: top_left, top, top_right, left, center, right,
-# bottom_left, bottom, bottom_right and none if you don't want automatic positioning
-; window_alignment = 'none'
-
-# For added effect we can pad the window if it obscures some other elements
-; window_x_padding = 0
-; window_y_padding = 0
 
 # Lower and higher cutoff frequencies for lowest and highest bars
-# the bandwith of the visualizer, defaults to 50 - 10000 Hz
-# Note: there is a minimum total bandwith of 43Mhz x number of bars. 
-# Cava will automatically increase the higher cuttoff if a too low band is specified.
-; lower_cutoff_freq = 50 
-; higher_cutoff_freq = 10000 
+# the bandwidth of the visualizer.
+# Note: there is a minimum total bandwidth of 43Mhz x number of bars.
+# Cava will automatically increase the higher cutoff if a too low band is specified.
+; lower_cutoff_freq = 50
+; higher_cutoff_freq = 10000
+
+
+
+[window]
+
+# Bars' width and space between bars in pixels.
+# Doesn't apply to terminal or serial modes.
+; bar_width = 20
+; bar_spacing = 4
+
+# Window width and height
+; width = 640
+; height = 480
+
+# Fullscreen toggle (1 = on, 0 = off)
+; fullscreen = 0
+
+# Enables or disables window borders (1 = on, 0 = off)
+; border = 1
+
+# Window transparency toggle (works under X ONLY) (same applies)
+; transparency = 0
+
+# Keeps the window under any other (works under X ONLY) (again, same applies)
+; keep_below = 0
+
+# This allows for the window to be positioned a bit easier
+# by putting the window to the part of the screen, which are:
+# top_left, top, top_right, left, center, right, bottom_left,
+# bottom, bottom_right and none if you don't want automatic positioning
+; alignment = 'none'
+
+# Additionally we can move the window from the already set
+# part of the screen (units are in pixels)
+; x_padding = 0
+; y_padding = 0
 
 
 
 [input]
 
-# method of capturing audio, possible methods are: 'pulse', 'alsa' or 'fifo'.
-# Defaults to 'pulse', 'alsa' or 'fifo', in that order, dependent on what support cava was built with
+# Audio capturing method. Possible methods are: 'pulse', 'alsa' or 'fifo'.
+# Defaults to 'pulse', 'alsa' or 'fifo', in that order, dependent on what support cava was built with.
 #
-# All input methods uses the same config variable 'source' 
+# All input methods uses the same config variable 'source'
 # to define where it should get the audio.
 #
-# for pulseaudio 'source' will be the source. Default: 'auto', which uses the monitor source of the default sink
-# (all pulseaudio sinks(outputs) have 'monitor' sources(inputs) associated with them)
+# For pulseaudio 'source' will be the source. Default: 'auto', which uses the monitor source of the default sink
+# (all pulseaudio sinks(outputs) have 'monitor' sources(inputs) associated with them).
 # 
-# for alsa 'source' will be the capture device. Default: 'hw:Loopback,1'
-# for fifo 'source' will be the path to fifo-file. Default: '/tmp/mpd.fifo' 
+# For alsa 'source' will be the capture device.
+# For fifo 'source' will be the path to fifo-file.
 ; method = pulse
 ; source = auto
 
-; method = alsa  
-; source = hw:Loopback,1 
+; method = alsa
+; source = hw:Loopback,1
 
 ; method = fifo
 ; source = /tmp/mpd.fifo
@@ -88,69 +96,70 @@
 
 [output]
 
-# ouput method may be ncurses, noncurses, x or raw. noncurses is for systems that does not suport ncurses. 
-# x is for systems that use the x windowing system and if by any chance you're running wayland or mir
-# or trying to get this to work on windows or macOS there is a sdl option
-# however performance difference is drastic so beware
-# raw is a 16 bit data stream of the bar heights that can be used to send to other applications
-# raw defaults to 200 bars, can be adjusted in the bars option above
+# Ouput method. Can be 'ncurses', 'noncurses', 'raw', 'sdl' or 'x'. 
+# 'noncurses' is for systems that does not suport ncurses.
+# 'raw' is a 16 bit data stream of the bar heights that can be used to send to other applications.
+# 'raw' defaults to 200 bars, which can be adjusted in the 'bars' option above.
+# 'sdl' is for a graphical window using OpenGL
+# 'x' is for a graphical window using XRender (usually faster, unsupported in wayland however)
 ; method = ncurses
 
-# visual styles, may be 'stereo' or 'mono'. 
-# Stereo mirrors both channels with low frequencies in center.
-# Mono averages both channels and outputs left to right lowest to highest frequencies
-; style = stereo 
+# Visual styles. Can be 'stereo' or 'mono'.
+# 'stereo' mirrors both channels with low frequencies in center.
+# 'mono' averages both channels and outputs left to right lowest to highest frequencies.
+; style = stereo
 
-# raw output target defaults to stdout, a fifo will be created if target does not exist
+# Raw output target. A fifo will be created if target does not exist.
 ; raw_target = /dev/stdout
 
-# raw data format, can be binary or ascii
+# Raw data format. Can be 'binary' or 'ascii'.
 ; data_format = binary
 
-# binary bit format, can be '8bit' (0-255) or '16bit' (0-65530) 
+# Binary bit format, can be '8bit' (0-255) or '16bit' (0-65530).
 ; bit_format = 16bit
 
-# ascii max value, in ascii mode range will run from 0 to value specified here
+# Ascii max value. In 'ascii' mode range will run from 0 to value specified here
 ; ascii_max_range = 1000
 
-# ascii delimiters, in ascii format each bar and frame is separated by a delimiters.
-# use decimal value in ascii table (i.e. 59 = ';' and 10 = '\n' (line feed)) 
+# Ascii delimiters. In ascii format each bar and frame is separated by a delimiters.
+# Use decimal value in ascii table (i.e. 59 = ';' and 10 = '\n' (line feed)).
 ; bar_delimiter = 59
 ; frame_delimiter = 10
 
 
 
-
 [color]
 
-# supported colors are: red, green, yellow, magenta, cyan, white, blue, black.
-# or defined by hex code '#xxxxxx' (hex code must be within '')
+# Colors can be one of seven predefined: black, blue, cyan, green, magenta, red, white, yellow.
+# Or defined by hex code '#xxxxxx' (hex code must be within '').
+# Or in case you're running in 'x' you could use the default option
+
 ; background = black
 ; foreground = cyan
 
 
 [smoothing]
 
-# multiplier for the integral smoothing calculations. Takes values from 0 - 0.99.
-# Higher values means smoother, but less precise. 0 to disable.
-; integral = 0.7 
+# Multiplier for the integral smoothing calculations. Takes values from 0-0.99.
+# Higher values means smoother, but less precise. Set to 0 to disable.
+; integral = 0.7
 
-# disables or enables the so-called "Monstercat smoothing". Default: 1. Set to 0 to disable.
-; monstercat = 1 
+# Disables or enables the so-called "Monstercat smoothing". Set to 0 to disable.
+; monstercat = 1
 
-# Set gravity multiplier for "drop off". Higher values means bars will drop faster. 
+# Set gravity multiplier for "drop off". Higher values means bars will drop faster.
 # Accepts only non-negative values. 0.5 means half gravity, 2 means double. Set to 0 to disable "drop off".
-; gravity = 1  
+; gravity = 1
 
 
 # In bar height, bars that would have been lower that this will not be drawn.
-; ignore = 0 
+; ignore = 0
 
 
 [eq]
 
-# This one is tricky. You can have as much keys as you want. 
-# remember to uncomment more then one key! More keys = more precision.
+# This one is tricky. You can have as much keys as you want.
+# Remember to uncomment more then one key! More keys = more precision.
 # Look at readme.md on github for further explanations and examples.
 ; 1 = 1 # bass
 ; 2 = 1

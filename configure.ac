@@ -1,4 +1,4 @@
-AC_INIT([cava], [m4_esyscmd_s([git describe --always --tags --dirty])], [karl@stavestrand.no])
+AC_INIT([cava], [m4_esyscmd_s([cat version])], [karl@stavestrand.no])
 AM_INIT_AUTOMAKE([subdir-objects -Wall -Werror foreign])
 dnl AC_CONFIG_MACRO_DIRS([m4])
 AM_PROG_AR
@@ -178,6 +178,14 @@ AS_IF([test "x$enable_legacy_iniparser" = "xyes"], [
   CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"
 ])
 
+dnl ############################
+dnl Set font directory
+dnl ############################
+DEFAULT_FONT_DIR="/usr/share/consolefonts"
+AC_ARG_VAR(FONT_DIR, [Directory where the font will be installed.])
+if test -z "$FONT_DIR" ; then
+  FONT_DIR="$DEFAULT_FONT_DIR"
+fi
 
 
 
