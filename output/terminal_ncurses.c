@@ -79,14 +79,15 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int rainb
 	init_pair(color_pair_number, fg_color_number, bg_color_number);
     
     if (rainbow) {
-        init_pair(1, COLOR_RED, bg_color_number);
-        init_pair(2, COLOR_GREEN, bg_color_number);
-        init_pair(3, COLOR_YELLOW, bg_color_number);
-        init_pair(4, COLOR_BLUE, bg_color_number);
-        init_pair(5, COLOR_MAGENTA, bg_color_number);
-        init_pair(6, COLOR_CYAN, bg_color_number);
-        init_pair(7, COLOR_WHITE, bg_color_number);
-        //bkgd(COLOR_PAIR(1));
+
+        init_pair(color_pair_number++, COLOR_RED, bg_color_number);
+        init_pair(color_pair_number++, COLOR_GREEN, bg_color_number);
+        init_pair(color_pair_number++, COLOR_YELLOW, bg_color_number);
+        init_pair(color_pair_number++, COLOR_BLUE, bg_color_number);
+        init_pair(color_pair_number++, COLOR_MAGENTA, bg_color_number);
+        init_pair(color_pair_number++, COLOR_CYAN, bg_color_number);
+        init_pair(color_pair_number, COLOR_WHITE, bg_color_number);
+
 
         for (int n = 0; n < 7; n++)
             change_color_definition(n + 1, rainbow_colors[n], n + 1);
@@ -100,13 +101,11 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int rainb
 }
 
 void change_colors(int cur_height, int tot_height) {
-    if (cur_height >= 0 && cur_height < tot_height / 7) attron(COLOR_PAIR(1));
-    else if (cur_height >= tot_height / 7 && cur_height < tot_height * 2 / 7) attron(COLOR_PAIR(2));
-    else if (cur_height >= tot_height * 2 / 7 && cur_height < tot_height * 3 / 7) attron(COLOR_PAIR(3));
-    else if (cur_height >= tot_height * 3 / 7 && cur_height < tot_height * 4 / 7) attron(COLOR_PAIR(4));
-    else if (cur_height >= tot_height * 4 / 7 && cur_height < tot_height * 5 / 7) attron(COLOR_PAIR(5));
-    else if (cur_height >= tot_height * 5 / 7 && cur_height < tot_height * 6 / 7) attron(COLOR_PAIR(6));
-    else if (cur_height >= tot_height * 6 / 7 && cur_height <= tot_height * 7 / 7) attron(COLOR_PAIR(7));
+    tot_height /= 7;
+    if (tot_height < 1) tot_height = 1;
+    cur_height /= tot_height;
+    if (cur_height > 6) cur_height = 6;
+    attron(COLOR_PAIR(cur_height + 1));
 }
 
 void get_terminal_dim_ncurses(int* width, int* height) {
