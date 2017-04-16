@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #define TEN_THSND 10000
+#define TEN_THSND_F 10000.0
 #define BIT_16 16
 #define BIT_8 8
 
@@ -10,7 +11,7 @@
 	for (int i = 0; i < bars_count; i++) { \
 		uint##type##_t f_##type = UINT##type##_MAX; \
 		if (f[i] < TEN_THSND) \
-			f_##type *= f[i] / TEN_THSND; \
+			f_##type *= f[i] / TEN_THSND_F; \
 		write(fd, &f_##type, sizeof(uint##type##_t)); \
 	}
 
@@ -27,7 +28,7 @@ int ascii_range, char bar_delim, char frame_delim, const int const f[200]) {
 		}
 	} else { // ascii
 		for (int i = 0; i < bars_count; i++) {
-			int f_ranged = (f[i] / 10000.0) * ascii_range;
+			int f_ranged = (f[i] / TEN_THSND_F) * ascii_range;
 			if (f_ranged > ascii_range)
 				f_ranged = ascii_range;
 
