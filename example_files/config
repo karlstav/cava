@@ -97,7 +97,9 @@
 ; background = black
 ; foreground = cyan
 
-#
+# Rainbow mode, sort of like a gradient but only with seven different colors.
+# Only hex defined colors are supported, background must also be defined in hex
+# or remain commented out. 1 = on, 0 = off
 ; rainbow = 0
 ; rainbow_color_1 = '#3366ff'
 ; rainbow_color_2 = '#6666ff'

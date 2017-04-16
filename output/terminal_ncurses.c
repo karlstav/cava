@@ -79,14 +79,14 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int rainb
 	init_pair(color_pair_number, fg_color_number, bg_color_number);
     
     if (rainbow) {
-        init_pair(1, COLOR_RED, 0);
-        init_pair(2, COLOR_GREEN, 0);
-        init_pair(3, COLOR_YELLOW, 0);
-        init_pair(4, COLOR_BLUE, 0);
-        init_pair(5, COLOR_MAGENTA, 0);
-        init_pair(6, COLOR_CYAN, 0);
-        init_pair(7, COLOR_WHITE, 0);
-        bkgd(COLOR_PAIR(1));
+        init_pair(1, COLOR_RED, bg_color_number);
+        init_pair(2, COLOR_GREEN, bg_color_number);
+        init_pair(3, COLOR_YELLOW, bg_color_number);
+        init_pair(4, COLOR_BLUE, bg_color_number);
+        init_pair(5, COLOR_MAGENTA, bg_color_number);
+        init_pair(6, COLOR_CYAN, bg_color_number);
+        init_pair(7, COLOR_WHITE, bg_color_number);
+        //bkgd(COLOR_PAIR(1));
 
         for (int n = 0; n < 7; n++)
             change_color_definition(n + 1, rainbow_colors[n], n + 1);
