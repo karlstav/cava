@@ -71,7 +71,8 @@ int rc;
 
 char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style, *raw_target, *data_format;
 // *bar_delim, *frame_delim ;
-char *rainbow_colors[7];
+char *gradient_color_1;
+char *gradient_color_2;
 double monstercat, integral, gravity, ignore, smh, sens;
 int fixedbars, framerate, bw, bs, autosens, overshoot;
 unsigned int lowcf, highcf;
@@ -98,7 +99,7 @@ char bar_delim = ';';
 char frame_delim = '\n';
 int ascii_range = 1000;
 int bit_format = 16;
-int rainbow = 0;
+int gradient = 0;
 
 // whether we should reload the config or not
 int should_reload = 0;
@@ -211,15 +212,10 @@ FILE *fp;
 	color = (char *)iniparser_getstring(ini, "color:foreground", "default");
 	bcolor = (char *)iniparser_getstring(ini, "color:background", "default");
 
-   	rainbow = iniparser_getint(ini, "color:rainbow", 0);
-    if (rainbow) {
-        rainbow_colors[0] = (char *)iniparser_getstring(ini, "color:rainbow_color_1", "#3366ff");
-        rainbow_colors[1] = (char *)iniparser_getstring(ini, "color:rainbow_color_2", "#6666ff");
-        rainbow_colors[2] = (char *)iniparser_getstring(ini, "color:rainbow_color_3", "#9966ff");
-        rainbow_colors[3] = (char *)iniparser_getstring(ini, "color:rainbow_color_4", "#cc33ff");
-        rainbow_colors[4] = (char *)iniparser_getstring(ini, "color:rainbow_color_5", "#ff00ff");
-        rainbow_colors[5] = (char *)iniparser_getstring(ini, "color:rainbow_color_6", "#cc0099");
-        rainbow_colors[6] = (char *)iniparser_getstring(ini, "color:rainbow_color_7", "#990099");
+   	gradient = iniparser_getint(ini, "color:gradient", 0);
+    if (gradient) {
+        gradient_color_1 = (char *)iniparser_getstring(ini, "color:gradient_color_1", "#111111");
+        gradient_color_2 = (char *)iniparser_getstring(ini, "color:gradient_color_2", "#dddddd");
     }
 
 	fixedbars = iniparser_getint(ini, "general:bars", 0);
@@ -807,7 +803,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		#ifdef NCURSES
 		//output: start ncurses mode
 		if (om == 1 || om ==  2) {
-			init_terminal_ncurses(color, bcolor, col, bgcol, rainbow, rainbow_colors);
+			init_terminal_ncurses(color, bcolor, col, bgcol, gradient, gradient_color_1, gradient_color_2);
 			get_terminal_dim_ncurses(&w, &h);
 		}
 		#endif
@@ -1132,7 +1128,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				switch (om) {
 					case 1:
 						#ifdef NCURSES
-						rc = draw_terminal_ncurses(inAtty, h, w, bars, bw, bs, rest, f, flastd, rainbow);
+						rc = draw_terminal_ncurses(inAtty, h, w, bars, bw, bs, rest, f, flastd, gradient);
 						break;
 						#endif
 					case 2:

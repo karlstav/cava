@@ -5,12 +5,12 @@ C.A.V.A. (M.P.)
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
-Now with multicolored rainbow:
+Now with multicolored gradient:
 ```
-rainbow = 1
+gradient = 1
 ```
 
-![spectrum](https://raw.githubusercontent.com/karlstav/cava/gh-pages/cava_rainbow.gif "spectrum")
+![spectrum](https://raw.githubusercontent.com/karlstav/cava/gh-pages/cava_gradient.gif "spectrum")
 
 thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( http://unix.stackexchange.com/questions/113695/gif-screencastng-the-unix-way).
 

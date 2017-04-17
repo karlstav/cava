@@ -11,7 +11,7 @@ struct colors {
 
 #define COLOR_REDEFINITION -2
 
-#define MAX_COLOR_REDEFINITION 8
+#define MAX_COLOR_REDEFINITION 16
 
 static struct colors the_color_redefinitions[MAX_COLOR_REDEFINITION];
 
@@ -58,8 +58,9 @@ char* const color_string, NCURSES_COLOR_T predef_color) {
 	return return_color_number;
 }
 
+
 void init_terminal_ncurses(char* const fg_color_string,
-char* const bg_color_string, int predef_fg_color, int predef_bg_color, int rainbow, char* const rainbow_colors[7]) {
+char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradient, char* const gradient_color_1, char* const gradient_color_2) {
 	initscr();
 	curs_set(0);
 	timeout(0);
@@ -78,19 +79,31 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int rainb
 	NCURSES_COLOR_T color_pair_number = 1;
 	init_pair(color_pair_number, fg_color_number, bg_color_number);
     
-    if (rainbow) {
+    if (gradient) {
 
-        init_pair(color_pair_number++, COLOR_RED, bg_color_number);
-        init_pair(color_pair_number++, COLOR_GREEN, bg_color_number);
-        init_pair(color_pair_number++, COLOR_YELLOW, bg_color_number);
-        init_pair(color_pair_number++, COLOR_BLUE, bg_color_number);
-        init_pair(color_pair_number++, COLOR_MAGENTA, bg_color_number);
-        init_pair(color_pair_number++, COLOR_CYAN, bg_color_number);
-        init_pair(color_pair_number, COLOR_WHITE, bg_color_number);
+        short unsigned int rgb[3][3];//r_1, g_1, b_1, r_2, g_2, b_2, r_next, g_next, b_next;
+        char next_color[8];// = "#303030";
 
+        init_pair(color_pair_number++, 1, bg_color_number);
+        change_color_definition(1, gradient_color_1, 1);
 
-        for (int n = 0; n < 7; n++)
-            change_color_definition(n + 1, rainbow_colors[n], n + 1);
+        sscanf(gradient_color_1 + 1, "%02hx%02hx%02hx", &rgb[0][0], &rgb[0][1], &rgb[0][2]);
+        sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0], &rgb[1][1], &rgb[1][2]);
+            
+
+        for (int n = 1; n < 15; n++) {
+
+            for(int i = 0; i < 3; i++)
+                rgb[2][i] = rgb[0][i] + (rgb[1][i] - rgb[0][i]) * n / 14;
+
+            sprintf(next_color,"#%02x%02x%02x",rgb[2][0], rgb[2][1], rgb[2][2]);
+
+            init_pair(color_pair_number++, n + 1, bg_color_number);
+            change_color_definition(n + 1, next_color, n + 1);
+        }
+
+        init_pair(color_pair_number++, 16, bg_color_number);
+        change_color_definition(16, gradient_color_2, 16);
 
     }
 
@@ -101,10 +114,10 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int rainb
 }
 
 void change_colors(int cur_height, int tot_height) {
-    tot_height /= 7;
+    tot_height /= 16;
     if (tot_height < 1) tot_height = 1;
     cur_height /= tot_height;
-    if (cur_height > 6) cur_height = 6;
+    if (cur_height > 15) cur_height = 15;
     attron(COLOR_PAIR(cur_height + 1));
 }
 
@@ -117,7 +130,7 @@ void get_terminal_dim_ncurses(int* width, int* height) {
 
 int draw_terminal_ncurses(int is_tty, int terminal_height, int terminal_width,
 int bars_count, int bar_width, int bar_spacing, int rest, const int f[200],
-int flastd[200], int rainbow) {
+int flastd[200], int gradient) {
 
 	const wchar_t* bar_heights[] = {L"\u2581", L"\u2582", L"\u2583",
 		L"\u2584", L"\u2585", L"\u2586", L"\u2587", L"\u2588"};
@@ -135,19 +148,19 @@ int flastd[200], int rainbow) {
 		if (f[bar] > flastd[bar]) { // higher then last frame
 			if (is_tty) {
 				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++) {
-                    if (rainbow) change_colors(n, height); 
+                    if (gradient) change_colors(n, height); 
 					for (int width = 0; width < bar_width; width++)
 						mvprintw((height - n), CURRENT_COLUMN, "%d", 8);
                 }
 			} else {
 				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++) {                                 
-                    if (rainbow) change_colors(n, height); 
+                    if (gradient) change_colors(n, height); 
 					for (int width = 0; width < bar_width; width++)
 						mvaddwstr((height - n), CURRENT_COLUMN,
 								bar_heights[LAST]);
                 }
 			}
-            if (rainbow) change_colors(f[bar] / 8, height); 
+            if (gradient) change_colors(f[bar] / 8, height); 
 			if (f[bar] % 8) {
 				if (is_tty) {
 					for (int width = 0; width < bar_width; width++)
@@ -164,7 +177,7 @@ int flastd[200], int rainbow) {
 				for (int width = 0; width < bar_width; width++)
 					mvaddstr((height - n), CURRENT_COLUMN, " ");
 			if (f[bar] % 8) {
-                 if (rainbow) change_colors(f[bar] / 8, height); 
+                 if (gradient) change_colors(f[bar] / 8, height); 
 				if (is_tty) {
 					for (int width = 0; width < bar_width; width++)
 						mvprintw((height - f[bar] / 8), CURRENT_COLUMN, "%d",
