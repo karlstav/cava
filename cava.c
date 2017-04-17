@@ -214,8 +214,8 @@ FILE *fp;
 
    	gradient = iniparser_getint(ini, "color:gradient", 0);
     if (gradient) {
-        gradient_color_1 = (char *)iniparser_getstring(ini, "color:gradient_color_1", "#111111");
-        gradient_color_2 = (char *)iniparser_getstring(ini, "color:gradient_color_2", "#dddddd");
+        gradient_color_1 = (char *)iniparser_getstring(ini, "color:gradient_color_1", "#0099ff");
+        gradient_color_2 = (char *)iniparser_getstring(ini, "color:gradient_color_2", "#ff3399");
     }
 
 	fixedbars = iniparser_getint(ini, "general:bars", 0);

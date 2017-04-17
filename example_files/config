@@ -100,8 +100,8 @@
 # gradient mode, only hex defined colors are supported, background must also be defined in hex
 # or remain commented out. 1 = on, 0 = off
 ; gradient = 0
-; gradient_color_1 = '#3366ff'
-; gradient_color_2 = '#6666ff'
+; gradient_color_1 = '#0099ff'
+; gradient_color_2 = '#ff3399'
 
 
 
