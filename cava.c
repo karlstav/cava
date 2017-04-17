@@ -803,8 +803,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		#ifdef NCURSES
 		//output: start ncurses mode
 		if (om == 1 || om ==  2) {
-			init_terminal_ncurses(color, bcolor, col, bgcol, gradient, gradient_color_1, gradient_color_2);
-			get_terminal_dim_ncurses(&w, &h);
+			init_terminal_ncurses(color, bcolor, col, bgcol, gradient, gradient_color_1, gradient_color_2,&w, &h);
+			//get_terminal_dim_ncurses(&w, &h);
 		}
 		#endif
 

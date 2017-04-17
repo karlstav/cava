@@ -2,6 +2,8 @@
 #include <wchar.h>
 #include <stdlib.h>
 
+int gradient_size = 64;
+
 struct colors {
 	NCURSES_COLOR_T color;
 	NCURSES_COLOR_T R;
@@ -11,7 +13,7 @@ struct colors {
 
 #define COLOR_REDEFINITION -2
 
-#define MAX_COLOR_REDEFINITION 16
+#define MAX_COLOR_REDEFINITION 32
 
 static struct colors the_color_redefinitions[MAX_COLOR_REDEFINITION];
 
@@ -60,13 +62,17 @@ char* const color_string, NCURSES_COLOR_T predef_color) {
 
 
 void init_terminal_ncurses(char* const fg_color_string,
-char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradient, char* const gradient_color_1, char* const gradient_color_2) {
+char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradient,
+ char* const gradient_color_1, char* const gradient_color_2, int* width, int* height) {
 	initscr();
 	curs_set(0);
 	timeout(0);
 	noecho();
 	start_color();
 	use_default_colors();
+
+    getmaxyx(stdscr, *height, *width);
+	clear();
 
 	NCURSES_COLOR_T fg_color_number;
 	fg_color_number = change_color_definition(1, fg_color_string, predef_fg_color);
@@ -80,9 +86,12 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
 	init_pair(color_pair_number, fg_color_number, bg_color_number);
     
     if (gradient) {
-
+        
         short unsigned int rgb[3][3];//r_1, g_1, b_1, r_2, g_2, b_2, r_next, g_next, b_next;
         char next_color[8];// = "#303030";
+        
+
+        gradient_size = *height;
 
         init_pair(color_pair_number++, 1, bg_color_number);
         change_color_definition(1, gradient_color_1, 1);
@@ -91,10 +100,12 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
         sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0], &rgb[1][1], &rgb[1][2]);
             
 
-        for (int n = 1; n < 15; n++) {
+        for (int n = 1; n < gradient_size - 1; n++) {
 
-            for(int i = 0; i < 3; i++)
-                rgb[2][i] = rgb[0][i] + (rgb[1][i] - rgb[0][i]) * n / 14;
+            for(int i = 0; i < 3; i++) {
+                rgb[2][i] = rgb[0][i] + (rgb[1][i] - rgb[0][i]) * n / gradient_size - 2;
+                if (rgb[2][i] > 255) rgb[2][i] = 0;
+                }
 
             sprintf(next_color,"#%02x%02x%02x",rgb[2][0], rgb[2][1], rgb[2][2]);
 
@@ -102,8 +113,8 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
             change_color_definition(n + 1, next_color, n + 1);
         }
 
-        init_pair(color_pair_number++, 16, bg_color_number);
-        change_color_definition(16, gradient_color_2, 16);
+        init_pair(color_pair_number++, gradient_size , bg_color_number);
+        change_color_definition(gradient_size , gradient_color_2, gradient_size );
 
     }
 
@@ -114,15 +125,16 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
 }
 
 void change_colors(int cur_height, int tot_height) {
-    tot_height /= 16;
+    tot_height /= gradient_size ;
     if (tot_height < 1) tot_height = 1;
     cur_height /= tot_height;
-    if (cur_height > 15) cur_height = 15;
+    if (cur_height > gradient_size  - 1) cur_height = gradient_size - 1;
     attron(COLOR_PAIR(cur_height + 1));
 }
 
 void get_terminal_dim_ncurses(int* width, int* height) {
 	getmaxyx(stdscr, *height, *width);
+    gradient_size = *height;
 	clear(); // clearing in case of resieze
 }
 
