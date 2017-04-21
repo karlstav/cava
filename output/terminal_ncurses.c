@@ -15,7 +15,7 @@ struct colors {
 
 #define MAX_COLOR_REDEFINITION 256
 
-static struct colors the_color_redefinitions[MAX_COLOR_REDEFINITION];
+//static struct colors the_color_redefinitions[MAX_COLOR_REDEFINITION];
 
 
 static void parse_color(char* color_string, struct colors* color) {
@@ -30,7 +30,7 @@ static void parse_color(char* color_string, struct colors* color) {
 		sscanf(++color_string, "%02hx%02hx%02hx", &color->R, &color->G, &color->B);
 	}
 }
-
+/*
 static void remember_color_definition(NCURSES_COLOR_T color_number) {
 	int index = color_number - 1; // array starts from zero and colors - not
 	if(the_color_redefinitions[index].color == 0) {
@@ -41,7 +41,7 @@ static void remember_color_definition(NCURSES_COLOR_T color_number) {
 			&the_color_redefinitions[index].B);
 	}
 }
-
+*/
 // ncurses use color range [0, 1000], and we - [0, 255]
 #define CURSES_COLOR_COEFFICIENT( X ) (( X ) * 1000.0 / 0xFF + 0.5)
 #define COLORS_STRUCT_NORMALIZE( X ) CURSES_COLOR_COEFFICIENT( X.R ), \
@@ -53,7 +53,7 @@ char* const color_string, NCURSES_COLOR_T predef_color) {
 	parse_color(color_string, &color);
 	NCURSES_COLOR_T return_color_number = predef_color;
 	if (color.color == COLOR_REDEFINITION) {
-		remember_color_definition(color_number);
+		//remember_color_definition(color_number);
 		init_color(color_number, COLORS_STRUCT_NORMALIZE(color));
 		return_color_number = color_number;
 	}
@@ -81,6 +81,8 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
 
 	if (bg_color_number != -1)
 		bkgd(COLOR_PAIR(color_pair_number));
+	attron(COLOR_PAIR(color_pair_number));
+	refresh();
 
     if (!gradient) {
 
@@ -96,25 +98,16 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
         
         gradient_size = *height;
 
-        if( COLORS < gradient_size ) {
-            gradient_size = COLORS;
-	    }
-        if( COLOR_PAIRS < gradient_size ) {
-            gradient_size = COLOR_PAIRS;
-        }   
-
-
+        if (gradient_size > COLORS) gradient_size = COLORS;
+	    
+        if (gradient_size > COLOR_PAIRS) gradient_size = COLOR_PAIRS;
+        
         if (gradient_size > MAX_COLOR_REDEFINITION) gradient_size = MAX_COLOR_REDEFINITION;
 
-        change_color_definition(1, gradient_color_1, 1);
-        init_pair(color_pair_number++, 1, bg_color_number);
-
-
         sscanf(gradient_color_1 + 1, "%02hx%02hx%02hx", &rgb[0][0], &rgb[0][1], &rgb[0][2]);
-        sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0], &rgb[1][1], &rgb[1][2]);
-            
+        sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0], &rgb[1][1], &rgb[1][2]);            
 
-        for (int n = 1; n < gradient_size - 1; n++) {
+        for (int n = 0; n < gradient_size; n++) {
 
             for(int i = 0; i < 3; i++) {
                 rgb[2][i] = rgb[0][i] + (rgb[1][i] - rgb[0][i]) * n / gradient_size;
@@ -128,15 +121,8 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
 
         }
 
-        change_color_definition(gradient_size , gradient_color_2, gradient_size );
-        init_pair(color_pair_number++, gradient_size , bg_color_number);
-
-
     }
 
-
-	attron(COLOR_PAIR(color_pair_number));
-	refresh();
 }
 
 void change_colors(int cur_height, int tot_height) {
@@ -231,7 +217,7 @@ void cleanup_terminal_ncurses(void) {
 	system("setfont  >/dev/null 2>&1");
 	system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
 	system("setterm -blank 10");
-	for(int i = 0; i < gradient_size; ++i) {
+	/*for(int i = 0; i < gradient_size; ++i) {
 		if(the_color_redefinitions[i].color) {
 			init_color(the_color_redefinitions[i].color,
 				the_color_redefinitions[i].R,
@@ -239,8 +225,9 @@ void cleanup_terminal_ncurses(void) {
 				the_color_redefinitions[i].B);
 		}
 	}
-
+  */
 	endwin();
 	system("clear");
+    system("reset");
 }
 
