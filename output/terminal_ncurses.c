@@ -98,11 +98,11 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
         
         gradient_size = *height;
 
-        if (gradient_size > COLORS) gradient_size = COLORS;
+        if (gradient_size > COLORS) gradient_size = COLORS - 1;
 	    
-        if (gradient_size > COLOR_PAIRS) gradient_size = COLOR_PAIRS;
+        if (gradient_size > COLOR_PAIRS) gradient_size = COLOR_PAIRS - 1;
         
-        if (gradient_size > MAX_COLOR_REDEFINITION) gradient_size = MAX_COLOR_REDEFINITION;
+        if (gradient_size > MAX_COLOR_REDEFINITION) gradient_size = MAX_COLOR_REDEFINITION - 1;
 
         sscanf(gradient_color_1 + 1, "%02hx%02hx%02hx", &rgb[0][0], &rgb[0][1], &rgb[0][2]);
         sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0], &rgb[1][1], &rgb[1][2]);            
