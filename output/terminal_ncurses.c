@@ -110,10 +110,11 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
         for (int n = 0; n < gradient_size; n++) {
 
             for(int i = 0; i < 3; i++) {
-                rgb[2][i] = rgb[0][i] + (rgb[1][i] - rgb[0][i]) * n / gradient_size;
+                rgb[2][i] = rgb[0][i] + (rgb[1][i] - rgb[0][i]) * n / (gradient_size * 0.85);
                 if (rgb[2][i] > 255) rgb[2][i] = 0;
+                if ( n > gradient_size * 0.85 ) rgb[2][i] = rgb[1][i];
                 }
-
+            
             sprintf(next_color,"#%02x%02x%02x",rgb[2][0], rgb[2][1], rgb[2][2]);
 
             change_color_definition(n + 1, next_color, n + 1);
