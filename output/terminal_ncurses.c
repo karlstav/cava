@@ -77,17 +77,12 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
     NCURSES_COLOR_T color_pair_number = 1;
 
     NCURSES_COLOR_T bg_color_number;
-    bg_color_number = change_color_definition(1, bg_color_string, predef_bg_color);
-
-	if (bg_color_number != -1)
-		bkgd(COLOR_PAIR(color_pair_number));
-	attron(COLOR_PAIR(color_pair_number));
-	refresh();
+    bg_color_number = change_color_definition(0, bg_color_string, predef_bg_color);
 
     if (!gradient) {
 
 	    NCURSES_COLOR_T fg_color_number;
-        fg_color_number = change_color_definition(2, fg_color_string, predef_fg_color);
+        fg_color_number = change_color_definition(1, fg_color_string, predef_fg_color);
 
         init_pair(color_pair_number, fg_color_number, bg_color_number);
 
@@ -123,6 +118,11 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
         }
 
     }
+
+	if (bg_color_number != -1)
+		bkgd(COLOR_PAIR(color_pair_number));
+	attron(COLOR_PAIR(color_pair_number));
+	refresh();
 
 }
 
