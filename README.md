@@ -120,12 +120,15 @@ Or you can change `PREFIX`, for example:
 
 ### openSUSE
 
-On openSUSE you need to add jubalh's home repository to install cava via zypper. For example for Tumbleweed do:
+Tumbleweed users have cava in their repo. They can just use:
 
-    zypper ar -f http://download.opensuse.org/repositories/home:/jubalh/openSUSE_Tumbleweed/home:jubalh.repo
-	zypper in cava
+    zypper in cava
 
-If you use 13.2 or 13.1 just replace *openSUSE_Tumbleweed* with *openSUSE_13.2*, adjust it to your version.
+Leap users need to add the multimedia:apps repository first:
+
+    zypper ar -f obs://multimedia:apps/openSUSE_Leap_42.2 multimedia
+
+If you use another version just replace *openSUSE_Leap_42.2* with *openSUSE_13.2*, adjust it to your version.
 
 ### Fedora
 
