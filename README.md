@@ -424,7 +424,12 @@ You can use:
     
     keep_below = 1
 
-This only works in X mode, however.
+
+Additionally you can change the default window class to "Cava", this helps remove shadows and/or blur on compositing window managers.
+NOTE: It also removes the ability to interact with the window (fxp. if you click or drag the window, nothing would happen)
+    
+    set_win_props = 1
+
 
 Thanks
 ------
