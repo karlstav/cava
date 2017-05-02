@@ -5,14 +5,12 @@ C.A.V.A. (M.P.)
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
-Now with more colors! Use hex codes in config, for example:
+Now with multicolored gradient:
 ```
-background = '#253552'
-foreground = '#FF479C'
+gradient = 1
 ```
-(hex code must be within '')
 
-![spectrum](https://cloud.githubusercontent.com/assets/5231746/7368413/7d7ca93e-ed9f-11e4-842f-61c54fc03dbe.gif "spectrum")
+![spectrum](https://raw.githubusercontent.com/karlstav/cava/gh-pages/cava_gradient.gif "spectrum")
 
 thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( http://unix.stackexchange.com/questions/113695/gif-screencastng-the-unix-way).
 
@@ -125,12 +123,15 @@ Or you can change `PREFIX`, for example:
 
 ### openSUSE
 
-On openSUSE you need to add jubalh's home repository to install cava via zypper. For example for Tumbleweed do:
+Tumbleweed users have cava in their repo. They can just use:
 
-    zypper ar -f http://download.opensuse.org/repositories/home:/jubalh/openSUSE_Tumbleweed/home:jubalh.repo
-	zypper in cava
+    zypper in cava
 
-If you use 13.2 or 13.1 just replace *openSUSE_Tumbleweed* with *openSUSE_13.2*, adjust it to your version.
+Leap users need to add the multimedia:apps repository first:
+
+    zypper ar -f obs://multimedia:apps/openSUSE_Leap_42.2 multimedia
+
+If you use another version just replace *openSUSE_Leap_42.2* with *openSUSE_13.2*, adjust it to your version.
 
 ### Fedora
 
