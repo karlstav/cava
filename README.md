@@ -427,6 +427,7 @@ You can use:
 
 
 Additionally you can change the default window class to "Cava", this helps remove shadows and/or blur on compositing window managers.
+
 NOTE: It also removes the ability to interact with the window (fxp. if you click or drag the window, nothing would happen)
     
     set_win_props = 1
