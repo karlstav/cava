@@ -57,6 +57,9 @@
 # Keeps the window under any other (works under X ONLY) (again, same applies)
 ; keep_below = 0
 
+# Set window properties like WM_CLASS.
+; set_win_props = 0
+
 # This allows for the window to be positioned a bit easier
 # by putting the window to the part of the screen, which are:
 # top_left, top, top_right, left, center, right, bottom_left,
