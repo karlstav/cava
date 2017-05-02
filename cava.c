@@ -84,7 +84,7 @@ dictionary *ini;
 char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style, *raw_target, *data_format;
 // *bar_delim, *frame_delim ;
 double monstercat, integral, gravity, ignore, smh, sens;
-int fixedbars, framerate, bw, bs, autosens, overshoot;
+int fixedbars, framerate, bw, bs, set_win_props, autosens, overshoot;
 unsigned int lowcf, highcf;
 double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8,
 					1, 1, 0.8, 0.6, 0.6, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8,
@@ -570,6 +570,9 @@ void validate_config()
 		// Get bar settings
 		bw = iniparser_getint(ini, "window:bar_width", 20);
 		bs = iniparser_getint(ini, "window:bar_spacing", 4);
+		
+		// Set window properties
+		set_win_props = iniparser_getint(ini, "window:set_win_props", 0);
 	}
 }
 
@@ -854,7 +857,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	// open XLIB window and set everything up
 	#ifdef XLIB
-	if(om == 5) if(init_window_x(color, bcolor, col, bgcol, argv, argc)) exit(EXIT_FAILURE);
+	if(om == 5) if(init_window_x(color, bcolor, col, bgcol, set_win_props, argv, argc)) exit(EXIT_FAILURE);
 	#endif
 
 	// setting up sdl

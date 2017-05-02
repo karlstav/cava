@@ -19,7 +19,6 @@ XColor xbgcol, xcol;
 XEvent cavaXEvent;
 Atom wm_delete_window;
 XWMHints cavaXWMHints;
-unsigned char windowClass;
 
 /**
 	The following struct is needed for
@@ -50,7 +49,7 @@ enum {
 #define _NET_WM_STATE_ADD 1;
 #define _NET_WM_STATE_TOGGLE 2;
 
-int init_window_x(char *color, char *bcolor, int col, int bgcol, char **argv, int argc)
+int init_window_x(char *color, char *bcolor, int col, int bgcol, int set_win_props, char **argv, int argc)
 {
 	// connect to the X server
 	cavaXDisplay = XOpenDisplay(NULL);
@@ -105,7 +104,23 @@ int init_window_x(char *color, char *bcolor, int col, int bgcol, char **argv, in
 	}
 	else
 		cavaXWindow = XCreateSimpleWindow(cavaXDisplay, RootWindow(cavaXDisplay, cavaXScreenNumber), windowX, windowY, w, h, 1, WhitePixel(cavaXDisplay, cavaXScreenNumber), BlackPixel(cavaXDisplay, cavaXScreenNumber));
+	
+	// add titlebar name
+	XStoreName(cavaXDisplay, cavaXWindow, "CAVA");
 
+	// fix for error while closing window
+	wm_delete_window = XInternAtom (cavaXDisplay, "WM_DELETE_WINDOW", FALSE);
+	XSetWMProtocols(cavaXDisplay, cavaXWindow, &wm_delete_window, 1);
+	
+	// set window properties
+	if(set_win_props)
+	{
+		cavaXWMHints.flags = InputHint | StateHint;
+		cavaXWMHints.initial_state = NormalState;
+		cavaXClassHint.res_name = (char *)"Cava";
+		XmbSetWMProperties(cavaXDisplay, cavaXWindow, NULL, NULL, argv, argc, NULL, &cavaXWMHints, &cavaXClassHint);
+	}
+	
 	// add inputs
 	XSelectInput(cavaXDisplay, cavaXWindow, StructureNotifyMask | ExposureMask | KeyPressMask | KeymapNotify);
 	// set the current window as active (mapping windows)		
@@ -298,23 +313,7 @@ int init_window_x(char *color, char *bcolor, int col, int bgcol, char **argv, in
 		XParseColor(cavaXDisplay, cavaXColormap, color, &xcol);
 		XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
 	}
-		
-	// add titlebar name
-	if(borderFlag)	
-	XStoreName(cavaXDisplay, cavaXWindow, "CAVA");
-
-	// fix for error while closing window
-	wm_delete_window = XInternAtom (cavaXDisplay, "WM_DELETE_WINDOW", FALSE);
-	XSetWMProtocols(cavaXDisplay, cavaXWindow, &wm_delete_window, 1);
 	
-	// set window properties
-	/**if(windowClass)
-	{
-		cavaXWMHints.flags = InputHint | StateHint;
-		cavaXWMHints.initial_state = NormalState;
-		cavaXClassHint.res_name = (char *)"Cava";
-		XmbSetWMProperties(cavaXDisplay, cavaXWindow, NULL, NULL, argv, argc, NULL, &cavaXWMHints, &cavaXClassHint);
-	}**/
 	return 0;
 }
 
