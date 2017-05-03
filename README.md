@@ -82,6 +82,9 @@ Fedora:
 
     dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool
 
+macOS:
+
+    brew install autoconf automake fftw libtool ncurses
 
 Iniparser is also required, but if it is not already installed, a bundled version will be used.
 
