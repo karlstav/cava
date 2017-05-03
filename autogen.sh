@@ -7,9 +7,9 @@ else
 fi
 
 if libtoolize 2>/dev/null; then
-  exit 1
+  libtoolize
 elif glibtoolize 2>/dev/null; then
-  exit 1
+  glibtoolize
 else
   echo 'Missing libtoolize'
   exit 1

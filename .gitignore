@@ -5,6 +5,25 @@ cava
 *.a
 
 # Compiled files
+.deps
+aclocal.m4
+ar-lib
+autom4te.cache
+compile
+config.guess
+config.log
+config.status
+config.sub
+configure
+depcomp
+iniparser/Makefile
+iniparser/Makefile.in
+iniparser/src/.deps
+install-sh
+libtool
 ltmain.sh
 m4
+Makefile
+Makefile.in
+missing
 version
