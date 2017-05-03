@@ -6,7 +6,14 @@ else
   echo 0.4.2 > version # hard coded versions
 fi
 
-libtoolize
+if libtoolize 2>/dev/null; then
+  exit 1
+elif glibtoolize 2>/dev/null; then
+  exit 1
+else
+  echo 'Missing libtoolize'
+  exit 1
+fi
 aclocal
 autoconf
 automake --add-missing

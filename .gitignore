@@ -3,3 +3,8 @@ cava
 *.so.0
 *.o
 *.a
+
+# Compiled files
+ltmain.sh
+m4
+version
