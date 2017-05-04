@@ -787,8 +787,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		pr =  fftw_plan_dft_r2c_1d(M, inr, *outr, FFTW_MEASURE); 
 	}
 
-	bool reloadConf = FALSE;
-	bool senseLow = TRUE;
+	bool reloadConf = false;
+	bool senseLow = true;
 
 	while  (!reloadConf) {//jumbing back to this loop means that you resized the screen
 		for (i = 0; i < 200; i++) {
@@ -925,7 +925,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	
 		if (stereo) bars = bars * 2; 	
 
-	   	bool resizeTerminal = FALSE;
+	   	bool resizeTerminal = false;
 
 		while  (!resizeTerminal) {
 
@@ -943,11 +943,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					break;
 				case 68:    // key right
 					bw++;
-					resizeTerminal = TRUE;
+					resizeTerminal = true;
 					break;
 				case 67:    // key left
 					if (bw > 1) bw--;
-					resizeTerminal = TRUE;
+					resizeTerminal = true;
 					break;
 				case 'm':
 					if (mode == modes) {
@@ -962,12 +962,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				case 'c': //change forground color
 					if (col < 7) col++;
 					else col = 0;
-					resizeTerminal = TRUE;
+					resizeTerminal = true;
 					break;
 				case 'b': //change backround color
 					if (bgcol < 7) bgcol++;
 					else bgcol = 0;
-					resizeTerminal = TRUE;
+					resizeTerminal = true;
 					break;
 
 				case 'q':
@@ -980,8 +980,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				audio.terminate = 1;
 				pthread_join( p_thread, NULL);
 
-				reloadConf = TRUE;
-				resizeTerminal = TRUE;
+				reloadConf = true;
+				resizeTerminal = true;
 				should_reload = 0;
 
 			}
@@ -1115,7 +1115,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			if (autosens && om != 4) {
 				for (o = 0; o < bars; o++) {
 					if (f[o] > height * 8 + height * 8 * overshoot / 100) {
-						senseLow = FALSE;
+						senseLow = false;
 						sens = sens * 0.99;
 						break;
 					}
@@ -1144,7 +1144,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						break;
 				}
 
-				if (rc == -1) resizeTerminal = TRUE; //terminal has been resized breaking to recalibrating values
+				if (rc == -1) resizeTerminal = true; //terminal has been resized breaking to recalibrating values
 
 				if (framerate <= 1) {
 					req.tv_sec = 1  / (float)framerate;

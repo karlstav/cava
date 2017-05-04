@@ -16,9 +16,11 @@ config.status
 config.sub
 configure
 depcomp
+iniparser/.libs
+iniparser/libiniparser.la
 iniparser/Makefile
 iniparser/Makefile.in
-iniparser/src/.deps
+iniparser/src
 install-sh
 libtool
 ltmain.sh
