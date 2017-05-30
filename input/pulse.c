@@ -111,7 +111,7 @@ void* input_pulse(void* data)
 	.fragsize = BUFSIZE
 	};
 
-	pa_simple *s = NULL;	
+	pa_simple *s = NULL;
 	int error;
 
 	if (!(s = pa_simple_new(NULL, "cava", PA_STREAM_RECORD, audio->source, "audio for cava", &ss, NULL, &pb, &error))) {
@@ -145,9 +145,10 @@ void* input_pulse(void* data)
                         }
 
 		if (audio->terminate == 1) {
+            free(audio->source);
 			pa_simple_free(s);
 			break;
-		}
+		    }
         }
 
 	return 0;
