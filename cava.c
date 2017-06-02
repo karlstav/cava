@@ -102,6 +102,7 @@ int bit_format = 16;
 int gradient = 0;
 dictionary* ini;
 char supportedInput[255] = "'fifo'";
+int sourceIsAuto = 1;
 
 
 
@@ -777,7 +778,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	#ifdef PULSE
 	if (im == 3) {
-        if (strcmp(audio.source, "auto") == 0) getPulseDefaultSink((void*)&audio);
+		if (strcmp(audio.source, "auto") == 0) {
+			getPulseDefaultSink((void*)&audio);
+			sourceIsAuto = 1;
+			}
+		else sourceIsAuto = 0;
 		thr_id = pthread_create(&p_thread, NULL, input_pulse, (void*)&audio); //starting pulsemusic listener
 		audio.rate = 44100;
 	}
@@ -1172,8 +1177,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	audio.terminate = 1;
 	pthread_join( p_thread, NULL);
 
-    if (customEQ) free(smooth);
-    iniparser_freedict(ini);
+	if (customEQ) free(smooth);
+	if (sourceIsAuto) free(audio.source);
+	iniparser_freedict(ini);
 
 
 	//fclose(fp);

@@ -144,8 +144,7 @@ void* input_pulse(void* data)
                                 if (n == 2048 - 1)n = 0;
                         }
 
-		if (audio->terminate == 1) {
-            free(audio->source);
+		if (audio->terminate == 1) {            		
 			pa_simple_free(s);
 			break;
 		    }
