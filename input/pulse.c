@@ -21,7 +21,10 @@ void cb(__attribute__((unused)) pa_context *pulseaudio_context, const pa_server_
 	audio->source = strcat(audio->source, ".monitor");
 
 	//quiting mainloop
+    pa_context_disconnect(pulseaudio_context);
+    pa_context_unref(pulseaudio_context);
 	pa_mainloop_quit(m_pulseaudio_mainloop, 0);
+    pa_mainloop_free(m_pulseaudio_mainloop);
 }
 
 
