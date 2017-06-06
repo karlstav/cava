@@ -841,18 +841,16 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					}
 					fptest = open(raw_target, O_RDONLY | O_NONBLOCK, 0644); //fifo needs to be open for reading in order to write to it
 				}
-		
+		    }
 
-				fp = open(raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
-				if (fp == -1) {
-					printf("could not open file %s for writing\n",raw_target);
-					exit(1);
-				}
-				printf("open file %s for writing raw ouput\n",raw_target);		
-
-				
+			fp = open(raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
+			if (fp == -1) {
+				printf("could not open file %s for writing\n",raw_target);
+				exit(1);
 			}
-
+			printf("open file %s for writing raw ouput\n",raw_target);		
+	
+            //height and with must be hardcoded for raw output.
 			h = 112;
 			w = 200;	
 		}
