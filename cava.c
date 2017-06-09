@@ -866,7 +866,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	// open XLIB window and set everything up
 	#ifdef XLIB
-	if(om == 5) if(init_window_x(color, bcolor, col, bgcol, set_win_props, argv, argc)) exit(EXIT_FAILURE);
+	if(om == 5) if(init_window_x(color, bcolor, col, bgcol, set_win_props, argv, argc, gradient, gradient_color_1, gradient_color_2)) exit(EXIT_FAILURE);
 	#endif
 
 	// setting up sdl
@@ -1079,7 +1079,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			#ifdef XLIB
 			if(om == 5)
 			{
-				switch(get_window_input_x(&should_reload, &bs, &sens, &bw, &modes, &mode, &w, &h, color, bcolor))
+				switch(get_window_input_x(&should_reload, &bs, &sens, &bw, &modes, &mode, &w, &h, color, bcolor, gradient))
 				{
 					case -1:
 						cleanup();
@@ -1299,7 +1299,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						if(reloadConf)
 							break;
 						
-						draw_graphical_x(h, bars, bw, bs, rest, f, flastd);
+						draw_graphical_x(h, bars, bw, bs, rest, gradient, f, flastd);
 						break;
 						#endif
 					}

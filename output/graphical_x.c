@@ -15,7 +15,7 @@ GC cavaXGraphics;
 Colormap cavaXColormap;
 int cavaXScreenNumber;
 XClassHint cavaXClassHint;
-XColor xbgcol, xcol;
+XColor xbgcol, xcol, xgrad[3];
 XEvent cavaXEvent;
 Atom wm_delete_window;
 XWMHints cavaXWMHints;
@@ -49,7 +49,7 @@ enum {
 #define _NET_WM_STATE_ADD 1;
 #define _NET_WM_STATE_TOGGLE 2;
 
-int init_window_x(char *color, char *bcolor, int col, int bgcol, int set_win_props, char **argv, int argc)
+int init_window_x(char *color, char *bcolor, int col, int bgcol, int set_win_props, char **argv, int argc, int gradient, char *gradient_color_1, char *gradient_color_2)
 {
 	// connect to the X server
 	cavaXDisplay = XOpenDisplay(NULL);
@@ -140,7 +140,7 @@ int init_window_x(char *color, char *bcolor, int col, int bgcol, int set_win_pro
 			but of course we can't do the whole desktop because optimization.
 
 			So we instead use precision, the higher the better is the color we get.
-			However, if the precision is too high it takes a long time to load, so be careful.
+			However, if the precision is too low it takes a long time to load, so be careful.
 			Just remember, SCREEN WIDTH / XPRECISION AND SCREEN HEIGHT / YPRECISION MUST BE
 			A WHOLE NUMBER OTHERWISE THIS WHOLE FUNCTION BREAKS. There's a workaround below,
 			but I don't think it could always work.
@@ -313,7 +313,15 @@ int init_window_x(char *color, char *bcolor, int col, int bgcol, int set_win_pro
 		XParseColor(cavaXDisplay, cavaXColormap, color, &xcol);
 		XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
 	}
-	
+	if(gradient)
+	{
+		XParseColor(cavaXDisplay, cavaXColormap, gradient_color_1, &xgrad[2]);
+		XAllocColor(cavaXDisplay, cavaXColormap, &xgrad[2]);
+		XParseColor(cavaXDisplay, cavaXColormap, gradient_color_1, &xgrad[0]);
+		XAllocColor(cavaXDisplay, cavaXColormap, &xgrad[0]);
+		XParseColor(cavaXDisplay, cavaXColormap, gradient_color_2, &xgrad[1]);
+		XAllocColor(cavaXDisplay, cavaXColormap, &xgrad[1]);
+	}
 	return 0;
 }
 
@@ -339,7 +347,7 @@ int apply_window_settings_x(void)
 	hints.decorations = borderFlag;		// setting the window border here
 	XChangeProperty(cavaXDisplay, cavaXWindow, mwmHintsProperty, mwmHintsProperty, 32, PropModeReplace, (unsigned char *)&hints, 5);
 
-	// use XEvents to toggle fullscreen
+	// use XEvents to toggle fullscreenxcolor xlib
 	XEvent xev;
 	xev.xclient.type=ClientMessage;
 	xev.xclient.serial = 0;
@@ -405,7 +413,7 @@ int apply_window_settings_x(void)
 	return 0;
 }
 
-int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *modes, int *mode, int *w, int *h, char *color, char *bcolor)
+int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *modes, int *mode, int *w, int *h, char *color, char *bcolor, int gradient)
 {
 	while(!*should_reload && (XEventsQueued(cavaXDisplay, QueuedAfterFlush) > 0))
 	{
@@ -467,6 +475,7 @@ int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *
 						XAllocColor(cavaXDisplay, cavaXColormap, &xbgcol);
 						return 2;
 					case XK_c:
+						if(gradient) break;
 						if(color[0] == '#' && strlen(color) == 7) free(color);
 						srand(time(NULL));
 						color = (char *) malloc(8*sizeof(char));
@@ -500,17 +509,60 @@ int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *
 	}
 	return 0;
 }
-void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_spacing, int rest, int f[200], int flastd[200])
+
+void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_spacing, int rest, int gradient, int f[200], int flastd[200])
 {
 	// draw bars on the X11 window
 	for(int i = 0; i < bars_count; i++)
 	{	
 		// this fixes a rendering bug
 		if(f[i] > h) f[i] = window_height;
-			
-		if(f[i] > flastd[i]){
-			XSetForeground(cavaXDisplay, cavaXGraphics, xcol.pixel);
-			XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width), window_height - f[i], bar_width, f[i] - flastd[i]);
+		
+		
+		if(f[i] > flastd[i])
+		{
+			if(!gradient)
+			{
+				XSetForeground(cavaXDisplay, cavaXGraphics, xcol.pixel);
+				XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width), window_height - f[i], bar_width, f[i] - flastd[i]);
+			}
+			else
+			{
+				for(int I = flastd[i]; I < f[i]; I++)
+				{
+					double step = (double)I / (float)window_height;
+					
+					// major optimization over allocating colors (like seriously, it killed a 6th gen i7)
+					// although this may or may NOT work on some systems, like if you're running in non-ARGB color mode
+					xgrad[2].pixel ^= xgrad[2].pixel; // YOU REALLY WANT TO RESET THIS TO NULL
+				
+		   			if(xgrad[0].red != 0 || xgrad[1].red != 0)
+		   			{
+						if(xgrad[0].red < xgrad[1].red) 
+							xgrad[2].pixel |= (unsigned long)(xgrad[0].red + ((xgrad[1].red - xgrad[0].red) * step)) / 256 << 16;
+						else xgrad[2].pixel |= (unsigned long)(xgrad[0].red - ((xgrad[0].red - xgrad[1].red) * step)) / 256 << 16;
+					}
+					
+		   			if(xgrad[0].green != 0 || xgrad[1].green != 0)
+		   			{
+						if(xgrad[0].green < xgrad[1].green) 
+							xgrad[2].pixel |= (unsigned long)(xgrad[0].green + ((xgrad[1].green - xgrad[0].green) * step)) / 256 << 8;
+						else xgrad[2].pixel |= (unsigned long)(xgrad[0].green - ((xgrad[0].green - xgrad[1].green) * step)) / 256 << 8;
+					}
+					
+					if(xgrad[0].blue != 0 || xgrad[1].blue != 0)
+		   			{
+						if(xgrad[0].blue < xgrad[1].blue) 
+							xgrad[2].pixel |= (unsigned long)(xgrad[0].blue + ((xgrad[1].blue - xgrad[0].blue) * step)) / 256;
+						else xgrad[2].pixel |= (unsigned long)(xgrad[0].blue - ((xgrad[0].blue - xgrad[1].blue) * step)) / 256;
+					}
+					
+        			xgrad[2].pixel |= 0xFF000000;	// set window opacity
+
+					XSetForeground(cavaXDisplay, cavaXGraphics, xgrad[2].pixel);
+					XDrawLine(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width), window_height - I, rest + i*(bar_spacing+bar_width) + bar_width - 1, window_height - I);
+				}
+			}
 		}
 		else if (f[i] < flastd[i]){
 			if(transparentFlag)
@@ -524,6 +576,7 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 			}
 		}
 	}
+
 	XSync(cavaXDisplay, 1);
 	return;
 }
