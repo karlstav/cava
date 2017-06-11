@@ -95,6 +95,7 @@ double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8,
 					0.7, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6};
 double *smooth = smoothDef;
 int smcount = 64;
+int customEQ = 0;
 struct audio_data audio;
 int im = 0;
 int om = 1;
@@ -105,13 +106,17 @@ int bars = 25;
 int autobars = 1;
 int stereo = -1;
 int M = 2048;
-char supportedInput[255] = "'fifo'";
 int is_bin = 1;
 char bar_delim = ';';
 char frame_delim = '\n';
 int ascii_range = 1000;
 int bit_format = 16;
 int gradient = 0;
+dictionary* ini;
+char supportedInput[255] = "'fifo'";
+int sourceIsAuto = 1;
+
+
 
 // whether we should reload the config or not
 int should_reload = 0;
@@ -211,13 +216,11 @@ void load_config(char configPath[255])
 
 	//setting alsa to defaualt if supported
 	#ifdef ALSA
-		strcat(supportedInput,", 'alsa'");
 		inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa"); 
 	#endif
 
 	//setting pulse to defaualt if supported
 	#ifdef PULSE
-		strcat(supportedInput,", 'pulse'");
 		inputMethod = (char *)iniparser_getstring(ini, "input:method", "pulse");
 	#endif
 
@@ -275,8 +278,10 @@ void load_config(char configPath[255])
 	bit_format = iniparser_getint(ini, "output:bit_format", 16);
 
 	// read & validate: eq
+
 	smcount = iniparser_getsecnkeys(ini, "eq");
 	if (smcount > 0) {
+        customEQ = 1;
 		smooth = malloc(smcount*sizeof(*smooth));
 		#ifndef LEGACYINIPARSER
 		const char *keys[smcount];
@@ -289,6 +294,7 @@ void load_config(char configPath[255])
 			smooth[sk] = iniparser_getdouble(ini, keys[sk], 1);
 		}
 	} else {
+        customEQ = 0;
 		smcount = 64; //back to the default one
 	}
 
@@ -348,6 +354,7 @@ void validate_config()
 
 
 	// validate: input method
+    im = 0;
 	if (strcmp(inputMethod, "alsa") == 0) {
 		im = 1;
 		#ifndef ALSA
@@ -361,9 +368,6 @@ void validate_config()
 	}
 	if (strcmp(inputMethod, "pulse") == 0) {
 		im = 3;
-		#ifdef PULSE
-			if (strcmp(audio.source, "auto") == 0) getPulseDefaultSink((void*)&audio);
-                #endif
 		#ifndef PULSE
 		        fprintf(stderr,
                                 "cava was built without pulseaudio support, install pulseaudio dev files and run make clean && ./configure && make again\n");
@@ -379,6 +383,7 @@ void validate_config()
 	}
 
 	// validate: output method
+    om = 0;
 	if (strcmp(outputMethod, "ncurses") == 0) {
 		om = 1;
 		#ifndef NCURSES
@@ -695,12 +700,6 @@ int main(int argc, char **argv)
 	int sleep = 0;
 	int i, n, o, height, c, rest, inAtty, silence, fp, fptest;
 	float temp;
-	double inr[2 * (M / 2 + 1)];
-	fftw_complex outr[M / 2 + 1][2];
-	fftw_plan pr;
-	double inl[2 * (M / 2 + 1)];
-	fftw_complex outl[M / 2 + 1][2];
-	fftw_plan pl;
 	//int cont = 1;
 	int fall[200];
 	float fpeak[200];
@@ -719,6 +718,8 @@ Options:\n\
 as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n";
 
 	char ch = '\0';
+	double inr[2 * (M / 2 + 1)];
+    double inl[2 * (M / 2 + 1)];
 	
 	//int maxvalue = 0;
 
@@ -759,17 +760,26 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		n = 0;
 	}
 
+    #ifdef ALSA
+        strcat(supportedInput,", 'alsa'");
+    #endif
+    #ifdef PULSE
+        strcat(supportedInput,", 'pulse'");
+    #endif
 
+	//fft: planning to rock
+	fftw_complex outl[M / 2 + 1][2];
+	fftw_plan pl =  fftw_plan_dft_r2c_1d(M, inl, *outl, FFTW_MEASURE); 	
 
-	
-	
+    fftw_complex outr[M / 2 + 1][2];
+    fftw_plan pr =  fftw_plan_dft_r2c_1d(M, inr, *outr, FFTW_MEASURE);
+
 	// general: main loop
 	while (1) {
 
 	//config: load & validate
 	load_config(configPath);
-	validate_config();
-
+    validate_config();	
 
 	if ((om != 4) && (om != 5)) { 
 		// Check if we're running in a Virtual console todo: replace virtual console with terminal emulator
@@ -842,7 +852,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	#ifdef PULSE
 	if (im == 3) {
-		thr_id = pthread_create(&p_thread, NULL, input_pulse, (void*)&audio); //starting fifomusic listener
+		if (strcmp(audio.source, "auto") == 0) {
+			getPulseDefaultSink((void*)&audio);
+			sourceIsAuto = 1;
+			}
+		else sourceIsAuto = 0;
+		thr_id = pthread_create(&p_thread, NULL, input_pulse, (void*)&audio); //starting pulsemusic listener
 		audio.rate = 44100;
 	}
 	#endif
@@ -854,12 +869,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		);
 			exit(EXIT_FAILURE);
 	}
+	 
 	
-	pl =  fftw_plan_dft_r2c_1d(M, inl, *outl, FFTW_MEASURE); //planning to rock
-	
-	if (stereo) {
-		pr =  fftw_plan_dft_r2c_1d(M, inr, *outr, FFTW_MEASURE); 
-	}
 
 	bool reloadConf = FALSE;
 	bool senseLow = TRUE;
@@ -914,18 +925,16 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					}
 					fptest = open(raw_target, O_RDONLY | O_NONBLOCK, 0644); //fifo needs to be open for reading in order to write to it
 				}
-		
+		    }
 
-				fp = open(raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
-				if (fp == -1) {
-					printf("could not open file %s for writing\n",raw_target);
-					exit(1);
-				}
-				printf("open file %s for writing raw ouput\n",raw_target);		
-
-				
+			fp = open(raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
+			if (fp == -1) {
+				printf("could not open file %s for writing\n",raw_target);
+				exit(1);
 			}
-
+			printf("open file %s for writing raw ouput\n",raw_target);		
+	
+            //height and with must be hardcoded for raw output.
 			h = 112;
 			w = 200;	
 		}
@@ -1114,9 +1123,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			#endif
 
 			if (should_reload) {
-				//**telling audio thread to terminate**//
-				audio.terminate = 1;
-				pthread_join( p_thread, NULL);
 
 				reloadConf = TRUE;
 				resizeTerminal = TRUE;
@@ -1329,9 +1335,19 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			} 
 		}
 	}//reloading config
-	req.tv_sec = 1; //waiting a second to free audio streams
-	req.tv_nsec = 0;
+	req.tv_sec = 0; 
+	req.tv_nsec = 100; //waiting some time to make shure audio is ready
 	nanosleep (&req, NULL);
+
+	//**telling audio thread to terminate**//
+	audio.terminate = 1;
+	pthread_join( p_thread, NULL);
+
+	if (customEQ) free(smooth);
+	if (sourceIsAuto) free(audio.source);
+	iniparser_freedict(ini);
+
+
 	//fclose(fp);
 	}
 }
