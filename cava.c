@@ -871,7 +871,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	// setting up sdl
 	#ifdef SDL
-	if(om == 6) if(init_window_sdl(&col, &bgcol, color, bcolor)) exit(EXIT_FAILURE);
+	if(om == 6) if(init_window_sdl(&col, &bgcol, color, bcolor, gradient, gradient_color_1, gradient_color_2)) exit(EXIT_FAILURE);
 	#endif
 
 	while  (!reloadConf) {//jumbing back to this loop means that you resized the screen
@@ -1096,7 +1096,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			#ifdef SDL
 			if(om == 6) 
 			{
-				switch(get_window_input_sdl(&bs, &bw, &sens, &mode, modes, &col, &bgcol, &w, &h))
+				switch(get_window_input_sdl(&bs, &bw, &sens, &mode, modes, &col, &bgcol, &w, &h, gradient))
 				{
 					case -1:
 						cleanup();
@@ -1306,7 +1306,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					case 6:
 					{
 						#ifdef SDL
-						if(!resizeTerminal) draw_graphical_sdl(bars, rest, bw, bs, f, flastd, col, bgcol);
+						if(!resizeTerminal) draw_graphical_sdl(bars, rest, bw, bs, f, flastd, col, bgcol, gradient);
 						break;
 						#endif
 					}
