@@ -74,7 +74,7 @@ char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style, *raw_tar
 char *gradient_color_1;
 char *gradient_color_2;
 double monstercat, integral, gravity, ignore, smh, sens;
-int fixedbars, framerate, bw, bs, autosens, overshoot;
+int fixedbars, framerate, bw, bs, autosens, overshoot, undershoot;
 unsigned int lowcf, highcf;
 double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8,
 					1, 1, 0.8, 0.6, 0.6, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8,
@@ -228,6 +228,7 @@ FILE *fp;
 	sens = iniparser_getint(ini, "general:sensitivity", 100);
 	autosens = iniparser_getint(ini, "general:autosens", 1);
 	overshoot = iniparser_getint(ini, "general:overshoot", 20);
+	undershoot = iniparser_getint(ini, "general:undershoot", 0);
 	lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
 	highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
 
@@ -1119,14 +1120,20 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 			//autmatic sens adjustment
 			if (autosens && om != 4) {
+				if (undershoot > 0)
+					senseLow = TRUE;
+
 				for (o = 0; o < bars; o++) {
+					if (undershoot > 0 && f[o] > height * 8 / (100 / undershoot)) {
+						senseLow = FALSE;
+					}
 					if (f[o] > height * 8 + height * 8 * overshoot / 100) {
 						senseLow = FALSE;
 						sens = sens * 0.99;
 						break;
 					}
-					if (senseLow && !silence) sens = sens * 1.01;		
 				}
+				if (senseLow && !silence && sens < 2) sens = sens * 1.01;		
 			}
 
 			// output: draw processed input
