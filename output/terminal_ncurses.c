@@ -1,6 +1,8 @@
-#include <curses.h>
+#include <ncursesw/curses.h>
 #include <wchar.h>
 #include <stdlib.h>
+
+#include "terminal_ncurses.h"
 
 int gradient_size = 64;
 
@@ -87,20 +89,20 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
         init_pair(color_pair_number, fg_color_number, bg_color_number);
 
     } else if (gradient) {
-        
+
         short unsigned int rgb[3][3];
         char next_color[8];
-        
+
         gradient_size = *height;
 
         if (gradient_size > COLORS) gradient_size = COLORS - 1;
-	    
+
         if (gradient_size > COLOR_PAIRS) gradient_size = COLOR_PAIRS - 1;
-        
+
         if (gradient_size > MAX_COLOR_REDEFINITION) gradient_size = MAX_COLOR_REDEFINITION - 1;
 
         sscanf(gradient_color_1 + 1, "%02hx%02hx%02hx", &rgb[0][0], &rgb[0][1], &rgb[0][2]);
-        sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0], &rgb[1][1], &rgb[1][2]);            
+        sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0], &rgb[1][1], &rgb[1][2]);
 
         for (int n = 0; n < gradient_size; n++) {
 
@@ -109,8 +111,8 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
                 if (rgb[2][i] > 255) rgb[2][i] = 0;
                 if ( n > gradient_size * 0.85 ) rgb[2][i] = rgb[1][i];
                 }
-            
-            sprintf(next_color,"#%02x%02x%02x",rgb[2][0], rgb[2][1], rgb[2][2]);
+
+            sprintf(next_color,"#%02hx%02hx%02hx",rgb[2][0], rgb[2][1], rgb[2][2]);
 
             change_color_definition(n + 1, next_color, n + 1);
             init_pair(color_pair_number++, n + 1, bg_color_number);
@@ -126,7 +128,7 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
 
 }
 
-void change_colors(int cur_height, int tot_height) {
+static void change_colors(int cur_height, int tot_height) {
     tot_height /= gradient_size ;
     if (tot_height < 1) tot_height = 1;
     cur_height /= tot_height;
@@ -143,8 +145,9 @@ void get_terminal_dim_ncurses(int* width, int* height) {
 #define TERMINAL_RESIZED -1
 
 int draw_terminal_ncurses(int is_tty, int terminal_height, int terminal_width,
-int bars_count, int bar_width, int bar_spacing, int rest, const int f[200],
-int flastd[200], int gradient) {
+int bars_count, int bar_width, int bar_spacing, int rest,
+const int f[FRAMES_BUFFER_SIZE], int flastd[FRAMES_BUFFER_SIZE],
+int gradient) {
 
 	const wchar_t* bar_heights[] = {L"\u2581", L"\u2582", L"\u2583",
 		L"\u2584", L"\u2585", L"\u2586", L"\u2587", L"\u2588"};
@@ -162,19 +165,19 @@ int flastd[200], int gradient) {
 		if (f[bar] > flastd[bar]) { // higher then last frame
 			if (is_tty) {
 				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++) {
-                    if (gradient) change_colors(n, height); 
+                    if (gradient) change_colors(n, height);
 					for (int width = 0; width < bar_width; width++)
 						mvprintw((height - n), CURRENT_COLUMN, "%d", 8);
                 }
 			} else {
-				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++) {                                 
-                    if (gradient) change_colors(n, height); 
+				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++) {
+                    if (gradient) change_colors(n, height);
 					for (int width = 0; width < bar_width; width++)
 						mvaddwstr((height - n), CURRENT_COLUMN,
 								bar_heights[LAST]);
                 }
 			}
-            if (gradient) change_colors(f[bar] / 8, height); 
+            if (gradient) change_colors(f[bar] / 8, height);
 			if (f[bar] % 8) {
 				if (is_tty) {
 					for (int width = 0; width < bar_width; width++)
@@ -191,7 +194,7 @@ int flastd[200], int gradient) {
 				for (int width = 0; width < bar_width; width++)
 					mvaddstr((height - n), CURRENT_COLUMN, " ");
 			if (f[bar] % 8) {
-                 if (gradient) change_colors(f[bar] / 8, height); 
+                 if (gradient) change_colors(f[bar] / 8, height);
 				if (is_tty) {
 					for (int width = 0; width < bar_width; width++)
 						mvprintw((height - f[bar] / 8), CURRENT_COLUMN, "%d",

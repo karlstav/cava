@@ -1,8 +1,9 @@
-// input: ALSA
+#include <alsa/asoundlib.h>
+#include <alloca.h>
+#include <stdlib.h>
 
-// assuming stereo
-#define CHANNELS_COUNT 2
-#define SAMPLE_RATE 44100
+#include "common.h"
+#include "alsa.h"
 
 static void initialize_audio_parameters(snd_pcm_t** handle, struct audio_data* audio,
 snd_pcm_uframes_t* frames) {
@@ -83,7 +84,7 @@ const int size) {
 		}
 
 		++audio_out_buffer_index;
-		audio_out_buffer_index %= 2048;
+		audio_out_buffer_index %= AUDIO_OUT_SIZE;
 	}
 }
 
@@ -117,7 +118,7 @@ void* input_alsa(void* data) {
 			#endif
 		}
 		fill_audio_outs(audio, buffer, size);
-		if (audio->terminate == 1) {
+		if (audio->terminate) {
 			free(buffer);
 			snd_pcm_close(handle);
 			return NULL;
