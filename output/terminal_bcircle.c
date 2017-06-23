@@ -1,9 +1,11 @@
-#include <curses.h>
+#include <ncursesw/curses.h>
 #include <locale.h>
 #include <wchar.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+
+#include "terminal_bcircle.h"
 
 #ifndef M_PI
 #define M_PI 3.141592
@@ -36,7 +38,7 @@ void get_terminal_dim_bcircle(int *w, int *h) {
 }
 
 
-int draw_terminal_bcircle(int tty, int h, int w, int f[200]) {
+int draw_terminal_bcircle(int tty, int h, int w, int f[FRAMES_BUFFER_SIZE]) {
 
   const wchar_t* bars[] = {L"\u2581", L"\u2582", L"\u2583", L"\u2584", L"\u2585", L"\u2586", L"\u2587", L"\u2588"};
 

@@ -1,11 +1,14 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <pulse/simple.h>
 #include <pulse/error.h>
 #include <pulse/pulseaudio.h>
-#define BUFSIZE 1024
+
+#include "common.h"
+#include "pulse.h"
 
 pa_mainloop *m_pulseaudio_mainloop;
 
@@ -13,7 +16,7 @@ void cb(__attribute__((unused)) pa_context *pulseaudio_context, const pa_server_
 
 	//getting default sink name
     struct audio_data *audio = (struct audio_data *)userdata;
-	audio->source = malloc(sizeof(char) * 1024);
+	audio->source = malloc(sizeof(char) * BUFFER_SIZE);
 
 	strcpy(audio->source,i->default_sink_name);
 
@@ -31,7 +34,7 @@ void cb(__attribute__((unused)) pa_context *pulseaudio_context, const pa_server_
 void pulseaudio_context_state_callback(pa_context *pulseaudio_context,
                                                   void *userdata) {
 
-	//make sure loop is ready	
+	//make sure loop is ready
 	switch (pa_context_get_state(pulseaudio_context))
 	{
 	case PA_CONTEXT_UNCONNECTED:
@@ -57,7 +60,7 @@ void pulseaudio_context_state_callback(pa_context *pulseaudio_context,
 	case PA_CONTEXT_TERMINATED:
 	//printf("TERMINATED\n");
     pa_mainloop_quit(m_pulseaudio_mainloop, 0);
-	break;	  
+	break;
 	}
 }
 
@@ -101,17 +104,17 @@ void* input_pulse(void* data)
 
         struct audio_data *audio = (struct audio_data *)data;
         int i, n;
-	int16_t buf[BUFSIZE / 2];
+	int16_t buf[BUFFER_SIZE / 2];
 
 	/* The sample type to use */
 	static const pa_sample_spec ss = {
 		.format = PA_SAMPLE_S16LE,
-		.rate =  44100,
+		.rate =  SAMPLE_RATE,
 		.channels = 2
 		};
 	static const pa_buffer_attr pb = {
-	.maxlength = BUFSIZE * 2,
-	.fragsize = BUFSIZE
+	.maxlength = BUFFER_SIZE * 2,
+	.fragsize = BUFFER_SIZE
 	};
 
 	pa_simple *s = NULL;
@@ -123,7 +126,7 @@ void* input_pulse(void* data)
 	}
 
 	n = 0;
-               
+
 	while (1) {
         	/* Record some data ... */
         	if (pa_simple_read(s, buf, sizeof(buf), &error) < 0) {
@@ -133,7 +136,7 @@ void* input_pulse(void* data)
 
 		 //sorting out channels
 
-	        for (i = 0; i < BUFSIZE / 2; i += 2) {
+	        for (i = 0; i < BUFFER_SIZE / 2; i += 2) {
 
                                 if (audio->channels == 1) audio->audio_out_l[n] = (buf[i] + buf[i + 1]) / 2;
 
@@ -147,7 +150,7 @@ void* input_pulse(void* data)
                                 if (n == 2048 - 1)n = 0;
                         }
 
-		if (audio->terminate == 1) {            		
+		if (audio->terminate) {
 			pa_simple_free(s);
 			break;
 		    }

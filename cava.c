@@ -1,25 +1,16 @@
 #define _XOPEN_SOURCE_EXTENDED
-#include <alloca.h>
 #include <locale.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <stdbool.h>
 #include <termios.h>
 #include <math.h>
-#include <fcntl.h> 
+#include <fcntl.h>
 
-#include <sys/ioctl.h>
 #include <fftw3.h>
 #define max(a,b) \
 	 ({ __typeof__ (a) _a = (a); \
 			 __typeof__ (b) _b = (b); \
 		 _a > _b ? _a : _b; })
-#include <unistd.h>
-#include <sys/types.h>
 #include <signal.h>
-#include <string.h>
 #include <sys/stat.h>
-#include <time.h>
 #include <getopt.h>
 #include <pthread.h>
 #include <dirent.h>
@@ -27,33 +18,22 @@
 
 
 #ifdef NCURSES
+#include <curses.h>
 #include "output/terminal_ncurses.h"
-#include "output/terminal_ncurses.c"
 #include "output/terminal_bcircle.h"
-#include "output/terminal_bcircle.c"
 #endif
 
 #include "output/terminal_noncurses.h"
-#include "output/terminal_noncurses.c"
-
 #include "output/raw.h"
-#include "output/raw.c"
-
-
 #include "input/fifo.h"
-#include "input/fifo.c"
 
 #ifdef ALSA
-#include <alsa/asoundlib.h>
 #include "input/alsa.h"
-#include "input/alsa.c"
 #endif
 
 #ifdef PULSE
 #include "input/pulse.h"
-#include "input/pulse.c"
 #endif
-
 
 #include <iniparser.h>
 
@@ -93,7 +73,7 @@ int bgcol = -1;
 int bars = 25;
 int autobars = 1;
 int stereo = -1;
-int M = 2048;
+int M = AUDIO_OUT_SIZE;
 int is_bin = 1;
 char bar_delim = ';';
 char frame_delim = '\n';
@@ -139,7 +119,7 @@ void load_config(char configPath[255])
 {
 
 FILE *fp;
-	
+
 	//config: creating path to default config file
 	if (configPath[0] == '\0') {
 		char *configFile = "config";
@@ -155,13 +135,13 @@ FILE *fp;
 				exit(EXIT_FAILURE);
 			}
 		}
-	
+
 		// config: create directory
 		mkdir(configPath, 0777);
 
 		// config: adding default filename file
 		strcat(configPath, configFile);
-		
+
 		fp = fopen(configPath, "ab+");
 		if (fp) {
 			fclose(fp);
@@ -173,7 +153,7 @@ FILE *fp;
 
 	} else { //opening specified file
 
-		fp = fopen(configPath, "rb+");	
+		fp = fopen(configPath, "rb+");
 		if (fp) {
 			fclose(fp);
 		} else {
@@ -186,11 +166,11 @@ FILE *fp;
 	ini = iniparser_load(configPath);
 
 	//setting fifo to defaualt if no other input modes supported
-	inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo"); 
+	inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo");
 
 	//setting alsa to defaualt if supported
 	#ifdef ALSA
-		inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa"); 
+		inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa");
 	#endif
 
 	//setting pulse to defaualt if supported
@@ -371,7 +351,7 @@ void validate_config()
 	if (strcmp(outputMethod, "raw") == 0) {//raw:
 		om = 4;
 		autosens = 0;
-		
+
 		//checking data format
 		if (strcmp(data_format, "binary") == 0) {
 			is_bin = 1;
@@ -381,7 +361,7 @@ void validate_config()
 				"bit format  %d is not supported, supported data formats are: '8' and '16'\n",
 							bit_format );
 			exit(EXIT_FAILURE);
-		
+
 			}
 		} else if (strcmp(data_format, "ascii") == 0) {
 			is_bin = 0;
@@ -395,7 +375,7 @@ void validate_config()
 			"data format %s is not supported, supported data formats are: 'binary' and 'ascii'\n",
 						data_format);
 		exit(EXIT_FAILURE);
-		
+
 		}
 
 
@@ -414,7 +394,7 @@ void validate_config()
                         "output method %s is not supported, supported methods are: 'ncurses' and 'noncurses'\n",
                                                 outputMethod);
                 exit(EXIT_FAILURE);
-		#endif	
+		#endif
 	}
 
 	// validate: output style
@@ -488,7 +468,7 @@ void validate_config()
 	if (strcmp(bcolor, "cyan") == 0) bgcol = 6;
 	if (strcmp(bcolor, "white") == 0) bgcol = 7;
 	// default if invalid
-	
+
 
 	// validate: gravity
 	if (gravity < 0) {
@@ -509,7 +489,7 @@ void validate_config()
 			"lower cutoff frequency can't be higher than higher cutoff frequency\n");
 		exit(EXIT_FAILURE);
 	}
-	
+
 	//setting sens
 	sens = sens / 100;
 
@@ -531,15 +511,15 @@ static bool directory_exists(const char * path) {
 
 #endif
 
-int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200], int hcf[200], float k[200], int channel) {
+int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[FRAMES_BUFFER_SIZE], int hcf[FRAMES_BUFFER_SIZE], float k[FRAMES_BUFFER_SIZE], int channel) {
 	int o,i;
 	float peak[201];
-	static int fl[200];
-	static int fr[200];
+	static int fl[FRAMES_BUFFER_SIZE];
+	static int fr[FRAMES_BUFFER_SIZE];
 	int y[M / 2 + 1];
 	float temp;
-	
-		
+
+
 	// process: separate frequency bands
 	for (o = 0; o < bars; o++) {
 
@@ -550,10 +530,10 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200]
 
 			y[i] =  pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5); //getting r of compex
 			peak[o] += y[i]; //adding upp band
-			
+
 		}
-	
-		
+
+
 		peak[o] = peak[o] / (hcf[o]-lcf[o]+1); //getting average
 		temp = peak[o] * k[o] * sens; //multiplying with k and adjusting to sens settings
 		if (temp <= ignore)temp = 0;
@@ -564,7 +544,7 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200]
 
 	if (channel == 1) return fl;
  	else return fr;
-} 
+}
 
 
 int * monstercat_filter (int * f, int bars) {
@@ -616,20 +596,20 @@ int main(int argc, char **argv)
 	pthread_t  p_thread;
 	int thr_id GCC_UNUSED;
 	int modes = 3; // amount of smoothing modes
-	float fc[200];
-	float fre[200];
-	int f[200], lcf[200], hcf[200];
+	float fc[FRAMES_BUFFER_SIZE];
+	float fre[FRAMES_BUFFER_SIZE];
+	int f[FRAMES_BUFFER_SIZE], lcf[FRAMES_BUFFER_SIZE], hcf[FRAMES_BUFFER_SIZE];
 	int *fl, *fr;
-	int fmem[200];
-	int flast[200];
-	int flastd[200];
+	int fmem[FRAMES_BUFFER_SIZE];
+	int flast[FRAMES_BUFFER_SIZE];
+	int flastd[FRAMES_BUFFER_SIZE];
 	int sleep = 0;
 	int i, n, o, height, h, w, c, rest, inAtty, silence, fp, fptest;
 	float temp;
 	//int cont = 1;
-	int fall[200];
-	float fpeak[200];
-	float k[200];
+	int fall[FRAMES_BUFFER_SIZE];
+	float fpeak[FRAMES_BUFFER_SIZE];
+	float k[FRAMES_BUFFER_SIZE];
 	float g;
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
 	char configPath[255];
@@ -646,12 +626,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	char ch = '\0';
 	double inr[2 * (M / 2 + 1)];
     double inl[2 * (M / 2 + 1)];
-	
+
 	//int maxvalue = 0;
 
 	// general: console title
 	printf("%c]0;%s%c", '\033', PACKAGE, '\007');
-	
+
 	configPath[0] = '\0';
 
 	setlocale(LC_ALL, "");
@@ -695,7 +675,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	//fft: planning to rock
 	fftw_complex outl[M / 2 + 1][2];
-	fftw_plan pl =  fftw_plan_dft_r2c_1d(M, inl, *outl, FFTW_MEASURE); 	
+	fftw_plan pl =  fftw_plan_dft_r2c_1d(M, inl, *outl, FFTW_MEASURE);
 
     fftw_complex outr[M / 2 + 1][2];
     fftw_plan pr =  fftw_plan_dft_r2c_1d(M, inr, *outr, FFTW_MEASURE);
@@ -705,13 +685,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	//config: load & validate
 	load_config(configPath);
-    validate_config();	
+    validate_config();
 
-	if (om != 4) { 
+	if (om != 4) {
 		// Check if we're running in a Virtual console todo: replace virtual console with terminal emulator
 		inAtty = 0;
 		if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0), "/dev/console") == 0) inAtty = 1;
-	
+
 		if (inAtty) {
 			system("setfont cava.psf  >/dev/null 2>&1");
 			system("setterm -blank 0");
@@ -722,7 +702,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	//input: init
 	audio.format = -1;
 	audio.rate = 0;
-	audio.terminate = 0;
+	audio.terminate = false;
 	if (stereo) audio.channels = 2;
 	if (!stereo) audio.channels = 1;
 
@@ -747,9 +727,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		thr_id = pthread_create(&p_thread, NULL, input_alsa,
 														(void *)&audio); //starting alsamusic listener
-		
+
 		n = 0;
-		
+
 		while (audio.format == -1 || audio.rate == 0) {
 			req.tv_sec = 0;
 			req.tv_nsec = 1000000;
@@ -773,7 +753,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	if (im == 2) {
 		thr_id = pthread_create(&p_thread, NULL, input_fifo, (void*)&audio); //starting fifomusic listener
-		audio.rate = 44100;
+		audio.rate = SAMPLE_RATE;
 	}
 
 	#ifdef PULSE
@@ -784,7 +764,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			}
 		else sourceIsAuto = 0;
 		thr_id = pthread_create(&p_thread, NULL, input_pulse, (void*)&audio); //starting pulsemusic listener
-		audio.rate = 44100;
+		audio.rate = SAMPLE_RATE;
 	}
 	#endif
 
@@ -795,14 +775,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		);
 			exit(EXIT_FAILURE);
 	}
-	 
-	
 
-	bool reloadConf = FALSE;
-	bool senseLow = TRUE;
+
+
+	bool reloadConf = false;
+	bool senseLow = true;
 
 	while  (!reloadConf) {//jumbing back to this loop means that you resized the screen
-		for (i = 0; i < 200; i++) {
+		for (i = 0; i < FRAMES_BUFFER_SIZE; i++) {
 			flast[i] = 0;
 			flastd[i] = 0;
 			fall[i] = 0;
@@ -848,11 +828,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				printf("could not open file %s for writing\n",raw_target);
 				exit(1);
 			}
-			printf("open file %s for writing raw ouput\n",raw_target);		
-	
+			printf("open file %s for writing raw ouput\n",raw_target);
+
             //height and with must be hardcoded for raw output.
 			h = 112;
-			w = 200;	
+			w = 200;
 		}
 
  		//handle for user setting too many bars
@@ -875,7 +855,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			if (bars%2 != 0) bars--;
 		}
 
-		
+
 
 		height = h - 1;
 
@@ -896,7 +876,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		//output: start noncurses mode
 		if (om == 3) init_terminal_noncurses(col, bgcol, w, h, bw);
 
-		
+
 
 		if (stereo) bars = bars / 2; // in stereo onle half number of bars per channel
 
@@ -906,7 +886,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 
 		double freqconst = log10((float)lowcf / (float)highcf) /  ((float)1 / ((float)bars + (float)1) - 1);
-	
+
 		//freqconst = -2;
 
 		// process: calculate cutoff frequencies
@@ -931,10 +911,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		// process: weigh signal to frequencies
 		for (n = 0; n < bars;
 			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000)) * smooth[(int)floor(((double)n) * smh)];
-	
-		if (stereo) bars = bars * 2; 	
 
-	   	bool resizeTerminal = FALSE;
+		if (stereo) bars = bars * 2;
+
+	   	bool resizeTerminal = false;
 
 		while  (!resizeTerminal) {
 
@@ -952,11 +932,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					break;
 				case 68:    // key right
 					bw++;
-					resizeTerminal = TRUE;
+					resizeTerminal = true;
 					break;
 				case 67:    // key left
 					if (bw > 1) bw--;
-					resizeTerminal = TRUE;
+					resizeTerminal = true;
 					break;
 				case 'm':
 					if (mode == modes) {
@@ -971,12 +951,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				case 'c': //change forground color
 					if (col < 7) col++;
 					else col = 0;
-					resizeTerminal = TRUE;
+					resizeTerminal = true;
 					break;
 				case 'b': //change backround color
 					if (bgcol < 7) bgcol++;
 					else bgcol = 0;
-					resizeTerminal = TRUE;
+					resizeTerminal = true;
 					break;
 
 				case 'q':
@@ -986,8 +966,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 			if (should_reload) {
 
-				reloadConf = TRUE;
-				resizeTerminal = TRUE;
+				reloadConf = true;
+				resizeTerminal = true;
 				should_reload = 0;
 
 			}
@@ -999,7 +979,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				refresh();
 			#endif
 
-			// process: populate input buffer and check if input is present			
+			// process: populate input buffer and check if input is present
 			silence = 1;
 			for (i = 0; i < (2 * (M / 2 + 1)); i++) {
 				if (i < M) {
@@ -1028,10 +1008,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				} else {
 					fftw_execute(pl);
 					fl = separate_freq_bands(outl,bars,lcf,hcf, k, 1);
-				}	
+				}
 
 
-			}			
+			}
 			 else { //**if in sleep mode wait and continue**//
 				#ifdef DEBUG
 					printw("no sound detected for 3 sec, going to sleep mode\n");
@@ -1049,11 +1029,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				if (monstercat) {
 					if (stereo) {
 						fl = monstercat_filter(fl, bars / 2);
-						fr = monstercat_filter(fr, bars / 2);	
+						fr = monstercat_filter(fr, bars / 2);
 					} else {
 						fl = monstercat_filter(fl, bars);
 					}
-				
+
 				}
 
 
@@ -1112,7 +1092,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					f[o] = 1;
 					if (om == 4) f[o] = 0;
 				}
-				//if(f[o] > maxvalue) maxvalue = f[o]; 
+				//if(f[o] > maxvalue) maxvalue = f[o];
 			}
 
 			//printf("%d\n",maxvalue); //checking maxvalue I keep forgetting its about 10000
@@ -1121,11 +1101,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			if (autosens && om != 4) {
 				for (o = 0; o < bars; o++) {
 					if (f[o] > height * 8 + height * 8 * overshoot / 100) {
-						senseLow = FALSE;
+						senseLow = false;
 						sens = sens * 0.99;
 						break;
 					}
-					if (senseLow && !silence) sens = sens * 1.01;		
+					if (senseLow && !silence) sens = sens * 1.01;
 				}
 			}
 
@@ -1150,7 +1130,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						break;
 				}
 
-				if (rc == -1) resizeTerminal = TRUE; //terminal has been resized breaking to recalibrating values
+				if (rc == -1) resizeTerminal = true; //terminal has been resized breaking to recalibrating values
 
 				if (framerate <= 1) {
 					req.tv_sec = 1  / (float)framerate;
@@ -1161,18 +1141,18 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 				nanosleep (&req, NULL);
 			#endif
-		
-			for (o = 0; o < bars; o++) {	
+
+			for (o = 0; o < bars; o++) {
 				flastd[o] = f[o];
-			} 
+			}
 		}
 	}//reloading config
-	req.tv_sec = 0; 
+	req.tv_sec = 0;
 	req.tv_nsec = 100; //waiting some time to make shure audio is ready
 	nanosleep (&req, NULL);
 
 	//**telling audio thread to terminate**//
-	audio.terminate = 1;
+	audio.terminate = true;
 	pthread_join( p_thread, NULL);
 
 	if (customEQ) free(smooth);
