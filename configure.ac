@@ -41,7 +41,6 @@ dnl ######################
 dnl checking for alsa dev
 dnl ######################
 AC_CHECK_LIB(asound, snd_pcm_open, have_alsa=yes, have_alsa=no)
-    AM_CONDITIONAL(HAVE_ALSA, test "x$have_alsa" = "xyes")
     if [[ $have_alsa = "yes" ]] ; then
       LIBS="$LIBS -lasound"
       CPPFLAGS="$CPPFLAGS -DALSA"
@@ -56,7 +55,6 @@ dnl ######################
 dnl checking for pulse dev
 dnl ######################
 AC_CHECK_LIB(pulse-simple, pa_simple_new, have_pulse=yes, have_pulse=no)
-    AM_CONDITIONAL(HAVE_PULSE, test "x$have_pulse" = "xyes")
     if [[ $have_pulse = "yes" ]] ; then
       LIBS="$LIBS -lpulse-simple -lpulse"
       CPPFLAGS="$CPPFLAGS -DPULSE"
@@ -80,7 +78,7 @@ AC_CHECK_LIB(m, sqrt, have_m=yes, have_m=no)
 
 
 dnl ######################
-dnl checking for fftw3
+dnl checking for fftw3 
 dnl ######################
 AC_CHECK_LIB(fftw3,fftw_execute, have_fftw=yes, have_fftw=no)
     if [[ $have_fftw = "yes" ]] ; then
@@ -103,7 +101,6 @@ AC_CHECK_LIB(ncursesw, initscr,
 )
 
 AC_CHECK_LIB($curses_lib, initscr,
-	AM_CONDITIONAL(HAVE_CURSES, test "$CURSES_CONFIG" != "")
 	if test "$CURSES_CONFIG" = "" ; then
 		LIBS="$LIBS -l$curses_lib"
   		CPPFLAGS="$CPPFLAGS -DNCURSES"
@@ -166,3 +163,8 @@ fi
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
+
+
+
+
+
