@@ -327,6 +327,22 @@ $ pkill -USR1 cava
 
 ![3_139](https://cloud.githubusercontent.com/assets/6376571/8670181/9db0ef50-29e8-11e5-81bc-3e2bb9892da0.png)
 
+
+Cross-compiling for Raspberry Pi (ARM CPUs) with docker
+-------------------------------------------------------
+
+To cross-compile the project for ARM CPUs we're going to use this Docker project: 
+[raspberry-pi-cross-compiler](https://hub.docker.com/r/sdt4docker/raspberry-pi-cross-compiler/)
+
+```
+docker run sdt4docker/raspberry-pi-cross-compiler > rpxc
+chmod +x rpxc
+./build-custom-docker-image-for-cava.sh
+# this command might sometime require root access
+# run it then with sudo
+./rpxc --image rpxc-with-extras bash -c "./autogen.sh && ./configure --host=arm-linux-gnueabihf && make"
+```
+
 Thanks
 ------
 
