@@ -1,21 +1,15 @@
 #include <locale.h>
-#include <math.h>
+#include <wchar.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
-#include <wchar.h>
-
-#include "terminal_noncurses.h"
 
 wchar_t barstring[8][100];
 int ttybarstring[8];
 char spacestring[100];
 
 
-static int setecho(int fd, int onoff) {
+int setecho(int fd, int onoff) {
 
 	struct termios t;
 

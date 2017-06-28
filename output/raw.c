@@ -1,9 +1,5 @@
-#include <fcntl.h>
-#include <math.h>
 #include <stdio.h>
-#include <unistd.h>
-
-#include "raw.h"
+#include <stdint.h>
 
 #define TEN_THSND 10000
 #define TEN_THSND_F 10000.0
@@ -20,7 +16,7 @@
 	}
 
 int print_raw_out(int bars_count, int fd, int is_binary, int bit_format,
-int ascii_range, char bar_delim, char frame_delim, const int f[FRAMES_BUFFER_SIZE]) {
+int ascii_range, char bar_delim, char frame_delim, const int const f[200]) {
 	if (is_binary) {
 		switch (bit_format) {
 		case BIT_16:
