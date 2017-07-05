@@ -115,7 +115,7 @@ int gradient = 0;
 dictionary* ini;
 char supportedInput[255] = "'fifo'";
 int sourceIsAuto = 1;
-
+int monstercat_alternative = 0;
 
 
 // whether we should reload the config or not
@@ -234,6 +234,7 @@ void load_config(char configPath[255])
 	modeString = (char *)iniparser_getstring(ini, "general:mode", "normal");
 
 	monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
+	monstercat_alternative = iniparser_getboolean(ini, "smoothing:monstercat_alternative", 0);
 	integral = iniparser_getdouble(ini, "smoothing:integral", 0.7);
 	gravity = iniparser_getdouble(ini, "smoothing:gravity", 1);
 	ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
@@ -662,6 +663,11 @@ int * monstercat_filter (int * f, int bars) {
 				f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
 			}
 		}
+	} else if (monstercat_alternative && monstercat > 0){		// less spiky monstercat smoothing method
+		for (z = 1; z < bars - 1; z++)
+			f[z] = 0.7*((f[z-1] + f[z+1])*monstercat/2+f[z]/2);
+		f[0] = (f[1]+f[0])/2;
+		f[bars - 1] = (f[bars-1]+f[bars-2])/2;
 	} else if (monstercat > 0) {
 		for (z = 0; z < bars; z++) {
 			if (f[z] < 0.125)f[z] = 0.125;
