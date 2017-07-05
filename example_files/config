@@ -159,6 +159,9 @@
 # Disables or enables the so-called "Monstercat smoothing". Set to 0 to disable.
 ; monstercat = 1
 
+# Alternate monstercat smoothing algorithm
+; monstercat_alternative = 0
+
 # Set gravity multiplier for "drop off". Higher values means bars will drop faster.
 # Accepts only non-negative values. 0.5 means half gravity, 2 means double. Set to 0 to disable "drop off".
 ; gravity = 1
