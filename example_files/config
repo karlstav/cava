@@ -140,6 +140,9 @@
 ; background = black
 ; foreground = cyan
 
+# Only works in X mode
+; foreground_opacity = 1.0
+
 # Gradient mode, only hex defined colors are supported, background must also be defined in hex
 # or remain commented out. 1 = on, 0 = off. Warning: for certain terminal emulators cava will
 # not able to restore color definitions on exit, simply restart your terminal to restore colors.
