@@ -326,7 +326,6 @@ int init_window_x(char *color, char *bcolor, double foreground_opacity, int col,
 	//
 	xcol.pixel %= 0x1000000;
 	xcol.pixel |= (unsigned int)(0xFF*foreground_opacity) << 24;
-	printf("%x\n", xcol.pixel);
 	return 0;
 }
 
