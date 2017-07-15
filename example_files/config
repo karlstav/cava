@@ -140,7 +140,7 @@
 ; background = black
 ; foreground = cyan
 
-# Only works in X mode
+# Only works in X mode, and is REALLY BUGGY.
 ; foreground_opacity = 1.0
 
 # Gradient mode, only hex defined colors are supported, background must also be defined in hex
