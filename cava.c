@@ -85,7 +85,7 @@ char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style, *raw_tar
 // *bar_delim, *frame_delim ;
 char *gradient_color_1;
 char *gradient_color_2;
-double monstercat, integral, gravity, ignore, smh, sens;
+double monstercat, integral, gravity, ignore, smh, sens, foreground_opacity;
 int fixedbars, framerate, bw, bs, set_win_props, autosens, overshoot;
 unsigned int lowcf, highcf;
 double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8,
@@ -241,6 +241,7 @@ void load_config(char configPath[255])
 
 	color = (char *)iniparser_getstring(ini, "color:foreground", "default");
 	bcolor = (char *)iniparser_getstring(ini, "color:background", "default");
+	foreground_opacity = iniparser_getdouble(ini, "color:foreground_opacity", 1.0);
 
    	gradient = iniparser_getint(ini, "color:gradient", 0);
     if (gradient) {
@@ -588,6 +589,12 @@ void validate_config()
 		
 		// Set window properties
 		set_win_props = iniparser_getint(ini, "window:set_win_props", 0);
+
+		if(foreground_opacity > 1.0)
+		{
+			fprintf(stderr, "foreground_opacity cannot be above 1.0\n");
+			exit(EXIT_FAILURE);
+		}
 	}
 }
 
@@ -883,7 +890,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	// open XLIB window and set everything up
 	#ifdef XLIB
-	if(om == 5) if(init_window_x(color, bcolor, col, bgcol, set_win_props, argv, argc, gradient, gradient_color_1, gradient_color_2)) exit(EXIT_FAILURE);
+	if(om == 5) if(init_window_x(color, bcolor, foreground_opacity, col, bgcol, set_win_props, argv, argc, gradient, gradient_color_1, gradient_color_2)) exit(EXIT_FAILURE);
 	#endif
 
 	// setting up sdl
@@ -1311,7 +1318,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						if(reloadConf)
 							break;
 						
-						draw_graphical_x(h, bars, bw, bs, rest, gradient, f, flastd);
+						draw_graphical_x(h, bars, bw, bs, rest, gradient, f, flastd, foreground_opacity);
 						break;
 						#endif
 					}

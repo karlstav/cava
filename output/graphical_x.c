@@ -49,7 +49,7 @@ enum {
 #define _NET_WM_STATE_ADD 1;
 #define _NET_WM_STATE_TOGGLE 2;
 
-int init_window_x(char *color, char *bcolor, int col, int bgcol, int set_win_props, char **argv, int argc, int gradient, char *gradient_color_1, char *gradient_color_2)
+int init_window_x(char *color, char *bcolor, double foreground_opacity, int col, int bgcol, int set_win_props, char **argv, int argc, int gradient, char *gradient_color_1, char *gradient_color_2)
 {
 	// connect to the X server
 	cavaXDisplay = XOpenDisplay(NULL);
@@ -322,6 +322,11 @@ int init_window_x(char *color, char *bcolor, int col, int bgcol, int set_win_pro
 		XParseColor(cavaXDisplay, cavaXColormap, gradient_color_2, &xgrad[1]);
 		XAllocColor(cavaXDisplay, cavaXColormap, &xgrad[1]);
 	}
+
+	//
+	xcol.pixel %= 0x1000000;
+	xcol.pixel |= (unsigned int)(0xFF*foreground_opacity) << 24;
+	printf("%x\n", xcol.pixel);
 	return 0;
 }
 
@@ -510,7 +515,7 @@ int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *
 	return 0;
 }
 
-void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_spacing, int rest, int gradient, int f[200], int flastd[200])
+void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_spacing, int rest, int gradient, int f[200], int flastd[200], double foreground_opacity)
 {
 	// draw bars on the X11 window
 	for(int i = 0; i < bars_count; i++)
@@ -557,7 +562,7 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 						else xgrad[2].pixel |= (unsigned long)(xgrad[0].blue - ((xgrad[0].blue - xgrad[1].blue) * step)) / 256;
 					}
 					
-        			xgrad[2].pixel |= 0xFF000000;	// set window opacity
+        			xgrad[2].pixel |= (unsigned int)((unsigned char)(0xFF * foreground_opacity) << 24);	// set window opacity
 
 					XSetForeground(cavaXDisplay, cavaXGraphics, xgrad[2].pixel);
 					XDrawLine(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width), window_height - I, rest + i*(bar_spacing+bar_width) + bar_width - 1, window_height - I);
