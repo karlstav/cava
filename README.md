@@ -42,6 +42,8 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
   - [Controls](#controls)
 - [Configuration](#configuration)
   - [GUI Options](#gui)
+  - [Shadow](#shadow)
+  - [Opacity](#opacity)
 - [Thanks](#thanks)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -431,6 +433,32 @@ Additionally you can change the default window class to "Cava", this helps remov
 NOTE: It also removes the ability to interact with the window (fxp. if you click or drag the window, nothing would happen)
     
     set_win_props = 1
+
+### Shadow
+
+You can change the following options:
+    
+    size = size of shadow in pixels
+
+and
+    
+    color = the color of the shadow in the following format aarrggbb
+
+```
+NOTE: All values of the AARRGGBB format must be specified!
+```
+
+```
+2nd NOTE: Works under X only
+```
+
+### Opacity
+
+foreground_opacity = (from 0.0 to 1.0)
+
+```
+NOTE: Works under X only
+```
 
 
 Thanks
