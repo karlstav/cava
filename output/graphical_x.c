@@ -19,6 +19,7 @@ XColor xbgcol, xcol, xgrad[3];
 XEvent cavaXEvent;
 Atom wm_delete_window;
 XWMHints cavaXWMHints;
+unsigned int shadow, shadow_color, shadow_drawn = 1;
 
 /**
 	The following struct is needed for
@@ -49,8 +50,12 @@ enum {
 #define _NET_WM_STATE_ADD 1;
 #define _NET_WM_STATE_TOGGLE 2;
 
-int init_window_x(char *color, char *bcolor, double foreground_opacity, int col, int bgcol, int set_win_props, char **argv, int argc, int gradient, char *gradient_color_1, char *gradient_color_2)
+int init_window_x(char *color, char *bcolor, double foreground_opacity, int col, int bgcol, int set_win_props, char **argv, int argc, int gradient, char *gradient_color_1, char *gradient_color_2, unsigned int shdw, unsigned int shdw_col)
 {
+	// Pass the shadow values
+	shadow = shdw;
+	shadow_color = shdw_col;
+	
 	// connect to the X server
 	cavaXDisplay = XOpenDisplay(NULL);
 	if(cavaXDisplay == NULL) {
@@ -323,13 +328,13 @@ int init_window_x(char *color, char *bcolor, double foreground_opacity, int col,
 		XAllocColor(cavaXDisplay, cavaXColormap, &xgrad[1]);
 	}
 
-	//
+	// Apply foreground opacity
 	xcol.pixel %= 0x1000000;
 	xcol.pixel |= (unsigned int)(0xFF*foreground_opacity) << 24;
 	return 0;
 }
 
-int apply_window_settings_x(void)
+int apply_window_settings_x()
 {
 	// Gets the monitors resolution
 	if(fs){
@@ -413,7 +418,9 @@ int apply_window_settings_x(void)
 	//	prop = XInternAtom(cavaXDisplay, "_NET_WM_WINDOW_TYPE_DESKTOP", FALSE);
 	//	XChangeProperty(cavaXDisplay, cavaXWindow, xa, XA_ATOM, 32, PropModeReplace, (unsigned char *) &prop, 1);
 	//}
-	// The code above breaks stuff, please don't use it.
+	// The code above breaks stuff, please don't use it.	
+	
+	shadow_drawn = 1;
 	return 0;
 }
 
@@ -514,8 +521,25 @@ int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *
 	return 0;
 }
 
+void draw_shadows(int window_height, int bars_count, int bar_width, int bar_spacing, int rest)
+{	
+	// draw bottom shadows
+	for(int i = 0; i < bars_count; i++)
+	{
+		for(int I = 0; I < shadow; I++)
+		{
+			XSetForeground(cavaXDisplay, cavaXGraphics, (((shadow_color >> 24 % 256)/(I+1)) << 24) + shadow_color % 0x1000000);
+			XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_width+bar_spacing) + I, window_height - shadow + I, bar_width+1, 1);
+		}
+	}
+	shadow_drawn = 0;
+	return;
+}
+
 void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_spacing, int rest, int gradient, int f[200], int flastd[200], double foreground_opacity)
 {
+	if(shadow_drawn) draw_shadows(window_height, bars_count, bar_width, bar_spacing, rest);
+	
 	// draw bars on the X11 window
 	for(int i = 0; i < bars_count; i++)
 	{	
@@ -525,6 +549,8 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 		
 		if(f[i] > flastd[i])
 		{
+			if(shadow && flastd[i] < shadow+1 && transparentFlag)	flastd[i] = shadow;
+			if(shadow && f[i] < shadow+1 && transparentFlag)	f[i] = shadow+1;
 			if(!gradient)
 			{
 				XSetForeground(cavaXDisplay, cavaXGraphics, xcol.pixel);
@@ -561,17 +587,31 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 						else xgrad[2].pixel |= (unsigned long)(xgrad[0].blue - ((xgrad[0].blue - xgrad[1].blue) * step)) / 256;
 					}
 					
-        			xgrad[2].pixel |= (unsigned int)((unsigned char)(0xFF * foreground_opacity) << 24);	// set window opacity
+					xgrad[2].pixel |= (unsigned int)((unsigned char)(0xFF * foreground_opacity) << 24);	// set window opacity
 
 					XSetForeground(cavaXDisplay, cavaXGraphics, xgrad[2].pixel);
-					XDrawLine(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width), window_height - I, rest + i*(bar_spacing+bar_width) + bar_width - 1, window_height - I);
+					XDrawLine(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width), window_height - I - 1, rest + i*(bar_spacing+bar_width) + bar_width - 1, window_height - I - 1);
+				}
+			}
+			if(shadow && transparentFlag)
+			{
+				//XClearArea(cavaXDisplay, cavaXWindow, rest + i*(bar_spacing+bar_width)+bar_width, 0, shadow, window_height, FALSE);
+				for(int I = 0; I < shadow; I++)
+				{
+					XSetForeground(cavaXDisplay, cavaXGraphics, (((shadow_color >> 24 % 256)/(I+1)) << 24) + shadow_color % 0x1000000);
+					XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width) + bar_width+I, window_height - f[i] + I, 1, f[i] - shadow + 1);
 				}
 			}
 		}
 		else if (f[i] < flastd[i]){
 			if(transparentFlag)
 			{
-				XClearArea(cavaXDisplay, cavaXWindow, rest + i*(bar_spacing+bar_width), window_height - flastd[i], bar_width, flastd[i] - f[i], FALSE);
+				XClearArea(cavaXDisplay, cavaXWindow, rest + i*(bar_spacing+bar_width), window_height - flastd[i] - shadow, bar_width + shadow, flastd[i] - f[i], FALSE);
+				if(shadow)
+				{
+					for(int I = 0; I <= shadow; I++)
+						XClearArea(cavaXDisplay, cavaXWindow, rest+i*(bar_spacing+bar_width)+bar_width+I, window_height - f[i] - 2, 1, I+1, FALSE);
+				}
 			}
 			else
 			{

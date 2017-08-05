@@ -116,7 +116,7 @@ dictionary* ini;
 char supportedInput[255] = "'fifo'";
 int sourceIsAuto = 1;
 int monstercat_alternative = 0;
-
+unsigned int shdw_col, shdw;
 
 // whether we should reload the config or not
 int should_reload = 0;
@@ -278,6 +278,11 @@ void load_config(char configPath[255])
 	frame_delim = (char)iniparser_getint(ini, "output:frame_delimiter", 10);
 	ascii_range = iniparser_getint(ini, "output:ascii_max_range", 1000);
 	bit_format = iniparser_getint(ini, "output:bit_format", 16);
+
+    // config: shadow
+	shdw = iniparser_getint(ini, "shadow:size", 0);
+	char *temp = iniparser_getstring(ini, "shadow:color", "#ff000000");
+	sscanf(temp, "#%x", &shdw_col);
 
 	// read & validate: eq
 
@@ -890,7 +895,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	// open XLIB window and set everything up
 	#ifdef XLIB
-	if(om == 5) if(init_window_x(color, bcolor, foreground_opacity, col, bgcol, set_win_props, argv, argc, gradient, gradient_color_1, gradient_color_2)) exit(EXIT_FAILURE);
+	if(om == 5) if(init_window_x(color, bcolor, foreground_opacity, col, bgcol, set_win_props, argv, argc, gradient, gradient_color_1, gradient_color_2, shdw, shdw_col)) exit(EXIT_FAILURE);
 	#endif
 
 	// setting up sdl
