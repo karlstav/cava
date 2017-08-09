@@ -4,6 +4,7 @@
 #include <X11/Xmd.h>
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
+#include <X11/XKBlib.h>
 #include "output/graphical.h"
 
 XVisualInfo cavaVInfo;
@@ -19,7 +20,8 @@ XColor xbgcol, xcol, xgrad[3];
 XEvent cavaXEvent;
 Atom wm_delete_window;
 XWMHints cavaXWMHints;
-unsigned int shadow, shadow_color, shadow_drawn = 1;
+int shadow, shadow_drawn = 1;
+unsigned int shadow_color;
 
 /**
 	The following struct is needed for
@@ -348,7 +350,7 @@ int apply_window_settings_x()
 	Atom mwmHintsProperty = XInternAtom(cavaXDisplay, "_MOTIF_WM_HINTS", FALSE);
 	Atom wmStateBelow = XInternAtom(cavaXDisplay, "_NET_WM_STATE_BELOW", TRUE);
 	//Atom xa = XInternAtom(cavaXDisplay, "_NET_WM_WINDOW_TYPE", FALSE); May be used in the future
-	Atom prop;
+	//Atom prop;
 
 	// Setting window options			
 	struct mwmHints hints;
@@ -435,7 +437,7 @@ int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *
 			case KeyPress:
 			{
 				KeySym key_symbol;
-				key_symbol = XKeycodeToKeysym(cavaXDisplay, cavaXEvent.xkey.keycode, 0);
+				key_symbol = XkbKeycodeToKeysym(cavaXDisplay, cavaXEvent.xkey.keycode, 0, cavaXEvent.xkey.state & ShiftMask ? 1 : 0);
 				switch(key_symbol)
 				{
 					// should_reload = 1

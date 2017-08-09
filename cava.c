@@ -85,6 +85,7 @@ char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style, *raw_tar
 // *bar_delim, *frame_delim ;
 char *gradient_color_1;
 char *gradient_color_2;
+char *shadow_color_str;
 double monstercat, integral, gravity, ignore, smh, sens, foreground_opacity;
 int fixedbars, framerate, bw, bs, set_win_props, autosens, overshoot;
 unsigned int lowcf, highcf;
@@ -281,8 +282,7 @@ void load_config(char configPath[255])
 
     // config: shadow
 	shdw = iniparser_getint(ini, "shadow:size", 0);
-	char *temp = iniparser_getstring(ini, "shadow:color", "#ff000000");
-	sscanf(temp, "#%x", &shdw_col);
+	shadow_color_str = (char *)iniparser_getstring(ini, "shadow:color", "#ff000000");
 
 	// read & validate: eq
 
@@ -600,6 +600,13 @@ void validate_config()
 			fprintf(stderr, "foreground_opacity cannot be above 1.0\n");
 			exit(EXIT_FAILURE);
 		}
+	}
+	
+	// validate: shadow
+	if(sscanf(shadow_color_str, "#%x", &shdw_col) != 1)
+	{
+		fprintf(stderr, "shadow color is improperly formatted!\n");
+		exit(EXIT_FAILURE);
 	}
 }
 
