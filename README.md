@@ -41,7 +41,7 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 - [Usage](#usage)
   - [Controls](#controls)
 - [Configuration](#configuration)
-- [Thanks](#thanks)
+- [Contribution](#contribution)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -327,13 +327,16 @@ $ pkill -USR1 cava
 
 ![3_139](https://cloud.githubusercontent.com/assets/6376571/8670181/9db0ef50-29e8-11e5-81bc-3e2bb9892da0.png)
 
-Thanks
+Contribution
 ------
 
-Contributors:
-* [Karl Stavestrand](mailto:karl@stavestrand.no) - creator
+Please read CONTRIBUTING.md before opening a pull request.
+
+Thanks to:
 * [CelestialWalrus](https://github.com/CelestialWalrus)
 * [anko](https://github.com/anko)
 * [livibetter](https://github.com/livibetter)
+
+for mayor contributions in the early development of this project.
 
 Also thanks to [dpayne](https://github.com/dpayne/) for figuring out how to find the pulseaudio default sink name.
