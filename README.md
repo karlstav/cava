@@ -72,7 +72,7 @@ Debian/Raspbian:
 
 ArchLinux:
 
-    pacman -S base-devel fftw ncurses
+    pacman -S base-devel fftw ncurses alsa-lib iniparser pulseaudio
 
 openSUSE:
 
@@ -138,7 +138,7 @@ If you use another version just replace *openSUSE_Leap_42.2* with *openSUSE_13.2
 
 Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
 
-    yaourt -S cava
+    pacaur -S cava
 
 ### Ubuntu
 
