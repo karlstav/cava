@@ -528,7 +528,7 @@ void draw_shadows(int window_height, int bars_count, int bar_width, int bar_spac
 	// draw bottom shadows
 	for(int i = 0; i < bars_count; i++)
 	{
-		for(int I = 0; I < shadow; I++)
+		for(int I = 0; I <= shadow; I++)
 		{
 			XSetForeground(cavaXDisplay, cavaXGraphics, (((shadow_color >> 24 % 256)/(I+1)) << 24) + shadow_color % 0x1000000);
 			XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_width+bar_spacing) + I, window_height - shadow + I, bar_width+1, 1);
@@ -551,12 +551,10 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 		
 		if(f[i] > flastd[i])
 		{
-			if(shadow && flastd[i] < shadow+1 && transparentFlag)	flastd[i] = shadow;
-			if(shadow && f[i] < shadow+1 && transparentFlag)	f[i] = shadow+1;
 			if(!gradient)
 			{
 				XSetForeground(cavaXDisplay, cavaXGraphics, xcol.pixel);
-				XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width), window_height - f[i], bar_width, f[i] - flastd[i]);
+				XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width), window_height - f[i]-shadow*transparentFlag, bar_width, f[i] - flastd[i]);
 			}
 			else
 			{
@@ -597,12 +595,12 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 			}
 			if(shadow && transparentFlag)
 			{
-				//XClearArea(cavaXDisplay, cavaXWindow, rest + i*(bar_spacing+bar_width)+bar_width, 0, shadow, window_height, FALSE);
 				for(int I = 0; I < shadow; I++)
 				{
 					XSetForeground(cavaXDisplay, cavaXGraphics, (((shadow_color >> 24 % 256)/(I+1)) << 24) + shadow_color % 0x1000000);
-					XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width) + bar_width+I, window_height - f[i] + I, 1, f[i] - shadow + 1);
+					XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width) + bar_width+I, window_height - f[i] + I - shadow, 1, f[i] - flastd[i]);
 				}
+
 			}
 		}
 		else if (f[i] < flastd[i]){
@@ -611,8 +609,8 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 				XClearArea(cavaXDisplay, cavaXWindow, rest + i*(bar_spacing+bar_width), window_height - flastd[i] - shadow, bar_width + shadow, flastd[i] - f[i], FALSE);
 				if(shadow)
 				{
-					for(int I = 0; I <= shadow; I++)
-						XClearArea(cavaXDisplay, cavaXWindow, rest+i*(bar_spacing+bar_width)+bar_width+I, window_height - f[i] - 2, 1, I+1, FALSE);
+					for(int I = 0; I < shadow; I++)
+						XClearArea(cavaXDisplay, cavaXWindow, rest+i*(bar_spacing+bar_width)+bar_width+I, window_height - f[i] - shadow-1, shadow-I, I+1, FALSE);
 				}
 			}
 			else

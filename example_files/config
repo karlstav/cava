@@ -176,8 +176,7 @@
 
 [shadow]
 # Fake shadow effect (works under X only)
-# Warning shadow must be lower than bar spacing or it will cause graphical issues
-# Shadows are also experimental and not stable, they may or may not work!
+# Warning shadows may not be larger than bars, or it will cause issues.
 ; size = 0
 # Valid shadow format is #aarrggbb
 ; color = "#ff000000"
