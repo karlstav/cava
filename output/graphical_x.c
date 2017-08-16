@@ -129,7 +129,7 @@ int init_window_x(char *color, char *bcolor, double foreground_opacity, int col,
 	}
 	
 	// add inputs
-	XSelectInput(cavaXDisplay, cavaXWindow, StructureNotifyMask | ExposureMask | KeyPressMask | KeymapNotify);
+	XSelectInput(cavaXDisplay, cavaXWindow, VisibilityChangeMask | StructureNotifyMask | ExposureMask | KeyPressMask | KeymapNotify);
 	// set the current window as active (mapping windows)		
 	XMapWindow(cavaXDisplay, cavaXWindow);
 	// get graphics context
@@ -514,6 +514,9 @@ int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *
 			}
 			case Expose:
 				return 2;
+			case VisibilityNotify:
+				if(cavaXEvent.xvisibility.state == VisibilityUnobscured) return 2;
+				break;
 			case ClientMessage:
 				if((Atom)cavaXEvent.xclient.data.l[0] == wm_delete_window)
 					return -1;
