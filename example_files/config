@@ -109,9 +109,9 @@
 
 [smoothing]
 
-# Multiplier for the integral smoothing calculations. Takes values from 0-0.99.
-# Higher values means smoother, but less precise. Set to 0 to disable.
-; integral = 0.7
+# Percentage value for integral smoothing. Takes values from 0 - 100.
+# Higher values means smoother, but less precise. 0 to disable.
+; integral = 90
 
 # Disables or enables the so-called "Monstercat smoothing". Set to 0 to disable.
 ; monstercat = 1

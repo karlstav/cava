@@ -208,7 +208,7 @@ FILE *fp;
 	modeString = (char *)iniparser_getstring(ini, "general:mode", "normal");
 
 	monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
-	integral = iniparser_getdouble(ini, "smoothing:integral", 0.7);
+	integral = iniparser_getdouble(ini, "smoothing:integral", 90);
 	gravity = iniparser_getdouble(ini, "smoothing:gravity", 1);
 	ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
 
@@ -496,10 +496,11 @@ void validate_config()
 	}
 
 	// validate: integral
+	integral = integral / 100;
 	if (integral < 0) {
 		integral = 0;
 	} else if (integral > 1) {
-		integral = 0.99;
+		integral = 1;
 	}
 
 	// validate: cutoff
@@ -549,8 +550,7 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200]
 		for (i = lcf[o]; i <= hcf[o]; i++) {
 
 			y[i] =  pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5); //getting r of compex
-			peak[o] += y[i]; //adding upp band
-			
+			peak[o] += y[i]; //adding upp band	
 		}
 	
 		
@@ -625,7 +625,7 @@ int main(int argc, char **argv)
 	int flastd[200];
 	int sleep = 0;
 	int i, n, o, height, h, w, c, rest, inAtty, silence, fp, fptest;
-	float temp;
+	//float temp;
 	//int cont = 1;
 	int fall[200];
 	float fpeak[200];
@@ -1072,37 +1072,28 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				}
 
 
-
-				// process [smoothing]: falloff
-				if (g > 0) {
-					for (o = 0; o < bars; o++) {
-						temp = f[o];
-
-						if (temp < flast[o]) {
-							f[o] = fpeak[o] - (g * fall[o] * fall[o]);
-							fall[o]++;
-						} else if (temp >= flast[o]) {
-							f[o] = temp;
-							fpeak[o] = f[o];
-							fall[o] = 0;
-						}
-
-						flast[o] = f[o];
+				// process [smoothing]
+				for (o = 0; o < bars; o++) {
+					fmem[o] = fmem[o] * integral + (f[o] - flast[o]) * 0.01;
+					f[o] = fmem[o]; 
+					
+					if (f[o] < flast[o] && g != 0) {
+						f[o] = fpeak[o] - (g * pow(fall[o], 2));
+						fall[o]++; 
 					}
-				}
-
-				// process [smoothing]: integral
-				if (integral > 0) {
-					for (o = 0; o < bars; o++) {
-						fmem[o] = fmem[o] * integral + f[o];
-						f[o] = fmem[o];
-
-						#ifdef DEBUG
-							mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%d \n", o, fc[o], fc[o + 1],
-										 lcf[o], hcf[o], f[o]);
-						#endif
+					if (f[o] > flast[o]) {
+						fpeak[o] = f[o];
+						fall[o] = 0;
 					}
+					
+					flast[o] = f[o];
+
+					#ifdef DEBUG
+						mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%d \n", o, fc[o], fc[o + 1],
+									 lcf[o], hcf[o], f[o]);
+					#endif
 				}
+				
 
 			}
 
