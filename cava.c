@@ -625,9 +625,9 @@ int main(int argc, char **argv)
 	int flastd[200];
 	int sleep = 0;
 	int i, n, o, height, h, w, c, rest, inAtty, silence, fp, fptest;
-	//float temp;
 	//int cont = 1;
 	int fall[200];
+	//float temp;
 	float fpeak[200];
 	float k[200];
 	float g;
@@ -1072,27 +1072,35 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				}
 
 
-				// process [smoothing]
-				for (o = 0; o < bars; o++) {
-					fmem[o] = fmem[o] * integral + (f[o] - flast[o]) * 0.01;
-					f[o] = fmem[o]; 
-					
-					if (f[o] < flast[o] && g != 0) {
-						f[o] = fpeak[o] - (g * pow(fall[o], 2));
-						fall[o]++; 
-					}
-					if (f[o] > flast[o]) {
-						fpeak[o] = f[o];
-						fall[o] = 0;
-					}
-					
-					flast[o] = f[o];
+				// process [smoothing]: falloff
+				if (g > 0) {
+					for (o = 0; o < bars; o++) {
+						if (f[o] < flast[o]) {
+							f[o] = fpeak[o] - (g * fall[o] * fall[o]);
+							fall[o]++;
+						} else  {
+							fpeak[o] = f[o];
+							fall[o] = 0;
+						}
 
-					#ifdef DEBUG
-						mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%d \n", o, fc[o], fc[o + 1],
-									 lcf[o], hcf[o], f[o]);
-					#endif
+						flast[o] = f[o];
+					}
 				}
+
+
+				// process [smoothing]: integral
+				if (integral > 0) {
+					for (o = 0; o < bars; o++) {
+						f[o] = fmem[o] * integral + f[o];
+						fmem[o] = f[o];
+
+						#ifdef DEBUG
+							mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%d \n", o, fc[o], fc[o + 1],
+										 lcf[o], hcf[o], f[o]);
+						#endif
+					}
+				}
+
 				
 
 			}
