@@ -3,7 +3,7 @@
 
 [general]
 
-# Smoothing mode. Can be 'normal', 'scientific' or 'waves'.
+# Smoothing mode. Can be 'normal', 'scientific' or 'waves'. DEPRECATED as of 0.6.0
 ; mode = normal
  
 # Accepts only non-negative values.
@@ -66,10 +66,10 @@
 # 'raw' defaults to 200 bars, which can be adjusted in the 'bars' option above.
 ; method = ncurses
 
-# Visual styles. Can be 'stereo' or 'mono'.
+# Visual channels. Can be 'stereo' or 'mono'.
 # 'stereo' mirrors both channels with low frequencies in center.
 # 'mono' averages both channels and outputs left to right lowest to highest frequencies.
-; style = stereo
+; channels = stereo
 
 # Raw output target. A fifo will be created if target does not exist.
 ; raw_target = /dev/stdout
@@ -113,12 +113,13 @@
 # Higher values means smoother, but less precise. 0 to disable.
 ; integral = 90
 
-# Disables or enables the so-called "Monstercat smoothing". Set to 0 to disable.
+# Disables or enables the so-called "Monstercat smoothing" with or without "waves". Set to 0 to disable. 
 ; monstercat = 1
+; waves = 0;
 
-# Set gravity multiplier for "drop off". Higher values means bars will drop faster.
-# Accepts only non-negative values. 0.5 means half gravity, 2 means double. Set to 0 to disable "drop off".
-; gravity = 1
+# Set gravity percentage for "drop off". Higher values means bars will drop faster.
+# Accepts only non-negative values. 50 means half gravity, 200 means double. Set to 0 to disable "drop off".
+; gravity = 100
 
 
 # In bar height, bars that would have been lower that this will not be drawn.

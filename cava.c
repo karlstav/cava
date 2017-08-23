@@ -25,7 +25,6 @@
 #include <dirent.h>
 #include <ctype.h>
 
-
 #ifdef NCURSES
 #include "output/terminal_ncurses.h"
 #include "output/terminal_ncurses.c"
@@ -54,9 +53,10 @@
 #include "input/pulse.c"
 #endif
 
-
 #include <iniparser.h>
 
+#include "config.h"
+#include "config.c"
 
 #ifdef __GNUC__
 // curses.h or other sources may already define
@@ -68,41 +68,8 @@
 
 struct termios oldtio, newtio;
 int rc;
-
-char *inputMethod, *outputMethod, *modeString, *color, *bcolor, *style, *raw_target, *data_format;
-// *bar_delim, *frame_delim ;
-char *gradient_color_1;
-char *gradient_color_2;
-double monstercat, integral, gravity, ignore, smh, sens;
-int fixedbars, framerate, bw, bs, autosens, overshoot;
-unsigned int lowcf, highcf;
-double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8,
-					1, 1, 0.8, 0.6, 0.6, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8,
-					0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8,
-					0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8,
-					0.7, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6};
-double *smooth = smoothDef;
-int smcount = 64;
-int customEQ = 0;
-struct audio_data audio;
-int im = 0;
-int om = 1;
-int mode = 1;
-int col = 6;
-int bgcol = -1;
-int bars = 25;
-int autobars = 1;
-int stereo = -1;
 int M = 2048;
-int is_bin = 1;
-char bar_delim = ';';
-char frame_delim = '\n';
-int ascii_range = 1000;
-int bit_format = 16;
-int gradient = 0;
-dictionary* ini;
-char supportedInput[255] = "'fifo'";
-int sourceIsAuto = 1;
+
 
 
 
@@ -135,387 +102,6 @@ void sig_handler(int sig_no)
 	raise(sig_no);
 }
 
-void load_config(char configPath[255])
-{
-
-FILE *fp;
-	
-	//config: creating path to default config file
-	if (configPath[0] == '\0') {
-		char *configFile = "config";
-		char *configHome = getenv("XDG_CONFIG_HOME");
-		if (configHome != NULL) {
-			sprintf(configPath,"%s/%s/", configHome, PACKAGE);
-		} else {
-			configHome = getenv("HOME");
-			if (configHome != NULL) {
-				sprintf(configPath,"%s/%s/%s/", configHome, ".config", PACKAGE);
-			} else {
-				printf("No HOME found (ERR_HOMELESS), exiting...");
-				exit(EXIT_FAILURE);
-			}
-		}
-	
-		// config: create directory
-		mkdir(configPath, 0777);
-
-		// config: adding default filename file
-		strcat(configPath, configFile);
-		
-		fp = fopen(configPath, "ab+");
-		if (fp) {
-			fclose(fp);
-		} else {
-			printf("Unable to access config '%s', exiting...\n", configPath);
-			exit(EXIT_FAILURE);
-		}
-
-
-	} else { //opening specified file
-
-		fp = fopen(configPath, "rb+");	
-		if (fp) {
-			fclose(fp);
-		} else {
-			printf("Unable to open file '%s', exiting...\n", configPath);
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	// config: parse ini
-	ini = iniparser_load(configPath);
-
-	//setting fifo to defaualt if no other input modes supported
-	inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo"); 
-
-	//setting alsa to defaualt if supported
-	#ifdef ALSA
-		inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa"); 
-	#endif
-
-	//setting pulse to defaualt if supported
-	#ifdef PULSE
-		inputMethod = (char *)iniparser_getstring(ini, "input:method", "pulse");
-	#endif
-
-
-	#ifdef NCURSES
-		outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
-	#endif
-	#ifndef NCURSES
-		outputMethod = (char *)iniparser_getstring(ini, "output:method", "noncurses");
-	#endif
-	modeString = (char *)iniparser_getstring(ini, "general:mode", "normal");
-
-	monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
-	integral = iniparser_getdouble(ini, "smoothing:integral", 90);
-	gravity = iniparser_getdouble(ini, "smoothing:gravity", 1);
-	ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
-
-	color = (char *)iniparser_getstring(ini, "color:foreground", "default");
-	bcolor = (char *)iniparser_getstring(ini, "color:background", "default");
-
-   	gradient = iniparser_getint(ini, "color:gradient", 0);
-    if (gradient) {
-        gradient_color_1 = (char *)iniparser_getstring(ini, "color:gradient_color_1", "#0099ff");
-        gradient_color_2 = (char *)iniparser_getstring(ini, "color:gradient_color_2", "#ff3399");
-    }
-
-	fixedbars = iniparser_getint(ini, "general:bars", 0);
-	bw = iniparser_getint(ini, "general:bar_width", 2);
-	bs = iniparser_getint(ini, "general:bar_spacing", 1);
-	framerate = iniparser_getint(ini, "general:framerate", 60);
-	sens = iniparser_getint(ini, "general:sensitivity", 100);
-	autosens = iniparser_getint(ini, "general:autosens", 1);
-	overshoot = iniparser_getint(ini, "general:overshoot", 20);
-	lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
-	highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
-
-    // config: output
-	style =  (char *)iniparser_getstring(ini, "output:style", "stereo");
-	raw_target = (char *)iniparser_getstring(ini, "output:raw_target", "/dev/stdout");
-	data_format = (char *)iniparser_getstring(ini, "output:data_format", "binary");
-	bar_delim = (char)iniparser_getint(ini, "output:bar_delimiter", 59);
-	frame_delim = (char)iniparser_getint(ini, "output:frame_delimiter", 10);
-	ascii_range = iniparser_getint(ini, "output:ascii_max_range", 1000);
-	bit_format = iniparser_getint(ini, "output:bit_format", 16);
-
-	// read & validate: eq
-
-	smcount = iniparser_getsecnkeys(ini, "eq");
-	if (smcount > 0) {
-        customEQ = 1;
-		smooth = malloc(smcount*sizeof(*smooth));
-		#ifndef LEGACYINIPARSER
-		const char *keys[smcount];
-		iniparser_getseckeys(ini, "eq", keys);
-		#endif
-		#ifdef LEGACYINIPARSER
-		char **keys = iniparser_getseckeys(ini, "eq");
-		#endif
-		for (int sk = 0; sk < smcount; sk++) {
-			smooth[sk] = iniparser_getdouble(ini, keys[sk], 1);
-		}
-	} else {
-        customEQ = 0;
-		smcount = 64; //back to the default one
-	}
-
-	// config: input
-	if (strcmp(inputMethod, "alsa") == 0) {
-		im = 1;
-		audio.source = (char *)iniparser_getstring(ini, "input:source", "hw:Loopback,1");
-	}
-	if (strcmp(inputMethod, "fifo") == 0) {
-		im = 2;
-		audio.source = (char *)iniparser_getstring(ini, "input:source", "/tmp/mpd.fifo");
-	}
-	if (strcmp(inputMethod, "pulse") == 0) {
-		im = 3;
-		audio.source = (char *)iniparser_getstring(ini, "input:source", "auto");
-	}
-
-}
-
-int validate_color(char *checkColor, int om)
-{
-	int validColor = 0;
-	if (checkColor[0] == '#' && strlen(checkColor) == 7) {
-		// If the output mode is not ncurses, tell the user to use a named colour instead of hex colours.
-		if (om != 1 && om != 2) {
-			fprintf(stderr, "Only 'ncurses' output method supports HTML colors. Please change the colours or the output method.\n");
-			exit(EXIT_FAILURE);
-		}
-		// 0 to 9 and a to f
-		for (int i = 1; checkColor[i]; ++i) {
-			if (!isdigit(checkColor[i])) {
-				if (tolower(checkColor[i]) >= 'a' && tolower(checkColor[i]) <= 'f') {
-					validColor = 1;
-				} else {
-					validColor = 0;
-					break;
-				}
-			} else {
-				validColor = 1;
-			}
-		}
-	} else {
-		if ((strcmp(checkColor, "black") == 0) || \
-			(strcmp(checkColor, "red") == 0) || \
-			(strcmp(checkColor, "green") == 0) || \
-			(strcmp(checkColor, "yellow") == 0) || \
-			(strcmp(checkColor, "blue") == 0) || \
-			(strcmp(checkColor, "magenta") == 0) || \
-			(strcmp(checkColor, "cyan") == 0) || \
-			(strcmp(checkColor, "white") == 0) || \
-			(strcmp(checkColor, "default") == 0)) validColor = 1;
-	}
-	return validColor;
-}
-
-void validate_config()
-{
-
-
-	// validate: input method
-    im = 0;
-	if (strcmp(inputMethod, "alsa") == 0) {
-		im = 1;
-		#ifndef ALSA
-		        fprintf(stderr,
-                                "cava was built without alsa support, install alsa dev files and run make clean && ./configure && make again\n");
-                        exit(EXIT_FAILURE);
-                #endif
-	}
-	if (strcmp(inputMethod, "fifo") == 0) {
-		im = 2;
-	}
-	if (strcmp(inputMethod, "pulse") == 0) {
-		im = 3;
-		#ifndef PULSE
-		        fprintf(stderr,
-                                "cava was built without pulseaudio support, install pulseaudio dev files and run make clean && ./configure && make again\n");
-                        exit(EXIT_FAILURE);
-                #endif
-
-	}
-	if (im == 0) {
-		fprintf(stderr,
-			"input method '%s' is not supported, supported methods are: %s\n",
-						inputMethod, supportedInput);
-		exit(EXIT_FAILURE);
-	}
-
-	// validate: output method
-    om = 0;
-	if (strcmp(outputMethod, "ncurses") == 0) {
-		om = 1;
-		#ifndef NCURSES
-			fprintf(stderr,
-				"cava was built without ncurses support, install ncursesw dev files and run make clean && ./configure && make again\n");
-			exit(EXIT_FAILURE);
-		#endif
-	}
-	if (strcmp(outputMethod, "circle") == 0) {
-		 om = 2;
-		#ifndef NCURSES
-			fprintf(stderr,
-				"cava was built without ncurses support, install ncursesw dev files and run make clean && ./configure && make again\n");
-			exit(EXIT_FAILURE);
-		#endif
-	}
-	if (strcmp(outputMethod, "noncurses") == 0) {
-		om = 3;
-		bgcol = 0;
-	}
-	if (strcmp(outputMethod, "raw") == 0) {//raw:
-		om = 4;
-		autosens = 0;
-		
-		//checking data format
-		if (strcmp(data_format, "binary") == 0) {
-			is_bin = 1;
-			//checking bit format:
-			if (bit_format != 8 && bit_format != 16 ) {
-			fprintf(stderr,
-				"bit format  %d is not supported, supported data formats are: '8' and '16'\n",
-							bit_format );
-			exit(EXIT_FAILURE);
-		
-			}
-		} else if (strcmp(data_format, "ascii") == 0) {
-			is_bin = 0;
-			if (ascii_range < 1 ) {
-			fprintf(stderr,
-				"ascii max value must be a positive integer\n");
-			exit(EXIT_FAILURE);
-			}
-		} else {
-		fprintf(stderr,
-			"data format %s is not supported, supported data formats are: 'binary' and 'ascii'\n",
-						data_format);
-		exit(EXIT_FAILURE);
-		
-		}
-
-
-
-	}
-	if (om == 0) {
-		#ifndef NCURSES
-		fprintf(stderr,
-			"output method %s is not supported, supported methods are: 'noncurses'\n",
-						outputMethod);
-		exit(EXIT_FAILURE);
-		#endif
-
-		#ifdef NCURSES
-                fprintf(stderr,
-                        "output method %s is not supported, supported methods are: 'ncurses' and 'noncurses'\n",
-                                                outputMethod);
-                exit(EXIT_FAILURE);
-		#endif	
-	}
-
-	// validate: output style
-	if (strcmp(style, "mono") == 0) stereo = 0;
-	if (strcmp(style, "stereo") == 0) stereo = 1;
-	if (stereo == -1) {
-		fprintf(stderr,
-			"output style %s is not supported, supported styles are: 'mono' and 'stereo'\n",
-						style);
-		exit(EXIT_FAILURE);
-	}
-
-
-
-
-	// validate: bars
-	if (fixedbars > 0) autobars = 0;
-	if (fixedbars > 200) fixedbars = 200;
-	if (bw > 200) bw = 200;
-	if (bw < 1) bw = 1;
-
-	// validate: mode
-	if (strcmp(modeString, "normal") == 0) mode = 1;
-	if (strcmp(modeString, "scientific") == 0) mode = 2;
-	if (strcmp(modeString, "waves") == 0) mode = 3;
-	if (mode == 0) {
-		fprintf(stderr,
-			"smoothing mode %s is not supported, supported modes are: 'normal', 'scientific', 'waves'\n",
-						modeString);
-		exit(EXIT_FAILURE);
-	}
-
-	// validate: framerate
-	if (framerate < 0) {
-		fprintf(stderr,
-			"framerate can't be negative!\n");
-		exit(EXIT_FAILURE);
-	}
-
-	// validate: color
-	if (!validate_color(color, om)) {
-		fprintf(stderr, "The value for 'foreground' is invalid. It can be either one of the 7 named colors or a HTML color of the form '#xxxxxx'.\n");
-		exit(EXIT_FAILURE);
-	}
-
-	// validate: background color
-	if (!validate_color(bcolor, om)) {
-		fprintf(stderr, "The value for 'background' is invalid. It can be either one of the 7 named colors or a HTML color of the form '#xxxxxx'.\n");
-		exit(EXIT_FAILURE);
-	}
-
-	// In case color is not html format set bgcol and col to predefinedint values
-
-	if (strcmp(color, "black") == 0) col = 0;
-	if (strcmp(color, "red") == 0) col = 1;
-	if (strcmp(color, "green") == 0) col = 2;
-	if (strcmp(color, "yellow") == 0) col = 3;
-	if (strcmp(color, "blue") == 0) col = 4;
-	if (strcmp(color, "magenta") == 0) col = 5;
-	if (strcmp(color, "cyan") == 0) col = 6;
-	if (strcmp(color, "white") == 0) col = 7;
-	// default if invalid
-
-	// validate: background color
-	if (strcmp(bcolor, "black") == 0) bgcol = 0;
-	if (strcmp(bcolor, "red") == 0) bgcol = 1;
-	if (strcmp(bcolor, "green") == 0) bgcol = 2;
-	if (strcmp(bcolor, "yellow") == 0) bgcol = 3;
-	if (strcmp(bcolor, "blue") == 0) bgcol = 4;
-	if (strcmp(bcolor, "magenta") == 0) bgcol = 5;
-	if (strcmp(bcolor, "cyan") == 0) bgcol = 6;
-	if (strcmp(bcolor, "white") == 0) bgcol = 7;
-	// default if invalid
-	
-
-	// validate: gravity
-	if (gravity < 0) {
-		gravity = 0;
-	}
-
-	// validate: integral
-	integral = integral / 100;
-	if (integral < 0) {
-		integral = 0;
-	} else if (integral > 1) {
-		integral = 1;
-	}
-
-	// validate: cutoff
-	if (lowcf == 0 ) lowcf++;
-	if (lowcf > highcf) {
-		fprintf(stderr,
-			"lower cutoff frequency can't be higher than higher cutoff frequency\n");
-		exit(EXIT_FAILURE);
-	}
-	
-	//setting sens
-	sens = sens / 100;
-
-
-}
 
 #ifdef ALSA
 static bool is_loop_device_for_sure(const char * text) {
@@ -532,7 +118,8 @@ static bool directory_exists(const char * path) {
 
 #endif
 
-int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200], int hcf[200], float k[200], int channel) {
+int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200],
+			 int hcf[200], float k[200], int channel, double sens, double ignore) {
 	int o,i;
 	float peak[201];
 	static int fl[200];
@@ -567,7 +154,7 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200]
 } 
 
 
-int * monstercat_filter (int * f, int bars) {
+int * monstercat_filter (int * f, int bars, int waves, int monstercat) {
 
 	int z;
 
@@ -575,7 +162,7 @@ int * monstercat_filter (int * f, int bars) {
 	// process [smoothing]: monstercat-style "average"
 
 	int m_y, de;
-	if (mode == 3) {
+	if (waves > 0) {
 		for (z = 0; z < bars; z++) { // waves
 			f[z] = f[z] / 1.25;
 			if (f[z] < 0.125)f[z] = 0.125;
@@ -615,7 +202,6 @@ int main(int argc, char **argv)
 	// general: define variables
 	pthread_t  p_thread;
 	int thr_id GCC_UNUSED;
-	int modes = 3; // amount of smoothing modes
 	float fc[200];
 	float fre[200];
 	int f[200], lcf[200], hcf[200];
@@ -646,8 +232,16 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	char ch = '\0';
 	double inr[2 * (M / 2 + 1)];
     double inl[2 * (M / 2 + 1)];
-	
+	int bars = 25;
+	char supportedInput[255] = "'fifo'";
+	int sourceIsAuto = 1;
+	double smh;
+
 	//int maxvalue = 0;
+
+	struct audio_data audio;
+	struct config_params p;
+
 
 	// general: console title
 	printf("%c]0;%s%c", '\033', PACKAGE, '\007');
@@ -703,11 +297,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	// general: main loop
 	while (1) {
 
-	//config: load & validate
-	load_config(configPath);
-    validate_config();	
+	//config: load
+	load_config(configPath, supportedInput, (void *)&p);
 
-	if (om != 4) { 
+	if (p.om != 4) { 
 		// Check if we're running in a Virtual console todo: replace virtual console with terminal emulator
 		inAtty = 0;
 		if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0), "/dev/console") == 0) inAtty = 1;
@@ -720,11 +313,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 
 	//input: init
+	audio.source = malloc(1 +  strlen(p.audio_source));
+	strcpy(audio.source, p.audio_source);
+
 	audio.format = -1;
 	audio.rate = 0;
 	audio.terminate = 0;
-	if (stereo) audio.channels = 2;
-	if (!stereo) audio.channels = 1;
+	if (p.stereo) audio.channels = 2;
+	if (!p.stereo) audio.channels = 1;
 
 	for (i = 0; i < M; i++) {
 		audio.audio_out_l[i] = 0;
@@ -733,7 +329,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	#ifdef ALSA
 	// input_alsa: wait for the input to be ready
-	if (im == 1) {
+	if (p.im == 1) {
 		if (is_loop_device_for_sure(audio.source)) {
 			if (directory_exists("/sys/")) {
 				if (! directory_exists("/sys/module/snd_aloop/")) {
@@ -771,13 +367,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	}
 	#endif
 
-	if (im == 2) {
+	if (p.im == 2) {
 		thr_id = pthread_create(&p_thread, NULL, input_fifo, (void*)&audio); //starting fifomusic listener
 		audio.rate = 44100;
 	}
 
 	#ifdef PULSE
-	if (im == 3) {
+	if (p.im == 3) {
 		if (strcmp(audio.source, "auto") == 0) {
 			getPulseDefaultSink((void*)&audio);
 			sourceIsAuto = 1;
@@ -788,7 +384,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	}
 	#endif
 
-	if (highcf > audio.rate / 2) {
+	if (p.highcf > audio.rate / 2) {
 		cleanup();
 		fprintf(stderr,
 			"higher cuttoff frequency can't be higher then sample rate / 2"
@@ -813,42 +409,43 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		#ifdef NCURSES
 		//output: start ncurses mode
-		if (om == 1 || om ==  2) {
-			init_terminal_ncurses(color, bcolor, col, bgcol, gradient, gradient_color_1, gradient_color_2,&w, &h);
+		if (p.om == 1 || p.om ==  2) {
+			init_terminal_ncurses(p.color, p.bcolor, p.col,
+			p.bgcol, p.gradient, p.gradient_color_1, p.gradient_color_2,&w, &h);
 			//get_terminal_dim_ncurses(&w, &h);
 		}
 		#endif
 
-		if (om == 3) get_terminal_dim_noncurses(&w, &h);
+		if (p.om == 3) get_terminal_dim_noncurses(&w, &h);
 
 		// output open file/fifo for raw output
-		if ( om == 4) {
+		if (p.om == 4) {
 
-			if (strcmp(raw_target,"/dev/stdout") != 0) {
+			if (strcmp(p.raw_target,"/dev/stdout") != 0) {
 
 				//checking if file exists
-				if( access( raw_target, F_OK ) != -1 ) {
-					fptest = open(raw_target, O_RDONLY | O_NONBLOCK, 0644);	//testopening in case it's a fifo
+				if( access( p.raw_target, F_OK ) != -1 ) {
+					fptest = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644);	//testopening in case it's a fifo
 					if (fptest == -1) {
-						printf("could not open file %s for writing\n",raw_target);
+						printf("could not open file %s for writing\n",p.raw_target);
 						exit(1);
 					}
 				} else {
-					printf("creating fifo %s\n",raw_target);
-					if (mkfifo(raw_target, 0664) == -1) {
-						printf("could not create fifo %s\n",raw_target);
+					printf("creating fifo %s\n",p.raw_target);
+					if (mkfifo(p.raw_target, 0664) == -1) {
+						printf("could not create fifo %s\n",p.raw_target);
 						exit(1);
 					}
-					fptest = open(raw_target, O_RDONLY | O_NONBLOCK, 0644); //fifo needs to be open for reading in order to write to it
+					fptest = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644); //fifo needs to be open for reading in order to write to it
 				}
 		    }
 
-			fp = open(raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
+			fp = open(p.raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
 			if (fp == -1) {
-				printf("could not open file %s for writing\n",raw_target);
+				printf("could not open file %s for writing\n",p.raw_target);
 				exit(1);
 			}
-			printf("open file %s for writing raw ouput\n",raw_target);		
+			printf("open file %s for writing raw ouput\n",p.raw_target);		
 	
             //height and with must be hardcoded for raw output.
 			h = 112;
@@ -856,22 +453,22 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		}
 
  		//handle for user setting too many bars
-		if (fixedbars) {
-			autobars = 0;
-			if (fixedbars * bw + fixedbars * bs - bs > w) autobars = 1;
+		if (p.fixedbars) {
+			p.autobars = 0;
+			if (p.fixedbars * p.bw + p.fixedbars * p.bs - p.bs > w) p.autobars = 1;
 		}
 
 		//getting orignial numbers of barss incase of resize
-		if (autobars == 1)  {
-			bars = (w + bs) / (bw + bs);
-			//if (bs != 0) bars = (w - bars * bs + bs) / bw;
-		} else bars = fixedbars;
+		if (p.autobars == 1)  {
+			bars = (w + p.bs) / (p.bw + p.bs);
+			//if (p.bs != 0) bars = (w - bars * p.bs + p.bs) / bw;
+		} else bars = p.fixedbars;
 
 
 		if (bars < 1) bars = 1; // must have at least 1 bars
         if (bars > 200) bars = 200; // cant have more than 200 bars
 
-		if (stereo) { //stereo must have even numbers of bars
+		if (p.stereo) { //stereo must have even numbers of bars
 			if (bars%2 != 0) bars--;
 		}
 
@@ -880,38 +477,38 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		height = h - 1;
 
 		// process [smoothing]: calculate gravity
-		g = gravity * ((float)height / 270) * pow((60 / (float)framerate), 2.5);
+		g = p.gravity * ((float)height / 270) * pow((60 / (float)p.framerate), 2.5);
 
 
 		//checks if there is stil extra room, will use this to center
-		rest = (w - bars * bw - bars * bs + bs) / 2;
+		rest = (w - bars * p.bw - bars * p.bs + p.bs) / 2;
 		if (rest < 0)rest = 0;
 
 		#ifdef DEBUG
 			printw("height: %d width: %d bars:%d bar width: %d rest: %d\n",
 						 w,
-						 h, bars, bw, rest);
+						 h, bars, p.bw, rest);
 		#endif
 
 		//output: start noncurses mode
-		if (om == 3) init_terminal_noncurses(col, bgcol, w, h, bw);
+		if (p.om == 3) init_terminal_noncurses(p.col, p.bgcol, w, h, p.bw);
 
 		
 
-		if (stereo) bars = bars / 2; // in stereo onle half number of bars per channel
+		if (p.stereo) bars = bars / 2; // in stereo onle half number of bars per channel
 
-		if ((smcount > 0) && (bars > 0)) {
-			smh = (double)(((double)smcount)/((double)bars));
+		if ((p.smcount > 0) && (bars > 0)) {
+			smh = (double)(((double)p.smcount)/((double)bars));
 		}
 
 
-		double freqconst = log10((float)lowcf / (float)highcf) /  ((float)1 / ((float)bars + (float)1) - 1);
+		double freqconst = log10((float)p.lowcf / (float)p.highcf) /  ((float)1 / ((float)bars + (float)1) - 1);
 	
 		//freqconst = -2;
 
 		// process: calculate cutoff frequencies
 		for (n = 0; n < bars + 1; n++) {
-			fc[n] = highcf * pow(10, freqconst * (-1) + ((((float)n + 1) / ((float)bars + 1)) * freqconst)); //decided to cut it at 10k, little interesting to hear above
+			fc[n] = p.highcf * pow(10, freqconst * (-1) + ((((float)n + 1) / ((float)bars + 1)) * freqconst)); //decided to cut it at 10k, little interesting to hear above
 			fre[n] = fc[n] / (audio.rate / 2); //remember nyquist!, pr my calculations this should be rate/2 and  nyquist freq in M/2 but testing shows it is not... or maybe the nq freq is in M/4
 			lcf[n] = fre[n] * (M /4); //lfc stores the lower cut frequency foo each bar in the fft out buffer
 			if (n != 0) {
@@ -930,9 +527,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		// process: weigh signal to frequencies
 		for (n = 0; n < bars;
-			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000)) * smooth[(int)floor(((double)n) * smh)];
+			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000)) * p.smooth[(int)floor(((double)n) * smh)];
 	
-		if (stereo) bars = bars * 2; 	
+		if (p.stereo) bars = bars * 2; 	
 
 	   	bool resizeTerminal = FALSE;
 
@@ -940,42 +537,35 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 			// general: keyboard controls
 			#ifdef NCURSES
-			if (om == 1 || om == 2) ch = getch();
+			if (p.om == 1 || p.om == 2) ch = getch();
 			#endif
 
 			switch (ch) {
 				case 65:    // key up
-					sens = sens * 1.05;
+					p.sens = p.sens * 1.05;
 					break;
 				case 66:    // key down
-					sens = sens * 0.95;
+					p.sens = p.sens * 0.95;
 					break;
 				case 68:    // key right
-					bw++;
+					p.bw++;
 					resizeTerminal = TRUE;
 					break;
 				case 67:    // key left
-					if (bw > 1) bw--;
+					if (p.bw > 1) p.bw--;
 					resizeTerminal = TRUE;
-					break;
-				case 'm':
-					if (mode == modes) {
-						mode = 1;
-					} else {
-						mode++;
-					}
 					break;
 				case 'r': //reload config
 					should_reload = 1;
 					break;
 				case 'c': //change forground color
-					if (col < 7) col++;
-					else col = 0;
+					if (p.col < 7) p.col++;
+					else p.col = 0;
 					resizeTerminal = TRUE;
 					break;
 				case 'b': //change backround color
-					if (bgcol < 7) bgcol++;
-					else bgcol = 0;
+					if (p.bgcol < 7) p.bgcol++;
+					else p.bgcol = 0;
 					resizeTerminal = TRUE;
 					break;
 
@@ -1004,11 +594,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			for (i = 0; i < (2 * (M / 2 + 1)); i++) {
 				if (i < M) {
 					inl[i] = audio.audio_out_l[i];
-					if (stereo) inr[i] = audio.audio_out_r[i];
+					if (p.stereo) inr[i] = audio.audio_out_r[i];
 					if (inl[i] || inr[i]) silence = 0;
 				} else {
 					inl[i] = 0;
-					if (stereo) inr[i] = 0;
+					if (p.stereo) inr[i] = 0;
 				}
 			}
 
@@ -1016,18 +606,18 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			else sleep = 0;
 
 			// process: if input was present for the last 5 seconds apply FFT to it
-			if (sleep < framerate * 5) {
+			if (sleep < p.framerate * 5) {
 
 				// process: execute FFT and sort frequency bands
-				if (stereo) {
+				if (p.stereo) {
 					fftw_execute(pl);
 					fftw_execute(pr);
 
-					fl = separate_freq_bands(outl,bars/2,lcf,hcf, k, 1);
-					fr = separate_freq_bands(outr,bars/2,lcf,hcf, k, 2);
+					fl = separate_freq_bands(outl,bars/2,lcf,hcf, k, 1, p.sens, p.ignore);
+					fr = separate_freq_bands(outr,bars/2,lcf,hcf, k, 2, p.sens, p.ignore);
 				} else {
 					fftw_execute(pl);
-					fl = separate_freq_bands(outl,bars,lcf,hcf, k, 1);
+					fl = separate_freq_bands(outl,bars,lcf,hcf, k, 1, p.sens, p.ignore);
 				}	
 
 
@@ -1044,72 +634,68 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			}
 
 			// process [smoothing]
-			if (mode != 2)
-			{
-				if (monstercat) {
-					if (stereo) {
-						fl = monstercat_filter(fl, bars / 2);
-						fr = monstercat_filter(fr, bars / 2);	
-					} else {
-						fl = monstercat_filter(fl, bars);
-					}
-				
+
+			if (p.monstercat) {
+				if (p.stereo) {
+					fl = monstercat_filter(fl, bars / 2, p.waves, p.monstercat);
+					fr = monstercat_filter(fr, bars / 2, p.waves, p.monstercat);	
+				} else {
+					fl = monstercat_filter(fl, bars, p.waves, p.monstercat);
 				}
-
-
-				//preperaing signal for drawing
-				for (o = 0; o < bars; o++) {
-					if (stereo) {
-						if (o < bars / 2) {
-							f[o] = fl[bars / 2 - o - 1];
-						} else {
-							f[o] = fr[o - bars / 2];
-						}
-
-					} else {
-						f[o] = fl[o];
-					}
-				}
-
-
-				// process [smoothing]: falloff
-				if (g > 0) {
-					for (o = 0; o < bars; o++) {
-						if (f[o] < flast[o]) {
-							f[o] = fpeak[o] - (g * fall[o] * fall[o]);
-							fall[o]++;
-						} else  {
-							fpeak[o] = f[o];
-							fall[o] = 0;
-						}
-
-						flast[o] = f[o];
-					}
-				}
-
-
-				// process [smoothing]: integral
-				if (integral > 0) {
-					for (o = 0; o < bars; o++) {
-						f[o] = fmem[o] * integral + f[o];
-						fmem[o] = f[o];
-
-						#ifdef DEBUG
-							mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%d \n", o, fc[o], fc[o + 1],
-										 lcf[o], hcf[o], f[o]);
-						#endif
-					}
-				}
-
-				
-
+			
 			}
+
+
+			//preperaing signal for drawing
+			for (o = 0; o < bars; o++) {
+				if (p.stereo) {
+					if (o < bars / 2) {
+						f[o] = fl[bars / 2 - o - 1];
+					} else {
+						f[o] = fr[o - bars / 2];
+					}
+
+				} else {
+					f[o] = fl[o];
+				}
+			}
+
+
+			// process [smoothing]: falloff
+			if (g > 0) {
+				for (o = 0; o < bars; o++) {
+					if (f[o] < flast[o]) {
+						f[o] = fpeak[o] - (g * fall[o] * fall[o]);
+						fall[o]++;
+					} else  {
+						fpeak[o] = f[o];
+						fall[o] = 0;
+					}
+
+					flast[o] = f[o];
+				}
+			}
+
+
+			// process [smoothing]: integral
+			if (p.integral > 0) {
+				for (o = 0; o < bars; o++) {
+					f[o] = fmem[o] * p.integral + f[o];
+					fmem[o] = f[o];
+
+					#ifdef DEBUG
+						mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%d \n", o, fc[o], fc[o + 1],
+									 lcf[o], hcf[o], f[o]);
+					#endif
+				}
+			}
+
 
 			// zero values causes divided by zero segfault
 			for (o = 0; o < bars; o++) {
 				if (f[o] < 1) {
 					f[o] = 1;
-					if (om == 4) f[o] = 0;
+					if (p.om == 4) f[o] = 0;
 				}
 				//if(f[o] > maxvalue) maxvalue = f[o]; 
 			}
@@ -1117,23 +703,23 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			//printf("%d\n",maxvalue); //checking maxvalue I keep forgetting its about 10000
 
 			//autmatic sens adjustment
-			if (autosens && om != 4) {
+			if (p.autosens && p.om != 4) {
 				for (o = 0; o < bars; o++) {
-					if (f[o] > height * 8 + height * 8 * overshoot / 100) {
+					if (f[o] > height * 8 + height * 8 * p.overshoot / 100) {
 						senseLow = FALSE;
-						sens = sens * 0.99;
+						p.sens = p.sens * 0.99;
 						break;
 					}
-					if (senseLow && !silence) sens = sens * 1.01;		
+					if (senseLow && !silence) p.sens = p.sens * 1.01;		
 				}
 			}
 
 			// output: draw processed input
 			#ifndef DEBUG
-				switch (om) {
+				switch (p.om) {
 					case 1:
 						#ifdef NCURSES
-						rc = draw_terminal_ncurses(inAtty, h, w, bars, bw, bs, rest, f, flastd, gradient);
+						rc = draw_terminal_ncurses(inAtty, h, w, bars, p.bw, p.bs, rest, f, flastd, p.gradient);
 						break;
 						#endif
 					case 2:
@@ -1142,20 +728,20 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						break;
 						#endif
 					case 3:
-						rc = draw_terminal_noncurses(inAtty, h, w, bars, bw, bs, rest, f, flastd);
+						rc = draw_terminal_noncurses(inAtty, h, w, bars, p.bw, p.bs, rest, f, flastd);
 						break;
 					case 4:
-						rc = print_raw_out(bars, fp, is_bin, bit_format, ascii_range, bar_delim, frame_delim,f);
+						rc = print_raw_out(bars, fp, p.is_bin, p.bit_format, p.ascii_range, p.bar_delim, p.frame_delim,f);
 						break;
 				}
 
 				if (rc == -1) resizeTerminal = TRUE; //terminal has been resized breaking to recalibrating values
 
-				if (framerate <= 1) {
-					req.tv_sec = 1  / (float)framerate;
+				if (p.framerate <= 1) {
+					req.tv_sec = 1  / (float)p.framerate;
 				} else {
 					req.tv_sec = 0;
-					req.tv_nsec = (1 / (float)framerate) * 1000000000; //sleeping for set us
+					req.tv_nsec = (1 / (float)p.framerate) * 1000000000; //sleeping for set us
 				}
 
 				nanosleep (&req, NULL);
@@ -1174,9 +760,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	audio.terminate = 1;
 	pthread_join( p_thread, NULL);
 
-	if (customEQ) free(smooth);
+	if (p.customEQ) free(p.smooth);
 	if (sourceIsAuto) free(audio.source);
-	iniparser_freedict(ini);
+	
 
 
 	//fclose(fp);

@@ -1,3 +1,5 @@
+int rc;
+
 struct audio_data {
 
         int audio_out_r[2048];
