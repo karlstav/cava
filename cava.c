@@ -710,7 +710,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					if (diff < 0) diff = 0;
 					double div = 1 / (diff + 1);
 					//f[o] = f[o] - pow(div, 10) * (height * 8 + 1); 
-					fmem[o] = fmem[o] * (1 - div / 30); 
+					fmem[o] = fmem[o] * (1 - div / 20); 
 
 					#ifdef DEBUG
 						mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%d \n",
@@ -737,11 +737,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				for (o = 0; o < bars; o++) {
 					if (f[o] > height * 8 ) {
 						senseLow = FALSE;
-						p.sens = p.sens * 0.99;
+						p.sens = p.sens * 0.985;
 						break;
 					}
 					if (senseLow && !silence) p.sens = p.sens * 1.01;
-				if (o == bars - 1) p.sens = p.sens * 1.005;
+				if (o == bars - 1) p.sens = p.sens * 1.002;
 				}
 			}
 			
