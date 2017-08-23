@@ -138,13 +138,13 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200]
 
 			//getting r of compex
 			y[i] =  pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5);
- 			peak[o] += y[i]; //adding upp band
+			peak[o] += y[i]; //adding upp band
 		}
 
 
 		peak[o] = peak[o] / (hcf[o]-lcf[o]+1); //getting average
 		temp = peak[o] * k[o] * sens; //multiplying with k and adjusting to sens settings
-		if (temp <= ignore)temp = 0;
+		if (temp <= ignore) temp = 0;
 		if (channel == 1) fl[o] = temp;
 		else fr[o] = temp;
 
@@ -700,12 +700,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				}
 			}
 
-
 			// process [smoothing]: integral
 			if (p.integral > 0) {
 				for (o = 0; o < bars; o++) {
 					f[o] = fmem[o] * p.integral + f[o];
 					fmem[o] = f[o];
+
+					int diff = (height + 1) * 8 - f[o]; 
+					if (diff < 0) diff = 0;
+					double div = 1 / (diff + 1);
+					//f[o] = f[o] - pow(div, 10) * (height * 8 + 1); 
+					fmem[o] = fmem[o] * (1 - div / 30); 
 
 					#ifdef DEBUG
 						mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%d \n",
@@ -730,15 +735,16 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			//autmatic sens adjustment
 			if (p.autosens && p.om != 4) {
 				for (o = 0; o < bars; o++) {
-					if (f[o] > height * 8 + height * 8 * p.overshoot / 100) {
+					if (f[o] > height * 8 ) {
 						senseLow = FALSE;
 						p.sens = p.sens * 0.99;
 						break;
 					}
 					if (senseLow && !silence) p.sens = p.sens * 1.01;
+				if (o == bars - 1) p.sens = p.sens * 1.005;
 				}
 			}
-
+			
 			// output: draw processed input
 			#ifndef DEBUG
 				switch (p.om) {
