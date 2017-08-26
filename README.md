@@ -11,6 +11,8 @@ Changes in 0.6:
 * Removed config parameter 'mode'
 * New config parameter 'waves'
 * Changed config parameter 'style' to 'channels' (was either 'mono' or 'stereo' anyway)
+* Parameters 'integral' and 'gravity' are now in percentage
+
 
 ![spectrum](https://raw.githubusercontent.com/karlstav/cava/gh-pages/cava_gradient.gif "spectrum")
 
