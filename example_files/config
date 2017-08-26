@@ -10,7 +10,8 @@
 ; framerate = 60
 
 # 'autosens' will attempt to decrease sensitivity if the bars peak. 1 = on, 0 = off
-# 'overshoot' allows bars to overshoot (in % of terminal height) without initiating autosens.
+# new as of 0.6.0 autosens of low values (dynamic range)
+# 'overshoot' allows bars to overshoot (in % of terminal height) without initiating autosens. DEPRECATED as of 0.6.0
 ; autosens = 1
 ; overshoot = 20
 
@@ -111,7 +112,7 @@
 
 # Percentage value for integral smoothing. Takes values from 0 - 100.
 # Higher values means smoother, but less precise. 0 to disable.
-; integral = 90
+; integral = 70
 
 # Disables or enables the so-called "Monstercat smoothing" with or without "waves". Set to 0 to disable. 
 ; monstercat = 1

@@ -5,10 +5,12 @@ C.A.V.A. (M.P.)
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
-Now with multicolored gradient:
-```
-gradient = 1
-```
+Changes in 0.6:
+* Autosens of low values (dynamic range)
+* Removed config parameter 'overshoot'
+* Removed config parameter 'mode'
+* New config parameter 'waves'
+* Changed config parameter 'style' to 'channels' (was either 'mono' or 'stereo' anyway)
 
 ![spectrum](https://raw.githubusercontent.com/karlstav/cava/gh-pages/cava_gradient.gif "spectrum")
 
