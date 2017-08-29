@@ -357,10 +357,13 @@ Or preferably:
 	
     output = sdl
 
-Just a bit of explination. X11/Xlib utilizes hardware drawing (if availble), while SDL2 utilizes software drawing (this could be changed in the future, however). The only reason why SDL2 is kept as a option is that it works on non X11 display servers (Wayland and such), whereas X doesn't.
+Just a bit of explination. X11/Xlib utilizes software/hardware drawing (if availble), while SDL2 utilizes software drawing (this could be changed in the future, however). The only reason why SDL2 is kept as a option is that it works on non X11 display servers (Wayland and such), whereas X doesn't.
+
+Additionally if you want full use of your hardware, you should probably enable OpenGL (works under X only):
+      
+    opengl = 1
 
 In the graphical modes you also have some other features, such as:
-
 
 Options that are unique to 'sdl' and 'x':
 

@@ -66,6 +66,28 @@ if [[ $have_xlib = "no" ]] ; then
 	AC_MSG_NOTICE([WARNING: No xlib dev files found building without xlib support])
 fi
 
+dnl ########################
+dnl checking for GLX and GLU
+dnl ########################
+
+AC_CHECK_LIB(GL, glEnable, have_gl=yes, have_gl=no)
+
+if [[ $have_xlib = "yes" ]] ; then
+	LIBS="$LIBS -lGL"
+	AC_CHECK_LIB(GLU, gluOrtho2D, have_glu=yes, have_glu=no)
+	if [[ $have_glu = "yes" ]] ; then
+		LIBS="$LIBS -lGLU"
+		CPPFLAGS="$CPPFLAGS -DGLX"
+	fi
+	if [[ $have_glu = "no" ]] ; then
+		AC_MSG_NOTICE([WARNING: No GLU dev files found building without GLX support])
+	fi
+fi
+
+if [[ $have_gl = "no" ]] ; then
+	AC_MSG_NOTICE([WARNING: No GL dev files found building without GLX support])
+fi
+
 dnl ######################
 dnl checking for alsa dev
 dnl ######################

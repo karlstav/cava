@@ -107,6 +107,9 @@
 # 'x' is for a graphical window using XRender (usually faster, unsupported in wayland however)
 ; method = ncurses
 
+# Additionally with Xlib, you can enable OpenGL mode to make full use of your hardware.
+; opengl = 1
+
 # Visual styles. Can be 'stereo' or 'mono'.
 # 'stereo' mirrors both channels with low frequencies in center.
 # 'mono' averages both channels and outputs left to right lowest to highest frequencies.

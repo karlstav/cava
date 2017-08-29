@@ -118,6 +118,7 @@ char supportedInput[255] = "'fifo'";
 int sourceIsAuto = 1;
 int monstercat_alternative = 0;
 unsigned int shdw_col, shdw;
+int GLXmode;
 
 // whether we should reload the config or not
 int should_reload = 0;
@@ -261,6 +262,7 @@ void load_config(char configPath[255])
 	highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
 
     // config: window
+	GLXmode = iniparser_getint(ini, "window:opengl", "1");
 	w = iniparser_getint(ini, "window:width", 640);
 	h = iniparser_getint(ini, "window:height", 480);
 	windowAlignment = (char *)iniparser_getstring(ini, "window:alignment", "none");
@@ -489,7 +491,12 @@ void validate_config()
 	}
 
 
-
+	// validate: opengl
+	if(GLXmode) {
+		#ifndef	GLX
+			fprintf(stderr, "opengl option not availble, install OpenGL and GLU dev files and run make clean && ./configure && make again\n");
+		#endif 
+	}
 
 	// validate: bars
 	if (fixedbars > 0) autobars = 0;
