@@ -119,6 +119,7 @@ int sourceIsAuto = 1;
 int monstercat_alternative = 0;
 unsigned int shdw_col, shdw;
 int GLXmode;
+double logScale = 1.0;
 
 // whether we should reload the config or not
 int should_reload = 0;
@@ -240,6 +241,7 @@ void load_config(char configPath[255])
 	integral = iniparser_getdouble(ini, "smoothing:integral", 0.7);
 	gravity = iniparser_getdouble(ini, "smoothing:gravity", 1);
 	ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
+	logScale = iniparser_getdouble(ini, "smoothing:fake_log", 1.0);
 
 	color = (char *)iniparser_getstring(ini, "color:foreground", "default");
 	bcolor = (char *)iniparser_getstring(ini, "color:background", "default");
@@ -1210,6 +1212,35 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				req.tv_nsec = 0;
 				nanosleep (&req, NULL);
 				continue;
+			}
+			
+			// logartithmic scaling
+			// before you complain, yeah, this code is quick hack and should not be used
+			if(!stereo && logScale != 1.0) {
+				double curScale; 
+				double totalScale = 0.0;
+				int newBars[bars], lastCeil = 0;
+				memset(newBars, 0x00, sizeof(int)*bars);
+					
+				// first calculate according bar positions
+				for(o = 0; o < bars; o++) {
+					if(o < (int)ceil(bars/(logScale+1.0))) {
+						if(o != 0) curScale -= (logScale-1.0)/bars*(logScale+1.0);
+						else curScale = logScale;
+					} else {
+						curScale -= 1.0/bars*(logScale+1.0)/logScale;
+					}
+					totalScale += curScale;
+					newBars[(int)ceil(totalScale)] = fl[o];
+					if((int)ceil(totalScale) - lastCeil > 1) {
+						for(int i = lastCeil; i < (int)ceil(totalScale); i++) {
+							newBars[i] = (newBars[(int)ceil(totalScale)]-newBars[lastCeil])/(ceil(totalScale)-lastCeil)*(i-lastCeil) + newBars[lastCeil];
+						}
+						lastCeil = (int)ceil(totalScale);
+					}	
+				}
+				// replace the old ones
+				memcpy(fl, newBars, sizeof(int)*bars);
 			}
 
 			// process [smoothing]

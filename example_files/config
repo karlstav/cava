@@ -176,6 +176,12 @@
 # In bar height, bars that would have been lower that this will not be drawn.
 ; ignore = 0
 
+# Because fftw doesn't have any logarithmic data sorting (or that I'm not aware of)
+# I made my "logartimic bar sorter", which is litterally a for loop doing magic.
+# Before you ask why didn't I just do log function instead. I lack knoweledge in how they work, that's why.
+# Use only if you know what are you doing.
+; fake_log = 1.0
+
 
 [shadow]
 # Fake shadow effect (works under X only)
