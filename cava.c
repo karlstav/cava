@@ -262,7 +262,7 @@ void load_config(char configPath[255])
 	highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
 
     // config: window
-	GLXmode = iniparser_getint(ini, "window:opengl", "1");
+	GLXmode = iniparser_getint(ini, "window:opengl", 1);
 	w = iniparser_getint(ini, "window:width", 640);
 	h = iniparser_getint(ini, "window:height", 480);
 	windowAlignment = (char *)iniparser_getstring(ini, "window:alignment", "none");
