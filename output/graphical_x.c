@@ -691,11 +691,11 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 		#ifdef GLX
 		else
 		{
-			float point[4];
-			point[0] = (float)pixelWidthGL*(rest+(bar_width+bar_spacing)*i)-1.0;
-			point[1] = (float)pixelWidthGL*(rest+(bar_width+bar_spacing)*i+bar_width)-1.0;
-			point[2] = (float)f[i]/window_height*2.0-1.0;
-			point[3] = (float)-1.0;
+			double point[4];
+			point[0] = (double)pixelWidthGL*(rest+(bar_width+bar_spacing)*i)-1.0;
+			point[1] = (double)pixelWidthGL*(rest+(bar_width+bar_spacing)*i+bar_width)-1.0;
+			point[2] = (double)f[i]/window_height*2.0-1.0;
+			point[3] = (double)-1.0;
 			if(shadow) {
 				point[2] += 2.0/window_height*shadow;
 				point[3] += 2.0/window_height*shadow;
@@ -709,42 +709,42 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 							xgrad[0].green+(xgrad[1].green-xgrad[0].green)*f[i]/window_height,
 							xgrad[0].blue+(xgrad[1].blue-xgrad[0].blue)*f[i]/window_height,
 							foreground_opacity*65535);
-					glVertex2f(point[0], point[2]);
-					glVertex2f(point[1], point[2]);
+					glVertex2d(point[0], point[2]);
+					glVertex2d(point[1], point[2]);
 					
 					glColor4us(xgrad[0].red, xgrad[0].green, xgrad[0].blue, foreground_opacity*65535);
-					glVertex2f(point[1], point[3]);
-					glVertex2f(point[0], point[3]);
+					glVertex2d(point[1], point[3]);
+					glVertex2d(point[0], point[3]);
 				glEnd();
 			}
 			else {
 				glColor4us(xcol.red, xcol.green, xcol.blue, foreground_opacity*65535);
 				glBegin(GL_POLYGON);
-					glVertex2f(point[0], point[2]);
-					glVertex2f(point[0], point[3]);
-					glVertex2f(point[1], point[3]);
-					glVertex2f(point[1], point[2]);
+					glVertex2d(point[0], point[2]);
+					glVertex2d(point[0], point[3]);
+					glVertex2d(point[1], point[3]);
+					glVertex2d(point[1], point[2]);
 				glEnd();
 			}
 			if(shadow) {
 				glBegin(GL_POLYGON);
 					glColor4ub((unsigned char)(shadow_color >> 16 % 256), (unsigned char)(shadow_color >> 8 % 256), (unsigned char)(shadow_color % 256),(unsigned char)(shadow_color >> 24 % 256));
-					glVertex2f(point[1], point[2]);
-					glVertex2f(point[1], point[3]);
+					glVertex2d(point[1], point[2]);
+					glVertex2d(point[1], point[3]);
 					
 					glColor4ub(0, 0, 0, 0);
-					glVertex2f(point[1]+2.0/window_height*shadow/4.0, point[3]-2.0/window_height*shadow);
-					glVertex2f(point[1]+2.0/window_height*shadow/4.0, point[2]-2.0/window_height*shadow);
+					glVertex2d(point[1]+2.0/window_height*shadow/4.0, point[3]-2.0/window_height*shadow);
+					glVertex2d(point[1]+2.0/window_height*shadow/4.0, point[2]-2.0/window_height*shadow);
 				glEnd();
 				
 				glBegin(GL_POLYGON);
 					glColor4ub((unsigned char)(shadow_color >> 16 % 256), (unsigned char)(shadow_color >> 8 % 256), (unsigned char)(shadow_color % 256), (unsigned char)(shadow_color >> 24 % 256));
-					glVertex2f(point[0],point[3]);
-					glVertex2f(point[1],point[3]);
+					glVertex2d(point[0],point[3]);
+					glVertex2d(point[1],point[3]);
 				
 					glColor4ub(0, 0, 0, 0);
-					glVertex2f(point[1]+2.0/window_height*shadow/4.0, point[3]-2.0/window_height*shadow);
-					glVertex2f(point[0]+2.0/window_height*shadow/4.0, point[3]-2.0/window_height*shadow);
+					glVertex2d(point[1]+2.0/window_height*shadow/4.0, point[3]-2.0/window_height*shadow);
+					glVertex2d(point[0]+2.0/window_height*shadow/4.0, point[3]-2.0/window_height*shadow);
 				glEnd();
 			}
 			
