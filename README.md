@@ -152,9 +152,10 @@ Michael Nguyen has added CAVA to his PPA, it can be installed with:
     sudo apt-get update
     sudo apt-get install cava
     
+**Not working as of 2017-09-24**, see issue #176.
 
 
-All distro specific instalations sources might be out of date.
+All distro specific instalation sources might be out of date.
 
 
 Capturing audio
