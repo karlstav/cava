@@ -324,7 +324,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	//config: load
 	load_config(configPath, supportedInput, (void *)&p);
 
-	if (p.om != 4) { 
+	if (p.om != 4 && p.om != 5 && p.om != 6) { 
 		// Check if we're running in a tty
 		inAtty = 0;
 		if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0),
@@ -597,7 +597,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		while  (!resizeTerminal) {
 
 			// general: keyboard controls
-			if(p.om != 5 & p.om != 6) {
+			if(p.om != 5 && p.om != 6) {
 			
 				#ifdef NCURSES
 				if (p.om == 1 || p.om == 2) ch = getch();

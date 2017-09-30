@@ -22,8 +22,6 @@ monstercat_alternative, set_win_props;
 };
 
 
-
-
 int validate_color(char *checkColor, int om)
 {
 int validColor = 0;

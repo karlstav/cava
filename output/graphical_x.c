@@ -19,7 +19,7 @@ int cavaXScreenNumber;
 XClassHint cavaXClassHint;
 XColor xbgcol, xcol, xgrad[3];
 XEvent cavaXEvent;
-Atom wm_delete_window;
+Atom wm_delete_window, wmState, fullScreen, mwmHintsProperty, wmStateBelow;
 XWMHints cavaXWMHints;
 int shadow, shadow_drawn = 0, gradient_drawn = 0;
 unsigned int shadow_color;
@@ -366,10 +366,10 @@ int apply_window_settings_x()
 	}
 
 	// Window manager options (atoms)
-	Atom wmState = XInternAtom(cavaXDisplay, "_NET_WM_STATE", FALSE);
-	Atom fullScreen = XInternAtom(cavaXDisplay, "_NET_WM_STATE_FULLSCREEN", FALSE);
-	Atom mwmHintsProperty = XInternAtom(cavaXDisplay, "_MOTIF_WM_HINTS", FALSE);
-	Atom wmStateBelow = XInternAtom(cavaXDisplay, "_NET_WM_STATE_BELOW", TRUE);
+	wmState = XInternAtom(cavaXDisplay, "_NET_WM_STATE", FALSE);
+	fullScreen = XInternAtom(cavaXDisplay, "_NET_WM_STATE_FULLSCREEN", FALSE);
+	mwmHintsProperty = XInternAtom(cavaXDisplay, "_MOTIF_WM_HINTS", FALSE);
+	wmStateBelow = XInternAtom(cavaXDisplay, "_NET_WM_STATE_BELOW", TRUE);
 	//Atom xa = XInternAtom(cavaXDisplay, "_NET_WM_WINDOW_TYPE", FALSE); May be used in the future
 	//Atom prop;
 
@@ -489,6 +489,8 @@ int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *
 						if ((*bw) > 1) (*bw)--;
 						return 2;
 					case XK_r: //reload config
+						free(bcolor);
+						free(color);
 						(*should_reload) = 1;
 						return 1;
 					case XK_q:
@@ -757,17 +759,23 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 
 void cleanup_graphical_x(void)
 {
-	if(shadowBox != NULL)
-	{
+	if(GLXmode) glXDestroyContext(cavaXDisplay, glcontext);
+	
+	if(shadowBox != NULL) {
 		XFreePixmap(cavaXDisplay, shadowBox);
 		shadowBox = NULL;
 	}
-	if(gradientBox != NULL)
-	{
+	if(gradientBox != NULL) {
 		XFreePixmap(cavaXDisplay, gradientBox);
 		gradientBox = NULL;
 	}
 	
+	XFreeColormap(cavaXDisplay, cavaXColormap);	
+	XFreeGC(cavaXDisplay, cavaXGraphics);
+	
+	// TODO: Find freeing functions for these variables
+	// cavaVInfo, cavaXClassHint and cavaXWMHints
+	 
 	XDestroyWindow(cavaXDisplay, cavaXWindow);
 	XCloseDisplay(cavaXDisplay);
 	return;
