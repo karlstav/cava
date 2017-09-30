@@ -45,14 +45,10 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 - [Usage](#usage)
   - [Controls](#controls)
 - [Configuration](#configuration)
-<<<<<<< HEAD
   - [GUI Options](#gui)
   - [Shadow](#shadow)
   - [Opacity](#opacity)
-- [Thanks](#thanks)
-=======
 - [Contribution](#contribution)
->>>>>>> upstream/master
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -85,11 +81,7 @@ Debian/Raspbian:
 
 ArchLinux:
 
-<<<<<<< HEAD
-    pacman -S base-devel fftw ncurses libx11 sdl2
-=======
-    pacman -S base-devel fftw ncurses alsa-lib iniparser pulseaudio
->>>>>>> upstream/master
+    pacman -S base-devel fftw ncurses alsa-lib iniparser pulseaudio libx11 sdl2
 
 openSUSE:
 
@@ -353,7 +345,7 @@ $ pkill -USR1 cava
 
 ![3_139](https://cloud.githubusercontent.com/assets/6376571/8670181/9db0ef50-29e8-11e5-81bc-3e2bb9892da0.png)
 
-<<<<<<< HEAD
+
 ### GUI
 
 CAVA (this branch) can now run in grapical modes.
@@ -478,11 +470,8 @@ NOTE: Works under X only
 ```
 
 
-Thanks
-=======
 Contribution
->>>>>>> upstream/master
-------
+------------
 
 Please read CONTRIBUTING.md before opening a pull request.
 
