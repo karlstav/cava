@@ -3,14 +3,15 @@
 
 [general]
 
-# Smoothing mode. Can be 'normal', 'scientific' or 'waves'.
+# Smoothing mode. Can be 'normal', 'scientific' or 'waves'. DEPRECATED as of 0.6.0
 ; mode = normal
  
 # Accepts only non-negative values.
 ; framerate = 60
 
 # 'autosens' will attempt to decrease sensitivity if the bars peak. 1 = on, 0 = off
-# 'overshoot' allows bars to overshoot (in % of terminal height) without initiating autosens.
+# new as of 0.6.0 autosens of low values (dynamic range)
+# 'overshoot' allows bars to overshoot (in % of terminal height) without initiating autosens. DEPRECATED as of 0.6.0
 ; autosens = 1
 ; overshoot = 20
 
@@ -107,13 +108,13 @@
 # 'x' is for a graphical window using XRender (usually faster, unsupported in wayland however)
 ; method = ncurses
 
-# Additionally with Xlib, you can enable OpenGL mode to make full use of your hardware.
+$ Additionally with Xlib, you can enable OpenGL mode to make full use of your hardware.
 ; opengl = 1
 
-# Visual styles. Can be 'stereo' or 'mono'.
+# Visual channels. Can be 'stereo' or 'mono'.
 # 'stereo' mirrors both channels with low frequencies in center.
 # 'mono' averages both channels and outputs left to right lowest to highest frequencies.
-; style = stereo
+; channels = stereo
 
 # Raw output target. A fifo will be created if target does not exist.
 ; raw_target = /dev/stdout
@@ -158,19 +159,20 @@
 
 [smoothing]
 
-# Multiplier for the integral smoothing calculations. Takes values from 0-0.99.
-# Higher values means smoother, but less precise. Set to 0 to disable.
-; integral = 0.7
+# Percentage value for integral smoothing. Takes values from 0 - 100.
+# Higher values means smoother, but less precise. 0 to disable.
+; integral = 70
 
-# Disables or enables the so-called "Monstercat smoothing". Set to 0 to disable.
+# Disables or enables the so-called "Monstercat smoothing" with or without "waves". Set to 0 to disable. 
 ; monstercat = 1
+; waves = 0;
 
 # Alternate monstercat smoothing algorithm
 ; monstercat_alternative = 0
 
-# Set gravity multiplier for "drop off". Higher values means bars will drop faster.
-# Accepts only non-negative values. 0.5 means half gravity, 2 means double. Set to 0 to disable "drop off".
-; gravity = 1
+# Set gravity percentage for "drop off". Higher values means bars will drop faster.
+# Accepts only non-negative values. 50 means half gravity, 200 means double. Set to 0 to disable "drop off".
+; gravity = 100
 
 
 # In bar height, bars that would have been lower that this will not be drawn.

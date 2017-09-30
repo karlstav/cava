@@ -5,10 +5,14 @@ C.A.V.A. (M.P.)
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
-Now with multicolored gradient:
-```
-gradient = 1
-```
+Changes in 0.6:
+* Autosens of low values (dynamic range)
+* Removed config parameter 'overshoot'
+* Removed config parameter 'mode'
+* New config parameter 'waves'
+* Changed config parameter 'style' to 'channels' (was either 'mono' or 'stereo' anyway)
+* Parameters 'integral' and 'gravity' are now in percentage
+
 
 ![spectrum](https://raw.githubusercontent.com/karlstav/cava/gh-pages/cava_gradient.gif "spectrum")
 
@@ -41,10 +45,14 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 - [Usage](#usage)
   - [Controls](#controls)
 - [Configuration](#configuration)
+<<<<<<< HEAD
   - [GUI Options](#gui)
   - [Shadow](#shadow)
   - [Opacity](#opacity)
 - [Thanks](#thanks)
+=======
+- [Contribution](#contribution)
+>>>>>>> upstream/master
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -77,7 +85,11 @@ Debian/Raspbian:
 
 ArchLinux:
 
+<<<<<<< HEAD
     pacman -S base-devel fftw ncurses libx11 sdl2
+=======
+    pacman -S base-devel fftw ncurses alsa-lib iniparser pulseaudio
+>>>>>>> upstream/master
 
 openSUSE:
 
@@ -143,7 +155,7 @@ If you use another version just replace *openSUSE_Leap_42.2* with *openSUSE_13.2
 
 Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
 
-    yaourt -S cava
+    pacaur -S cava
 
 The GUI branch (this) is also in [AUR](https://aur.archlinux.org/packages/cava-gui-git/).
 
@@ -157,9 +169,10 @@ Michael Nguyen has added CAVA to his PPA, it can be installed with:
     sudo apt-get update
     sudo apt-get install cava
     
+**Not working as of 2017-09-24**, see issue #176.
 
 
-All distro specific instalations sources might be out of date.
+All distro specific instalation sources might be out of date.
 
 
 Capturing audio
@@ -340,6 +353,7 @@ $ pkill -USR1 cava
 
 ![3_139](https://cloud.githubusercontent.com/assets/6376571/8670181/9db0ef50-29e8-11e5-81bc-3e2bb9892da0.png)
 
+<<<<<<< HEAD
 ### GUI
 
 CAVA (this branch) can now run in grapical modes.
@@ -465,12 +479,18 @@ NOTE: Works under X only
 
 
 Thanks
+=======
+Contribution
+>>>>>>> upstream/master
 ------
 
-Contributors:
-* [Karl Stavestrand](mailto:karl@stavestrand.no) - creator
+Please read CONTRIBUTING.md before opening a pull request.
+
+Thanks to:
 * [CelestialWalrus](https://github.com/CelestialWalrus)
 * [anko](https://github.com/anko)
 * [livibetter](https://github.com/livibetter)
+
+for mayor contributions in the early development of this project.
 
 Also thanks to [dpayne](https://github.com/dpayne/) for figuring out how to find the pulseaudio default sink name.

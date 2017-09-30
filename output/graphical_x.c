@@ -450,7 +450,7 @@ int apply_window_settings_x()
 	return 0;
 }
 
-int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *modes, int *mode, int *w, int *h, char *color, char *bcolor, int gradient)
+int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *w, int *h, char *color, char *bcolor, int gradient)
 {
 	while(!*should_reload && (XEventsQueued(cavaXDisplay, QueuedAfterFlush) > 0))
 	{
@@ -488,13 +488,6 @@ int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *
 					case XK_Right:
 						if ((*bw) > 1) (*bw)--;
 						return 2;
-					case XK_m:
-						if ((*mode) == (*modes)) {
-						(*mode) = 1;
-						} else {
-						(*mode)++;
-						}
-						break;
 					case XK_r: //reload config
 						(*should_reload) = 1;
 						return 1;

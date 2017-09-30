@@ -149,7 +149,7 @@ void apply_window_settings_sdl(int bgcol)
 	return;
 }
 
-int get_window_input_sdl(int *bs, int *bw, double *sens, int *mode, int modes, int *col, int *bgcol, int *w, int *h, int gradient)
+int get_window_input_sdl(int *bs, int *bw, double *sens, int *col, int *bgcol, int *w, int *h, int gradient)
 {
 	while(SDL_PollEvent(&cavaSDLEvent) != 0)
 	{
@@ -184,13 +184,6 @@ int get_window_input_sdl(int *bs, int *bw, double *sens, int *mode, int modes, i
 					case SDLK_RIGHT: // key right
 						if((*bw) > 1) (*bw)--;
 						return 2;
-					case SDLK_m:
-						if((*mode) == modes){
-							(*mode) = 1;
-						} else {
-							(*mode)++;
-						}
-						break;
 					case SDLK_r: // reload config
 						return 1;
 					case SDLK_c: // change foreground color
