@@ -18,7 +18,7 @@ unsigned int lowcf, highcf, shdw, shdw_col;
 double *smooth;
 int smcount, customEQ, im, om, col, bgcol, autobars, stereo, is_bin, ascii_range,
  bit_format, gradient, fixedbars, framerate, bw, bs, autosens, overshoot, waves,
-monstercat_alternative, GLXmode, set_win_props;
+monstercat_alternative, set_win_props;
 };
 
 
@@ -198,7 +198,7 @@ if (p->stereo == -1) {
 }
 
 // validate: opengl
-if(p->GLXmode) {
+if(GLXmode) {
 	#ifndef	GLX
 		fprintf(stderr, "opengl option not availble, install OpenGL and GLU dev files and run make clean && ./configure && make again\n");
 	#endif 
@@ -415,7 +415,7 @@ p->lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
 p->highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
 
 // config: window
-p->GLXmode = iniparser_getint(ini, "window:opengl", 1);
+GLXmode = iniparser_getint(ini, "window:opengl", 1);
 w = iniparser_getint(ini, "window:width", 640);
 h = iniparser_getint(ini, "window:height", 480);
 windowAlignment = (char *)iniparser_getstring(ini, "window:alignment", "none");
