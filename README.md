@@ -373,9 +373,7 @@ In the graphical modes you also have some other features, such as:
 
 Options that are unique to 'sdl' and 'x':
 
-```
-Please use window category instead of general category. As those are NOT compatible
-```
+NOTE: Please use window category instead of general category. As those are NOT compatible
 
 Toggle fullscreen:
      
