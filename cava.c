@@ -499,7 +499,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		if(p.om == 5) apply_window_settings_x();
 		#endif
 		#ifdef SDL
-		if(p.om == 6) apply_window_settings_sdl(p.bgcol);
+		if(p.om == 6) apply_window_settings_sdl(p.bgcol, &w, &h);
 		#endif
 
  		//handle for user setting too many bars
@@ -896,7 +896,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					case 6:
 					{
 						#ifdef SDL
-						if(!resizeTerminal) draw_graphical_sdl(bars, rest, p.bw, p.bs, f, flastd, p.col, p.bgcol, p.gradient);
+						if(reloadConf) break;
+						
+						draw_graphical_sdl(bars, rest, p.bw, p.bs, f, flastd, p.col, p.bgcol, p.gradient);
 						break;
 						#endif
 					}
