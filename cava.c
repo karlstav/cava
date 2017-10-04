@@ -87,14 +87,14 @@ int M = 2048;
 int should_reload = 0;
 
 // general: cleanup
-void cleanup(void)
+void cleanup(int om)
 {
 	#ifdef XLIB
-	cleanup_graphical_x();
+	if(om == 5) cleanup_graphical_x();
 	#endif
 	
 	#ifdef SDL
-	cleanup_graphical_sdl();
+	if(om == 6) cleanup_graphical_sdl();
 	#endif
 
 	#ifdef NCURSES
@@ -112,7 +112,7 @@ void sig_handler(int sig_no)
 		return;
 	}
 
-	cleanup();
+	cleanup(4);
 	if (sig_no == SIGINT) {
 		printf("CTRL-C pressed -- goodbye\n");
 	}
@@ -378,7 +378,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			n++;
 			if (n > 2000) {
 			#ifdef DEBUG
-				cleanup();
+				cleanup(p.om);
 				fprintf(stderr,
 				"could not get rate and/or format, problems with audio thread? quiting...\n");
 			#endif
@@ -412,7 +412,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	#endif
 
 	if (p.highcf > audio.rate / 2) {
-		cleanup();
+		cleanup(p.om);
 		fprintf(stderr,
 			"higher cuttoff frequency can't be higher then sample rate / 2"
 		);
@@ -639,7 +639,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						resizeTerminal = TRUE;
 						break;
 					case 'q':
-						cleanup();
+						cleanup(p.om);
 						return EXIT_SUCCESS;
 				}
 			}
@@ -649,10 +649,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				switch(get_window_input_x(&should_reload, &p.bs, &p.sens, &p.bw, &w, &h, p.color, p.bcolor, p.gradient))
 				{
 					case -1:
-						cleanup();
+						cleanup(p.om);
 						return EXIT_SUCCESS;
 					case 1:
-						cleanup();
+						cleanup(p.om);
 						break;
 					case 2:
 						resizeTerminal = TRUE;
@@ -666,12 +666,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				switch(get_window_input_sdl(&p.bs, &p.bw, &p.sens, &p.col, &p.bgcol, &w, &h, p.gradient))
 				{
 					case -1:
-						cleanup();
+						cleanup(p.om);
 						exit(EXIT_FAILURE);
 						break;
 					case 1:
 						should_reload = 1;
-						cleanup();
+						cleanup(p.om);
 						break;
 					case 2:
 						resizeTerminal = 1;
