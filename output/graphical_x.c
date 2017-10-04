@@ -489,8 +489,8 @@ int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *
 						if ((*bw) > 1) (*bw)--;
 						return 2;
 					case XK_r: //reload config
-						free(bcolor);
-						free(color);
+						if(bcolor[0] == '#')	free(bcolor);
+						if(color[0] == '#')	free(color);
 						(*should_reload) = 1;
 						return 1;
 					case XK_q:
