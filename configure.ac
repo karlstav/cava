@@ -72,7 +72,7 @@ dnl ########################
 
 AC_CHECK_LIB(GL, glEnable, have_gl=yes, have_gl=no)
 
-if [[ $have_xlib = "yes" ]] ; then
+if [[ $have_gl = "yes" ]] ; then
 	LIBS="$LIBS -lGL"
 	AC_CHECK_LIB(GLU, gluOrtho2D, have_glu=yes, have_glu=no)
 	if [[ $have_glu = "yes" ]] ; then
