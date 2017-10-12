@@ -849,7 +849,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			//autmatic sens adjustment
 			if (p.autosens && p.om != 4) {
 				for (o = 0; o < bars; o++) {
-					if (f[o] > height * 8 ) {
+					if (f[o] > height * (7*(p.om!=5&&p.om!=6) + 1)) {
 						senseLow = FALSE;
 						p.sens = p.sens * 0.985;
 						break;
