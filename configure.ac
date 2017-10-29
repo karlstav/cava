@@ -65,6 +65,19 @@ AC_CHECK_LIB(pulse-simple, pa_simple_new, have_pulse=yes, have_pulse=no)
     fi
 
 dnl ######################
+dnl checking for sndio dev
+dnl ######################
+AC_CHECK_LIB(sndio, sio_open, have_sndio=yes, have_sndio=no)
+    if [[ $have_sndio = "yes" ]] ; then
+      LIBS="$LIBS -lsndio"
+      CPPFLAGS="$CPPFLAGS -DSNDIO"
+    fi
+
+    if [[ $have_sndio = "no" ]] ; then
+      AC_MSG_NOTICE([WARNING: No sndio dev files found building without sndio support])
+    fi
+
+dnl ######################
 dnl checking for math lib
 dnl ######################
 AC_CHECK_LIB(m, sqrt, have_m=yes, have_m=no)
