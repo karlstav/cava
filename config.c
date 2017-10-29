@@ -413,10 +413,12 @@ if (strcmp(inputMethod, "pulse") == 0) {
 	p->im = 3;
 	p->audio_source = (char *)iniparser_getstring(ini, "input:source", "auto");
 }
+#ifdef SNDIO
 if (strcmp(inputMethod, "sndio") == 0) {
 	p->im = 4;
 	p->audio_source = (char *)iniparser_getstring(ini, "input:source", SIO_DEVANY);
 }
+#endif
 
 validate_config(supportedInput, params);
 //iniparser_freedict(ini);
