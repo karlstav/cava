@@ -36,6 +36,11 @@ AC_CHECK_HEADERS([pthread.h],
 	AC_MSG_ERROR([no pthread.h header header file found])
 )
 
+dnl ######################
+dnl checking for alloca.h
+dnl ######################
+
+AC_CHECK_HEADER([alloca.h], [CPPFLAGS="$CPPFLAGS -DHAVE_ALLOCA_H"])
 
 dnl ######################
 dnl checking for alsa dev
