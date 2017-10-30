@@ -1,5 +1,14 @@
 #define _XOPEN_SOURCE_EXTENDED
 #include <locale.h>
+
+#ifdef SNDIO
+#include <stdlib.h>
+#endif
+
+#ifndef SNDIO
+#include <alloca.h>
+#endif
+
 #include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
