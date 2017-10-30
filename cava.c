@@ -1,5 +1,4 @@
 #define _XOPEN_SOURCE_EXTENDED
-#include <stdlib.h>
 #include <locale.h>
 #include <stdio.h>
 #include <stddef.h>
@@ -55,6 +54,11 @@
 
 #ifdef SNDIO
 #include "input/sndio.c"
+#include <stdlib.h>
+#endif
+
+#ifndef SNDIO
+#include <alloca.h>
 #endif
 
 #include <iniparser.h>
