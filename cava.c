@@ -1,6 +1,12 @@
 #define _XOPEN_SOURCE_EXTENDED
-#include <alloca.h>
 #include <locale.h>
+
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#else
+#include <stdlib.h>
+#endif
+
 #include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -63,6 +69,10 @@
 #include "output/graphical.h"
 #include "output/graphical_sdl.c"
 #include "output/graphical_sdl.h"
+#endif
+
+#ifdef SNDIO
+#include "input/sndio.c"
 #endif
 
 #include <iniparser.h>
@@ -310,6 +320,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
     #ifdef PULSE
         strcat(supportedInput,", 'pulse'");
     #endif
+    #ifdef SNDIO
+        strcat(supportedInput,", 'sndio'");
+    #endif
 
 	//fft: planning to rock
 	fftw_complex outl[M / 2 + 1][2];
@@ -407,6 +420,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		else sourceIsAuto = 0;
 		//starting pulsemusic listener
 		thr_id = pthread_create(&p_thread, NULL, input_pulse, (void*)&audio); 
+		audio.rate = 44100;
+	}
+	#endif
+
+	#ifdef SNDIO
+	if (p.im == 4) {
+		thr_id = pthread_create(&p_thread, NULL, input_sndio, (void*)&audio);
 		audio.rate = 44100;
 	}
 	#endif

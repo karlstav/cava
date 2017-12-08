@@ -52,11 +52,12 @@ void pulseaudio_context_state_callback(pa_context *pulseaudio_context,
 	pulseaudio_context, cb, userdata));
 	break;
 	case PA_CONTEXT_FAILED:
-	//printf("FAILED\n");
+	printf("failed to coennect to pulseaudio server\n");
+	exit(EXIT_FAILURE);
 	break;
 	case PA_CONTEXT_TERMINATED:
-	//printf("TERMINATED\n");
-    pa_mainloop_quit(m_pulseaudio_mainloop, 0);
+	printf("TERMINATED\n");
+	pa_mainloop_quit(m_pulseaudio_mainloop, 0);
 	break;	  
 	}
 }
@@ -65,7 +66,7 @@ void pulseaudio_context_state_callback(pa_context *pulseaudio_context,
 void getPulseDefaultSink(void* data) {
 
 
-    struct audio_data *audio = (struct audio_data *)data;
+    	struct audio_data *audio = (struct audio_data *)data;
 	pa_mainloop_api *mainloop_api;
 	pa_context *pulseaudio_context;
 	int ret;
@@ -76,23 +77,35 @@ void getPulseDefaultSink(void* data) {
 	mainloop_api = pa_mainloop_get_api(m_pulseaudio_mainloop);
 	pulseaudio_context = pa_context_new(mainloop_api, "cava device list");
 
+
 	// This function connects to the pulse server
 	pa_context_connect(pulseaudio_context, NULL, PA_CONTEXT_NOFLAGS,
 			       NULL);
 
+
+//        printf("connecting to server\n");
 
 	//This function defines a callback so the server will tell us its state.
 	pa_context_set_state_callback(pulseaudio_context,
 			                  pulseaudio_context_state_callback,
 			                  (void*)audio);
 
+
+
 	//starting a mainloop to get default sink
-	if (pa_mainloop_run(m_pulseaudio_mainloop, &ret) < 0)
-	{
-	printf("Could not open pulseaudio mainloop to "
-			                  "find default device name: %d",
-		   ret);
-	}
+
+	//starting with one nonblokng iteration in case pulseaudio is not able to run
+	if (!(ret = pa_mainloop_iterate(m_pulseaudio_mainloop, 0, &ret))){
+        printf("Could not open pulseaudio mainloop to "
+                                          "find default device name: %d\n"
+                                        "check if pulseaudio is running\n",
+                   ret);
+
+        exit(EXIT_FAILURE);
+        }
+
+	pa_mainloop_run(m_pulseaudio_mainloop, &ret);
+	
 
 }
 

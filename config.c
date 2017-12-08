@@ -85,6 +85,13 @@ if (strcmp(inputMethod, "pulse") == 0) {
         #endif
 
 }
+if (strcmp(inputMethod, "sndio") == 0) {
+	p->im = 4;
+	#ifndef SNDIO
+		fprintf(stderr, "cava was built without sndio support\n");
+		exit(EXIT_FAILURE);
+	#endif
+}
 if (p->im == 0) {
 	fprintf(stderr,
 		"input method '%s' is not supported, supported methods are: %s\n",
@@ -376,6 +383,10 @@ inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo");
 	inputMethod = (char *)iniparser_getstring(ini, "input:method", "pulse");
 #endif
 
+//setting sndio to defaualt if supported
+#ifdef SNDIO
+	inputMethod = (char *)iniparser_getstring(ini, "input:method", "sndio");
+#endif
 
 #ifdef NCURSES
 	outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
@@ -472,6 +483,12 @@ if (strcmp(inputMethod, "pulse") == 0) {
 	p->im = 3;
 	p->audio_source = (char *)iniparser_getstring(ini, "input:source", "auto");
 }
+#ifdef SNDIO
+if (strcmp(inputMethod, "sndio") == 0) {
+	p->im = 4;
+	p->audio_source = (char *)iniparser_getstring(ini, "input:source", SIO_DEVANY);
+}
+#endif
 
 // Get bar settings
 if(!strcmp(outputMethod, "x") | !strcmp(outputMethod, "sdl")) {
