@@ -65,11 +65,13 @@ int XGLInit() {
 		return 1;
 	}
 	glXMakeCurrent(cavaXDisplay, cavaXWindow, glcontext);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	return 0;
 }
 #endif
 
-int init_window_x(char *color, char *bcolor, double foreground_opacity, int col, int bgcol, int set_win_props, char **argv, int argc, int gradient, char *gradient_color_1, char *gradient_color_2, unsigned int shdw, unsigned int shdw_col)
+int init_window_x(char *color, char *bcolor, double foreground_opacity, int col, int bgcol, int set_win_props, char **argv, int argc, int gradient, char *gradient_color_1, char *gradient_color_2, unsigned int shdw, unsigned int shdw_col, int w, int h)
 {
 	// Pass the shadow values
 	shadow = shdw;
@@ -149,7 +151,9 @@ int init_window_x(char *color, char *bcolor, double foreground_opacity, int col,
 	XSelectInput(cavaXDisplay, cavaXWindow, VisibilityChangeMask | StructureNotifyMask | ExposureMask | KeyPressMask | KeymapNotify);
 	
 	// init OpenGL
-	if(GLXmode) if(XGLInit()) return 1;
+	#ifdef GLX
+		if(GLXmode) if(XGLInit()) return 1;
+	#endif
 	
 	// give user control over the window		
 	XMapWindow(cavaXDisplay, cavaXWindow);
@@ -357,12 +361,12 @@ int init_window_x(char *color, char *bcolor, double foreground_opacity, int col,
 	return 0;
 }
 
-int apply_window_settings_x()
+int apply_window_settings_x(int *w, int *h)
 {
 	// Gets the monitors resolution
 	if(fs){
-		w = DisplayWidth(cavaXDisplay, cavaXScreenNumber);
-		h = DisplayHeight(cavaXDisplay, cavaXScreenNumber);
+		(*w) = DisplayWidth(cavaXDisplay, cavaXScreenNumber);
+		(*h) = DisplayHeight(cavaXDisplay, cavaXScreenNumber);
 	}
 
 	// Window manager options (atoms)
@@ -431,7 +435,7 @@ int apply_window_settings_x()
 		if(!transparentFlag)
 		{
 			XSetForeground(cavaXDisplay, cavaXGraphics, xbgcol.pixel);
-			XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, 0, 0, w, h);
+			XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, 0, 0, (*w), (*h));
 		}
 		else
 			XClearWindow(cavaXDisplay, cavaXWindow);
@@ -563,7 +567,7 @@ void render_shadows_x(int window_height, int bars_count, int bar_width, int bar_
 	// draw bottom shadows
 	for(int i = 0; i < bars_count; i++)
 	{
-		for(int I = 0; I <= shadow; I++)
+		for(int I = 0; I <= (shadow > bar_spacing ? bar_spacing : shadow); I++)
 		{
 			XSetForeground(cavaXDisplay, cavaXGraphics, (((shadow_color >> 24 % 256)/(I+1)) << 24) + shadow_color % 0x1000000);
 			XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_width+bar_spacing) + I, window_height - shadow + I, bar_width+1, 1);
@@ -623,9 +627,11 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 {
 
 	if(GLXmode) {
+		#ifdef GLX
 		pixelWidthGL = 2.0/(bars_count*(bar_width+bar_spacing)+rest*2);
 		glClearColor(xbgcol.red, xbgcol.green, xbgcol.blue, 0.0); // TODO BG transparency
 		glClear(GL_COLOR_BUFFER_BIT);
+		#endif
 	} else {	// don't worry we have shaders for this
 		if(!shadow_drawn && shadow) render_shadows_x(window_height, bars_count, bar_width, bar_spacing, rest);
 		if(!gradient_drawn && gradient) render_gradient_x(window_height, bar_width, bar_spacing, rest, foreground_opacity); 
@@ -635,7 +641,7 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 	for(int i = 0; i < bars_count; i++)
 	{	
 		// this fixes a rendering bug
-		if(f[i] > h) f[i] = window_height;
+		if(f[i] > window_height) f[i] = window_height;
 		
 		if(!GLXmode){
 			if(f[i] > flastd[i])
@@ -759,7 +765,9 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 
 void cleanup_graphical_x(void)
 {
-	if(GLXmode) glXDestroyContext(cavaXDisplay, glcontext);
+	#ifdef GLX
+		if(GLXmode) glXDestroyContext(cavaXDisplay, glcontext);
+	#endif
 	
 	if(shadowBox != NULL) {
 		XFreePixmap(cavaXDisplay, shadowBox);

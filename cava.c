@@ -1,3 +1,6 @@
+#define TRUE 1
+#define FALSE 0
+
 #define _XOPEN_SOURCE_EXTENDED
 #include <locale.h>
 
@@ -106,12 +109,12 @@ void cleanup(int om)
 	#ifdef SDL
 	if(om == 6) cleanup_graphical_sdl();
 	#endif
-
+	
 	#ifdef NCURSES
-	cleanup_terminal_ncurses();
+	if(om == 1 || om == 3) cleanup_terminal_ncurses();
 	#endif
 
-	cleanup_terminal_noncurses();
+	if(om == 2) cleanup_terminal_noncurses();
 }
 
 // general: handle signals
@@ -336,8 +339,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	//config: load
 	load_config(configPath, supportedInput, (void *)&p);
-
+	w = p.w;
+	h = p.h;
 	if (p.om != 4 && p.om != 5 && p.om != 6) { 
+
 		// Check if we're running in a tty
 		inAtty = 0;
 		if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0),
@@ -446,12 +451,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	// open XLIB window and set everything up
 	#ifdef XLIB
-	if(p.om == 5) if(init_window_x(p.color, p.bcolor, p.foreground_opacity, p.col, p.bgcol, p.set_win_props, argv, argc, p.gradient, p.gradient_color_1, p.gradient_color_2, p.shdw, p.shdw_col)) exit(EXIT_FAILURE);
+	if(p.om == 5) if(init_window_x(p.color, p.bcolor, p.foreground_opacity, p.col, p.bgcol, p.set_win_props, argv, argc, p.gradient, p.gradient_color_1, p.gradient_color_2, p.shdw, p.shdw_col, w, h)) exit(EXIT_FAILURE);
 	#endif
 
 	// setting up sdl
 	#ifdef SDL
-	if(p.om == 6) if(init_window_sdl(&p.col, &p.bgcol, p.color, p.bcolor, p.gradient, p.gradient_color_1, p.gradient_color_2)) exit(EXIT_FAILURE);
+	if(p.om == 6) if(init_window_sdl(&p.col, &p.bgcol, p.color, p.bcolor, p.gradient, p.gradient_color_1, p.gradient_color_2, w, h)) exit(EXIT_FAILURE);
 	#endif
 
 	while  (!reloadConf) {//jumbing back to this loop means that you resized the screen
@@ -516,7 +521,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		// draw X11 background
 		#ifdef XLIB
-		if(p.om == 5) apply_window_settings_x();
+		if(p.om == 5) apply_window_settings_x(&w, &h);
 		#endif
 		#ifdef SDL
 		if(p.om == 6) apply_window_settings_sdl(p.bgcol, &w, &h);
@@ -771,14 +776,20 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					
 				// first calculate according bar positions
 				for(o = 0; o < bars; o++) {
-					if(o < (int)ceil(bars/(p.logScale+1.0))) {
-						if(o != 0) curScale -= (p.logScale-1.0)/bars*(p.logScale+1.0);
+					if(o < (int)floor((float)bars/(p.logScale+1.0))) {
+						if(o != 0) curScale -= (float)(p.logScale-1.0)/bars*(p.logScale+1.0);
 						else curScale = p.logScale;
 					} else {
-						curScale -= 1.0/bars*(p.logScale+1.0)/p.logScale;
+						curScale -= (float)1.0/bars*(p.logScale+1.0)/p.logScale;
 					}
+					if(curScale >= bars) break;
+					
 					totalScale += curScale;
-					newBars[(int)ceil(totalScale)] = fl[o];
+					if(lastCeil == (int)ceil(totalScale) && newBars[lastCeil] > newBars[(int)ceil(totalScale)])
+						newBars[(int)ceil(totalScale)] = fl[o];
+					else if(lastCeil != (int)ceil(totalScale))
+						newBars[(int)ceil(totalScale)] = fl[o];
+					
 					if((int)ceil(totalScale) - lastCeil > 1) {
 						for(int i = lastCeil; i < (int)ceil(totalScale); i++) {
 							newBars[i] = (newBars[(int)ceil(totalScale)]-newBars[lastCeil])/(ceil(totalScale)-lastCeil)*(i-lastCeil) + newBars[lastCeil];
@@ -918,7 +929,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						#ifdef SDL
 						if(reloadConf) break;
 						
-						draw_graphical_sdl(bars, rest, p.bw, p.bs, f, flastd, p.col, p.bgcol, p.gradient);
+						draw_graphical_sdl(bars, rest, p.bw, p.bs, f, flastd, p.col, p.bgcol, p.gradient, h);
 						break;
 						#endif
 					}

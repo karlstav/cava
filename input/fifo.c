@@ -1,3 +1,4 @@
+#include <math.h>
 int rc;
 
 struct audio_data {

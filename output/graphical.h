@@ -5,6 +5,6 @@
 	extern int GLXmode;
 #endif
 
-int w, h, windowX, windowY;
+int windowX, windowY;
 unsigned char fs, borderFlag, transparentFlag, keepInBottom;
 char *windowAlignment;

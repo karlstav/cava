@@ -14,7 +14,7 @@ void cleanup_graphical_sdl(void)
 	SDL_Quit();
 }
 
-int init_window_sdl(int *col, int *bgcol, char *color, char *bcolor, int gradient, char *gradient_color_1, char *gradient_color_2)
+int init_window_sdl(int *col, int *bgcol, char *color, char *bcolor, int gradient, char *gradient_color_1, char *gradient_color_2, int w, int h)
 {
 	
 	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
@@ -221,8 +221,7 @@ int get_window_input_sdl(int *bs, int *bw, double *sens, int *col, int *bgcol, i
 	return 0;
 }
  
-void draw_graphical_sdl(int bars, int rest, int bw, int bs, int *f, int *flastd, int col, int bgcol, int gradient)
-{
+void draw_graphical_sdl(int bars, int rest, int bw, int bs, int *f, int *flastd, int col, int bgcol, int gradient, int h) {
 	for(int i = 0; i < bars; i++)
 	{
 		SDL_Rect current_bar;
