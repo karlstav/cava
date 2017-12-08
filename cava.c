@@ -68,6 +68,8 @@
 #include "config.h"
 #include "config.c"
 
+#include "clock.h"
+
 #ifdef __GNUC__
 // curses.h or other sources may already define
 #undef  GCC_UNUSED
@@ -670,6 +672,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					printw("no sound detected for 3 sec, going to sleep mode\n");
 				#endif
 				//wait 1 sec, then check sound again.
+				#ifdef CLOCK
+			        draw_clock(SILENCE);
+					refresh();
+				#endif
 				req.tv_sec = 1;
 				req.tv_nsec = 0;
 				nanosleep (&req, NULL);

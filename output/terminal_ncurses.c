@@ -1,6 +1,7 @@
 #include <curses.h>
 #include <wchar.h>
 #include <stdlib.h>
+#include "clock.h"
 
 int gradient_size = 64;
 
@@ -206,6 +207,11 @@ int flastd[200], int gradient) {
 		#undef CURRENT_COLUMN
 		flastd[bar] = f[bar]; // memory for falloff func
 	}
+
+    #ifdef CLOCK
+        draw_clock(NORMAL);
+    #endif
+
 	refresh();
 	return 0;
 }
