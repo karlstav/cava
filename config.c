@@ -308,6 +308,9 @@ if(p->om == 5 || p->om == 6)
 		fprintf(stderr, "foreground_opacity cannot be above 1.0\n");
 		exit(EXIT_FAILURE);
 	}
+
+	// TUI used x8 height, let's fix that
+	p->sens /= 8;
 }
 
 // validate: shadow
