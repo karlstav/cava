@@ -5,6 +5,8 @@
 #define _CLOCK_H
 #ifdef CLOCK
 
+#include <stdbool.h>
+
 #define SILENCE 1
 #define NORMAL 0
 
@@ -23,8 +25,18 @@
 #define BOX_HORIZ_LINE L'\u2500'
 #define BOX_VERT_LINE L'\u2502'
 
+#define CLOCK_POS_TOP_LEFT 0
+#define CLOCK_POS_TOP_RIGHT 1
+#define CLOCK_POS_BOTTOM_LEFT 2
+#define CLOCK_POS_BOTTOM_RIGHT 3
+#define CLOCK_POS_LEFT_CENTER 4
+#define CLOCK_POS_RIGHT_CENTER 5
+#define CLOCK_POS_TOP_CENTER 6
+#define CLOCK_POS_BOTTOM_CENTER 7
+#define CLOCK_POS_MIDDLE 8
+
 // Function Prototypes
-void draw_clock(int);
+void draw_clock(int,int,int,int,int);
 void refresh_clock(void);
 
 
