@@ -208,11 +208,9 @@ int flastd[200], int gradient) {
 		flastd[bar] = f[bar]; // memory for falloff func
 	}
 
-    #ifdef CLOCK
-        draw_clock(NORMAL);
+    #ifndef CLOCK
+	   refresh();
     #endif
-
-	refresh();
 	return 0;
 }
 
