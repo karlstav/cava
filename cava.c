@@ -78,6 +78,11 @@
 #include "input/sndio.c"
 #endif
 
+#ifdef PORTAUDIO
+#include "input/portaudio.c"
+#include "input/portaudio.h"
+#endif
+
 #include <iniparser.h>
 
 #include "config.h"
@@ -432,6 +437,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	#ifdef SNDIO
 	if (p.im == 4) {
 		thr_id = pthread_create(&p_thread, NULL, input_sndio, (void*)&audio);
+		audio.rate = 44100;
+	}
+	#endif
+	
+	#ifdef PORTAUDIO
+	if (p.im == 5) {
+		thr_id = pthread_create(&p_thread, NULL, input_portaudio, (void*)&audio);
 		audio.rate = 44100;
 	}
 	#endif

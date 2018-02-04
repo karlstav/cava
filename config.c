@@ -92,6 +92,13 @@ if (strcmp(inputMethod, "sndio") == 0) {
 		exit(EXIT_FAILURE);
 	#endif
 }
+if (strcmp(inputMethod, "portaudio") == 0) {
+	p->im = 5;
+	#ifndef PORTAUDIO
+		fprintf(stderr, "cava was built without portaudio support\n");
+		exit(EXIT_FAILURE);
+	#endif
+}
 if (p->im == 0) {
 	fprintf(stderr,
 		"input method '%s' is not supported, supported methods are: %s\n",
@@ -377,6 +384,10 @@ ini = iniparser_load(configPath);
 //setting fifo to defaualt if no other input modes supported
 inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo"); 
 
+#ifdef PORTAUDIO
+	inputMethod = (char *)iniparser_getstring(ini, "input:method", "portaudio");
+#endif
+
 //setting alsa to defaualt if supported
 #ifdef ALSA
 	inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa"); 
@@ -497,6 +508,10 @@ if (strcmp(inputMethod, "sndio") == 0) {
 	p->audio_source = (char *)iniparser_getstring(ini, "input:source", SIO_DEVANY);
 }
 #endif
+if (strcmp(inputMethod, "portaudio") == 0) {
+	p->im = 5;
+	p->audio_source = (char *)iniparser_getstring(ini, "input:source", "auto");
+}
 
 // Get bar settings
 if(!strcmp(outputMethod, "x") | !strcmp(outputMethod, "sdl")) {
