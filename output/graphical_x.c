@@ -23,7 +23,6 @@ Atom wm_delete_window, wmState, fullScreen, mwmHintsProperty, wmStateBelow;
 XWMHints cavaXWMHints;
 int shadow, shadow_drawn = 0, gradient_drawn = 0;
 unsigned int shadow_color;
-long double pixelWidthGL = 0.0f;
 int GLXmode;
 
 /**
@@ -625,7 +624,7 @@ int render_gradient_x(int window_height, int bar_width, int bar_spacing, int res
 
 void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_spacing, int rest, int gradient, int f[200], int flastd[200], double foreground_opacity)
 {
-
+	double pixelWidthGL;
 	if(GLXmode) {
 		#ifdef GLX
 		pixelWidthGL = 2.0/(bars_count*(bar_width+bar_spacing)+rest*2);

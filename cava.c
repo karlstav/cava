@@ -83,6 +83,12 @@
 #include "input/portaudio.h"
 #endif
 
+#ifdef WIN
+#include "output/graphical_win.h"
+#include "output/graphical_win.c"
+#include "output/graphical.h"
+#endif
+
 #include <iniparser.h>
 
 #include "config.h"
@@ -115,6 +121,10 @@ void cleanup(int om)
 	if(om == 6) cleanup_graphical_sdl();
 	#endif
 	
+	#ifdef WIN
+	if(om == 7) cleanup_graphical_win();
+	#endif
+		
 	#ifdef NCURSES
 	if(om == 1 || om == 3) cleanup_terminal_ncurses();
 	#endif
@@ -346,7 +356,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	load_config(configPath, supportedInput, (void *)&p);
 	w = p.w;
 	h = p.h;
-	if (p.om != 4 && p.om != 5 && p.om != 6) { 
+	if (p.om != 4 && p.om != 5 && p.om != 6 && p.om != 7) { 
 
 		// Check if we're running in a tty
 		inAtty = 0;
@@ -471,6 +481,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	if(p.om == 6) if(init_window_sdl(&p.col, &p.bgcol, p.color, p.bcolor, p.gradient, p.gradient_color_1, p.gradient_color_2, w, h)) exit(EXIT_FAILURE);
 	#endif
 
+	#ifdef WIN
+	if(p.om == 7) if(init_window_win(p.color, p.bcolor, p.foreground_opacity, p.col, p.bgcol, p.gradient, p.gradient_color_1, p.gradient_color_2, p.shdw, p.shdw_col, w, h)) exit(EXIT_FAILURE);
+	#endif
+	
 	while  (!reloadConf) {//jumbing back to this loop means that you resized the screen
 		for (i = 0; i < 200; i++) {
 			flast[i] = 0;
@@ -538,7 +552,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		#ifdef SDL
 		if(p.om == 6) apply_window_settings_sdl(p.bgcol, &w, &h);
 		#endif
-
+		#ifdef WIN
+		if(p.om == 7) apply_win_settings(w, h);
+		#endif
+		
  		//handle for user setting too many bars
 		if (p.fixedbars) {
 			p.autobars = 0;
@@ -634,7 +651,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		while  (!resizeTerminal) {
 
 			// general: keyboard controls
-			if(p.om != 5 && p.om != 6) {
+			if(p.om != 5 && p.om != 6 && p.om != 7) {
 			
 				#ifdef NCURSES
 				if (p.om == 1 || p.om == 2) ch = getch();
@@ -712,6 +729,23 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						break;
 					case 2:
 						resizeTerminal = 1;
+						break;
+				}
+			}
+			#endif
+			#ifdef WIN
+			if(p.om == 7)
+			{
+				switch(get_window_input_win(&should_reload, &p.bs, &p.sens, &p.bw, &w, &h, p.color, p.bcolor, p.gradient))
+				{
+					case -1:
+						cleanup(p.om);
+						return EXIT_SUCCESS;
+					case 1:
+						cleanup(p.om);
+						break;
+					case 2:
+						resizeTerminal = TRUE;
 						break;
 				}
 			}
@@ -892,7 +926,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			//autmatic sens adjustment
 			if (p.autosens && p.om != 4) {
 				for (o = 0; o < bars; o++) {
-					if (f[o] > height * (7*(p.om!=5&&p.om!=6) + 1)) {
+					if (f[o] > height * (7*(p.om!=5&&p.om!=6&&p.om!=7) + 1)) {
 						senseLow = FALSE;
 						p.sens = p.sens * 0.985;
 						break;
@@ -942,6 +976,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						if(reloadConf) break;
 						
 						draw_graphical_sdl(bars, rest, p.bw, p.bs, f, flastd, p.col, p.bgcol, p.gradient, h);
+						break;
+						#endif
+					}
+					case 7:
+					{
+						#ifdef WIN
+						if(reloadConf) break;
+						
+						draw_graphical_win(h, bars, p.bw, p.bs, rest, p.gradient, f, flastd, p.foreground_opacity);
 						break;
 						#endif
 					}

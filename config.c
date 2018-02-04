@@ -27,8 +27,8 @@ int validate_color(char *checkColor, int om)
 int validColor = 0;
 if (checkColor[0] == '#' && strlen(checkColor) == 7) {
 	// If the output mode is not ncurses, tell the user to use a named colour instead of hex colours.
-	if (om != 1 && om != 2 && om != 5 && om != 6) {
-		fprintf(stderr, "'ncurses','x' and 'sdl' output methods supports HTML colors. Please change the colours or the output method.\n");
+	if (om != 1 && om != 2 && om != 5 && om != 6 && om != 7) {
+		fprintf(stderr, "'ncurses','x','sdl' and 'win' output methods supports HTML colors. Please change the colours or the output method.\n");
 		exit(EXIT_FAILURE);
 	}
 	// 0 to 9 and a to f
@@ -180,6 +180,15 @@ if(strcmp(outputMethod, "sdl") == 0)
 		exit(EXIT_FAILURE);
 	#endif
 }
+if(strcmp(outputMethod, "win") == 0)
+{
+	p->om = 7;
+	#ifndef WIN
+		fprintf(stderr,
+			"cava was build without win32 support, you need to be running windows in order for win32 to work :P\n");
+		exit(EXIT_FAILURE);
+	#endif
+}
 if (p->om == 0) {
 	fprintf(stderr,
 		"output method %s is not supported, supported methods are: 'noncurses'",
@@ -296,7 +305,7 @@ if (p->lowcf > p->highcf) {
 p->sens = p->sens / 100;
 
 // validate: window settings
-if(p->om == 5 || p->om == 6)
+if(p->om == 5 || p->om == 6 || p->om == 7)
 {
 	// validate: alignment
 	if(strcmp(windowAlignment, "top_left"))
@@ -442,7 +451,7 @@ p->highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
 #ifdef GLX
 	GLXmode = iniparser_getint(ini, "window:opengl", 1);
 #endif
-if(!strcmp(outputMethod, "sdl") | !strcmp(outputMethod, "x")) {
+if(!strcmp(outputMethod, "sdl") | !strcmp(outputMethod, "x") | !strcmp(outputMethod, "win")) {
 	p->w = iniparser_getint(ini, "window:width", 640);
 	p->h = iniparser_getint(ini, "window:height", 480);
 }
@@ -514,7 +523,7 @@ if (strcmp(inputMethod, "portaudio") == 0) {
 }
 
 // Get bar settings
-if(!strcmp(outputMethod, "x") | !strcmp(outputMethod, "sdl")) {
+if(!strcmp(outputMethod, "x") | !strcmp(outputMethod, "sdl") | !strcmp(outputMethod, "win")) {
 	p->bw = iniparser_getint(ini, "window:bar_width", 20);
 	p->bs = iniparser_getint(ini, "window:bar_spacing", 4);
 }

@@ -65,16 +65,16 @@ static int recordCallback( const void *inputBuffer, void *outputBuffer,
     {
         for( i=0; i<framesToCalc; i++ )
         {
-			if(audio->channels == 1) {
-				audio->audio_out_l[n] = (rptr[0] + rptr[1]) / 2;
+		if(audio->channels == 1) {
+			audio->audio_out_l[n] = (rptr[0] + rptr[1]) / 2;
         		rptr += 2;
-			}
-			if(audio->channels == 2) {
-				audio->audio_out_l[n] = *rptr++;
-				audio->audio_out_r[n] = *rptr++;
-			}	
-			n++;
-			if(n == 2048 - 1) n = 0;
+		}
+		if(audio->channels == 2) {
+			audio->audio_out_l[n] = *rptr++;
+			audio->audio_out_r[n] = *rptr++;
+		}	
+		n++;
+		if(n == 2048 - 1) n = 0;
         }
     }
     
@@ -152,7 +152,6 @@ void* input_portaudio(void *audiodata) {
 			Pa_Sleep(5);
 			if(audio->terminate == 1) break;	
 		}
-		
 		// check for errors
 		if(err < 0) {
 			fprintf(stderr, "Error: failure in recording audio (%x)\n", err);
