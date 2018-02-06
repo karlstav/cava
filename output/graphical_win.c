@@ -72,8 +72,10 @@ void init_opengl_win() {
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	if(trans) {
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
 	glClearColor(0, 0, 0, 0);
 	return;
 }
@@ -186,12 +188,12 @@ int init_window_win(char *color, char *bcolor, double foreground_opacity, int co
 		return 1;
 	}
 	
-	// enable blur?
+	// we need the desktop window manager to enable transparent background (from Vista ...onward)
 	DWM_BLURBEHIND bb = {0};
 	HRGN hRgn = CreateRectRgn(0, 0, -1, -1);
 	bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
 	bb.hRgnBlur = hRgn;
-	bb.fEnable = TRUE;
+	bb.fEnable = transparentFlag;
 	DwmEnableBlurBehindWindow(cavaWinWindow, &bb);
 	
 	CreateHGLRC(cavaWinWindow);
@@ -371,11 +373,10 @@ void draw_graphical_win(int window_height, int bars_count, int bar_width, int ba
 		if(grad)
 		{
 			glBegin(GL_POLYGON);
-					glColor4ub(
-			(gradientColor[0]>>16%256)+((gradientColor[1]>>16%256)-(gradientColor[0]>>16%256))*f[i]/window_height,
-			(gradientColor[0]>>8%256)+((gradientColor[1]>>8%256)-(gradientColor[0]>>8%256))*f[i]/window_height,
-			(gradientColor[0]%256)+((gradientColor[1]%256)-(gradientColor[0]%256))*f[i]/window_height,
-			foreground_opacity*0xFF);
+				glColor4ub((gradientColor[0]>>16%256)+((gradientColor[1]>>16%256)-(gradientColor[0]>>16%256))*f[i]/window_height,
+					(gradientColor[0]>>8%256)+((gradientColor[1]>>8%256)-(gradientColor[0]>>8%256))*f[i]/window_height,
+					(gradientColor[0]%256)+((gradientColor[1]%256)-(gradientColor[0]%256))*f[i]/window_height,
+					foreground_opacity*0xFF);
 				glVertex2d(point[0], point[2]);
 				glVertex2d(point[1], point[2]);
 					

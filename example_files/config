@@ -72,6 +72,9 @@
 ; x_padding = 0
 ; y_padding = 0
 
+# On Xlib or win32 you can enable opengl to take advantage of your graphics card for drawing.
+# NOTE: On win32 it's MUST BE ON.
+; opengl = 1
 
 
 [input]
@@ -96,7 +99,8 @@
 ; method = fifo
 ; source = /tmp/mpd.fifo
 
-
+; method = portaudio
+; source = default
 
 [output]
 
@@ -106,10 +110,8 @@
 # 'raw' defaults to 200 bars, which can be adjusted in the 'bars' option above.
 # 'sdl' is for a graphical window using OpenGL
 # 'x' is for a graphical window using XRender (usually faster, unsupported in wayland however)
+# 'win' is a win32 graphical window (which embedded into the NT kernel)
 ; method = ncurses
-
-$ Additionally with Xlib, you can enable OpenGL mode to make full use of your hardware.
-; opengl = 1
 
 # Visual channels. Can be 'stereo' or 'mono'.
 # 'stereo' mirrors both channels with low frequencies in center.
@@ -144,7 +146,8 @@ $ Additionally with Xlib, you can enable OpenGL mode to make full use of your ha
 ; background = black
 ; foreground = cyan
 
-# Only works in X mode, and is REALLY BUGGY.
+# This adjusts the opacity of the bars (must have transparency on in order to work)
+# The option is quite buggy in most cases, so it may or may not work.
 ; foreground_opacity = 1.0
 
 # Gradient mode, only hex defined colors are supported, background must also be defined in hex
@@ -165,9 +168,9 @@ $ Additionally with Xlib, you can enable OpenGL mode to make full use of your ha
 
 # Disables or enables the so-called "Monstercat smoothing" with or without "waves". Set to 0 to disable. 
 ; monstercat = 1
-; waves = 0;
+; waves = 0
 
-# Alternate monstercat smoothing algorithm
+# Alternate monstercat smoothing algorithm (that smooths out bars instead of making spikes), use the monstercat option to adjust it's value.
 ; monstercat_alternative = 0
 
 # Set gravity percentage for "drop off". Higher values means bars will drop faster.
@@ -178,16 +181,15 @@ $ Additionally with Xlib, you can enable OpenGL mode to make full use of your ha
 # In bar height, bars that would have been lower that this will not be drawn.
 ; ignore = 0
 
-# Because fftw doesn't have any logarithmic data sorting (or that I'm not aware of)
-# I made my "logartimic bar sorter", which is litterally a for loop doing magic.
-# Before you ask why didn't I just do log function instead. I lack knoweledge in how they work, that's why.
-# Use only if you know what are you doing.
+# This option emulates a logarithmic fourier transform, because FFTW3 doesn't have it by default.
+# It is quite inaccurate, but to properly use it you can apply basic math
+# the value of fake log is as follows middle_position = bars/(fake_log+1.0)
 ; fake_log = 1.0
 
 
 [shadow]
-# Fake shadow effect (works under X only)
-# Warning shadows may not be larger than bars, or it will cause issues.
+# Fake shadow effect (works under Xlib and win32)
+# Warning shadows may not be larger than bars spacing, or it will cause issues.
 ; size = 0
 # Valid shadow format is #aarrggbb
 ; color = "#ff000000"

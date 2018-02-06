@@ -56,16 +56,22 @@ enum {
 
 #ifdef GLX
 int XGLInit() {
-	// create OpenGL context
+	// creating GLX context requires visual info about the X server in general
+	if(!transparentFlag)
+		XMatchVisualInfo(cavaXDisplay, cavaXScreenNumber, 24, TrueColor, &cavaVInfo);
+	
 	glcontext = glXCreateContext(cavaXDisplay, &cavaVInfo, 0, True);
 	if(!glcontext)
 	{
 		fprintf(stderr, "X11 server does not support OpenGL\n");
 		return 1;
 	}
+
 	glXMakeCurrent(cavaXDisplay, cavaXWindow, glcontext);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	if(transparentFlag) {
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
 	return 0;
 }
 #endif
@@ -382,7 +388,7 @@ int apply_window_settings_x(int *w, int *h)
 	hints.decorations = borderFlag;		// setting the window border here
 	XChangeProperty(cavaXDisplay, cavaXWindow, mwmHintsProperty, mwmHintsProperty, 32, PropModeReplace, (unsigned char *)&hints, 5);
 
-	// use XEvents to toggle fullscreenxcolor xlib
+	// use XEvents to toggle fullscreen color xlib
 	XEvent xev;
 	xev.xclient.type=ClientMessage;
 	xev.xclient.serial = 0;
@@ -419,7 +425,6 @@ int apply_window_settings_x(int *w, int *h)
 		xev.xclient.data.l[2] = 0;
 		xev.xclient.data.l[3] = 0;
 		xev.xclient.data.l[4] = 0;
-		// Push the event
 		XSendEvent(cavaXDisplay, DefaultRootWindow(cavaXDisplay), FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 	}
   	

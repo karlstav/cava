@@ -202,6 +202,9 @@ if (p->om == 0) {
 	#ifdef NCURSES
 		fprintf(stderr, ", 'ncurses'");
 	#endif
+	#ifdef WIN
+		fprintf(stderr, ", 'win'");
+	#endif
 	// Just a quick question, should you add 'circle' and 'raw' here?
 	fprintf(stderr, "\n");
 
@@ -217,15 +220,6 @@ if (p->stereo == -1) {
 					channels);
 	exit(EXIT_FAILURE);
 }
-
-// validate: opengl
-#ifdef GLX
-if(GLXmode) {
-	#ifndef	GLX
-		fprintf(stderr, "opengl option not availble, install OpenGL and GLU dev files and run make clean && ./configure && make again\n");
-	#endif 
-}
-#endif
 
 // validate: bars
 p->autobars = 1;

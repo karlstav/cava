@@ -33,7 +33,9 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
   - [Fedora](#fedora)
   - [Arch](#arch)
   - [Ubuntu](#ubuntu)
+  - [Windows](#windows)
 - [Capturing audio](#capturing-audio)
+  - [From PortAudio](#from-portaudio)
   - [From Pulseaudio monitor source (Easy, default if supported)](#from-pulseaudio-monitor-source-easy-default-if-supported)
   - [From ALSA-loopback device (Tricky)](#from-alsa-loopback-device-tricky)
   - [From mpd's fifo output](#from-mpds-fifo-output)
@@ -41,11 +43,14 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 - [Font notes](#font-notes)
   - [In ttys](#in-ttys)
   - [In terminal emulators](#in-terminal-emulators)
+  - [In window modes](#in-window-modes)
 - [Latency notes](#latency-notes)
 - [Usage](#usage)
   - [Controls](#controls)
 - [Configuration](#configuration)
-  - [GUI Options](#gui)
+- [GUI](#gui)
+  - [Output modes](#output-modes)
+  - [Features over console](#features-over-console)
   - [Shadow](#shadow)
   - [Opacity](#opacity)
 - [Contribution](#contribution)
@@ -69,7 +74,8 @@ Build requirements
 * [SDL2 dev files](https://libsdl.org/)
 * [ALSA dev files](http://alsa-project.org/)
 * [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/)
-* libtool
+* [Portaudio dev files](http://www.portaudio.com/)
+* [GNU libtool](https://www.gnu.org/software/libtool/)
 
 Only FFTW is actually required for CAVA to compile, but for maximum usage and performance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
 
@@ -77,20 +83,23 @@ All the requirements can be installed easily in all major distros:
 
 Debian/Raspbian:
 
-    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool libx11-dev libsdl2-dev
+    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool libx11-dev libsdl2-dev libportaudio-dev 
 
 ArchLinux:
 
-    pacman -S base-devel fftw ncurses alsa-lib iniparser pulseaudio libx11 sdl2
+    pacman -S base-devel fftw ncurses alsa-lib iniparser pulseaudio libx11 sdl2 portaudio
 
 openSUSE:
 
-    zypper install alsa-devel ncurses-devel fftw3-devel libX11-devel libSDL2-devel libtool
+    zypper install alsa-devel ncurses-devel fftw3-devel libX11-devel libSDL2-devel libtool portaudio-devel
 
 Fedora:
 
-    dnf install alsa-lib-devel ncurses-devel fftw3-devel xorg-x11-devel SDL2-devel pulseaudio-libs-devel libtool
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel xorg-x11-devel SDL2-devel pulseaudio-libs-devel libtool portaudio-devel
 
+Cygwin dependencies (64bit ONLY):
+   
+   gcc-core w32api portaudio libportaudio-devel libncurses-devel
 
 Iniparser is also required, but if it is not already installed, a bundled version will be used.
 
@@ -161,6 +170,9 @@ Michael Nguyen has added CAVA to his PPA, it can be installed with:
     sudo apt-get update
     sudo apt-get install cava
     
+### Windows
+
+You must compile from source, and it is only available under Cygwin. No mingw or VSC support yet.
 
 
 All distro specific instalation sources might be out of date.
@@ -168,6 +180,14 @@ All distro specific instalation sources might be out of date.
 
 Capturing audio
 ---------------
+
+### From portaudio
+
+First make sure cava was compiled with portaudio, and just uncomment:
+    
+    method = portaudio
+
+in the `[input]` section of your config.
 
 ### From Pulseaudio monitor source (Easy, default if supported)
 
@@ -251,7 +271,7 @@ Font notes
 ----------
 
 Since the graphics are simply based on characters, performance is dependent on the terminal font.
-Unless you are running in x mode, the performance is pixel/resolution-based.
+Unless you are running in on of the graphical modes, the graphics are pixel/resolution-based.
 
 ### In ttys
 
@@ -272,6 +292,10 @@ Performance is also different, urxvt is the best I found so far, while Gnome-ter
 Cava also disables the terminal cursor, and turns it back on on exit, but in case it terminates unexpectedly, run `setterm -cursor on` to get it back.
 
 Tip: Cava will look much nicer in small font sizes. Use a second terminal emulator for cava and set the font size to 1. Warning, can cause high CPU usage and latency if the terminal window is too large!
+
+### In window modes
+
+Enable openGL for better graphics card utilization.
 
 
 Latency notes
@@ -305,7 +329,7 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 | <kbd>up</kbd> / <kbd>down</kbd>| increase/decrease sensitivity |
 | <kbd>left</kbd> / <kbd>right</kbd>| increase/decrease bar width |
 | <kbd>a</kbd> / <kbd>s</kbd> | increase/decrease bar spacing |
-| <kbd>f</kbd> | toggle fullscreen (only in window modes) |
+| <kbd>f</kbd> | toggle fullscreen (only in window modes, besides win32) |
 | <kbd>c</kbd> / <kbd>b</kbd>| change forground/background color |
 | <kbd>r</kbd> | Reload configuration |
 | <kbd>q</kbd> or <kbd>CTRL-C</kbd>| Quit C.A.V.A. |
@@ -345,34 +369,33 @@ $ pkill -USR1 cava
 ![3_139](https://cloud.githubusercontent.com/assets/6376571/8670181/9db0ef50-29e8-11e5-81bc-3e2bb9892da0.png)
 
 
-### GUI
+GUI
+---
 
 CAVA (this branch) can now run in grapical modes.
 
-NOTE: All of these options are in the config file (usually) at ~/.config/cava/config
+To achieve this you have to change `method` in the `[output]` category to one of the supported graphical modes.
 
-2nd NOTE: Remember to remove ';' in front of the options if you want to change them.
+### Output modes
 
+CAVA currently supports these graphical modes:
+`
+    x - standard XFree86 window (works under Linux/BSD/macOS (must have Xquartz though))
 
-To achieve this you can change the following value to:
+	sdl - SDL2 window (runs under almost any OS, but doesn't suport transparency)
 
-    output = x
+	win - win32 window (runs on any Windows-based operating system, from Vista onwards)
+`
 
-Or preferably:
-	
-    output = sdl
+### Features over console
 
-Just a bit of explination. X11/Xlib utilizes software/hardware drawing (if availble), while SDL2 utilizes software drawing (this could be changed in the future, however). The only reason why SDL2 is kept as a option is that it works on non X11 display servers (Wayland and such), whereas X doesn't.
+Since you are running in a window, you can utilise some of it's features.
 
-Additionally if you want full use of your hardware, you should probably enable OpenGL (works under X only):
+For example, you can run cava in OpenGL, but it doesn't work with SDL2:
       
     opengl = 1
 
-In the graphical modes you also have some other features, such as:
-
-Options that are unique to 'sdl' and 'x':
-
-NOTE: Please use window category instead of general category. As those are NOT compatible
+You also have other options such as,
 
 Toggle fullscreen:
      
@@ -388,8 +411,6 @@ Change bar width/height (units are in pixels rather than characters):
     
     bar_spacing = (specify value)
     
-
-
 Assign the window to a specific part of the screen by changing:
     
     alignment = 'value'
@@ -397,7 +418,7 @@ Assign the window to a specific part of the screen by changing:
 Possible values are:
 
 ```
-'top_left', 'top', 'top_right'. 'left', 'center', 'right', 'bottom_left', 'bottom', 'bottom_right' and 'none' if you don't want to position the window automaticly.
+'top_left', 'top', 'top_right'. 'left', 'center', 'right', 'bottom_left', 'bottom', 'bottom_right' and 'none'
 ```
 
 In addition to window aligment you can adjust the window using the following options:
@@ -406,17 +427,12 @@ In addition to window aligment you can adjust the window using the following opt
     
     y_padding = (specify value)
 
-NOTE: These options don't apply if "aligment" is set to 
-```
-'none'
-```
-.
 
-But there are features that are unique for the 'x' mode alone, and one of them is enabling the window background to be transparent. However, you'll need a window composite manager running on your system (WARNING: generally causes slowdowns). This can be enabled by:
+You can enable transparent windows (doesn't work under SDL2):
      
      transparency = (0 disable, 1 enable)
 
-A another feature is when you set the foreground color to 'default' in x mode. It will automaticly get the average desktop color and blend in with your background, looks really nice with transparency+no borders.
+Setting foreground color to `default` will cause in Xlib to average out the color in the desktop. But in win32 though, it will grab the accent color instead.
 To enable this you just have to change:
     
     foreground = 'default'
@@ -427,9 +443,8 @@ A screenshot with the 'default' foreground option with transparency+no borders (
 A quick demo showing off what can be done by enabling transparency and disabling window borders:
 ![transparency](http://i.imgur.com/QscuEh8.gif "transparency")
 
-NOTE: To keep the window below any other (fxp. you want it to run in the background).
 
-You can use:
+If the window keeps annoying you by being in the foreground, you can force it to be behind any window (works only under Xlib):
     
     keep_below = 1
 
@@ -448,23 +463,19 @@ You can change the following options:
 
 and
     
-    color = the color of the shadow in the following format aarrggbb
+    color = the color of the shadow in the following format #aarrggbb
+
 
 ```
-NOTE: All values of the AARRGGBB format must be specified!
-```
-
-```
-2nd NOTE: Works under X only
+NOTE: Doesn't work under SDL2.
 ```
 
 ### Opacity
+    
+    foreground_opacity = (from 0.0 to 1.0)
 
-foreground_opacity = (from 0.0 to 1.0)
 
-```
-NOTE: Works under X only
-```
+NOTE: Doesn't work under SDL2, since it has no transparency.
 
 
 Contribution
