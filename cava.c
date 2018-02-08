@@ -121,7 +121,9 @@ static bool is_loop_device_for_sure(const char * text) {
 
 static bool directory_exists(const char * path) {
 	DIR * const dir = opendir(path);
-	const bool exists = dir != NULL;
+	bool exists;// = dir != NULL;
+    if (dir == NULL) exists = FALSE;
+    else exists = TRUE; 
 	closedir(dir);
 	return exists;
 }
