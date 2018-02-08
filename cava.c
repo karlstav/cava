@@ -808,7 +808,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			for (o = 0; o < bars; o++) {
 				flastd[o] = f[o];
 			}
-		}
+		}//resize terminal
+        
 	}//reloading config
 	req.tv_sec = 0;
 	req.tv_nsec = 100; //waiting some time to make shure audio is ready
@@ -820,8 +821,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	if (p.customEQ) free(p.smooth);
 	if (sourceIsAuto) free(audio.source);
-
-
+   
+    cleanup();
 
 	//fclose(fp);
 	}
