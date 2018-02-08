@@ -100,7 +100,7 @@ void getPulseDefaultSink(void* data) {
                                           "find default device name: %d\n"
                                         "check if pulseaudio is running\n",
                    ret);
-        cleanup();
+
         exit(EXIT_FAILURE);
         }
 
