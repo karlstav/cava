@@ -350,6 +350,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		if (is_loop_device_for_sure(audio.source)) {
 			if (directory_exists("/sys/")) {
 				if (! directory_exists("/sys/module/snd_aloop/")) {
+      				cleanup();
 					fprintf(stderr,
 					"Linux kernel module \"snd_aloop\" does not seem to  be loaded.\n"
 					"Maybe run \"sudo modprobe snd_aloop\".\n");
@@ -369,11 +370,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			nanosleep (&req, NULL);
 			n++;
 			if (n > 2000) {
-			#ifdef DEBUG
 				cleanup();
 				fprintf(stderr,
 				"could not get rate and/or format, problems with audio thread? quiting...\n");
-			#endif
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -808,6 +807,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			for (o = 0; o < bars; o++) {
 				flastd[o] = f[o];
 			}
+
+            //checking if audio thread has exited unexpectedly
+            if (audio.terminate == 1) {
+                cleanup();
+   				fprintf(stderr,
+                "Audio thread exited unexpectedly. %s\n", audio.error_message);
+                exit(EXIT_FAILURE); 
+            } 
+
 		}//resize terminal
         
 	}//reloading config
