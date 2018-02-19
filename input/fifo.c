@@ -11,6 +11,7 @@ struct audio_data {
         int im; //input mode alsa, fifo or pulse
         int channels;
 	int terminate; // shared variable used to terminate audio thread
+        char error_message[1024];
 };
 
 

@@ -157,7 +157,9 @@ static bool is_loop_device_for_sure(const char * text) {
 
 static bool directory_exists(const char * path) {
 	DIR * const dir = opendir(path);
-	const bool exists = dir != NULL;
+	bool exists;// = dir != NULL;
+    if (dir == NULL) exists = FALSE;
+    else exists = TRUE; 
 	closedir(dir);
 	return exists;
 }
@@ -391,6 +393,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		if (is_loop_device_for_sure(audio.source)) {
 			if (directory_exists("/sys/")) {
 				if (! directory_exists("/sys/module/snd_aloop/")) {
+      				cleanup(p.om);
 					fprintf(stderr,
 					"Linux kernel module \"snd_aloop\" does not seem to  be loaded.\n"
 					"Maybe run \"sudo modprobe snd_aloop\".\n");
@@ -414,7 +417,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				cleanup(p.om);
 				fprintf(stderr,
 				"could not get rate and/or format, problems with audio thread? quiting...\n");
-			#endif
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -1006,7 +1008,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			for (o = 0; o < bars; o++) {
 				flastd[o] = f[o];
 			}
-		}
+
+            //checking if audio thread has exited unexpectedly
+            if (audio.terminate == 1) {
+                cleanup(p.om);
+   				fprintf(stderr,
+                "Audio thread exited unexpectedly. %s\n", audio.error_message);
+                exit(EXIT_FAILURE); 
+            } 
+
+		}//resize terminal
+        
 	}//reloading config
 	req.tv_sec = 0;
 	req.tv_nsec = 100; //waiting some time to make shure audio is ready
@@ -1018,8 +1030,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	if (p.customEQ) free(p.smooth);
 	if (sourceIsAuto) free(audio.source);
-
-
+   
+    cleanup(p.om);
 
 	//fclose(fp);
 	}
