@@ -418,12 +418,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				fprintf(stderr,
 				"could not get rate and/or format, problems with audio thread? quiting...\n");
 				exit(EXIT_FAILURE);
+			#endif
 			}
 		}
 	#ifdef DEBUG
 		printf("got format: %d and rate %d\n", audio.format, audio.rate);
 	#endif
-
 	}
 	#endif
 
