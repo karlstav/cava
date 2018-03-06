@@ -6,12 +6,12 @@ double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8,
 					0.7, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6};
 
 
-char *inputMethod, *outputMethod, *channels, *data_format;
+char *inputMethod, *outputMethod, *channels;
 
 
 struct config_params {
 
-char *color, *bcolor, *raw_target, *audio_source, *gradient_color_1, *gradient_color_2;
+char *color, *bcolor, *raw_target, *audio_source, *gradient_color_1, *gradient_color_2, *data_format;
 char bar_delim, frame_delim ;
 double monstercat, integral, gravity, ignore, sens; 
 unsigned int lowcf, highcf;
@@ -125,11 +125,10 @@ if (strcmp(outputMethod, "noncurses") == 0) {
 }
 if (strcmp(outputMethod, "raw") == 0) {//raw:
 	p->om = 4;
-	p->autosens = 0;
 	
 	//checking data format
 	p->is_bin = -1;
-	if (strcmp(data_format, "binary") == 0) {
+	if (strcmp(p->data_format, "binary") == 0) {
 		p->is_bin = 1;
 		//checking bit format:
 		if (p->bit_format != 8 && p->bit_format != 16 ) {
@@ -139,7 +138,7 @@ if (strcmp(outputMethod, "raw") == 0) {//raw:
 		exit(EXIT_FAILURE);
 	
 		}
-	} else if (strcmp(data_format, "ascii") == 0) {
+	} else if (strcmp(p->data_format, "ascii") == 0) {
 		p->is_bin = 0;
 		if (p->ascii_range < 1 ) {
 		fprintf(stderr,
@@ -149,7 +148,7 @@ if (strcmp(outputMethod, "raw") == 0) {//raw:
 	} else {
 	fprintf(stderr,
 		"data format %s is not supported, supported data formats are: 'binary' and 'ascii'\n",
-					data_format);
+					p->data_format);
 	exit(EXIT_FAILURE);
 	
 	}
@@ -372,7 +371,7 @@ p->highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
 // config: output
 channels =  (char *)iniparser_getstring(ini, "output:channels", "stereo");
 p->raw_target = (char *)iniparser_getstring(ini, "output:raw_target", "/dev/stdout");
-data_format = (char *)iniparser_getstring(ini, "output:data_format", "binary");
+p->data_format = (char *)iniparser_getstring(ini, "output:data_format", "binary");
 p->bar_delim = (char)iniparser_getint(ini, "output:bar_delimiter", 59);
 p->frame_delim = (char)iniparser_getint(ini, "output:frame_delimiter", 10);
 p->ascii_range = iniparser_getint(ini, "output:ascii_max_range", 1000);

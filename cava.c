@@ -443,6 +443,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		if (p.om == 3) get_terminal_dim_noncurses(&w, &h);
 
+		height = (h - 1) * 8;
+
 		// output open file/fifo for raw output
 		if (p.om == 4) {
 
@@ -477,9 +479,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			}
 			printf("open file %s for writing raw ouput\n",p.raw_target);
 
-            //height and with must be hardcoded for raw output.
-			h = 112;
+            //width must be hardcoded for raw output.
 			w = 200;
+
+    		if (strcmp(p.data_format, "binary") == 0) {
+                height = pow(2, p.bit_format) - 1;
+            } else {
+                height = p.ascii_range;
+            }
+
+
+
 		}
 
  		//handle for user setting too many bars
@@ -504,10 +514,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 
 
-		height = h - 1;
+
 
 		// process [smoothing]: calculate gravity
-		g = p.gravity * ((float)height / 270) * pow((60 / (float)p.framerate), 2.5);
+		g = p.gravity * ((float)height / 2160) * pow((60 / (float)p.framerate), 2.5);
 
 
 		//checks if there is stil extra room, will use this to center
@@ -567,7 +577,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		// process: weigh signal to frequencies
 		for (n = 0; n < bars;
-			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000)) * 
+			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*32000)) * 
 				p.smooth[(int)floor(((double)n) * smh)];
 
 		if (p.stereo) bars = bars * 2;
@@ -727,10 +737,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					f[o] = fmem[o] * p.integral + f[o];
 					fmem[o] = f[o];
 
-					int diff = (height + 1) * 8 - f[o]; 
+					int diff = (height + 1) - f[o]; 
 					if (diff < 0) diff = 0;
 					double div = 1 / (diff + 1);
-					//f[o] = f[o] - pow(div, 10) * (height * 8 + 1); 
+					//f[o] = f[o] - pow(div, 10) * (height + 1); 
 					fmem[o] = fmem[o] * (1 - div / 20); 
 
 					#ifdef DEBUG
@@ -754,9 +764,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			//printf("%d\n",maxvalue); //checking maxvalue I keep forgetting its about 10000
 
 			//autmatic sens adjustment
-			if (p.autosens && p.om != 4) {
+			if (p.autosens) {
 				for (o = 0; o < bars; o++) {
-					if (f[o] > height * 8 ) {
+					if (f[o] > height ) {
 						senseLow = FALSE;
 						p.sens = p.sens * 0.985;
 						break;
