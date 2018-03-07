@@ -35,6 +35,12 @@ snd_pcm_uframes_t* frames) {
 		exit(EXIT_FAILURE);
 	}
 
+    if ((err = snd_pcm_prepare (*handle)) < 0) {
+    fprintf (stderr, "cannot prepare audio interface for use (%s)\n",
+             snd_strerror (err));
+    exit (EXIT_FAILURE);
+    }
+
 	// getting actual format
 	snd_pcm_hw_params_get_format(params, (snd_pcm_format_t*)&sample_rate);
 	// converting result to number of bits
@@ -90,33 +96,57 @@ const int size) {
 #define FRAMES_NUMBER 256
 
 void* input_alsa(void* data) {
+    int err;
 	struct audio_data* audio = (struct audio_data*)data;
 	snd_pcm_t* handle;
 	snd_pcm_uframes_t frames = FRAMES_NUMBER;
-
+    int16_t buf[FRAMES_NUMBER * 2];
 	initialize_audio_parameters(&handle, audio, &frames);
-
 	// frames * bits/8 * channels
 	const int size = frames * (audio->format / 8) * CHANNELS_COUNT;
 	signed char* buffer = malloc(size);
+    int n = 0;
+
 	while (1) {
-		int err = snd_pcm_readi(handle, buffer, frames);
-		if (err == -EPIPE) {
-			/* EPIPE means overrun */
-			#ifdef DEBUG
-				fprintf(stderr, "overrun occurred\n");
-			#endif
-			snd_pcm_prepare(handle);
-		} else if (err < 0) {
-			#ifdef DEBUG
-				fprintf(stderr, "error from read: %s\n", snd_strerror(err));
-			#endif
-		} else if (err != (int)frames) {
-			#ifdef DEBUG
-				fprintf(stderr, "short read, read %d %d frames\n", err, (int)frames);
-			#endif
-		}
-		fill_audio_outs(audio, buffer, size);
+        switch (audio->format) {
+        case 16:
+            err = snd_pcm_readi(handle, buf, frames);
+	        for (int i = 0; i < FRAMES_NUMBER * 2; i += 2) {
+                if (audio->channels == 1) audio->audio_out_l[n] = (buf[i] + buf[i + 1]) / 2;
+                //stereo storing channels in buffer
+                if (audio->channels == 2) {
+                        audio->audio_out_l[n] = buf[i];
+                        audio->audio_out_r[n] = buf[i + 1];
+                        }
+                n++;
+                if (n == 2048 - 1)n = 0;
+            }
+            break;
+        default:
+		    err = snd_pcm_readi(handle, buffer, frames);
+            fill_audio_outs(audio, buffer, size);
+            break;
+        }
+
+	    if (err == -EPIPE) {
+		    /* EPIPE means overrun */
+		    #ifdef DEBUG
+			    fprintf(stderr, "overrun occurred\n");
+		    #endif
+        snd_pcm_prepare(handle);
+	    } else if (err < 0) {
+		    #ifdef DEBUG
+			    fprintf(stderr, "error from read: %s\n", snd_strerror(err));
+		    #endif
+	    } else if (err != (int)frames) {
+		    #ifdef DEBUG
+			    fprintf(stderr, "short read, read %d %d frames\n", err, (int)frames);
+		    #endif
+	    }
+
+
+
+
 		if (audio->terminate == 1) {
 			free(buffer);
 			snd_pcm_close(handle);

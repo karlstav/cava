@@ -23,10 +23,10 @@ void* input_fifo(void* data)
 	int fd;
 	int n = 0;
 	//signed char buf[1024];
-	int tempr, templ, lo;
-	int q, i;
+	//int tempr, templ, lo, q;
+	int i;
 	int t = 0;
-	int size = 1024;
+	//int size = 1024;
 	int bytes = 0;
 	int flags;
 	int16_t buf[BUFSIZE / 2];
