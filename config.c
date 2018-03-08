@@ -212,6 +212,17 @@ if (!validate_color(p->bcolor, p->om)) {
 	exit(EXIT_FAILURE);
 }
 
+if (p->gradient) {
+    if (!validate_color(p->gradient_color_1, p->om)) {
+	    fprintf(stderr, "The first gradient color is invalid. It must be HTML color of the form '#xxxxxx'.\n");
+	    exit(EXIT_FAILURE);
+    }
+    if (!validate_color(p->gradient_color_2, p->om)) {
+	    fprintf(stderr, "The second gradient color is invalid. It must be HTML color of the form '#xxxxxx'.\n");
+	    exit(EXIT_FAILURE);
+    }
+}
+
 // In case color is not html format set bgcol and col to predefinedint values
 p->col = 6;
 if (strcmp(p->color, "black") == 0) p->col = 0;

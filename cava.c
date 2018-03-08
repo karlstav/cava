@@ -79,7 +79,7 @@
 struct termios oldtio, newtio;
 int rc;
 int M = 2048;
-
+int output_mode;
 
 
 
@@ -90,10 +90,12 @@ int should_reload = 0;
 // general: cleanup
 void cleanup(void)
 {
-	#ifdef NCURSES
-	cleanup_terminal_ncurses();
-	#endif
-	cleanup_terminal_noncurses();
+	if (output_mode == 1 || output_mode == 2 ) {
+	    cleanup_terminal_ncurses();
+    }
+    else if (output_mode ==3 ) {
+	    cleanup_terminal_noncurses();
+    }
 }
 
 // general: handle signals
@@ -315,6 +317,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	//config: load
 	load_config(configPath, supportedInput, (void *)&p);
+
+    output_mode = p.om;
 
 	if (p.om != 4) { 
 		// Check if we're running in a tty

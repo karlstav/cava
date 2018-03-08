@@ -71,9 +71,9 @@ int init_terminal_noncurses(int col, int bgcol, int w, int h, int bw) {
 
 	printf("\033[1m"); //setting "bright" color mode, looks cooler... I think
 
-	if (bgcol != 0)
+	if (bgcol != 0) {
 		printf("\033[%dm", bgcol);
-	{
+	
 		for (n = (h); n >= 0; n--) {
 			for (i = 0; i < w; i++) {
 
