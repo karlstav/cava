@@ -105,6 +105,7 @@ if (p->im == 0) {
 p->om = 0;
 if (strcmp(outputMethod, "ncurses") == 0) {
 	p->om = 1;
+    p->bgcol = -1;
 	#ifndef NCURSES
 		fprintf(stderr,
 			"cava was built without ncurses support, install ncursesw dev files and run make clean && ./configure && make again\n");
@@ -236,7 +237,6 @@ if (strcmp(p->color, "white") == 0) p->col = 7;
 // default if invalid
 
 // validate: background color
-p->bgcol = -1;
 if (strcmp(p->bcolor, "black") == 0) p->bgcol = 0;
 if (strcmp(p->bcolor, "red") == 0) p->bgcol = 1;
 if (strcmp(p->bcolor, "green") == 0) p->bgcol = 2;
