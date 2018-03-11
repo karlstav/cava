@@ -180,7 +180,7 @@ int * monstercat_filter (int * f, int bars, int waves, double monstercat) {
 	if (waves > 0) {
 		for (z = 0; z < bars; z++) { // waves
 			f[z] = f[z] / 1.25;
-			if (f[z] < 0.125)f[z] = 0.125;
+			if (f[z] < 1)f[z] = 1;
 			for (m_y = z - 1; m_y >= 0; m_y--) {
 				de = z - m_y;
 				f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
@@ -192,7 +192,7 @@ int * monstercat_filter (int * f, int bars, int waves, double monstercat) {
 		}
 	} else if (monstercat > 0) {
 		for (z = 0; z < bars; z++) {
-			if (f[z] < 0.125)f[z] = 0.125;
+			if (f[z] < 1)f[z] = 1;
 			for (m_y = z - 1; m_y >= 0; m_y--) {
 				de = z - m_y;
 				f[m_y] = max(f[z] / pow(monstercat, de), f[m_y]);
