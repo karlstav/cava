@@ -136,7 +136,18 @@ If you use another version just replace *openSUSE_Leap_42.2* with *openSUSE_13.2
 
 ### Fedora
 
-[RPM spec file](https://gist.github.com/sedrubal/617d40deb7452a25d004#file-cava-spec)
+Packages for Fedora 26 and 27 have been created using Fedora's COPR service.  You can find the packages here:
+
+    https://copr.fedorainfracloud.org/coprs/larsks/cava/
+
+To install packages from this repository:
+
+    dnf copr enable larsks/cava
+    dnf install cava
+
+These packages are generated from the spec file hosted at <https://github.com/larsks-packages/cava>.
+
+To report problems with the packages (or to request new builds for new releases), please use the issue tracker at <https://github.com/larsks-packages/cava/issues>.
 
 ### Arch
 
