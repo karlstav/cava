@@ -7,28 +7,23 @@
 #include <X11/XKBlib.h>
 #include "output/graphical.h"
 
-XVisualInfo cavaVInfo;
-XSetWindowAttributes cavaAttr;
+
+Pixmap gradientBox = 0, shadowBox = 0;
+XColor xbgcol, xcol, xgrad[3];
+
+XEvent cavaXEvent;
+Colormap cavaXColormap;
 Display *cavaXDisplay;
 Screen *cavaXScreen;
-Window cavaXWindow;
+Window cavaXWindow, cavaXRoot;
 GC cavaXGraphics;
-Colormap cavaXColormap;
-Pixmap *gradientBox, *shadowBox;
-int cavaXScreenNumber;
-XClassHint cavaXClassHint;
-XColor xbgcol, xcol, xgrad[3];
-XEvent cavaXEvent;
-Atom wm_delete_window, wmState, fullScreen, mwmHintsProperty, wmStateBelow;
-XWMHints cavaXWMHints;
-int shadow, shadow_drawn = 0, gradient_drawn = 0;
-unsigned int shadow_color;
-int GLXmode;
 
-/**
-	The following struct is needed for
-	passing window flags (aka. talking to the window manager)
-**/
+XVisualInfo cavaVInfo;
+XSetWindowAttributes cavaAttr;
+Atom wm_delete_window, wmState, fullScreen, mwmHintsProperty, wmStateBelow;
+XClassHint cavaXClassHint;
+XWMHints cavaXWMHints;
+// mwmHints helps us comunicate with the window manager
 struct mwmHints {
     unsigned long flags;
     unsigned long functions;
@@ -37,6 +32,11 @@ struct mwmHints {
     unsigned long status;
 };
 
+int cavaXScreenNumber, shadow, shadow_drawn = 0, gradient_drawn = 0, shadow_color, GLXmode;
+static unsigned int defaultColors[8] = {0x00000000,0x00FF0000,0x0000FF00,0x00FFFF00,0x000000FF,0x00FF00FF,0x0000FFFF,0x00FFFFFF};
+
+
+// Some window manager definitions
 enum {
     MWM_HINTS_FUNCTIONS = (1L << 0),
     MWM_HINTS_DECORATIONS =  (1L << 1),
@@ -48,33 +48,81 @@ enum {
     MWM_FUNC_MAXIMIZE = (1L << 4),
     MWM_FUNC_CLOSE = (1L << 5)
 };
-
-// Some window manager definitions
 #define _NET_WM_STATE_REMOVE 0;
 #define _NET_WM_STATE_ADD 1;
 #define _NET_WM_STATE_TOGGLE 2;
 
+
 #ifdef GLX
 int XGLInit() {
-	// creating GLX context requires visual info about the X server in general
-	if(!transparentFlag)
-		XMatchVisualInfo(cavaXDisplay, cavaXScreenNumber, 24, TrueColor, &cavaVInfo);
-	
-	glcontext = glXCreateContext(cavaXDisplay, &cavaVInfo, 0, True);
-	if(!glcontext)
-	{
-		fprintf(stderr, "X11 server does not support OpenGL\n");
-		return 1;
-	}
-
-	glXMakeCurrent(cavaXDisplay, cavaXWindow, glcontext);
+	// we will use the existing VisualInfo for this, because I'm not messing around with FBConfigs
+	cavaGLXContext = glXCreateContext(cavaXDisplay, &cavaVInfo, NULL, TRUE);
+	glXMakeCurrent(cavaXDisplay, cavaXWindow, cavaGLXContext);
 	if(transparentFlag) {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
 	return 0;
 }
 #endif
+
+void calculateColors(char *color, char *bcolor, int bgcol, int col, double foreground_opacity) {
+	// Generate a sum of colors
+	if(!strcmp(color, "default")) {
+		unsigned long redSum = 0, greenSum = 0, blueSum = 0, tempColor;
+		int xPrecision = 20, yPrecision = 20;	
+		while(1){ if(((double)cavaXScreen->width / (double)xPrecision) == ((int)cavaXScreen->width / (int)xPrecision)) break; else xPrecision++; }
+		while(1){ if(((double)cavaXScreen->height / (double)yPrecision) == ((int)cavaXScreen->height / (int)yPrecision)) break; else yPrecision++; }
+		
+		// we need a source for that
+		XImage *background = XGetImage(cavaXDisplay, cavaXRoot, 0, 0, cavaXScreen->width, cavaXScreen->height, AllPlanes, XYPixmap);
+		for(unsigned short i = 0; i < cavaXScreen->width; i+=(cavaXScreen->width / xPrecision)) {
+			for(unsigned short I = 0; I < cavaXScreen->height; I+=(cavaXScreen->height / yPrecision)) {
+				tempColor = XGetPixel(background, i, I);
+				// Xorg by default uses a 64bit color mode
+				// which goes like AAAARRRRGGGGBBBB
+				redSum += tempColor>>32%65536;
+				greenSum += tempColor>>16%65536;
+				blueSum += tempColor%65536;
+			}
+		}
+		XDestroyImage(background);
+
+		xcol.red /= xPrecision * yPrecision;
+		xcol.green /= xPrecision * yPrecision;
+		xcol.blue /= xPrecision * yPrecision;
+	} else if(color[0] != '#') {
+		xcol.red = (defaultColors[col]>>16)*256;
+		xcol.green = (defaultColors[col]>>8)*256;
+		xcol.blue = defaultColors[col]*256;
+	} else {
+		sscanf(color, "#%02hx%02hx%02hx", &xcol.red, &xcol.blue, &xcol.green);
+		xcol.red *= 256;
+		xcol.green *= 256;
+		xcol.blue *= 256;
+	}
+	xcol.flags = DoRed | DoGreen | DoBlue;
+	XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
+	
+	if(bcolor[0] != '#') {
+		xbgcol.red = (defaultColors[bgcol]>>16)*256;
+		xbgcol.green = (defaultColors[bgcol]>>8)*256;
+		xbgcol.blue = defaultColors[bgcol]*256;
+	} else {
+		sscanf(bcolor, "#%02hx%02hx%02hx", &xbgcol.red, &xbgcol.blue, &xbgcol.green);
+		xbgcol.red *= 256;
+		xbgcol.green *= 256;
+		xbgcol.blue *= 256;
+	}
+	xbgcol.flags = DoRed | DoGreen | DoBlue;
+	XAllocColor(cavaXDisplay, cavaXColormap, &xbgcol);
+	
+	xcol.pixel = (xcol.pixel%0x1000000000000) | ((unsigned long)(0xFFFF*foreground_opacity)<<48);
+	xcol.pixel |= (unsigned long)(0xFFFF*foreground_opacity)<<48;
+}
 
 int init_window_x(char *color, char *bcolor, double foreground_opacity, int col, int bgcol, int set_win_props, char **argv, int argc, int gradient, char *gradient_color_1, char *gradient_color_2, unsigned int shdw, unsigned int shdw_col, int w, int h)
 {
@@ -88,270 +136,46 @@ int init_window_x(char *color, char *bcolor, double foreground_opacity, int col,
 		fprintf(stderr, "cannot open X display\n");
 		return 1;
 	}
-	// get the screen
+	
 	cavaXScreen = DefaultScreenOfDisplay(cavaXDisplay);
-	// get the display number
 	cavaXScreenNumber = DefaultScreen(cavaXDisplay);
+	cavaXRoot = RootWindow(cavaXDisplay, cavaXScreenNumber);
 	
-	// calculate x and y
-	if(!strcmp(windowAlignment, "top")){
-		windowX = (cavaXScreen->width - w) / 2 + windowX;
-	}else if(!strcmp(windowAlignment, "bottom")){
-		windowX = (cavaXScreen->width - w) / 2 + windowX;
-		windowY = (cavaXScreen->height - h) + (-1*windowY);
-	}else if(!strcmp(windowAlignment, "top_left")){
-		// Nothing to do here :P
-	}else if(!strcmp(windowAlignment, "top_right")){
-		windowX = (cavaXScreen->width - w) + (-1*windowX);
-	}else if(!strcmp(windowAlignment, "left")){
-		windowY = (cavaXScreen->height - h) / 2;
-	}else if(!strcmp(windowAlignment, "right")){
-		windowX = (cavaXScreen->width - w) + (-1*windowX);
-		windowY = (cavaXScreen->height - h) / 2 + windowY;
-	}else if(!strcmp(windowAlignment, "bottom_left")){
-		windowY = (cavaXScreen->height - h) + (-1*windowY);
-	}else if(!strcmp(windowAlignment, "bottom_right")){
-		windowX = (cavaXScreen->width - w) + (-1*windowX);
-		windowY = (cavaXScreen->height - h) + (-1*windowY);
-	}else if(!strcmp(windowAlignment, "center")){
-		windowX = (cavaXScreen->width - w) / 2 + windowX;
-		windowY = (cavaXScreen->height - h) / 2 + windowY;
-	}
-	// Some error checking
-	#ifdef DEBUG
-		if(windowX > cavaXScreen->width - w) printf("Warning: Screen out of bounds (X axis)!");
-		if(windowY > cavaXScreen->width - w) printf("Warning: Screen out of bounds (Y axis)!");
-	#endif
-	// create X window
-	if(transparentFlag)
-	{	
-		// Set the window to 32 bit mode (if supported), and also set the screen to a blank pixel
-		XMatchVisualInfo(cavaXDisplay, cavaXScreenNumber, 32, TrueColor, &cavaVInfo);
-		cavaAttr.colormap = XCreateColormap(cavaXDisplay, DefaultRootWindow(cavaXDisplay), cavaVInfo.visual, AllocNone);
-		cavaAttr.border_pixel = 0;
-		cavaAttr.background_pixel = 0;
-		// Now create a window using those options
-		cavaXWindow = XCreateWindow(cavaXDisplay, DefaultRootWindow(cavaXDisplay), windowX, windowY, w, h, 0, cavaVInfo.depth, InputOutput, cavaVInfo.visual, CWEventMask | CWColormap | CWBorderPixel | CWBackPixel, &cavaAttr);
-	}
-	else
-		cavaXWindow = XCreateSimpleWindow(cavaXDisplay, RootWindow(cavaXDisplay, cavaXScreenNumber), windowX, windowY, w, h, 1, WhitePixel(cavaXDisplay, cavaXScreenNumber), BlackPixel(cavaXDisplay, cavaXScreenNumber));
+	calculate_win_pos(&windowX, &windowY, w, h, cavaXScreen->width, cavaXScreen->height, windowAlignment);
 	
-	// add titlebar name
+	// 32 bit color means alpha channel support
+	XMatchVisualInfo(cavaXDisplay, cavaXScreenNumber, transparentFlag ? 32 : 24, TrueColor, &cavaVInfo);
+		if(transparentFlag)	cavaAttr.colormap = XCreateColormap(cavaXDisplay, DefaultRootWindow(cavaXDisplay), cavaVInfo.visual, AllocNone);
+		else cavaAttr.colormap = DefaultColormap(cavaXDisplay, cavaXScreenNumber);
+		cavaXColormap = cavaAttr.colormap; 
+		calculateColors(color, bcolor, bgcol, col, foreground_opacity);
+		cavaAttr.background_pixel = (((unsigned long)0xFFFF&transparentFlag)<<48)|(xbgcol.pixel%0x1000000000000);
+		cavaAttr.border_pixel = xcol.pixel;
+	
+	cavaXWindow = XCreateWindow(cavaXDisplay, cavaXRoot, windowX, windowY, w, h, 0, cavaVInfo.depth, InputOutput, cavaVInfo.visual, CWEventMask | CWColormap | CWBorderPixel | CWBackPixel, &cavaAttr);	
 	XStoreName(cavaXDisplay, cavaXWindow, "CAVA");
 
-	// fix for error while closing window
+	// The "X" button is handled by the window manager and not Xorg, so we set up a Atom
 	wm_delete_window = XInternAtom (cavaXDisplay, "WM_DELETE_WINDOW", FALSE);
 	XSetWMProtocols(cavaXDisplay, cavaXWindow, &wm_delete_window, 1);
 	
-	// set window properties
-	if(set_win_props)
-	{
+	if(set_win_props) {
 		cavaXWMHints.flags = InputHint | StateHint;
 		cavaXWMHints.initial_state = NormalState;
 		cavaXClassHint.res_name = (char *)"Cava";
 		XmbSetWMProperties(cavaXDisplay, cavaXWindow, NULL, NULL, argv, argc, NULL, &cavaXWMHints, &cavaXClassHint);
 	}
-	
-	// add inputs
+
 	XSelectInput(cavaXDisplay, cavaXWindow, VisibilityChangeMask | StructureNotifyMask | ExposureMask | KeyPressMask | KeymapNotify);
 	
-	// init OpenGL
 	#ifdef GLX
 		if(GLXmode) if(XGLInit()) return 1;
 	#endif
 	
-	// give user control over the window		
 	XMapWindow(cavaXDisplay, cavaXWindow);
-	// get graphics context
 	cavaXGraphics = XCreateGC(cavaXDisplay, cavaXWindow, 0, 0);
-	// get colormap
-	if(transparentFlag) cavaXColormap = cavaAttr.colormap; 
-	else cavaXColormap = DefaultColormap(cavaXDisplay, cavaXScreenNumber);
-	// Get the color
-	if(!strcmp(color, "default"))
-	{
-		/**
-			A bit of description.
-			Because it can get confusing, I know.
-			This chunk of code grabs sums the desktop background and makes an average color,
-			but of course we can't do the whole desktop because optimization.
-
-			So we instead use precision, the higher the better is the color we get.
-			However, if the precision is too low it takes a long time to load, so be careful.
-			Just remember, SCREEN WIDTH / XPRECISION AND SCREEN HEIGHT / YPRECISION MUST BE
-			A WHOLE NUMBER OTHERWISE THIS WHOLE FUNCTION BREAKS. There's a workaround below,
-			but I don't think it could always work.
-		**/
-
-		// First we get the background
-		XImage *background = XGetImage (cavaXDisplay, RootWindow (cavaXDisplay, cavaXScreenNumber), 0, 0, cavaXScreen->width, cavaXScreen->height, AllPlanes, XYPixmap);
-		// Color sums
-		unsigned long redSum = 0, greenSum = 0, blueSum = 0;
-		// A color variable a.k.a foobar
-		XColor tempColor;
-		// Our precision variables (the higher they are the slower the calculation will get)
-		int xPrecision = 20, yPrecision = 20;
-		// Making sure that xPrecision is a whole number
-		while(1){
-			if(((double)cavaXScreen->width / (double)xPrecision) == ((int)cavaXScreen->width / (int)xPrecision)) break;
-			else xPrecision++;
-		}
-
-		// Making sure that yPrecision is a whole number
-		while(1){
-			if(((double)cavaXScreen->height / (double)yPrecision) == ((int)cavaXScreen->height / (int)yPrecision)) break;
-			else yPrecision++;
-		}
-
-		// Our screen width
-		for(unsigned short i = 0; i < cavaXScreen->width; i+=(cavaXScreen->width / xPrecision))
-		{
-			// Our screen height
-			for(unsigned short I = 0; I < cavaXScreen->height; I+=(cavaXScreen->height / yPrecision))
-			{
-				// This captures the pixel
-				tempColor.pixel = XGetPixel (background, i, I);
-				// This saves it
-				XQueryColor(cavaXDisplay, cavaXColormap, &tempColor);
-				// Because colors in Xlib are 48bit for some reason
-				redSum += tempColor.red / 256;
-				greenSum += tempColor.green / 256;
-				blueSum += tempColor.blue / 256;
-			}
-		}
-
-		// Now turn the sums into averages
-		redSum /= xPrecision * yPrecision;
-		greenSum /= xPrecision * yPrecision;
-		blueSum /= xPrecision * yPrecision;
-
-		// Nuke the leftovers
-		XDestroyImage(background);
-
-		// In case the background image is too bright or dark
-		if(redSum < 0x10) redSum += 0x10;
-		else if(redSum > 0xF0) redSum -= 0x10;
-		if(greenSum < 0x10) greenSum += 0x10;
-		else if(greenSum > 0xF0) greenSum -= 0x10;
-		if(blueSum < 0x10) blueSum += 0x10;
-		else if(blueSum > 0xF0) blueSum -= 0x10;
-		// Again 48bit colors
-		xcol.red = redSum * 256;
-		xcol.green = greenSum * 256;
-		xcol.blue = blueSum * 256;
-		// Set the color channels
-		xcol.flags = DoRed | DoGreen | DoBlue;
-		// Save it
-		XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
-	}
-	else if(color[0] != '#')
-	{
-		color = (char *)malloc((char)8); // default hex color string
-		if(color == NULL)
-		{
-			fprintf(stderr, "memory error\n");
-			return 1;
-		}
-		switch(col)
-		{
-			case 0:
-				strcpy(color, "#000000");
-				break;
-			case 1:
-				strcpy(color, "#FF0000");
-				break;
-			case 2:
-				strcpy(color, "#00FF00");
-				break;
-			case 3:
-				strcpy(color, "#FFFF00");
-				break;
-			case 4:
-				strcpy(color, "#0000FF");
-				break;
-			case 5:
-				strcpy(color, "#FF00FF");
-				break;
-			case 6:
-				strcpy(color, "#00FFFF");
-				break;
-			case 7:
-				strcpy(color, "#FFFFFF");
-				break;
-		}
-	}
-	else
-	{
-		// because iniparser makes strings consts -_-
-		char *temp = (char *)malloc((char)8);
-		if(temp == NULL)
-		{
-			fprintf(stderr, "memory error\n");
-			return 1;
-		}
-		strcpy(temp, color);
-		color = temp;
-	}
 	
-	if(bcolor[0] != '#')
-	{
-		bcolor = (char *)malloc((char)8); // default hex color string
-		if(bcolor == NULL)
-		{
-			fprintf(stderr, "memory error\n");
-			return 1;
-		}
-		switch(bgcol)
-		{
-			case 0:
-				strcpy(bcolor, "#000000");
-				break;
-			case 1:
-				strcpy(bcolor, "#FF0000");
-				break;
-			case 2:
-				strcpy(bcolor, "#00FF00");
-				break;
-			case 3:
-				strcpy(bcolor, "#FFFF00");
-				break;
-			case 4:
-				strcpy(bcolor, "#0000FF");
-				break;
-			case 5:
-				strcpy(bcolor, "#FF00FF");
-				break;
-			case 6:
-				strcpy(bcolor, "#00FFFF");
-				break;
-			case 7:
-				strcpy(bcolor, "#FFFFFF");
-				break;
-		}
-	}
-	else
-	{
-		// because iniparser makes strings consts -_-
-		char *temp = (char *)malloc((char)8);
-		if(temp == NULL)
-		{
-			fprintf(stderr, "memory error\n");
-			return 1;
-		}
-		strcpy(temp, bcolor);
-		bcolor = temp;
-	}
-	XParseColor(cavaXDisplay, cavaXColormap, bcolor, &xbgcol);
-	XAllocColor(cavaXDisplay, cavaXColormap, &xbgcol);
-	XParseColor(cavaXDisplay, cavaXColormap, color, &xcol);
-	XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
-	if(strcmp(color, "default"))
-	{
-		XParseColor(cavaXDisplay, cavaXColormap, color, &xcol);
-		XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
-	}
-	if(gradient)
-	{
+	if(gradient) {
 		XParseColor(cavaXDisplay, cavaXColormap, gradient_color_1, &xgrad[2]);
 		XAllocColor(cavaXDisplay, cavaXColormap, &xgrad[2]);
 		XParseColor(cavaXDisplay, cavaXColormap, gradient_color_1, &xgrad[0]);
@@ -359,10 +183,6 @@ int init_window_x(char *color, char *bcolor, double foreground_opacity, int col,
 		XParseColor(cavaXDisplay, cavaXColormap, gradient_color_2, &xgrad[1]);
 		XAllocColor(cavaXDisplay, cavaXColormap, &xgrad[1]);
 	}
-
-	// Apply foreground opacity
-	xcol.pixel %= 0x1000000;
-	xcol.pixel |= (unsigned int)(0xFF*foreground_opacity) << 24;
 	return 0;
 }
 
@@ -435,7 +255,16 @@ int apply_window_settings_x(int *w, int *h)
 		XMoveWindow(cavaXDisplay, cavaXWindow, windowX - xwa.x, windowY - xwa.y);
 		
 	// do the usual stuff :P
-	if(!GLXmode){
+	if(GLXmode){
+		
+		glViewport(0, 0, (double)*w, (double)*h);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		
+		glOrtho(0, (double)*w, 0, (double)*h, -1, 1);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+	}else{
 		if(!transparentFlag)
 		{
 			XSetForeground(cavaXDisplay, cavaXGraphics, xbgcol.pixel);
@@ -460,7 +289,7 @@ int apply_window_settings_x(int *w, int *h)
 
 int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *w, int *h, char *color, char *bcolor, int gradient)
 {
-	while(!*should_reload && (XEventsQueued(cavaXDisplay, QueuedAfterFlush) > 0))
+	while(!*should_reload && XPending(cavaXDisplay))
 	{
 		XNextEvent(cavaXDisplay, &cavaXEvent);
 		
@@ -497,8 +326,6 @@ int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *
 						if ((*bw) > 1) (*bw)--;
 						return 2;
 					case XK_r: //reload config
-						if(bcolor[0] == '#')	free(bcolor);
-						if(color[0] == '#')	free(color);
 						(*should_reload) = 1;
 						return 1;
 					case XK_q:
@@ -556,8 +383,7 @@ int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *
 void render_shadows_x(int window_height, int bars_count, int bar_width, int bar_spacing, int rest)
 {
 	// render side shadows
-	if(shadowBox != NULL)
-		XFreePixmap(cavaXDisplay, shadowBox);
+	if(shadowBox != 0) XFreePixmap(cavaXDisplay, shadowBox);
 
 	shadowBox = XCreatePixmap(cavaXDisplay, cavaXWindow, shadow, window_height, 32);
 	XSetForeground(cavaXDisplay, cavaXGraphics, 0x00000000);
@@ -583,8 +409,7 @@ void render_shadows_x(int window_height, int bars_count, int bar_width, int bar_
 
 int render_gradient_x(int window_height, int bar_width, int bar_spacing, int rest, double foreground_opacity)
 {
-	if(gradientBox != NULL)
-		XFreePixmap(cavaXDisplay, gradientBox);
+	if(gradientBox != 0) XFreePixmap(cavaXDisplay, gradientBox);
 
 	gradientBox = XCreatePixmap(cavaXDisplay, cavaXWindow, bar_width, window_height, 32);
 	// TODO: Error checks
@@ -629,10 +454,8 @@ int render_gradient_x(int window_height, int bar_width, int bar_spacing, int res
 
 void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_spacing, int rest, int gradient, int f[200], int flastd[200], double foreground_opacity)
 {
-	double pixelWidthGL;
 	if(GLXmode) {
 		#ifdef GLX
-		pixelWidthGL = 2.0/(bars_count*(bar_width+bar_spacing)+rest*2);
 		glClearColor(xbgcol.red, xbgcol.green, xbgcol.blue, 0.0); // TODO BG transparency
 		glClear(GL_COLOR_BUFFER_BIT);
 		#endif
@@ -697,13 +520,13 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 		else
 		{
 			double point[4];
-			point[0] = (double)pixelWidthGL*(rest+(bar_width+bar_spacing)*i)-1.0;
-			point[1] = (double)pixelWidthGL*(rest+(bar_width+bar_spacing)*i+bar_width)-1.0;
-			point[2] = (double)f[i]/window_height*2.0-1.0;
-			point[3] = (double)-1.0;
+			point[0] = rest+(bar_width+bar_spacing)*i;
+			point[1] = rest+(bar_width+bar_spacing)*i+bar_width;
+			point[2] = f[i];
+			point[3] = 0;
 			if(shadow) {
-				point[2] += 2.0/window_height*shadow;
-				point[3] += 2.0/window_height*shadow;
+				point[2] += shadow;
+				point[3] += shadow;
 			}
 			
 			// OpenGL stuff goes here
@@ -738,8 +561,8 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 					glVertex2d(point[1], point[3]);
 					
 					glColor4ub(0, 0, 0, 0);
-					glVertex2d(point[1]+2.0/window_height*shadow/4.0, point[3]-2.0/window_height*shadow);
-					glVertex2d(point[1]+2.0/window_height*shadow/4.0, point[2]-2.0/window_height*shadow);
+					glVertex2d(point[1]+shadow, point[3]-shadow);
+					glVertex2d(point[1]+shadow, point[2]-shadow);
 				glEnd();
 				
 				glBegin(GL_POLYGON);
@@ -748,8 +571,8 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 					glVertex2d(point[1],point[3]);
 				
 					glColor4ub(0, 0, 0, 0);
-					glVertex2d(point[1]+2.0/window_height*shadow/4.0, point[3]-2.0/window_height*shadow);
-					glVertex2d(point[0]+2.0/window_height*shadow/4.0, point[3]-2.0/window_height*shadow);
+					glVertex2d(point[1]+shadow, point[3]-shadow);
+					glVertex2d(point[0]+shadow, point[3]-shadow);
 				glEnd();
 			}
 			
@@ -767,28 +590,28 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 	return;
 }
 
+void adjust_x(void){
+	if(shadowBox != 0) { XFreePixmap(cavaXDisplay, shadowBox); shadowBox = 0; }
+	if(gradientBox != 0) { XFreePixmap(cavaXDisplay, gradientBox); gradientBox = 0; }
+}
+
 void cleanup_graphical_x(void)
 {
-	#ifdef GLX
-		if(GLXmode) glXDestroyContext(cavaXDisplay, glcontext);
-	#endif
+    //XFlush(cavaXDisplay);
 	
-	if(shadowBox != NULL) {
-		XFreePixmap(cavaXDisplay, shadowBox);
-		shadowBox = NULL;
-	}
-	if(gradientBox != NULL) {
-		XFreePixmap(cavaXDisplay, gradientBox);
-		gradientBox = NULL;
-	}
+	if(!GLXmode) adjust_x();	
 	
-	XFreeColormap(cavaXDisplay, cavaXColormap);	
-	XFreeGC(cavaXDisplay, cavaXGraphics);
 	
 	// TODO: Find freeing functions for these variables
 	// cavaVInfo, cavaXClassHint and cavaXWMHints
 	 
+	#ifdef GLX
+		glXMakeCurrent(cavaXDisplay, 0, 0);
+		if(GLXmode) glXDestroyContext(cavaXDisplay, cavaGLXContext);
+	#endif
+	XFreeGC(cavaXDisplay, cavaXGraphics);
 	XDestroyWindow(cavaXDisplay, cavaXWindow);
+	XFreeColormap(cavaXDisplay, cavaXColormap);
 	XCloseDisplay(cavaXDisplay);
 	return;
 }

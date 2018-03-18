@@ -63,13 +63,11 @@
 #endif
 
 #ifdef XLIB
-#include "output/graphical.h"
 #include "output/graphical_x.c"
 #include "output/graphical_x.h"
 #endif
 
 #ifdef SDL
-#include "output/graphical.h"
 #include "output/graphical_sdl.c"
 #include "output/graphical_sdl.h"
 #endif
@@ -86,6 +84,10 @@
 #ifdef WIN
 #include "output/graphical_win.h"
 #include "output/graphical_win.c"
+#endif
+
+#if defined(WIN)||defined(SDL)||defined(XLIB)
+#include "output/graphical.c"
 #include "output/graphical.h"
 #endif
 
@@ -711,6 +713,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						cleanup(p.om);
 						break;
 					case 2:
+						adjust_x();	
 						resizeTerminal = TRUE;
 						break;
 				}
