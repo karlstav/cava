@@ -23,6 +23,7 @@ XSetWindowAttributes cavaAttr;
 Atom wm_delete_window, wmState, fullScreen, mwmHintsProperty, wmStateBelow;
 XClassHint cavaXClassHint;
 XWMHints cavaXWMHints;
+GLVertex *cavaGLVertex = NULL;
 // mwmHints helps us comunicate with the window manager
 struct mwmHints {
     unsigned long flags;
@@ -456,7 +457,7 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 {
 	if(GLXmode) {
 		#ifdef GLX
-		glClearColor(xbgcol.red, xbgcol.green, xbgcol.blue, 0.0); // TODO BG transparency
+		glClearColor(xbgcol.red, xbgcol.green, xbgcol.blue, (!transparentFlag)*1.0); // TODO BG transparency
 		glClear(GL_COLOR_BUFFER_BIT);
 		#endif
 	} else {	// don't worry we have shaders for this
@@ -464,22 +465,22 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 		if(!gradient_drawn && gradient) render_gradient_x(window_height, bar_width, bar_spacing, rest, foreground_opacity); 
 	}
 	
-	// draw bars on the X11 window
-	for(int i = 0; i < bars_count; i++)
-	{	
-		// this fixes a rendering bug
-		if(f[i] > window_height) f[i] = window_height;
-		
-		if(!GLXmode){
-			if(f[i] > flastd[i])
-			{
-				if(shadow && transparentFlag)
-				{
+	if(GLXmode) {
+		float glColors[11] = {gradient ? xgrad[0].red/65535.0 : xcol.red/65535.0, gradient ? xgrad[0].green/65535.0 : xcol.green/65535.0, gradient ? xgrad[0].blue/65535.0 : xcol.blue/65535.0,
+							xgrad[1].red/65535.0, xgrad[1].green/65535.0, xgrad[1].blue/65535.0, foreground_opacity, ((unsigned int)shadow_color>>24)%256/255.0, ((unsigned int)shadow_color>>16)%256/255.0, ((unsigned int)shadow_color>>8)%256/255.0, (unsigned int)shadow_color%256/255.0};
+		if(drawGLBars(cavaGLVertex, rest, bar_width, bar_spacing, bars_count, window_height, shadow, gradient, glColors, f)) exit(EXIT_FAILURE);
+	} else {	
+		// draw bars on the X11 window
+		for(int i = 0; i < bars_count; i++)
+		{	
+			// this fixes a rendering bug
+			if(f[i] > window_height) f[i] = window_height;
+				
+			if(f[i] > flastd[i]) {
+				if(shadow && transparentFlag) {
 					XCopyArea(cavaXDisplay, shadowBox, cavaXWindow, cavaXGraphics, 0, 0, shadow, f[i] - flastd[i]+shadow, rest+i*(bar_width+bar_spacing)+bar_width, window_height-f[i]-shadow);
-					if(flastd[i] < shadow)
-					{
-						for(int I = 0; I <= shadow; I++)
-						{
+					if(flastd[i] < shadow) {
+						for(int I = 0; I <= shadow; I++) {
 							XSetForeground(cavaXDisplay, cavaXGraphics, (((shadow_color >> 24 % 256)/(I+1)) << 24) + shadow_color % 0x1000000);
 							XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_width+bar_spacing) + I, window_height - shadow + I, bar_width+1, 1);
 						}		
@@ -487,101 +488,34 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 				}
 				if(gradient)
 					XCopyArea(cavaXDisplay, gradientBox, cavaXWindow, cavaXGraphics, 0, window_height - f[i], bar_width, f[i] - flastd[i], rest + i*(bar_spacing+bar_width), window_height - f[i]-shadow*transparentFlag);	
-				else{
+				else {
 					XSetForeground(cavaXDisplay, cavaXGraphics, xcol.pixel);
 					XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width), window_height - f[i]-shadow*transparentFlag, bar_width, f[i] - flastd[i]);
 				}
 			}
-			else if (f[i] < flastd[i]){
-				if(transparentFlag)
-				{
+			else if (f[i] < flastd[i]) {
+				if(transparentFlag) {
 					XClearArea(cavaXDisplay, cavaXWindow, rest + i*(bar_spacing+bar_width), window_height - flastd[i] - shadow, bar_width + shadow, flastd[i] - f[i], FALSE);
-					if(shadow)
-					{
+					if(shadow) {
 						XCopyArea(cavaXDisplay, shadowBox, cavaXWindow, cavaXGraphics, 0, 0, shadow, shadow, rest+i*(bar_width+bar_spacing)+bar_width, window_height-f[i]-shadow);
-						if(f[i] < shadow)
-						{
-							for(int I = 0; I <= shadow; I++)
-							{
+						if(f[i] < shadow) {
+							for(int I = 0; I <= shadow; I++) {
 								XSetForeground(cavaXDisplay, cavaXGraphics, (((shadow_color >> 24 % 256)/(I+1)) << 24) + shadow_color % 0x1000000);
 								XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_width+bar_spacing) + I, window_height - shadow + I, bar_width+1, 1);
 							}
 						}
 					}
-				}
-				else
-				{
+				} else {
 					XSetForeground(cavaXDisplay, cavaXGraphics, xbgcol.pixel);
 					XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width), window_height - flastd[i], bar_width, flastd[i] - f[i]);
 				}
 			}
 		}
-		#ifdef GLX
-		else
-		{
-			double point[4];
-			point[0] = rest+(bar_width+bar_spacing)*i;
-			point[1] = rest+(bar_width+bar_spacing)*i+bar_width;
-			point[2] = f[i];
-			point[3] = 0;
-			if(shadow) {
-				point[2] += shadow;
-				point[3] += shadow;
-			}
-			
-			// OpenGL stuff goes here
-			if(gradient)
-			{
-				glBegin(GL_POLYGON);
-					glColor4us(	xgrad[0].red+(xgrad[1].red-xgrad[0].red)*f[i]/window_height,
-							xgrad[0].green+(xgrad[1].green-xgrad[0].green)*f[i]/window_height,
-							xgrad[0].blue+(xgrad[1].blue-xgrad[0].blue)*f[i]/window_height,
-							foreground_opacity*65535);
-					glVertex2d(point[0], point[2]);
-					glVertex2d(point[1], point[2]);
-					
-					glColor4us(xgrad[0].red, xgrad[0].green, xgrad[0].blue, foreground_opacity*65535);
-					glVertex2d(point[1], point[3]);
-					glVertex2d(point[0], point[3]);
-				glEnd();
-			}
-			else {
-				glColor4us(xcol.red, xcol.green, xcol.blue, foreground_opacity*65535);
-				glBegin(GL_POLYGON);
-					glVertex2d(point[0], point[2]);
-					glVertex2d(point[0], point[3]);
-					glVertex2d(point[1], point[3]);
-					glVertex2d(point[1], point[2]);
-				glEnd();
-			}
-			if(shadow) {
-				glBegin(GL_POLYGON);
-					glColor4ub((unsigned char)(shadow_color >> 16 % 256), (unsigned char)(shadow_color >> 8 % 256), (unsigned char)(shadow_color % 256),(unsigned char)(shadow_color >> 24 % 256));
-					glVertex2d(point[1], point[2]);
-					glVertex2d(point[1], point[3]);
-					
-					glColor4ub(0, 0, 0, 0);
-					glVertex2d(point[1]+shadow, point[3]-shadow);
-					glVertex2d(point[1]+shadow, point[2]-shadow);
-				glEnd();
-				
-				glBegin(GL_POLYGON);
-					glColor4ub((unsigned char)(shadow_color >> 16 % 256), (unsigned char)(shadow_color >> 8 % 256), (unsigned char)(shadow_color % 256), (unsigned char)(shadow_color >> 24 % 256));
-					glVertex2d(point[0],point[3]);
-					glVertex2d(point[1],point[3]);
-				
-					glColor4ub(0, 0, 0, 0);
-					glVertex2d(point[1]+shadow, point[3]-shadow);
-					glVertex2d(point[0]+shadow, point[3]-shadow);
-				glEnd();
-			}
-			
-		}
-		#endif
 	}
 	
 	#ifdef GLX
 	if(GLXmode) {
+		glDrawArrays(GL_QUADS, 0, bars_count*(shadow ? 12 : 4));
 		glXSwapBuffers(cavaXDisplay, cavaXWindow);
 		glXWaitGL();
 	}
