@@ -24,6 +24,7 @@ Atom wm_delete_window, wmState, fullScreen, mwmHintsProperty, wmStateBelow;
 XClassHint cavaXClassHint;
 XWMHints cavaXWMHints;
 GLVertex *cavaGLVertex = NULL;
+XEvent xev;
 // mwmHints helps us comunicate with the window manager
 struct mwmHints {
     unsigned long flags;
@@ -100,10 +101,10 @@ void calculateColors(char *color, char *bcolor, int bgcol, int col, double foreg
 		xcol.green = (defaultColors[col]>>8)*256;
 		xcol.blue = defaultColors[col]*256;
 	} else {
-		sscanf(color, "#%02hx%02hx%02hx", &xcol.red, &xcol.blue, &xcol.green);
-		xcol.red *= 256;
-		xcol.green *= 256;
-		xcol.blue *= 256;
+		sscanf(color, "#%lx", &xcol.pixel);
+		xcol.red   = (xcol.pixel>>16%256)*256;
+		xcol.green = (xcol.pixel>>8%256)*256;
+		xcol.blue  = (xcol.pixel%256)*256;
 	}
 	xcol.flags = DoRed | DoGreen | DoBlue;
 	XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
@@ -113,10 +114,10 @@ void calculateColors(char *color, char *bcolor, int bgcol, int col, double foreg
 		xbgcol.green = (defaultColors[bgcol]>>8)*256;
 		xbgcol.blue = defaultColors[bgcol]*256;
 	} else {
-		sscanf(bcolor, "#%02hx%02hx%02hx", &xbgcol.red, &xbgcol.blue, &xbgcol.green);
-		xbgcol.red *= 256;
-		xbgcol.green *= 256;
-		xbgcol.blue *= 256;
+		sscanf(bcolor, "#%lx", &xbgcol.pixel);
+		xbgcol.red   = (xbgcol.pixel>>16%256)*256;
+		xbgcol.green = (xbgcol.pixel>>8%256)*256;
+		xbgcol.blue  = (xbgcol.pixel%256)*256;
 	}
 	xbgcol.flags = DoRed | DoGreen | DoBlue;
 	XAllocColor(cavaXDisplay, cavaXColormap, &xbgcol);
@@ -184,6 +185,39 @@ int init_window_x(char *color, char *bcolor, double foreground_opacity, int col,
 		XParseColor(cavaXDisplay, cavaXColormap, gradient_color_2, &xgrad[1]);
 		XAllocColor(cavaXDisplay, cavaXColormap, &xgrad[1]);
 	}
+	
+	// Set up atoms
+	wmState = XInternAtom(cavaXDisplay, "_NET_WM_STATE", FALSE);
+	fullScreen = XInternAtom(cavaXDisplay, "_NET_WM_STATE_FULLSCREEN", FALSE);
+	mwmHintsProperty = XInternAtom(cavaXDisplay, "_MOTIF_WM_HINTS", FALSE);
+	wmStateBelow = XInternAtom(cavaXDisplay, "_NET_WM_STATE_BELOW", TRUE);
+
+	// Set a few options
+	if(keepInBottom){
+		xev.xclient.type = ClientMessage;
+		xev.xclient.window = cavaXWindow;
+		xev.xclient.message_type = wmState;
+		xev.xclient.format = 32;
+		xev.xclient.data.l[0] = _NET_WM_STATE_ADD;
+		xev.xclient.data.l[1] = wmStateBelow; // Keeps the window below duh
+		xev.xclient.data.l[2] = 0;
+		xev.xclient.data.l[3] = 0;
+		xev.xclient.data.l[4] = 0;
+		XSendEvent(cavaXDisplay, cavaXRoot, FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+	}
+
+	// Setting window options			
+	struct mwmHints hints;
+	hints.flags = (1L << 1);
+	hints.decorations = borderFlag;		// setting the window border here
+	XChangeProperty(cavaXDisplay, cavaXWindow, mwmHintsProperty, mwmHintsProperty, 32, PropModeReplace, (unsigned char *)&hints, 5);
+	
+	// move the window in case it didn't by default
+	XWindowAttributes xwa;
+	XGetWindowAttributes(cavaXDisplay, cavaXWindow, &xwa);
+	if(strcmp(windowAlignment, "none"))
+		XMoveWindow(cavaXDisplay, cavaXWindow, windowX - xwa.x, windowY - xwa.y);
+	
 	return 0;
 }
 
@@ -195,22 +229,11 @@ int apply_window_settings_x(int *w, int *h)
 		(*h) = DisplayHeight(cavaXDisplay, cavaXScreenNumber);
 	}
 
-	// Window manager options (atoms)
-	wmState = XInternAtom(cavaXDisplay, "_NET_WM_STATE", FALSE);
-	fullScreen = XInternAtom(cavaXDisplay, "_NET_WM_STATE_FULLSCREEN", FALSE);
-	mwmHintsProperty = XInternAtom(cavaXDisplay, "_MOTIF_WM_HINTS", FALSE);
-	wmStateBelow = XInternAtom(cavaXDisplay, "_NET_WM_STATE_BELOW", TRUE);
 	//Atom xa = XInternAtom(cavaXDisplay, "_NET_WM_WINDOW_TYPE", FALSE); May be used in the future
 	//Atom prop;
 
-	// Setting window options			
-	struct mwmHints hints;
-	hints.flags = (1L << 1);
-	hints.decorations = borderFlag;		// setting the window border here
-	XChangeProperty(cavaXDisplay, cavaXWindow, mwmHintsProperty, mwmHintsProperty, 32, PropModeReplace, (unsigned char *)&hints, 5);
 
 	// use XEvents to toggle fullscreen color xlib
-	XEvent xev;
 	xev.xclient.type=ClientMessage;
 	xev.xclient.serial = 0;
 	xev.xclient.send_event = TRUE;
@@ -221,7 +244,7 @@ int apply_window_settings_x(int *w, int *h)
 	else {xev.xclient.data.l[0] = _NET_WM_STATE_REMOVE;}
 	xev.xclient.data.l[1] = fullScreen;
 	xev.xclient.data.l[2] = 0;
-	XSendEvent(cavaXDisplay, DefaultRootWindow(cavaXDisplay), FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+	XSendEvent(cavaXDisplay, cavaXRoot, FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 
 	// also use them to keep the window at the bottom of the stack
 	/**
@@ -236,28 +259,9 @@ int apply_window_settings_x(int *w, int *h)
 		data.l[3] = source indication (0-unk,1-normal app,2-pager)
 		other data.l[] elements = 0
 	**/
-	if(keepInBottom){
-		xev.xclient.type = ClientMessage;
-		xev.xclient.window = cavaXWindow;
-		xev.xclient.message_type = wmState;
-		xev.xclient.format = 32;
-		xev.xclient.data.l[0] = _NET_WM_STATE_ADD;
-		xev.xclient.data.l[1] = wmStateBelow; // Keeps the window below duh
-		xev.xclient.data.l[2] = 0;
-		xev.xclient.data.l[3] = 0;
-		xev.xclient.data.l[4] = 0;
-		XSendEvent(cavaXDisplay, DefaultRootWindow(cavaXDisplay), FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
-	}
-  	
-	// move the window in case it didn't by default
-	XWindowAttributes xwa;
-	XGetWindowAttributes(cavaXDisplay, cavaXWindow, &xwa);
-	if(strcmp(windowAlignment, "none"))
-		XMoveWindow(cavaXDisplay, cavaXWindow, windowX - xwa.x, windowY - xwa.y);
-		
+  		
 	// do the usual stuff :P
-	if(GLXmode){
-		
+	if(GLXmode){	
 		glViewport(0, 0, (double)*w, (double)*h);
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
@@ -525,15 +529,19 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 }
 
 void adjust_x(void){
-	if(shadowBox != 0) { XFreePixmap(cavaXDisplay, shadowBox); shadowBox = 0; }
-	if(gradientBox != 0) { XFreePixmap(cavaXDisplay, gradientBox); gradientBox = 0; }
+	if(GLXmode) {
+		free(cavaGLVertex);
+	} else {
+		if(shadowBox != 0) { XFreePixmap(cavaXDisplay, shadowBox); shadowBox = 0; }
+		if(gradientBox != 0) { XFreePixmap(cavaXDisplay, gradientBox); gradientBox = 0; }
+	}
 }
 
 void cleanup_graphical_x(void)
 {
     //XFlush(cavaXDisplay);
 	
-	if(!GLXmode) adjust_x();	
+	adjust_x();	
 	
 	
 	// TODO: Find freeing functions for these variables
