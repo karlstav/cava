@@ -25,6 +25,7 @@ XClassHint cavaXClassHint;
 XWMHints cavaXWMHints;
 GLVertex *cavaGLVertex = NULL;
 XEvent xev;
+
 // mwmHints helps us comunicate with the window manager
 struct mwmHints {
     unsigned long flags;
@@ -50,9 +51,9 @@ enum {
     MWM_FUNC_MAXIMIZE = (1L << 4),
     MWM_FUNC_CLOSE = (1L << 5)
 };
-#define _NET_WM_STATE_REMOVE 0;
-#define _NET_WM_STATE_ADD 1;
-#define _NET_WM_STATE_TOGGLE 2;
+#define _NET_WM_STATE_REMOVE 0
+#define _NET_WM_STATE_ADD 1
+#define _NET_WM_STATE_TOGGLE 2
 
 
 #ifdef GLX
@@ -192,8 +193,17 @@ int init_window_x(char *color, char *bcolor, double foreground_opacity, int col,
 	mwmHintsProperty = XInternAtom(cavaXDisplay, "_MOTIF_WM_HINTS", FALSE);
 	wmStateBelow = XInternAtom(cavaXDisplay, "_NET_WM_STATE_BELOW", TRUE);
 
-	// Set a few options
 	if(keepInBottom){
+	/**
+		window  = the respective client window
+		message_type = _NET_WM_STATE
+		format = 32
+		data.l[0] = the action, as listed below
+		data.l[1] = first property to alter
+		data.l[2] = second property to alter
+		data.l[3] = source indication (0-unk,1-normal app,2-pager)
+		other data.l[] elements = 0
+	**/
 		xev.xclient.type = ClientMessage;
 		xev.xclient.window = cavaXWindow;
 		xev.xclient.message_type = wmState;
@@ -209,14 +219,14 @@ int init_window_x(char *color, char *bcolor, double foreground_opacity, int col,
 	// Setting window options			
 	struct mwmHints hints;
 	hints.flags = (1L << 1);
-	hints.decorations = borderFlag;		// setting the window border here
+	hints.decorations = borderFlag;
 	XChangeProperty(cavaXDisplay, cavaXWindow, mwmHintsProperty, mwmHintsProperty, 32, PropModeReplace, (unsigned char *)&hints, 5);
 	
 	// move the window in case it didn't by default
 	XWindowAttributes xwa;
 	XGetWindowAttributes(cavaXDisplay, cavaXWindow, &xwa);
 	if(strcmp(windowAlignment, "none"))
-		XMoveWindow(cavaXDisplay, cavaXWindow, windowX - xwa.x, windowY - xwa.y);
+		XMoveWindow(cavaXDisplay, cavaXWindow, windowX, windowY);
 	
 	return 0;
 }
@@ -232,34 +242,27 @@ int apply_window_settings_x(int *w, int *h)
 	//Atom xa = XInternAtom(cavaXDisplay, "_NET_WM_WINDOW_TYPE", FALSE); May be used in the future
 	//Atom prop;
 
+	// change window type (this makes sure that compoziting managers don't mess with it)
+	//if(xa != NULL)
+	//{
+	//	prop = XInternAtom(cavaXDisplay, "_NET_WM_WINDOW_TYPE_DESKTOP", FALSE);
+	//	XChangeProperty(cavaXDisplay, cavaXWindow, xa, XA_ATOM, 32, PropModeReplace, (unsigned char *) &prop, 1);
+	//}
+	// The code above breaks stuff, please don't use it.	
+	
 
-	// use XEvents to toggle fullscreen color xlib
+	// tell the window manager to switch to a fullscreen state
 	xev.xclient.type=ClientMessage;
 	xev.xclient.serial = 0;
 	xev.xclient.send_event = TRUE;
 	xev.xclient.window = cavaXWindow;
 	xev.xclient.message_type = wmState;
 	xev.xclient.format = 32;
-	if(fs) {xev.xclient.data.l[0] = _NET_WM_STATE_ADD;}
-	else {xev.xclient.data.l[0] = _NET_WM_STATE_REMOVE;}
+	xev.xclient.data.l[0] = fs ? _NET_WM_STATE_ADD : _NET_WM_STATE_REMOVE;
 	xev.xclient.data.l[1] = fullScreen;
 	xev.xclient.data.l[2] = 0;
 	XSendEvent(cavaXDisplay, cavaXRoot, FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
-
-	// also use them to keep the window at the bottom of the stack
-	/**
-		This is how a XEvent should look like:
-			
-		window  = the respective client window
-		message_type = _NET_WM_STATE
-		format = 32
-		data.l[0] = the action, as listed below
-		data.l[1] = first property to alter
-		data.l[2] = second property to alter
-		data.l[3] = source indication (0-unk,1-normal app,2-pager)
-		other data.l[] elements = 0
-	**/
-  		
+	
 	// do the usual stuff :P
 	if(GLXmode){	
 		glViewport(0, 0, (double)*w, (double)*h);
@@ -270,42 +273,27 @@ int apply_window_settings_x(int *w, int *h)
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 	}else{
-		if(!transparentFlag)
-		{
+		if(!transparentFlag) {
 			XSetForeground(cavaXDisplay, cavaXGraphics, xbgcol.pixel);
 			XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, 0, 0, (*w), (*h));
-		}
-		else
-			XClearWindow(cavaXDisplay, cavaXWindow);
+		} else XClearWindow(cavaXDisplay, cavaXWindow);
 	}
-	
-	// change window type (this makes sure that compoziting managers don't mess with it)
-	//if(xa != NULL)
-	//{
-	//	prop = XInternAtom(cavaXDisplay, "_NET_WM_WINDOW_TYPE_DESKTOP", FALSE);
-	//	XChangeProperty(cavaXDisplay, cavaXWindow, xa, XA_ATOM, 32, PropModeReplace, (unsigned char *) &prop, 1);
-	//}
-	// The code above breaks stuff, please don't use it.	
 	
 	shadow_drawn = 0;
 	gradient_drawn = 0;	
 	return 0;
 }
 
-int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *w, int *h, char *color, char *bcolor, int gradient)
-{
-	while(!*should_reload && XPending(cavaXDisplay))
-	{
+int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *w, int *h, char *color, char *bcolor, int gradient) {
+	while(!*should_reload && XPending(cavaXDisplay)) {
 		XNextEvent(cavaXDisplay, &cavaXEvent);
 		
-		switch(cavaXEvent.type)
-		{
+		switch(cavaXEvent.type) {
 			case KeyPress:
 			{
 				KeySym key_symbol;
 				key_symbol = XkbKeycodeToKeysym(cavaXDisplay, cavaXEvent.xkey.keycode, 0, cavaXEvent.xkey.state & ShiftMask ? 1 : 0);
-				switch(key_symbol)
-				{
+				switch(key_symbol) {
 					// should_reload = 1
 					// resizeTerminal = 2
 					// bail = -1
@@ -393,17 +381,14 @@ void render_shadows_x(int window_height, int bars_count, int bar_width, int bar_
 	shadowBox = XCreatePixmap(cavaXDisplay, cavaXWindow, shadow, window_height, 32);
 	XSetForeground(cavaXDisplay, cavaXGraphics, 0x00000000);
 	XFillRectangle(cavaXDisplay, shadowBox, cavaXGraphics, 0, 0, shadow, shadow);
-	for(int I = 0; I < shadow; I++)
-	{
+	for(int I = 0; I < shadow; I++) {
 		XSetForeground(cavaXDisplay, cavaXGraphics, (((shadow_color >> 24 % 256)/(I+1)) << 24) + shadow_color % 0x1000000);
 		XFillRectangle(cavaXDisplay, shadowBox, cavaXGraphics, I, I, 1, window_height-shadow);
 	}
 			
 	// draw bottom shadows
-	for(int i = 0; i < bars_count; i++)
-	{
-		for(int I = 0; I <= (shadow > bar_spacing ? bar_spacing : shadow); I++)
-		{
+	for(int i = 0; i < bars_count; i++) {
+		for(int I = 0; I <= (shadow > bar_spacing ? bar_spacing : shadow); I++) {
 			XSetForeground(cavaXDisplay, cavaXGraphics, (((shadow_color >> 24 % 256)/(I+1)) << 24) + shadow_color % 0x1000000);
 			XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_width+bar_spacing) + I, window_height - shadow + I, bar_width+1, 1);
 		}
@@ -419,30 +404,26 @@ int render_gradient_x(int window_height, int bar_width, int bar_spacing, int res
 	gradientBox = XCreatePixmap(cavaXDisplay, cavaXWindow, bar_width, window_height, 32);
 	// TODO: Error checks
 
-	for(int I = 0; I < window_height; I++)
-	{
+	for(int I = 0; I < window_height; I++) {
 		double step = (double)I / (float)window_height;
 
 		// gradients break compatibility with non ARGB displays.
 		// if you could fix this without allocating bilions of colors, please do so
 
 		xgrad[2].pixel ^= xgrad[2].pixel; 	
-		if(xgrad[0].red != 0 || xgrad[1].red != 0)
-		{
+		if(xgrad[0].red != 0 || xgrad[1].red != 0) {
 			if(xgrad[0].red < xgrad[1].red) 
 				xgrad[2].pixel |= (unsigned long)(xgrad[0].red + ((xgrad[1].red - xgrad[0].red) * step)) / 256 << 16;
 			else xgrad[2].pixel |= (unsigned long)(xgrad[0].red - ((xgrad[0].red - xgrad[1].red) * step)) / 256 << 16;
 		}
 		
-		if(xgrad[0].green != 0 || xgrad[1].green != 0)
-		{
+		if(xgrad[0].green != 0 || xgrad[1].green != 0) {
 			if(xgrad[0].green < xgrad[1].green) 
 				xgrad[2].pixel |= (unsigned long)(xgrad[0].green + ((xgrad[1].green - xgrad[0].green) * step)) / 256 << 8;
 			else xgrad[2].pixel |= (unsigned long)(xgrad[0].green - ((xgrad[0].green - xgrad[1].green) * step)) / 256 << 8;
 		}
 		
-		if(xgrad[0].blue != 0 || xgrad[1].blue != 0)
-		{
+		if(xgrad[0].blue != 0 || xgrad[1].blue != 0) {
 			if(xgrad[0].blue < xgrad[1].blue) 
 				xgrad[2].pixel |= (unsigned long)(xgrad[0].blue + ((xgrad[1].blue - xgrad[0].blue) * step)) / 256;
 			else xgrad[2].pixel |= (unsigned long)(xgrad[0].blue - ((xgrad[0].blue - xgrad[1].blue) * step)) / 256;
@@ -475,8 +456,7 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 		if(drawGLBars(cavaGLVertex, rest, bar_width, bar_spacing, bars_count, window_height, shadow, gradient, glColors, f)) exit(EXIT_FAILURE);
 	} else {	
 		// draw bars on the X11 window
-		for(int i = 0; i < bars_count; i++)
-		{	
+		for(int i = 0; i < bars_count; i++) {
 			// this fixes a rendering bug
 			if(f[i] > window_height) f[i] = window_height;
 				
