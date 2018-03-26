@@ -68,6 +68,8 @@
 #include "config.h"
 #include "config.c"
 
+#include "clock.h"
+
 #ifdef __GNUC__
 // curses.h or other sources may already define
 #undef  GCC_UNUSED
@@ -624,6 +626,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					resizeTerminal = TRUE;
 					break;
 
+				#ifdef CLOCK
+				case '=': // toggle clock
+					p.show_clock = !(p.show_clock);
+					break;
+
+				case '+': // cycle through clock positions
+					if (p.clock_position<8) p.clock_position++;
+					else p.clock_position = 0;
+					break;
+				#endif
+
 				case 'q':
 					cleanup();
 					return EXIT_SUCCESS;
@@ -685,6 +698,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					printw("no sound detected for 3 sec, going to sleep mode\n");
 				#endif
 				//wait 1 sec, then check sound again.
+				#ifdef CLOCK
+			        draw_clock(SILENCE,p.show_clock,p.clock_position,h,w);
+					refresh();
+				#endif
 				req.tv_sec = 1;
 				req.tv_nsec = 0;
 				nanosleep (&req, NULL);
@@ -787,6 +804,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						#ifdef NCURSES
 						rc = draw_terminal_ncurses(inAtty, h, w, bars, 
 							p.bw, p.bs, rest, f, flastd, p.gradient);
+						#ifdef CLOCK
+					        draw_clock(NORMAL,p.show_clock,p.clock_position,h,w);
+					        refresh();
+					    #endif
 						break;
 						#endif
 					case 2:

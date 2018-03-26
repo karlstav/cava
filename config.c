@@ -8,6 +8,9 @@ double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8,
 
 char *inputMethod, *outputMethod, *channels;
 
+#ifdef CLOCK
+char* cpos;
+#endif
 
 struct config_params {
 
@@ -18,6 +21,11 @@ unsigned int lowcf, highcf;
 double *smooth;
 int smcount, customEQ, im, om, col, bgcol, autobars, stereo, is_bin, ascii_range,
  bit_format, gradient, fixedbars, framerate, bw, bs, autosens, overshoot, waves;
+
+#ifdef CLOCK
+int show_clock;
+int clock_position;
+#endif
 
 };
 
@@ -275,6 +283,25 @@ if (p->lowcf > p->highcf) {
 p->sens = p->sens / 100;
 
 
+#ifdef CLOCK
+#include "clock.h"
+//validate clock position string
+if (strcmp(cpos, "top_left") == 0) p->clock_position = CLOCK_POS_TOP_LEFT;
+else if (strcmp(cpos, "top_right") == 0) p->clock_position = CLOCK_POS_TOP_RIGHT;
+else if (strcmp(cpos, "bottom_left") == 0) p->clock_position = CLOCK_POS_BOTTOM_LEFT;
+else if (strcmp(cpos, "bottom_right") == 0) p->clock_position = CLOCK_POS_BOTTOM_RIGHT;
+else if (strcmp(cpos, "left_center") == 0) p->clock_position = CLOCK_POS_LEFT_CENTER;
+else if (strcmp(cpos, "right_center") == 0) p->clock_position = CLOCK_POS_RIGHT_CENTER;
+else if (strcmp(cpos, "top_center") == 0) p->clock_position = CLOCK_POS_TOP_CENTER;
+else if (strcmp(cpos, "bottom_center") == 0) p->clock_position = CLOCK_POS_BOTTOM_CENTER;
+else if (strcmp(cpos, "middle") == 0) p->clock_position = CLOCK_POS_MIDDLE;
+else {
+	fprintf(stderr,"Value of clock_position \"%s\" is invalid. It can be either of the following:\ntop_left, top_right, bottom_left, bottom_right, left_center, right_center, top_center, bottom_center or middle\n",cpos); 
+	exit(EXIT_FAILURE);
+}
+#endif
+
+
 }
 
 void load_config(char configPath[255], char supportedInput[255], void* params)
@@ -428,6 +455,12 @@ if (strcmp(inputMethod, "sndio") == 0) {
 	p->im = 4;
 	p->audio_source = (char *)iniparser_getstring(ini, "input:source", SIO_DEVANY);
 }
+#endif
+
+// config clock
+#ifdef CLOCK
+p->show_clock = iniparser_getint(ini, "general:show_clock", 0);
+cpos = (char *)iniparser_getstring(ini, "general:clock_position", "top_left");
 #endif
 
 validate_config(supportedInput, params);
