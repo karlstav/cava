@@ -136,18 +136,10 @@ If you use another version just replace *openSUSE_Leap_42.2* with *openSUSE_13.2
 
 ### Fedora
 
-Packages for Fedora 26 and 27 have been created using Fedora's COPR service.  You can find the packages here:
+Cava is available in Fedora 26 and later.  You can install Cava by
+running:
 
-    https://copr.fedorainfracloud.org/coprs/larsks/cava/
-
-To install packages from this repository:
-
-    dnf copr enable larsks/cava
     dnf install cava
-
-These packages are generated from the spec file hosted at <https://github.com/larsks-packages/cava>.
-
-To report problems with the packages (or to request new builds for new releases), please use the issue tracker at <https://github.com/larsks-packages/cava/issues>.
 
 ### Arch
 
