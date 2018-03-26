@@ -1,12 +1,19 @@
+#if defined(WIN)||defined(GLX)
+	#define GL
+#endif
+
 #ifndef H_GRAPHICAL
 #define H_GRAPHICAL
 
 #ifdef GLX
 	#include <GL/gl.h>
-	#include <GL/glx.h>
 	GLXContext cavaGLXContext;
 	GLXFBConfig* cavaFBConfig;
 	extern int GLXmode;
+#endif
+
+#ifdef GL
+	#include <GL/gl.h>
 	typedef struct {
 		GLfloat x, y, r, g, b, a;
 	} GLVertex;

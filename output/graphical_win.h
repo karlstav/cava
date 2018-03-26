@@ -6,9 +6,7 @@
 #include <assert.h>
 #include <tchar.h>
 
-#pragma comment (lib, "opengl32.lib")
-#pragma comment (lib, "glu32.lib")
-#pragma comment (lib, "dwmapi.lib")
+#include "output/graphical.h"
 
 #ifdef assert
 #define vertify(expr) if(!expr) assert(0)

@@ -15,6 +15,7 @@ int gradientColor[2], grad = 0;
 int shadowColor, shadow = 0;
 double opacity[2] = {1.0, 1.0};
 int trans;
+GLVertex *cavaGLVertex = NULL;
 
 LRESULT CALLBACK WindowFunc(HWND hWnd,UINT msg, WPARAM wParam, LPARAM lParam) {
     PAINTSTRUCT ps;
@@ -71,6 +72,8 @@ void init_opengl_win() {
 	glEnable(GL_COLOR_MATERIAL);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
 
 	if(trans) {
 		glEnable(GL_BLEND);
@@ -128,11 +131,12 @@ unsigned char CreateHGLRC(HWND hWnd) {
 }
 
 void resize_framebuffer(int width,int height) {
-	glViewport(0,0, width,height);
+	glViewport(0, 0, (double)width, (double)height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-
-	glMatrixMode(GL_MODELVIEW );
+	
+	glOrtho(0, (double)width, 0, (double)height, -1, 1);
+	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
 
@@ -279,6 +283,10 @@ void apply_win_settings(int w, int h) {
 	return;
 }
 
+void cleanFragile(void) {
+	free(cavaGLVertex);
+}
+
 
 int get_window_input_win(int *should_reload, int *bs, double *sens, int *bw, int *w, int *h, char *color, char *bcolor, int gradient) {
 	while(!*should_reload && PeekMessage(&cavaWinEvent, NULL, WM_KEYFIRST, WM_MOUSELAST, PM_REMOVE)) {	
@@ -292,12 +300,15 @@ int get_window_input_win(int *should_reload, int *bs, double *sens, int *bw, int
 					// bail = -1
 				        case 'A':
 						(*bs)++;
+						cleanFragile();
 						return 2;
 					case 'S':
 						if((*bs) > 0) (*bs)--;
+						cleanFragile();
 						return 2;
 					case 'F': // fullscreen
 						//fs = !fs;
+						cleanFragile();
 						return 2;
 					case VK_UP:
 						(*sens) *= 1.05;
@@ -307,9 +318,11 @@ int get_window_input_win(int *should_reload, int *bs, double *sens, int *bw, int
 						break;
 					case VK_LEFT:
 						(*bw)++;
+						cleanFragile();
 						return 2;
 					case VK_RIGHT:
 						if ((*bw) > 1) (*bw)--;
+						cleanFragile();
 						return 2;
 					case 'R': //reload config
 						(*should_reload) = 1;
@@ -322,11 +335,13 @@ int get_window_input_win(int *should_reload, int *bs, double *sens, int *bw, int
 						if(trans) break;
 						srand(time(NULL));
 						bgcolor = (rand() << 16) + rand();
+						cleanFragile();
 						return 2;
 					case 'C':
 						if(grad) break;
 						srand(time(NULL));
 						fgcolor = (rand() << 16) + rand();
+						cleanFragile();
 						return 2;
 			       		default: break;
 			       }
@@ -341,9 +356,10 @@ int get_window_input_win(int *should_reload, int *bs, double *sens, int *bw, int
 			{
 				RECT rect;
 				if(GetWindowRect(cavaWinWindow, &rect)) {
-					w = rect.right - rect.left;
-					h = rect.bottom - rect.top;
+					(*w) = rect.right - rect.left;
+					(*h) = rect.bottom - rect.top;
 				}
+				cleanFragile();
 				return 2;
 			}
 		}
@@ -356,67 +372,13 @@ void draw_graphical_win(int window_height, int bars_count, int bar_width, int ba
         wglMakeCurrent(hdc, cavaWinGLFrame);
 
 	// clear color and calculate pixel witdh in double
-	double pixelWidthGL = 2.0/(double)(bars_count*(bar_width+bar_spacing)+rest*2.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 		
-	for(int i = 0; i < bars_count; i++) {
-		double point[4];
-		point[0] = (double)pixelWidthGL*(rest+(bar_width+bar_spacing)*i)-1.0;
-		point[1] = (double)pixelWidthGL*(rest+(bar_width+bar_spacing)*i+bar_width)-1.0;
-		point[2] = (double)f[i]/window_height*2.0-1.0;
-		point[3] = (double)-1.0;
-		if(shadow) {
-			point[2] += 2.0/window_height*shadow;
-			point[3] += 2.0/window_height*shadow;
-		}
-			
-		if(grad)
-		{
-			glBegin(GL_POLYGON);
-				glColor4ub((gradientColor[0]>>16%256)+((gradientColor[1]>>16%256)-(gradientColor[0]>>16%256))*f[i]/window_height,
-					(gradientColor[0]>>8%256)+((gradientColor[1]>>8%256)-(gradientColor[0]>>8%256))*f[i]/window_height,
-					(gradientColor[0]%256)+((gradientColor[1]%256)-(gradientColor[0]%256))*f[i]/window_height,
-					foreground_opacity*0xFF);
-				glVertex2d(point[0], point[2]);
-				glVertex2d(point[1], point[2]);
-					
-				glColor4ub(gradientColor[0]>>16%256, gradientColor[0]>>8%256,
-					       	gradientColor[0]%256, foreground_opacity*0xFF);
-				glVertex2d(point[1], point[3]);
-				glVertex2d(point[0], point[3]);
-			glEnd();
-		} else {
-			glColor4ub(fgcolor>>16%256, fgcolor>>8%256, fgcolor%256, (unsigned char)(foreground_opacity*255));
-			glBegin(GL_POLYGON);
-				glVertex2f(point[0], point[2]);
-				glVertex2f(point[0], point[3]);
-				glVertex2f(point[1], point[3]);
-				glVertex2d(point[1], point[2]);
-			glEnd();
-		}
-		if(shadow) {
-			glBegin(GL_POLYGON);
-				glColor4ub((unsigned char)(shadowColor >> 16 % 256), (unsigned char)(shadowColor >> 8 % 256), (unsigned char)(shadowColor % 256),(unsigned char)(shadowColor >> 24 % 256));
-				glVertex2d(point[1], point[2]);
-				glVertex2d(point[1], point[3]);
-				
-				glColor4ub(0, 0, 0, 0);
-				glVertex2d(point[1]+2.0/window_height*shadow/4.0, point[3]-2.0/window_height*shadow);
-				glVertex2d(point[1]+2.0/window_height*shadow/4.0, point[2]-2.0/window_height*shadow);
-			glEnd();
-				
-			glBegin(GL_POLYGON);
-				glColor4ub((unsigned char)(shadowColor >> 16 % 256), (unsigned char)(shadowColor >> 8 % 256), (unsigned char)(shadowColor % 256), (unsigned char)(shadowColor >> 24 % 256));
-				glVertex2d(point[0],point[3]);
-				glVertex2d(point[1],point[3]);
-		
-				glColor4ub(0, 0, 0, 0);
-				glVertex2d(point[1]+2.0/window_height*shadow/4.0, point[3]-2.0/window_height*shadow);
-				glVertex2d(point[0]+2.0/window_height*shadow/4.0, point[3]-2.0/window_height*shadow);
-			glEnd();
-		}
-	}
+	float glColors[11] = {gradient ? (gradientColor[0]>>16%256)/255.0 : (fgcolor>>16%256)/255.0, gradient ? (gradientColor[0]>>8%256)/255.0 : (fgcolor>>8%256)/255.0, gradient ? (gradientColor[0]%256)/255.0 : (fgcolor%256)/255.0,
+						(gradientColor[1]>>16%256)/255.0, (gradientColor[1]>>8%256)/255.0, (gradientColor[1]%256)/255.0, foreground_opacity, ((unsigned int)shadowColor>>24%256)/255.0, ((unsigned int)shadowColor>>16%256)/255.0, ((unsigned int)shadowColor>>8%256)/255.0, (unsigned int)(shadowColor%256)/255.0};
+	if(drawGLBars(cavaGLVertex, rest, bar_width, bar_spacing, bars_count, window_height, shadow, gradient, glColors, f)) exit(EXIT_FAILURE);
 	
+	glDrawArrays(GL_QUADS, 0, bars_count*(shadow ? 12 : 4));
 	glFlush();
 
 	// swap buffers	
@@ -425,6 +387,7 @@ void draw_graphical_win(int window_height, int bars_count, int bar_width, int ba
 }
 
 void cleanup_graphical_win(void) {
+	cleanFragile();
 	wglMakeCurrent(NULL, NULL);
         wglDeleteContext(cavaWinGLFrame);
 	ReleaseDC(cavaWinWindow, cavaWinFrame);
