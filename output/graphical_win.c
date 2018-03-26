@@ -280,13 +280,12 @@ int init_window_win(char *color, char *bcolor, double foreground_opacity, int co
 void apply_win_settings(int w, int h) {
 	resize_framebuffer(w, h);
 	ReleaseDC(cavaWinWindow, cavaWinFrame);
+	if(cavaGLVertex) {
+		free(cavaGLVertex);
+		cavaGLVertex = NULL;
+	}
 	return;
 }
-
-void cleanFragile(void) {
-	free(cavaGLVertex);
-}
-
 
 int get_window_input_win(int *should_reload, int *bs, double *sens, int *bw, int *w, int *h, char *color, char *bcolor, int gradient) {
 	while(!*should_reload && PeekMessage(&cavaWinEvent, NULL, WM_KEYFIRST, WM_MOUSELAST, PM_REMOVE)) {	
@@ -300,15 +299,12 @@ int get_window_input_win(int *should_reload, int *bs, double *sens, int *bw, int
 					// bail = -1
 				        case 'A':
 						(*bs)++;
-						cleanFragile();
 						return 2;
 					case 'S':
 						if((*bs) > 0) (*bs)--;
-						cleanFragile();
 						return 2;
 					case 'F': // fullscreen
 						//fs = !fs;
-						cleanFragile();
 						return 2;
 					case VK_UP:
 						(*sens) *= 1.05;
@@ -318,11 +314,9 @@ int get_window_input_win(int *should_reload, int *bs, double *sens, int *bw, int
 						break;
 					case VK_LEFT:
 						(*bw)++;
-						cleanFragile();
 						return 2;
 					case VK_RIGHT:
 						if ((*bw) > 1) (*bw)--;
-						cleanFragile();
 						return 2;
 					case 'R': //reload config
 						(*should_reload) = 1;
@@ -335,13 +329,11 @@ int get_window_input_win(int *should_reload, int *bs, double *sens, int *bw, int
 						if(trans) break;
 						srand(time(NULL));
 						bgcolor = (rand() << 16) + rand();
-						cleanFragile();
 						return 2;
 					case 'C':
 						if(grad) break;
 						srand(time(NULL));
 						fgcolor = (rand() << 16) + rand();
-						cleanFragile();
 						return 2;
 			       		default: break;
 			       }
@@ -359,7 +351,6 @@ int get_window_input_win(int *should_reload, int *bs, double *sens, int *bw, int
 					(*w) = rect.right - rect.left;
 					(*h) = rect.bottom - rect.top;
 				}
-				cleanFragile();
 				return 2;
 			}
 		}
@@ -387,7 +378,7 @@ void draw_graphical_win(int window_height, int bars_count, int bar_width, int ba
 }
 
 void cleanup_graphical_win(void) {
-	cleanFragile();
+	free(cavaGLVertex);
 	wglMakeCurrent(NULL, NULL);
         wglDeleteContext(cavaWinGLFrame);
 	ReleaseDC(cavaWinWindow, cavaWinFrame);
