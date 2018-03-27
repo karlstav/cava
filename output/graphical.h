@@ -6,7 +6,7 @@
 #define H_GRAPHICAL
 
 #ifdef GLX
-	#include <GL/gl.h>
+	#include <GL/glx.h>
 	GLXContext cavaGLXContext;
 	GLXFBConfig* cavaFBConfig;
 	extern int GLXmode;

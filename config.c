@@ -18,7 +18,7 @@ unsigned int lowcf, highcf, shdw, shdw_col;
 double *smooth;
 int smcount, customEQ, im, om, col, bgcol, autobars, stereo, is_bin, ascii_range,
  bit_format, gradient, fixedbars, framerate, bw, bs, autosens, overshoot, waves,
-monstercat_alternative, set_win_props, w, h;
+ set_win_props, w, h;
 };
 
 
@@ -394,26 +394,27 @@ if (configPath[0] == '\0') {
 dictionary* ini;
 ini = iniparser_load(configPath);
 
-//setting fifo to defaualt if no other input modes supported
+//setting fifo to default if no other input modes supported
 inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo"); 
 
-#ifdef PORTAUDIO
-	inputMethod = (char *)iniparser_getstring(ini, "input:method", "portaudio");
-#endif
-
-//setting alsa to defaualt if supported
+//setting alsa to default if supported
 #ifdef ALSA
 	inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa"); 
 #endif
 
-//setting pulse to defaualt if supported
+//setting pulse to default if supported
 #ifdef PULSE
 	inputMethod = (char *)iniparser_getstring(ini, "input:method", "pulse");
 #endif
 
-//setting sndio to defaualt if supported
+//setting sndio to default if supported
 #ifdef SNDIO
 	inputMethod = (char *)iniparser_getstring(ini, "input:method", "sndio");
+#endif
+
+// setting portaudio to default if supported
+#ifdef PORTAUDIO
+	inputMethod = (char *)iniparser_getstring(ini, "input:method", "portaudio");
 #endif
 
 #ifdef NCURSES
@@ -424,7 +425,6 @@ inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo");
 #endif
 
 p->monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
-p->monstercat_alternative = iniparser_getboolean(ini, "smoothing:monstercat_alternative", 0);
 p->waves = iniparser_getint(ini, "smoothing:waves", 0);
 p->integral = iniparser_getdouble(ini, "smoothing:integral", 90);
 p->gravity = iniparser_getdouble(ini, "smoothing:gravity", 100);
@@ -521,10 +521,12 @@ if (strcmp(inputMethod, "sndio") == 0) {
 	p->audio_source = (char *)iniparser_getstring(ini, "input:source", SIO_DEVANY);
 }
 #endif
+#ifdef PORTAUDIO
 if (strcmp(inputMethod, "portaudio") == 0) {
 	p->im = 5;
 	p->audio_source = (char *)iniparser_getstring(ini, "input:source", "auto");
 }
+#endif
 
 // Get bar settings
 if(!strcmp(outputMethod, "x") | !strcmp(outputMethod, "sdl") | !strcmp(outputMethod, "win")) {

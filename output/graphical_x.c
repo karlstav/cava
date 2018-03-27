@@ -8,7 +8,7 @@
 #include "output/graphical.h"
 
 
-Pixmap gradientBox = 0, shadowBox = 0;
+Pixmap gradientBox = 0;
 XColor xbgcol, xcol, xgrad[3];
 
 XEvent cavaXEvent;
@@ -35,7 +35,7 @@ struct mwmHints {
     unsigned long status;
 };
 
-int cavaXScreenNumber, shadow, shadow_drawn = 0, gradient_drawn = 0, shadow_color, GLXmode;
+int cavaXScreenNumber, shadow, shadow_color, GLXmode;
 static unsigned int defaultColors[8] = {0x00000000,0x00FF0000,0x0000FF00,0x00FFFF00,0x000000FF,0x00FF00FF,0x0000FFFF,0x00FFFFFF};
 
 
@@ -73,9 +73,12 @@ int XGLInit() {
 #endif
 
 void calculateColors(char *color, char *bcolor, int bgcol, int col, double foreground_opacity) {
+	char tempColorStr[8];
+	
 	// Generate a sum of colors
 	if(!strcmp(color, "default")) {
-		unsigned long redSum = 0, greenSum = 0, blueSum = 0, tempColor;
+		unsigned long redSum = 0, greenSum = 0, blueSum = 0;
+		XColor tempColor;
 		int xPrecision = 20, yPrecision = 20;	
 		while(1){ if(((double)cavaXScreen->width / (double)xPrecision) == ((int)cavaXScreen->width / (int)xPrecision)) break; else xPrecision++; }
 		while(1){ if(((double)cavaXScreen->height / (double)yPrecision) == ((int)cavaXScreen->height / (int)yPrecision)) break; else yPrecision++; }
@@ -84,43 +87,33 @@ void calculateColors(char *color, char *bcolor, int bgcol, int col, double foreg
 		XImage *background = XGetImage(cavaXDisplay, cavaXRoot, 0, 0, cavaXScreen->width, cavaXScreen->height, AllPlanes, XYPixmap);
 		for(unsigned short i = 0; i < cavaXScreen->width; i+=(cavaXScreen->width / xPrecision)) {
 			for(unsigned short I = 0; I < cavaXScreen->height; I+=(cavaXScreen->height / yPrecision)) {
-				tempColor = XGetPixel(background, i, I);
-				// Xorg by default uses a 64bit color mode
-				// which goes like AAAARRRRGGGGBBBB
-				redSum += tempColor>>32%65536;
-				greenSum += tempColor>>16%65536;
-				blueSum += tempColor%65536;
+				// we validate each and EVERY pixel value,
+				// because Xorg says so..... and is really slow, so we make compromises
+				tempColor.pixel = XGetPixel(background, i, I);
+				XQueryColor(cavaXDisplay, cavaXColormap, &tempColor);	
+				
+				redSum += tempColor.red/256;
+				greenSum += tempColor.green/256;
+				blueSum += tempColor.blue/256;
 			}
 		}
-		XDestroyImage(background);
+		redSum /= xPrecision*yPrecision;
+		greenSum /= xPrecision*yPrecision;
+		blueSum /= xPrecision*yPrecision;
 
-		xcol.red /= xPrecision * yPrecision;
-		xcol.green /= xPrecision * yPrecision;
-		xcol.blue /= xPrecision * yPrecision;
-	} else if(color[0] != '#') {
-		xcol.red = (defaultColors[col]>>16)*256;
-		xcol.green = (defaultColors[col]>>8)*256;
-		xcol.blue = defaultColors[col]*256;
-	} else {
-		sscanf(color, "#%lx", &xcol.pixel);
-		xcol.red   = (xcol.pixel>>16%256)*256;
-		xcol.green = (xcol.pixel>>8%256)*256;
-		xcol.blue  = (xcol.pixel%256)*256;
-	}
-	xcol.flags = DoRed | DoGreen | DoBlue;
-	XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
+		XDestroyImage(background);
+		sprintf(tempColorStr, "#%02hhx%02hhx%02hhx", (unsigned char)redSum, (unsigned char)greenSum, (unsigned char)blueSum);
+	} else if(color[0] != '#') 
+		sprintf(tempColorStr, "#%02hhx%02hhx%02hhx", (unsigned char)(defaultColors[col]>>16)%256, (unsigned char)(defaultColors[col]>>8)%256, (unsigned char)defaultColors[col]);
 	
-	if(bcolor[0] != '#') {
-		xbgcol.red = (defaultColors[bgcol]>>16)*256;
-		xbgcol.green = (defaultColors[bgcol]>>8)*256;
-		xbgcol.blue = defaultColors[bgcol]*256;
-	} else {
-		sscanf(bcolor, "#%lx", &xbgcol.pixel);
-		xbgcol.red   = (xbgcol.pixel>>16%256)*256;
-		xbgcol.green = (xbgcol.pixel>>8%256)*256;
-		xbgcol.blue  = (xbgcol.pixel%256)*256;
-	}
-	xbgcol.flags = DoRed | DoGreen | DoBlue;
+	XParseColor(cavaXDisplay, cavaXColormap, color[0]=='#' ? color : tempColorStr, &xcol);
+	XAllocColor(cavaXDisplay, cavaXColormap, &xcol);
+
+	
+	if(bcolor[0] != '#')
+		sprintf(tempColorStr, "#%02hhx%02hhx%02hhx", (unsigned char)defaultColors[bgcol]>>16, (unsigned char)defaultColors[bgcol]>>8, (unsigned char)defaultColors[bgcol]);
+	
+	XParseColor(cavaXDisplay, cavaXColormap, bcolor[0]=='#' ? bcolor : tempColorStr, &xbgcol);
 	XAllocColor(cavaXDisplay, cavaXColormap, &xbgcol);
 	
 	xcol.pixel = (xcol.pixel%0x1000000000000) | ((unsigned long)(0xFFFF*foreground_opacity)<<48);
@@ -148,11 +141,10 @@ int init_window_x(char *color, char *bcolor, double foreground_opacity, int col,
 	
 	// 32 bit color means alpha channel support
 	XMatchVisualInfo(cavaXDisplay, cavaXScreenNumber, transparentFlag ? 32 : 24, TrueColor, &cavaVInfo);
-		if(transparentFlag)	cavaAttr.colormap = XCreateColormap(cavaXDisplay, DefaultRootWindow(cavaXDisplay), cavaVInfo.visual, AllocNone);
-		else cavaAttr.colormap = DefaultColormap(cavaXDisplay, cavaXScreenNumber);
+		cavaAttr.colormap = XCreateColormap(cavaXDisplay, DefaultRootWindow(cavaXDisplay), cavaVInfo.visual, AllocNone);
 		cavaXColormap = cavaAttr.colormap; 
 		calculateColors(color, bcolor, bgcol, col, foreground_opacity);
-		cavaAttr.background_pixel = (((unsigned long)0xFFFF&transparentFlag)<<48)|(xbgcol.pixel%0x1000000000000);
+		cavaAttr.background_pixel = xbgcol.pixel;
 		cavaAttr.border_pixel = xcol.pixel;
 	
 	cavaXWindow = XCreateWindow(cavaXDisplay, cavaXRoot, windowX, windowY, w, h, 0, cavaVInfo.depth, InputOutput, cavaVInfo.visual, CWEventMask | CWColormap | CWBorderPixel | CWBackPixel, &cavaAttr);	
@@ -273,14 +265,9 @@ int apply_window_settings_x(int *w, int *h)
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 	}else{
-		if(!transparentFlag) {
-			XSetForeground(cavaXDisplay, cavaXGraphics, xbgcol.pixel);
-			XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, 0, 0, (*w), (*h));
-		} else XClearWindow(cavaXDisplay, cavaXWindow);
+		XSetBackground(cavaXDisplay, cavaXGraphics, xbgcol.pixel);
+		XClearWindow(cavaXDisplay, cavaXWindow);
 	}
-	
-	shadow_drawn = 0;
-	gradient_drawn = 0;	
 	return 0;
 }
 
@@ -373,32 +360,7 @@ int get_window_input_x(int *should_reload, int *bs, double *sens, int *bw, int *
 	return 0;
 }
 
-void render_shadows_x(int window_height, int bars_count, int bar_width, int bar_spacing, int rest)
-{
-	// render side shadows
-	if(shadowBox != 0) XFreePixmap(cavaXDisplay, shadowBox);
-
-	shadowBox = XCreatePixmap(cavaXDisplay, cavaXWindow, shadow, window_height, 32);
-	XSetForeground(cavaXDisplay, cavaXGraphics, 0x00000000);
-	XFillRectangle(cavaXDisplay, shadowBox, cavaXGraphics, 0, 0, shadow, shadow);
-	for(int I = 0; I < shadow; I++) {
-		XSetForeground(cavaXDisplay, cavaXGraphics, (((shadow_color >> 24 % 256)/(I+1)) << 24) + shadow_color % 0x1000000);
-		XFillRectangle(cavaXDisplay, shadowBox, cavaXGraphics, I, I, 1, window_height-shadow);
-	}
-			
-	// draw bottom shadows
-	for(int i = 0; i < bars_count; i++) {
-		for(int I = 0; I <= (shadow > bar_spacing ? bar_spacing : shadow); I++) {
-			XSetForeground(cavaXDisplay, cavaXGraphics, (((shadow_color >> 24 % 256)/(I+1)) << 24) + shadow_color % 0x1000000);
-			XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_width+bar_spacing) + I, window_height - shadow + I, bar_width+1, 1);
-		}
-	}
-	shadow_drawn = 1;
-	return;
-}
-
-int render_gradient_x(int window_height, int bar_width, int bar_spacing, int rest, double foreground_opacity)
-{
+int render_gradient_x(int window_height, int bar_width, double foreground_opacity) {
 	if(gradientBox != 0) XFreePixmap(cavaXDisplay, gradientBox);
 
 	gradientBox = XCreatePixmap(cavaXDisplay, cavaXWindow, bar_width, window_height, 32);
@@ -434,7 +396,6 @@ int render_gradient_x(int window_height, int bar_width, int bar_spacing, int res
 		XSetForeground(cavaXDisplay, cavaXGraphics, xgrad[2].pixel);
 		XFillRectangle(cavaXDisplay, gradientBox, cavaXGraphics, 0, window_height - I, bar_width, 1);
 	}
-	gradient_drawn = 1;
 	return 0;
 }
 
@@ -442,18 +403,19 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 {
 	if(GLXmode) {
 		#ifdef GLX
-		glClearColor(xbgcol.red, xbgcol.green, xbgcol.blue, (!transparentFlag)*1.0); // TODO BG transparency
+		glClearColor(xbgcol.red/65535.0, xbgcol.green/65535.0, xbgcol.blue/65535.0, (!transparentFlag)*1.0); // TODO BG transparency
 		glClear(GL_COLOR_BUFFER_BIT);
 		#endif
-	} else {	// don't worry we have shaders for this
-		if(!shadow_drawn && shadow) render_shadows_x(window_height, bars_count, bar_width, bar_spacing, rest);
-		if(!gradient_drawn && gradient) render_gradient_x(window_height, bar_width, bar_spacing, rest, foreground_opacity); 
+	} else {
+		if(gradient&&!gradientBox&&transparentFlag) render_gradient_x(window_height, bar_width, foreground_opacity); 
 	}
 	
 	if(GLXmode) {
+		#ifdef GLX
 		float glColors[11] = {gradient ? xgrad[0].red/65535.0 : xcol.red/65535.0, gradient ? xgrad[0].green/65535.0 : xcol.green/65535.0, gradient ? xgrad[0].blue/65535.0 : xcol.blue/65535.0,
 							xgrad[1].red/65535.0, xgrad[1].green/65535.0, xgrad[1].blue/65535.0, foreground_opacity, ((unsigned int)shadow_color>>24)%256/255.0, ((unsigned int)shadow_color>>16)%256/255.0, ((unsigned int)shadow_color>>8)%256/255.0, (unsigned int)shadow_color%256/255.0};
 		if(drawGLBars(cavaGLVertex, rest, bar_width, bar_spacing, bars_count, window_height, shadow, gradient, glColors, f)) exit(EXIT_FAILURE);
+		#endif
 	} else {	
 		// draw bars on the X11 window
 		for(int i = 0; i < bars_count; i++) {
@@ -461,39 +423,15 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 			if(f[i] > window_height) f[i] = window_height;
 				
 			if(f[i] > flastd[i]) {
-				if(shadow && transparentFlag) {
-					XCopyArea(cavaXDisplay, shadowBox, cavaXWindow, cavaXGraphics, 0, 0, shadow, f[i] - flastd[i]+shadow, rest+i*(bar_width+bar_spacing)+bar_width, window_height-f[i]-shadow);
-					if(flastd[i] < shadow) {
-						for(int I = 0; I <= shadow; I++) {
-							XSetForeground(cavaXDisplay, cavaXGraphics, (((shadow_color >> 24 % 256)/(I+1)) << 24) + shadow_color % 0x1000000);
-							XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_width+bar_spacing) + I, window_height - shadow + I, bar_width+1, 1);
-						}		
-					}
-				}
-				if(gradient)
-					XCopyArea(cavaXDisplay, gradientBox, cavaXWindow, cavaXGraphics, 0, window_height - f[i], bar_width, f[i] - flastd[i], rest + i*(bar_spacing+bar_width), window_height - f[i]-shadow*transparentFlag);	
+				if(gradient&&transparentFlag)
+					XCopyArea(cavaXDisplay, gradientBox, cavaXWindow, cavaXGraphics, 0, window_height - f[i], bar_width, f[i] - flastd[i], rest + i*(bar_spacing+bar_width), window_height - f[i]);	
 				else {
 					XSetForeground(cavaXDisplay, cavaXGraphics, xcol.pixel);
-					XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width), window_height - f[i]-shadow*transparentFlag, bar_width, f[i] - flastd[i]);
+					XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width), window_height - f[i], bar_width, f[i] - flastd[i]);
 				}
 			}
-			else if (f[i] < flastd[i]) {
-				if(transparentFlag) {
-					XClearArea(cavaXDisplay, cavaXWindow, rest + i*(bar_spacing+bar_width), window_height - flastd[i] - shadow, bar_width + shadow, flastd[i] - f[i], FALSE);
-					if(shadow) {
-						XCopyArea(cavaXDisplay, shadowBox, cavaXWindow, cavaXGraphics, 0, 0, shadow, shadow, rest+i*(bar_width+bar_spacing)+bar_width, window_height-f[i]-shadow);
-						if(f[i] < shadow) {
-							for(int I = 0; I <= shadow; I++) {
-								XSetForeground(cavaXDisplay, cavaXGraphics, (((shadow_color >> 24 % 256)/(I+1)) << 24) + shadow_color % 0x1000000);
-								XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_width+bar_spacing) + I, window_height - shadow + I, bar_width+1, 1);
-							}
-						}
-					}
-				} else {
-					XSetForeground(cavaXDisplay, cavaXGraphics, xbgcol.pixel);
-					XFillRectangle(cavaXDisplay, cavaXWindow, cavaXGraphics, rest + i*(bar_spacing+bar_width), window_height - flastd[i], bar_width, flastd[i] - f[i]);
-				}
-			}
+			else if (f[i] < flastd[i])
+				XClearArea(cavaXDisplay, cavaXWindow, rest + i*(bar_spacing+bar_width), window_height - flastd[i], bar_width, flastd[i] - f[i], FALSE);
 		}
 	}
 	
@@ -504,28 +442,24 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 		glXWaitGL();
 	}
 	#endif
+	
 	XSync(cavaXDisplay, 0);
 	return;
 }
 
 void adjust_x(void){
-	if(GLXmode) {
+	if(GLXmode)
 		free(cavaGLVertex);
-	} else {
-		if(shadowBox != 0) { XFreePixmap(cavaXDisplay, shadowBox); shadowBox = 0; }
-		if(gradientBox != 0) { XFreePixmap(cavaXDisplay, gradientBox); gradientBox = 0; }
-	}
+	else
+		if(gradientBox != 0) { XFreePixmap(cavaXDisplay, gradientBox); gradientBox = 0; };
 }
 
 void cleanup_graphical_x(void)
 {
-    //XFlush(cavaXDisplay);
+	// make sure that all events are dead by this point
+	XSync(cavaXDisplay, 0);
 	
 	adjust_x();	
-	
-	
-	// TODO: Find freeing functions for these variables
-	// cavaVInfo, cavaXClassHint and cavaXWMHints
 	 
 	#ifdef GLX
 		glXMakeCurrent(cavaXDisplay, 0, 0);

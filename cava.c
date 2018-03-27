@@ -215,7 +215,7 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200]
 } 
 
 
-int * monstercat_filter (int * f, int bars, int waves, double monstercat, bool monstercat_alt) {
+int * monstercat_filter (int * f, int bars, int waves, double monstercat) {
 
 	int z;
 
@@ -236,11 +236,6 @@ int * monstercat_filter (int * f, int bars, int waves, double monstercat, bool m
 				f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
 			}
 		}
-	} else if (monstercat_alt && monstercat > 0){		// less spiky monstercat smoothing method
-		for (z = 1; z < bars - 1; z++)
-			f[z] = 0.7*((f[z-1] + f[z+1])*monstercat/2+f[z]/2);
-		f[0] = (f[1]+f[0])/2;
-		f[bars - 1] = (f[bars-1]+f[bars-2])/2;
 	} else if (monstercat > 0) {
 		for (z = 0; z < bars; z++) {
 			//if (f[z] < 1)f[z] = 1;
@@ -302,7 +297,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	char supportedInput[255] = "'fifo'";
 	int sourceIsAuto = 1;
 	double smh;
-
+	bool isGraphical = false;
+	
 	//int maxvalue = 0;
 
 	struct audio_data audio;
@@ -371,8 +367,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	w = p.w;
 	h = p.h;
     output_mode = p.om;
+	isGraphical = (output_mode==5)||(output_mode==6)||(output_mode==7);
 	
-	if (output_mode != 4 && output_mode != 5 && output_mode != 6 && output_mode != 7) { 
+	if (output_mode != 4 && !isGraphical) { 
 		// Check if we're running in a tty
 		inAtty = 0;
 		if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0),
@@ -521,7 +518,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		if (output_mode == 3) get_terminal_dim_noncurses(&w, &h);
 
-		height = (h - 1) * (8-7*(output_mode!=5|output_mode!=6|output_mode==7));
+		height = (h - 1) * (8-7*isGraphical);
 
 		// output open file/fifo for raw output
 		if (output_mode == 4) {
@@ -723,12 +720,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			{
 				switch(get_window_input_x(&should_reload, &p.bs, &p.sens, &p.bw, &w, &h, p.color, p.bcolor, p.gradient))
 				{
-					case -1:
-						cleanup();
-						return EXIT_SUCCESS;
-					case 1:
-						cleanup();
-						break;
+					case -1: return EXIT_SUCCESS;
+					case 1: break;
 					case 2:
 						adjust_x();	
 						resizeTerminal = TRUE;
@@ -741,13 +734,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			{
 				switch(get_window_input_sdl(&p.bs, &p.bw, &p.sens, &p.col, &p.bgcol, &w, &h, p.gradient))
 				{
-					case -1:
-						cleanup();
-						exit(EXIT_FAILURE);
-						break;
+					case -1: return EXIT_FAILURE;
 					case 1:
 						should_reload = 1;
-						cleanup();
 						break;
 					case 2:
 						resizeTerminal = 1;
@@ -760,12 +749,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			{
 				switch(get_window_input_win(&should_reload, &p.bs, &p.sens, &p.bw, &w, &h, p.color, p.bcolor, p.gradient))
 				{
-					case -1:
-						cleanup();
-						return EXIT_SUCCESS;
-					case 1:
-						cleanup();
-						break;
+					case -1: return EXIT_SUCCESS;
+					case 1: break;
 					case 2:
 						resizeTerminal = TRUE;
 						break;
@@ -874,11 +859,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			if (p.monstercat) {
 				if (p.stereo) {
 					fl = monstercat_filter(fl, bars / 2, p.waves,
-					 	p.monstercat, p.monstercat_alternative);
+					 	p.monstercat);
 					fr = monstercat_filter(fr, bars / 2, p.waves,
-						p.monstercat, p.monstercat_alternative);	
+						p.monstercat);	
 				} else {
-					fl = monstercat_filter(fl, bars, p.waves, p.monstercat, p.monstercat_alternative);
+					fl = monstercat_filter(fl, bars, p.waves, p.monstercat);
 				}
 			}
 
@@ -985,8 +970,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					{
 						#ifdef XLIB
 						// this prevents invalid access
-						if(reloadConf)
-							break;
+						if(should_reload||reloadConf) break;
 						
 						draw_graphical_x(h, bars, p.bw, p.bs, rest, p.gradient, f, flastd, p.foreground_opacity);
 						break;

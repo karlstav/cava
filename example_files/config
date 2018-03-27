@@ -153,7 +153,7 @@
 # Gradient mode, only hex defined colors are supported, background must also be defined in hex
 # or remain commented out. 1 = on, 0 = off. Warning: for certain terminal emulators cava will
 # not able to restore color definitions on exit, simply restart your terminal to restore colors.
-# This option now works in graphical modes too
+# On X mode, you must either have transparency or OpenGL enabled for this to work.
 ; gradient = 0
 ; gradient_color_1 = '#0099ff'
 ; gradient_color_2 = '#ff3399'
@@ -169,9 +169,6 @@
 # Disables or enables the so-called "Monstercat smoothing" with or without "waves". Set to 0 to disable. 
 ; monstercat = 1
 ; waves = 0
-
-# Alternate monstercat smoothing algorithm (that smooths out bars instead of making spikes), use the monstercat option to adjust it's value.
-; monstercat_alternative = 0
 
 # Set gravity percentage for "drop off". Higher values means bars will drop faster.
 # Accepts only non-negative values. 50 means half gravity, 200 means double. Set to 0 to disable "drop off".
