@@ -1,41 +1,34 @@
 #include <stdio.h>
 #include <stdint.h>
-
-#define TEN_THSND 10000
-#define TEN_THSND_F 10000.0
-#define BIT_16 16
-#define BIT_8 8
-
-#define NORMALIZE_AND_WRITE(type) _NORMALIZE_AND_WRITE(type)
-#define _NORMALIZE_AND_WRITE(type) \
-	for (int i = 0; i < bars_count; i++) { \
-		uint##type##_t f_##type = UINT##type##_MAX; \
-		if (f[i] < TEN_THSND) \
-			f_##type *= f[i] / TEN_THSND_F; \
-		write(fd, &f_##type, sizeof(uint##type##_t)); \
-	}
+int16_t buf_16;
+int8_t buf_8;
 
 int print_raw_out(int bars_count, int fd, int is_binary, int bit_format,
 int ascii_range, char bar_delim, char frame_delim, const int f[200]) {
 	if (is_binary) {
-		switch (bit_format) {
-		case BIT_16:
-			NORMALIZE_AND_WRITE(BIT_16);
-			break;
-		case BIT_8:
-			NORMALIZE_AND_WRITE(BIT_8);
-			break;
-		}
+        for (int i = 0; i < bars_count; i++) {
+            int f_limited = f[i];
+            if (f_limited > (pow(2, bit_format) - 1)) f_limited = pow(2, bit_format) - 1;
+
+		    switch (bit_format) {
+		    case 16:
+                buf_16 = f_limited;
+			    write(fd, &buf_16, sizeof(int16_t));
+			    break;
+		    case 8:
+                buf_8 = f_limited;
+			    write(fd, &buf_8, sizeof(int8_t));
+			    break;
+		    }
+        }
 	} else { // ascii
 		for (int i = 0; i < bars_count; i++) {
-			int f_ranged = (f[i] / TEN_THSND_F) * ascii_range;
-			if (f_ranged > ascii_range)
-				f_ranged = ascii_range;
+			int f_ranged = f[i];
+			if (f_ranged > ascii_range) f_ranged = ascii_range;
 
 			// finding size of number-string in byte
 			int bar_height_size = 2; // a number + \0
-			if (f_ranged != 0)
-				bar_height_size += floor (log10 (f_ranged));
+			if (f_ranged != 0) bar_height_size += floor (log10 (f_ranged));
 
 			char bar_height[bar_height_size];
 			snprintf(bar_height, bar_height_size, "%d", f_ranged);

@@ -106,32 +106,42 @@
 
 struct termios oldtio, newtio;
 int rc;
-
 int M = 2048;
+int output_mode;
 
 // whether we should reload the config or not
 int should_reload = 0;
 
 // general: cleanup
-void cleanup(int om)
+void cleanup()
 {
-	#ifdef XLIB
-	if(om == 5) cleanup_graphical_x();
-	#endif
-	
-	#ifdef SDL
-	if(om == 6) cleanup_graphical_sdl();
-	#endif
-	
-	#ifdef WIN
-	if(om == 7) cleanup_graphical_win();
-	#endif
-		
-	#ifdef NCURSES
-	if(om == 1 || om == 3) cleanup_terminal_ncurses();
-	#endif
-
-	if(om == 2) cleanup_terminal_noncurses();
+	switch(output_mode) {
+		#ifdef NCURSES
+		case 1:
+		case 2:
+			cleanup_terminal_ncurses();
+			break;
+		#endif
+		case 3:
+			cleanup_terminal_noncurses();
+			break;
+		#ifdef XLIB
+		case 5:
+			cleanup_graphical_x();
+			break;
+		#endif
+		#ifdef SDL
+		case 6:
+			cleanup_graphical_sdl();
+			break;
+		#endif
+		#ifdef WIN
+		case 7:
+			cleanup_graphical_win();
+			break;
+		#endif
+		default: break;
+	}
 }
 
 // general: handle signals
@@ -216,7 +226,7 @@ int * monstercat_filter (int * f, int bars, int waves, double monstercat, bool m
 	if (waves > 0) {
 		for (z = 0; z < bars; z++) { // waves
 			f[z] = f[z] / 1.25;
-			if (f[z] < 0.125)f[z] = 0.125;
+			//if (f[z] < 1) f[z] = 1;
 			for (m_y = z - 1; m_y >= 0; m_y--) {
 				de = z - m_y;
 				f[m_y] = max(f[z] - pow(de, 2), f[m_y]);
@@ -233,7 +243,7 @@ int * monstercat_filter (int * f, int bars, int waves, double monstercat, bool m
 		f[bars - 1] = (f[bars-1]+f[bars-2])/2;
 	} else if (monstercat > 0) {
 		for (z = 0; z < bars; z++) {
-			if (f[z] < 0.125)f[z] = 0.125;
+			//if (f[z] < 1)f[z] = 1;
 			for (m_y = z - 1; m_y >= 0; m_y--) {
 				de = z - m_y;
 				f[m_y] = max(f[z] / pow(monstercat, de), f[m_y]);
@@ -360,8 +370,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	load_config(configPath, supportedInput, (void *)&p);
 	w = p.w;
 	h = p.h;
-	if (p.om != 4 && p.om != 5 && p.om != 6 && p.om != 7) { 
-
+    output_mode = p.om;
+	
+	if (output_mode != 4 && output_mode != 5 && output_mode != 6 && output_mode != 7) { 
 		// Check if we're running in a tty
 		inAtty = 0;
 		if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0),
@@ -395,7 +406,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		if (is_loop_device_for_sure(audio.source)) {
 			if (directory_exists("/sys/")) {
 				if (! directory_exists("/sys/module/snd_aloop/")) {
-      				cleanup(p.om);
+      				cleanup();
 					fprintf(stderr,
 					"Linux kernel module \"snd_aloop\" does not seem to  be loaded.\n"
 					"Maybe run \"sudo modprobe snd_aloop\".\n");
@@ -416,7 +427,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			n++;
 			if (n > 2000) {
 			#ifdef DEBUG
-				cleanup(p.om);
+				cleanup();
 				fprintf(stderr,
 				"could not get rate and/or format, problems with audio thread? quiting...\n");
 				exit(EXIT_FAILURE);
@@ -463,7 +474,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	#endif
 
 	if (p.highcf > audio.rate / 2) {
-		cleanup(p.om);
+		cleanup();
 		fprintf(stderr,
 			"higher cuttoff frequency can't be higher then sample rate / 2"
 		);
@@ -477,16 +488,16 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	// open XLIB window and set everything up
 	#ifdef XLIB
-	if(p.om == 5) if(init_window_x(p.color, p.bcolor, p.foreground_opacity, p.col, p.bgcol, p.set_win_props, argv, argc, p.gradient, p.gradient_color_1, p.gradient_color_2, p.shdw, p.shdw_col, w, h)) exit(EXIT_FAILURE);
+	if(output_mode == 5) if(init_window_x(p.color, p.bcolor, p.foreground_opacity, p.col, p.bgcol, p.set_win_props, argv, argc, p.gradient, p.gradient_color_1, p.gradient_color_2, p.shdw, p.shdw_col, w, h)) exit(EXIT_FAILURE);
 	#endif
 
 	// setting up sdl
 	#ifdef SDL
-	if(p.om == 6) if(init_window_sdl(&p.col, &p.bgcol, p.color, p.bcolor, p.gradient, p.gradient_color_1, p.gradient_color_2, w, h)) exit(EXIT_FAILURE);
+	if(output_mode == 6) if(init_window_sdl(&p.col, &p.bgcol, p.color, p.bcolor, p.gradient, p.gradient_color_1, p.gradient_color_2, w, h)) exit(EXIT_FAILURE);
 	#endif
 
 	#ifdef WIN
-	if(p.om == 7) if(init_window_win(p.color, p.bcolor, p.foreground_opacity, p.col, p.bgcol, p.gradient, p.gradient_color_1, p.gradient_color_2, p.shdw, p.shdw_col, w, h)) exit(EXIT_FAILURE);
+	if(output_mode == 7) if(init_window_win(p.color, p.bcolor, p.foreground_opacity, p.col, p.bgcol, p.gradient, p.gradient_color_1, p.gradient_color_2, p.shdw, p.shdw_col, w, h)) exit(EXIT_FAILURE);
 	#endif
 	
 	while  (!reloadConf) {//jumbing back to this loop means that you resized the screen
@@ -501,17 +512,19 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		#ifdef NCURSES
 		//output: start ncurses mode
-		if (p.om == 1 || p.om ==  2) {
+		if (output_mode == 1 || output_mode ==  2) {
 			init_terminal_ncurses(p.color, p.bcolor, p.col,
 			p.bgcol, p.gradient, p.gradient_color_1, p.gradient_color_2,&w, &h);
 			//get_terminal_dim_ncurses(&w, &h);
 		}
 		#endif
 
-		if (p.om == 3) get_terminal_dim_noncurses(&w, &h);
+		if (output_mode == 3) get_terminal_dim_noncurses(&w, &h);
+
+		height = (h - 1) * (8-7*(output_mode!=5|output_mode!=6|output_mode==7));
 
 		// output open file/fifo for raw output
-		if (p.om == 4) {
+		if (output_mode == 4) {
 
 			if (strcmp(p.raw_target,"/dev/stdout") != 0) {
 
@@ -544,20 +557,28 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			}
 			printf("open file %s for writing raw ouput\n",p.raw_target);
 
-            //height and with must be hardcoded for raw output.
-			h = 112;
+            //width must be hardcoded for raw output.
 			w = 200;
+
+    		if (strcmp(p.data_format, "binary") == 0) {
+                height = pow(2, p.bit_format) - 1;
+            } else {
+                height = p.ascii_range;
+            }
+
+
+
 		}
 
 		// draw X11 background
 		#ifdef XLIB
-		if(p.om == 5) apply_window_settings_x(&w, &h);
+		if(output_mode == 5) apply_window_settings_x(&w, &h);
 		#endif
 		#ifdef SDL
-		if(p.om == 6) apply_window_settings_sdl(p.bgcol, &w, &h);
+		if(output_mode == 6) apply_window_settings_sdl(p.bgcol, &w, &h);
 		#endif
 		#ifdef WIN
-		if(p.om == 7) apply_win_settings(w, h);
+		if(output_mode == 7) apply_win_settings(w, h);
 		#endif
 		
  		//handle for user setting too many bars
@@ -582,10 +603,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 
 
-		height = h - 1;
+
 
 		// process [smoothing]: calculate gravity
-		g = p.gravity * ((float)height / 270) * pow((60 / (float)p.framerate), 2.5);
+		g = p.gravity * ((float)height / 2160) * pow((60 / (float)p.framerate), 2.5);
 
 
 		//checks if there is stil extra room, will use this to center
@@ -599,7 +620,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		#endif
 
 		//output: start noncurses mode
-		if (p.om == 3) init_terminal_noncurses(p.col, p.bgcol, w, h, p.bw);
+		if (output_mode == 3) init_terminal_noncurses(p.col, p.bgcol, w, h, p.bw);
 
 
 
@@ -645,7 +666,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		// process: weigh signal to frequencies
 		for (n = 0; n < bars;
-			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*4000)) * 
+			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*32000)) * 
 				p.smooth[(int)floor(((double)n) * smh)];
 
 		if (p.stereo) bars = bars * 2;
@@ -654,63 +675,59 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		while  (!resizeTerminal) {
 
-			// general: keyboard controls
-			if(p.om != 5 && p.om != 6 && p.om != 7) {
+			#ifdef NCURSES
+			if (output_mode == 1 || output_mode == 2) ch = getch();
+			#endif
 			
-				#ifdef NCURSES
-				if (p.om == 1 || p.om == 2) ch = getch();
-				#endif
-
-				switch (ch) {
-					case 65:    // key up
-						p.sens = p.sens * 1.05;
-						break;
-					case 66:    // key down
-						p.sens = p.sens * 0.95;
-						break;
-					case 68:    // key right
-						p.bw++;
-						resizeTerminal = TRUE;
-						break;
-					case 67:    // key left
-						if (p.bw > 1) p.bw--;
-						resizeTerminal = TRUE;
-						break;
-					case 'a':
-						if (p.bs > 1) p.bs--;
-						resizeTerminal = TRUE;
-						break;
-					case 's':
-						p.bs++;
-						break;
-					case 'r': //reload config
-						should_reload = 1;
-						break;
-					case 'c': //change forground color
-						if (p.col < 7) p.col++;
-						else p.col = 0;
-						resizeTerminal = TRUE;
-						break;
-					case 'b': //change backround color
-						if (p.bgcol < 7) p.bgcol++;
-						else p.bgcol = 0;
-						resizeTerminal = TRUE;
-						break;
-					case 'q':
-						cleanup(p.om);
-						return EXIT_SUCCESS;
-				}
+			switch (ch) {
+				case 65:    // key up
+					p.sens = p.sens * 1.05;
+					break;
+				case 66:    // key down
+					p.sens = p.sens * 0.95;
+					break;
+				case 68:    // key right
+					p.bw++;
+					resizeTerminal = TRUE;
+					break;
+				case 67:    // key left
+					if (p.bw > 1) p.bw--;
+					resizeTerminal = TRUE;
+					break;
+				case 'a':
+					if (p.bs > 1) p.bs--;
+					resizeTerminal = TRUE;
+					break;
+				case 's':
+					p.bs++;
+					break;
+				case 'r': //reload config
+					should_reload = 1;
+					break;
+				case 'c': //change forground color
+					if (p.col < 7) p.col++;
+					else p.col = 0;
+					resizeTerminal = TRUE;
+					break;
+				case 'b': //change backround color
+					if (p.bgcol < 7) p.bgcol++;
+					else p.bgcol = 0;
+					resizeTerminal = TRUE;
+					break;
+				case 'q':
+					cleanup();
+					return EXIT_SUCCESS;
 			}
 			#ifdef XLIB
-			if(p.om == 5)
+			if(output_mode == 5)
 			{
 				switch(get_window_input_x(&should_reload, &p.bs, &p.sens, &p.bw, &w, &h, p.color, p.bcolor, p.gradient))
 				{
 					case -1:
-						cleanup(p.om);
+						cleanup();
 						return EXIT_SUCCESS;
 					case 1:
-						cleanup(p.om);
+						cleanup();
 						break;
 					case 2:
 						adjust_x();	
@@ -720,17 +737,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			}
 			#endif
 			#ifdef SDL
-			if(p.om == 6) 
+			if(output_mode == 6) 
 			{
 				switch(get_window_input_sdl(&p.bs, &p.bw, &p.sens, &p.col, &p.bgcol, &w, &h, p.gradient))
 				{
 					case -1:
-						cleanup(p.om);
+						cleanup();
 						exit(EXIT_FAILURE);
 						break;
 					case 1:
 						should_reload = 1;
-						cleanup(p.om);
+						cleanup();
 						break;
 					case 2:
 						resizeTerminal = 1;
@@ -739,15 +756,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			}
 			#endif
 			#ifdef WIN
-			if(p.om == 7)
+			if(output_mode == 7)
 			{
 				switch(get_window_input_win(&should_reload, &p.bs, &p.sens, &p.bw, &w, &h, p.color, p.bcolor, p.gradient))
 				{
 					case -1:
-						cleanup(p.om);
+						cleanup();
 						return EXIT_SUCCESS;
 					case 1:
-						cleanup(p.om);
+						cleanup();
 						break;
 					case 2:
 						resizeTerminal = TRUE;
@@ -902,10 +919,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					f[o] = fmem[o] * p.integral + f[o];
 					fmem[o] = f[o];
 
-					int diff = (height + 1) * 8 - f[o]; 
+					int diff = (height + 1) - f[o]; 
 					if (diff < 0) diff = 0;
 					double div = 1 / (diff + 1);
-					//f[o] = f[o] - pow(div, 10) * (height * 8 + 1); 
+					//f[o] = f[o] - pow(div, 10) * (height + 1); 
 					fmem[o] = fmem[o] * (1 - div / 20); 
 
 					#ifdef DEBUG
@@ -921,7 +938,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			for (o = 0; o < bars; o++) {
 				if (f[o] < 1) {
 					f[o] = 1;
-					if (p.om == 4) f[o] = 0;
+					if (output_mode == 4) f[o] = 0;
 				}
 				//if(f[o] > maxvalue) maxvalue = f[o];
 			}
@@ -929,9 +946,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			//printf("%d\n",maxvalue); //checking maxvalue I keep forgetting its about 10000
 
 			//autmatic sens adjustment
-			if (p.autosens && p.om != 4) {
+			if (p.autosens) {
 				for (o = 0; o < bars; o++) {
-					if (f[o] > height * (7*(p.om!=5&&p.om!=6&&p.om!=7) + 1)) {
+					if (f[o] > height ) {
 						senseLow = FALSE;
 						p.sens = p.sens * 0.985;
 						break;
@@ -943,7 +960,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			
 			// output: draw processed input
 			#ifndef DEBUG
-				switch (p.om) {
+				switch (output_mode) {
 					case 1:
 						#ifdef NCURSES
 						rc = draw_terminal_ncurses(inAtty, h, w, bars, 
@@ -1014,7 +1031,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
             //checking if audio thread has exited unexpectedly
             if (audio.terminate == 1) {
-                cleanup(p.om);
+                cleanup();
    				fprintf(stderr,
                 "Audio thread exited unexpectedly. %s\n", audio.error_message);
                 exit(EXIT_FAILURE); 
@@ -1034,7 +1051,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	if (p.customEQ) free(p.smooth);
 	if (sourceIsAuto) free(audio.source);
    
-    cleanup(p.om);
+    cleanup();
 
 	//fclose(fp);
 	}

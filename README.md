@@ -150,7 +150,13 @@ If you use another version just replace *openSUSE_Leap_42.2* with *openSUSE_13.2
 
 ### Fedora
 
-[RPM spec file](https://gist.github.com/sedrubal/617d40deb7452a25d004#file-cava-spec)
+Cava is available in Fedora 26 and later.  You can install Cava by
+running:
+
+    dnf install cava
+
+
+For the GUI branch, you'll have to compile it yourself.
 
 ### Arch
 
