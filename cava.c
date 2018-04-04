@@ -747,7 +747,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			#ifdef WIN
 			if(output_mode == 7)
 			{
-				switch(get_window_input_win(&should_reload, &p.bs, &p.sens, &p.bw, &w, &h, p.color, p.bcolor, p.gradient))
+				switch(get_window_input_win(&should_reload, &p.bs, &p.sens, &p.bw, &w, &h))
 				{
 					case -1: return EXIT_SUCCESS;
 					case 1: break;
@@ -990,7 +990,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						#ifdef WIN
 						if(reloadConf) break;
 						
-						draw_graphical_win(h, bars, p.bw, p.bs, rest, p.gradient, f, flastd, p.foreground_opacity);
+						draw_graphical_win(h, bars, p.bw, p.bs, rest, p.gradient, f);
 						break;
 						#endif
 					}

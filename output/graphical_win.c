@@ -10,16 +10,13 @@ HMODULE cavaWinModule;
 WNDCLASSEX cavaWinClass;	// same thing as window classes in Xlib
 HDC cavaWinFrame;
 HGLRC cavaWinGLFrame;
-int fgcolor, bgcolor;
-int gradientColor[2], grad = 0;
-int shadowColor, shadow = 0;
+unsigned int fgcolor, bgcolor;
+unsigned int gradientColor[2], grad = 0;
+unsigned int shadowColor, shadow = 0;
 double opacity[2] = {1.0, 1.0};
-int trans;
 GLVertex *cavaGLVertex = NULL;
 
 LRESULT CALLBACK WindowFunc(HWND hWnd,UINT msg, WPARAM wParam, LPARAM lParam) {
-    PAINTSTRUCT ps;
-
     switch(msg) {
         case WM_CREATE: break;
 	case WM_DESTROY: 
@@ -75,7 +72,7 @@ void init_opengl_win() {
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);
 
-	if(trans) {
+	if(transparentFlag) {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
@@ -209,7 +206,7 @@ int init_window_win(char *color, char *bcolor, double foreground_opacity, int co
 		// instead of messing around with average colors like on Xlib
 		// we'll just get the accent color (which is way easier and an better thing to do)
 
-		unsigned char opaque = 1;
+		WINBOOL opaque = 1;
 		HRESULT error = DwmGetColorizationColor(&fgcolor, &opaque);
 		if(!SUCCEEDED(error)) {
 			MessageBox(NULL, "DwmGetColorizationColor - failed", "Error", MB_OK | MB_ICONERROR);
@@ -228,24 +225,20 @@ int init_window_win(char *color, char *bcolor, double foreground_opacity, int co
 			case 7: fgcolor = 0xFFFFFF; break;
 			default: MessageBox(NULL, "Missing color.\nPlease send a bug report!", "Error", MB_OK | MB_ICONERROR); return 1;
 		}
-	} else if(color[0] == '#') {
-		unsigned char red, green, blue;
-		sscanf(color, "#%hhx%hhx%hhx", &red, &green, &blue);
-		fgcolor = (red << 16) | (green << 8) + blue + (unsigned char)(foreground_opacity*255)<<24;
-	}
+	} else if(color[0] == '#') sscanf(color, "#%x", &fgcolor);
 
 	if(!strcmp(bcolor, "default")) {
 		// instead of messing around with average colors like on Xlib
-		// we'll just get the accent color (which is way easier and an better thing to do)
+		// we'll just get the accent color (which is way easier and a better thing to do)
 
-		unsigned char opaque = 1;
+		WINBOOL opaque = 1;
 		HRESULT error = DwmGetColorizationColor(&bgcolor, &opaque);
 		if(!SUCCEEDED(error)) {
 			MessageBox(NULL, "DwmGetColorizationColor - failed", "Error", MB_OK | MB_ICONERROR);
 			return 1;
 		}
 	} else if(bcolor[0] != '#') {
-		switch(col)
+		switch(bgcol)
 		{
 			case 0: bgcolor = 0x000000; break;
 			case 1: bgcolor = 0xFF0000; break;
@@ -257,20 +250,20 @@ int init_window_win(char *color, char *bcolor, double foreground_opacity, int co
 			case 7: bgcolor = 0xFFFFFF; break;
 			default: MessageBox(NULL, "Missing color.\nPlease send a bug report!", "Error", MB_OK | MB_ICONERROR); return 1;
 		}
-	} else if(bcolor[0] == '#') {
-		unsigned char red, green, blue;
-		sscanf(bcolor, "#%hhx%hhx%hhx", &red, &green, &blue);
-		bgcolor = (red << 16) | (green << 8) | blue | (transparentFlag*255<<24);
+	} else if(bcolor[0] == '#') sscanf(bcolor, "#%x", &fgcolor);
+	
+	// gradient strings are consts, so we need to improvise
+	if(gradient) {
+		sscanf(gradient_color_1, "#%06x", &gradientColor[0]);
+		sscanf(gradient_color_2, "#%06x", &gradientColor[1]);
 	}
 
-	// parse all the color values
+	// parse all of the values
 	grad = gradient;
-	gradientColor[0] = gradient_color_1;
-	gradientColor[1] = gradient_color_2;
 	shadow = shdw;
 	shadowColor = shdw_col;
 	opacity[0] = foreground_opacity;
-	trans = transparentFlag;
+	//opacity[1] = ;
 
 	// set up opengl and stuff
 	init_opengl_win();
@@ -284,10 +277,12 @@ void apply_win_settings(int w, int h) {
 		free(cavaGLVertex);
 		cavaGLVertex = NULL;
 	}
+
+	if(!transparentFlag) glClearColor(((bgcolor>>16)%256)/255.0, ((bgcolor>>8)%256)/255.0,(bgcolor%256)/255.0, opacity[1]);
 	return;
 }
 
-int get_window_input_win(int *should_reload, int *bs, double *sens, int *bw, int *w, int *h, char *color, char *bcolor, int gradient) {
+int get_window_input_win(int *should_reload, int *bs, double *sens, int *bw, int *w, int *h) {
 	while(!*should_reload && PeekMessage(&cavaWinEvent, NULL, WM_KEYFIRST, WM_MOUSELAST, PM_REMOVE)) {	
 		TranslateMessage(&cavaWinEvent);
 		DispatchMessage(&cavaWinEvent);	// windows handles the rest
@@ -326,14 +321,14 @@ int get_window_input_win(int *should_reload, int *bs, double *sens, int *bw, int
 					case VK_ESCAPE:
 						return -1;
 					case 'B':
-						if(trans) break;
+						if(transparentFlag) break;
 						srand(time(NULL));
-						bgcolor = (rand() << 16) + rand();
+						bgcolor = (rand()<<16)+rand();
 						return 2;
 					case 'C':
 						if(grad) break;
 						srand(time(NULL));
-						fgcolor = (rand() << 16) + rand();
+						fgcolor = (rand()<<16)+rand();
 						return 2;
 			       		default: break;
 			       }
@@ -358,18 +353,19 @@ int get_window_input_win(int *should_reload, int *bs, double *sens, int *bw, int
 	return 0;
 }
 
-void draw_graphical_win(int window_height, int bars_count, int bar_width, int bar_spacing, int rest, int gradient, int f[200], int flastd[200], double foreground_opacity) {
+void draw_graphical_win(int window_height, int bars_count, int bar_width, int bar_spacing, int rest, int gradient, int f[200]) {
 	HDC hdc = GetDC(cavaWinWindow);
         wglMakeCurrent(hdc, cavaWinGLFrame);
 
 	// clear color and calculate pixel witdh in double
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-	float glColors[11] = {gradient ? (gradientColor[0]>>16%256)/255.0 : (fgcolor>>16%256)/255.0, gradient ? (gradientColor[0]>>8%256)/255.0 : (fgcolor>>8%256)/255.0, gradient ? (gradientColor[0]%256)/255.0 : (fgcolor%256)/255.0,
-						(gradientColor[1]>>16%256)/255.0, (gradientColor[1]>>8%256)/255.0, (gradientColor[1]%256)/255.0, foreground_opacity, ((unsigned int)shadowColor>>24%256)/255.0, ((unsigned int)shadowColor>>16%256)/255.0, ((unsigned int)shadowColor>>8%256)/255.0, (unsigned int)(shadowColor%256)/255.0};
-	if(drawGLBars(cavaGLVertex, rest, bar_width, bar_spacing, bars_count, window_height, shadow, gradient, glColors, f)) exit(EXIT_FAILURE);
+	float glColors[11] = {gradient ? ((gradientColor[0]>>16)%256)/255.0 : ((fgcolor>>16)%256)/255.0, gradient ? ((gradientColor[0]>>8)%256)/255.0 : ((fgcolor>>8)%256)/255.0,
+		gradient ? (gradientColor[0]%256)/255.0 : (fgcolor%256)/255.0, ((gradientColor[1]>>16)%256)/255.0, ((gradientColor[1]>>8)%256)/255.0, (gradientColor[1]%256)/255.0,
+	       	opacity[0], ((shadowColor>>24)%256)/255.0, ((shadowColor>>16)%256)/255.0, ((shadowColor>>8)%256)/255.0, (shadowColor%256)/255.0};
+	if(drawGLBars(cavaGLVertex, rest, bar_width, bar_spacing, bars_count, window_height, transparentFlag ? shadow : 0, gradient, glColors, f)) exit(EXIT_FAILURE);
 	
-	glDrawArrays(GL_QUADS, 0, bars_count*(shadow ? 12 : 4));
+	glDrawArrays(GL_QUADS, 0, bars_count*(shadow&&transparentFlag ? 12 : 4));
 	glFlush();
 
 	// swap buffers	
