@@ -85,21 +85,14 @@ if [[ $build_windows = "no" ]] ; then
 	fi
 fi
 
-dnl ########################
-dnl checking for GLX and GLU
-dnl ########################
+dnl #################
+dnl checking for GLX
+dnl #################
 if [[ $build_windows = "no" ]] ; then
 	AC_CHECK_LIB(GL, glEnable, have_gl=yes, have_gl=no)
 	if [[ $have_gl = "yes" ]] ; then
 		LIBS="$LIBS -lGL"
-		AC_CHECK_LIB(GLU, gluOrtho2D, have_glu=yes, have_glu=no)
-		if [[ $have_glu = "yes" ]] ; then
-			LIBS="$LIBS -lGLU"
-			CPPFLAGS="$CPPFLAGS -DGLX"
-		fi
-		if [[ $have_glu = "no" ]] ; then
-			AC_MSG_NOTICE([WARNING: No GLU dev files found building without GLX support])
-		fi
+		CPPFLAGS="$CPPFLAGS -DGLX"
 	fi
 	
 	if [[ $have_gl = "no" ]] ; then
@@ -120,8 +113,14 @@ if [[ $have_gdi = "yes" ]] ; then
 		if [[ $have_wglu = "yes" ]] ; then
 			AC_CHECK_LIB(dwmapi, DwmFlush, have_dwmapi=yes, have_dwmapi=no)
 			if [[ $have_dwmapi = "yes" ]] ; then
-				LIBS="$LIBS -lgdi32 -lopengl32 -lglu32 -ldwmapi -mwindows"
-				CPPFLAGS="$CPPFLAGS -DWIN"
+				AC_CHECK_LIB(GLU, gluOrtho2D, have_glu=yes, have_glu=no)
+				if [[ $have_glu = "yes" ]] ; then
+					LIBS="$LIBS -lgdi32 -lopengl32 -lglu32 -ldwmapi -mwindows -lGLU"
+					CPPFLAGS="$CPPFLAGS -DWIN"
+				fi
+				if [[ $have_glu = "no" ]] ; then
+					AC_MSG_NOTICE([WARNING: No GLU dev files found building without win32 support])
+				fi
 			fi
 			if [[ $have_dwmapi = "no" ]] ; then
 				AC_MSG_NOTICE([WARNING: No dwmapi dev files found building without win32 support])
