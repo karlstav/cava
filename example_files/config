@@ -146,8 +146,7 @@
 ; background = black
 ; foreground = cyan
 
-# This adjusts the opacity of the bars (must have transparency on in order to work)
-# The option is quite buggy in most cases, so it may or may not work.
+# This adjusts the opacity of the bars (must have transparency and OpenGL in order for it to work)
 ; foreground_opacity = 1.0
 
 # Gradient mode, only hex defined colors are supported, background must also be defined in hex

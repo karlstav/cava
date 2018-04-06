@@ -23,8 +23,11 @@ XSetWindowAttributes cavaAttr;
 Atom wm_delete_window, wmState, fullScreen, mwmHintsProperty, wmStateBelow;
 XClassHint cavaXClassHint;
 XWMHints cavaXWMHints;
-GLVertex *cavaGLVertex = NULL;
 XEvent xev;
+
+#ifdef GLX
+GLVertex *cavaGLVertex = NULL;
+#endif
 
 // mwmHints helps us comunicate with the window manager
 struct mwmHints {
@@ -72,7 +75,7 @@ int XGLInit() {
 }
 #endif
 
-void calculateColors(char *color, char *bcolor, int bgcol, int col, double foreground_opacity) {
+void calculateColors(char *color, char *bcolor, int bgcol, int col) {
 	char tempColorStr[8];
 	
 	// Generate a sum of colors
@@ -115,12 +118,9 @@ void calculateColors(char *color, char *bcolor, int bgcol, int col, double foreg
 	
 	XParseColor(cavaXDisplay, cavaXColormap, bcolor[0]=='#' ? bcolor : tempColorStr, &xbgcol);
 	XAllocColor(cavaXDisplay, cavaXColormap, &xbgcol);
-	
-	xcol.pixel = (xcol.pixel%0x1000000000000) | ((unsigned long)(0xFFFF*foreground_opacity)<<48);
-	xcol.pixel |= (unsigned long)(0xFFFF*foreground_opacity)<<48;
 }
 
-int init_window_x(char *color, char *bcolor, double foreground_opacity, int col, int bgcol, int set_win_props, char **argv, int argc, int gradient, char *gradient_color_1, char *gradient_color_2, unsigned int shdw, unsigned int shdw_col, int w, int h)
+int init_window_x(char *color, char *bcolor, int col, int bgcol, int set_win_props, char **argv, int argc, int gradient, char *gradient_color_1, char *gradient_color_2, unsigned int shdw, unsigned int shdw_col, int w, int h)
 {
 	// Pass the shadow values
 	shadow = shdw;
@@ -143,8 +143,8 @@ int init_window_x(char *color, char *bcolor, double foreground_opacity, int col,
 	XMatchVisualInfo(cavaXDisplay, cavaXScreenNumber, transparentFlag ? 32 : 24, TrueColor, &cavaVInfo);
 		cavaAttr.colormap = XCreateColormap(cavaXDisplay, DefaultRootWindow(cavaXDisplay), cavaVInfo.visual, AllocNone);
 		cavaXColormap = cavaAttr.colormap; 
-		calculateColors(color, bcolor, bgcol, col, foreground_opacity);
-		cavaAttr.background_pixel = xbgcol.pixel;
+		calculateColors(color, bcolor, bgcol, col);
+		cavaAttr.background_pixel = transparentFlag ? 0 : xbgcol.pixel;
 		cavaAttr.border_pixel = xcol.pixel;
 	
 	cavaXWindow = XCreateWindow(cavaXDisplay, cavaXRoot, windowX, windowY, w, h, 0, cavaVInfo.depth, InputOutput, cavaVInfo.visual, CWEventMask | CWColormap | CWBorderPixel | CWBackPixel, &cavaAttr);	
@@ -257,6 +257,7 @@ int apply_window_settings_x(int *w, int *h)
 	
 	// do the usual stuff :P
 	if(GLXmode){	
+		#ifdef GLX
 		glViewport(0, 0, (double)*w, (double)*h);
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
@@ -264,6 +265,7 @@ int apply_window_settings_x(int *w, int *h)
 		glOrtho(0, (double)*w, 0, (double)*h, -1, 1);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
+		#endif
 	}else{
 		XSetBackground(cavaXDisplay, cavaXGraphics, xbgcol.pixel);
 		XClearWindow(cavaXDisplay, cavaXWindow);
@@ -448,9 +450,11 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 }
 
 void adjust_x(void){
+	#ifdef GLX
 	if(GLXmode)
 		free(cavaGLVertex);
 	else
+	#endif
 		if(gradientBox != 0) { XFreePixmap(cavaXDisplay, gradientBox); gradientBox = 0; };
 }
 

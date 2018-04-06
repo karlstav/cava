@@ -98,7 +98,7 @@ Fedora:
     dnf install alsa-lib-devel ncurses-devel fftw3-devel xorg-x11-devel SDL2-devel pulseaudio-libs-devel libtool portaudio-devel
 
 Cygwin dependencies (64bit ONLY):
-   
+
    gcc-core w32api portaudio libportaudio-devel libncurses-devel
 
 Iniparser is also required, but if it is not already installed, a bundled version will be used.
@@ -386,6 +386,7 @@ To achieve this you have to change `method` in the `[output]` category to one of
 
 CAVA currently supports these graphical modes:
 `
+
     x - standard XFree86 window (works under Linux/BSD/macOS (must have Xquartz though))
 
 	sdl - SDL2 window (runs under almost any OS, but doesn't suport transparency)
@@ -395,17 +396,17 @@ CAVA currently supports these graphical modes:
 
 ### Features over console
 
-Since you are running in a window, you can utilise some of it's features.
-
-For example, you can run cava in OpenGL, but it doesn't work with SDL2:
+Run cava in OpenGL:
       
     opengl = 1
 
-You also have other options such as,
+WARNING: OpenGL isn't supported under SDL2.
 
 Toggle fullscreen:
      
     fullscreen = (1 for on and 0 for off)
+
+WARNING: On Windows it isn't supported.
 
 Toggle window border:
     
@@ -416,8 +417,10 @@ Change bar width/height (units are in pixels rather than characters):
     bar_width = (specify value)
     
     bar_spacing = (specify value)
-    
-Assign the window to a specific part of the screen by changing:
+
+NOTE: It's located in the ```window``` category.
+
+Move the window on startup to a specific part of the screen:
     
     alignment = 'value'
 
@@ -427,37 +430,41 @@ Possible values are:
 'top_left', 'top', 'top_right'. 'left', 'center', 'right', 'bottom_left', 'bottom', 'bottom_right' and 'none'
 ```
 
-In addition to window aligment you can adjust the window using the following options:
+In addition to window aligment you can adjust the window position further with:
     
     x_padding = (specify value)
     
     y_padding = (specify value)
 
 
-You can enable transparent windows (doesn't work under SDL2):
+You can enable transparent windows:
      
      transparency = (0 disable, 1 enable)
 
-Setting foreground color to `default` will cause in Xlib to average out the color in the desktop. But in win32 though, it will grab the accent color instead.
+WARNING: SDL2 doesn't have transparency.
+
+
+Setting foreground color to `default` will cause in Xlib to average out the color in the desktop. 
+
+On Windows it will grab the accent color (aka. your theme) instead.
+
 To enable this you just have to change:
     
     foreground = 'default'
 
-A screenshot with the 'default' foreground option with transparency+no borders (in X):
-![blendin](http://i.imgur.com/9K2o4K8.png)
 
 A quick demo showing off what can be done by enabling transparency and disabling window borders:
 ![transparency](http://i.imgur.com/QscuEh8.gif "transparency")
 
 
-If the window keeps annoying you by being in the foreground, you can force it to be behind any window (works only under Xlib):
+Force the window to be behind any window (works only under Xlib):
     
     keep_below = 1
 
 
-Additionally you can change the default window class to "Cava", this helps remove shadows and/or blur on compositing window managers.
+Additionally you can change the default window class to "Cava"; this helps remove shadows and/or blur on compositing window managers.
 
-NOTE: It also removes the ability to interact with the window (fxp. if you click or drag the window, nothing would happen)
+WARNING: It also removes the ability to interact with the window.
     
     set_win_props = 1
 
@@ -471,17 +478,14 @@ and
     
     color = the color of the shadow in the following format #aarrggbb
 
+Doesn't work under SDL2.
 
-```
-NOTE: Doesn't work under SDL2.
-```
 
 ### Opacity
     
     foreground_opacity = (from 0.0 to 1.0)
 
-
-NOTE: Doesn't work under SDL2, since it has no transparency.
+You need OpenGL and transparency support in order for it to work.
 
 
 Contribution
