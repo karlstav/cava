@@ -15,6 +15,14 @@ struct audio_data {
         char error_message[1024];
 };
 
+int open_fifo(const char *path)
+{
+	int fd = open(path, O_RDONLY);
+	int flags = fcntl(fd, F_GETFL, 0);
+	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+	return fd;
+}
+
 
 //input: FIFO
 void* input_fifo(void* data)
@@ -28,27 +36,26 @@ void* input_fifo(void* data)
 	int t = 0;
 	//int size = 1024;
 	int bytes = 0;
-	int flags;
 	int16_t buf[BUFSIZE / 2];
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 10000000 };
 
 
 
 
-	fd = open(audio->source, O_RDONLY);
-	flags = fcntl(fd, F_GETFL, 0);
-	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+	fd = open_fifo(audio->source);
 
 	while (1) {
 
 		bytes = read(fd, buf, sizeof(buf));
 
-		if (bytes == -1) { //if no bytes read sleep 10ms and zero shared buffer
+		if (bytes < 1) { //if no bytes read sleep 10ms and zero shared buffer
 			nanosleep (&req, NULL);
 			t++;
 			if (t > 10) {
 				for (i = 0; i < 2048; i++)audio->audio_out_l[i] = 0;
 				for (i = 0; i < 2048; i++)audio->audio_out_r[i] = 0;
+				close(fd);
+				fd = open_fifo(audio->source);
 				t = 0;
 			}
 		} else { //if bytes read go ahead
