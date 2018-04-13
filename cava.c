@@ -496,7 +496,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	#ifdef WIN
 	if(output_mode == 7) if(init_window_win(p.color, p.bcolor, p.foreground_opacity, p.col, p.bgcol, p.gradient, p.gradient_color_1, p.gradient_color_2, p.shdw, p.shdw_col, w, h)) exit(EXIT_FAILURE);
 	#endif
-	
+
 	while  (!reloadConf) {//jumbing back to this loop means that you resized the screen
 		for (i = 0; i < 200; i++) {
 			flast[i] = 0;
@@ -999,14 +999,21 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				//terminal has been resized breaking to recalibrating values
 				if (rc == -1) resizeTerminal = TRUE; 
 
+				struct timeval tv;
+				gettimeofday(&tv, NULL);
+				
+				long newTime = tv.tv_sec*1000+tv.tv_usec/1000, oldTime;
+
 				if (p.framerate <= 1) {
 					req.tv_sec = 1  / (float)p.framerate;
 				} else {
 					req.tv_sec = 0;
-					req.tv_nsec = (1 / (float)p.framerate) * 1000000000; 
+					if(newTime-oldTime>1000/p.framerate || newTime<oldTime) req.tv_nsec = 0;
+					else req.tv_nsec = (1 / (p.framerate-(newTime-oldTime))) * 1000000000; 
 				}
 
 				nanosleep (&req, NULL);
+				oldTime = newTime;
 			#endif
 
 			for (o = 0; o < bars; o++) {
