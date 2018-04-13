@@ -429,7 +429,7 @@ p->waves = iniparser_getint(ini, "smoothing:waves", 0);
 p->integral = iniparser_getdouble(ini, "smoothing:integral", 90);
 p->gravity = iniparser_getdouble(ini, "smoothing:gravity", 100);
 p->ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
-p->logScale = iniparser_getdouble(ini, "smoothing:fake_log", 1.0);
+p->logScale = iniparser_getdouble(ini, "smoothing:log", 1.0);
 
 p->color = (char *)iniparser_getstring(ini, "color:foreground", "default");
 p->bcolor = (char *)iniparser_getstring(ini, "color:background", "default");

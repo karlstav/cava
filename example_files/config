@@ -52,28 +52,26 @@
 # Enables or disables window borders (1 = on, 0 = off)
 ; border = 1
 
-# Window transparency toggle (works under X ONLY) (same applies)
+# Window transparency toggle (your system must have a compositing WM)
 ; transparency = 0
 
-# Keeps the window under any other (works under X ONLY) (again, same applies)
+# Keeps the window under any other (works under X only)
 ; keep_below = 0
 
-# Set window properties like WM_CLASS.
+# Set window properties like WM_CLASS (works under X only)
 ; set_win_props = 0
 
-# This allows for the window to be positioned a bit easier
-# by putting the window to the part of the screen, which are:
+# This allows for the window to be 'aligned' to a part of a screen
+# The following positions are supported:
 # top_left, top, top_right, left, center, right, bottom_left,
-# bottom, bottom_right and none if you don't want automatic positioning
+# bottom, bottom_right and none if you don't want manual positioning
 ; alignment = 'none'
 
-# Additionally we can move the window from the already set
-# part of the screen (units are in pixels)
+# Additionally we can further adjust the positions if needed (in pixels)
 ; x_padding = 0
 ; y_padding = 0
 
-# On Xlib or win32 you can enable opengl to take advantage of your graphics card for drawing.
-# NOTE: On win32 it's MUST BE ON.
+# This option will drastically increase performance (in most cases).
 ; opengl = 1
 
 
@@ -152,7 +150,7 @@
 # Gradient mode, only hex defined colors are supported, background must also be defined in hex
 # or remain commented out. 1 = on, 0 = off. Warning: for certain terminal emulators cava will
 # not able to restore color definitions on exit, simply restart your terminal to restore colors.
-# On X mode, you must either have transparency or OpenGL enabled for this to work.
+# For graphical modes, you have to enable transparency.
 ; gradient = 0
 ; gradient_color_1 = '#0099ff'
 ; gradient_color_2 = '#ff3399'
@@ -173,21 +171,20 @@
 # Accepts only non-negative values. 50 means half gravity, 200 means double. Set to 0 to disable "drop off".
 ; gravity = 100
 
-
 # In bar height, bars that would have been lower that this will not be drawn.
 ; ignore = 0
 
-# This option emulates a logarithmic fourier transform, because FFTW3 doesn't have it by default.
-# It is quite inaccurate, but to properly use it you can apply basic math
-# the value of fake log is as follows middle_position = bars/(fake_log+1.0)
-; fake_log = 1.0
+# Variable logarithm (the higher the value, the more intense) 
+; log = 1.0
 
 
 [shadow]
-# Fake shadow effect (works under Xlib and win32)
-# Warning shadows may not be larger than bars spacing, or it will cause issues.
+
+# Fake shadow effect (works with transparency only)
+# Make sure that the shadow size is NOT larger then the bar spacing
 ; size = 0
-# Valid shadow format is #aarrggbb
+
+# Color format is #aarrggbb
 ; color = "#ff000000"
 
 

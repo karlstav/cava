@@ -190,12 +190,10 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200]
 
 	// process: separate frequency bands
 	for (o = 0; o < bars; o++) {
-
 		peak[o] = 0;
 
 		// process: get peaks
 		for (i = lcf[o]; i <= hcf[o]; i++) {
-
 			//getting r of compex
 			y[i] =  pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5);
 			peak[o] += y[i]; //adding upp band
@@ -207,7 +205,6 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200]
 		if (temp <= ignore) temp = 0;
 		if (channel == 1) fl[o] = temp;
 		else fr[o] = temp;
-
 	}
 
 	if (channel == 1) return fl;
@@ -628,28 +625,23 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		}
 
 
-		double freqconst = log10((float)p.lowcf / (float)p.highcf) /  
-			((float)1 / ((float)bars + (float)1) - 1);
-
+		// freqconst contains the logarithm intensity
+		double freqconst = log(p.highcf-p.lowcf)/log((double)bars*p.logScale);
 		//freqconst = -2;
 
 		// process: calculate cutoff frequencies
 		for (n = 0; n < bars + 1; n++) {
-			fc[n] = p.highcf * pow(10, freqconst * (-1) + ((((float)n + 1) / 
-				((float)bars + 1)) * freqconst)); 
+			fc[n] = pow((n+1)+((p.logScale-1.0)*(((double)n+1.0)/(double)bars)*((double)n+1.0)), freqconst)+p.lowcf;
 			fre[n] = fc[n] / (audio.rate / 2); 
 			//remember nyquist!, pr my calculations this should be rate/2 
 			//and  nyquist freq in M/2 but testing shows it is not... 
 			//or maybe the nq freq is in M/4
 
-			//lfc stores the lower cut frequency foo each bar in the fft out buffer
+			//lfc stores the lower cut frequency for each bar in the fft out buffer
 			lcf[n] = fre[n] * (M /4); 
 			if (n != 0) {
-				hcf[n - 1] = lcf[n] - 1;
-	
-				//pushing the spectrum up if the expe function gets "clumped"
-				if (lcf[n] <= lcf[n - 1])lcf[n] = lcf[n - 1] + 1; 
-				hcf[n - 1] = lcf[n] - 1;
+				//hfc holds the high cut frequency for each bar
+				hcf[n-1] = lcf[n]; 
 			}
 
 			#ifdef DEBUG
@@ -819,41 +811,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				continue;
 			}
 			
-			// logartithmic scaling
-			// before you complain, yeah, this code is quick hack and should not be used
-			if(!p.stereo && p.logScale != 1.0) {
-				double curScale; 
-				double totalScale = 0.0;
-				int newBars[bars], lastCeil = 0;
-				memset(newBars, 0x00, sizeof(int)*bars);
-					
-				// first calculate according bar positions
-				for(o = 0; o < bars; o++) {
-					if(o < (int)floor((float)bars/(p.logScale+1.0))) {
-						if(o != 0) curScale -= (float)(p.logScale-1.0)/bars*(p.logScale+1.0);
-						else curScale = p.logScale;
-					} else {
-						curScale -= (float)1.0/bars*(p.logScale+1.0)/p.logScale;
-					}
-					if(curScale >= bars) break;
-					
-					totalScale += curScale;
-					if(lastCeil == (int)ceil(totalScale) && newBars[lastCeil] > newBars[(int)ceil(totalScale)])
-						newBars[(int)ceil(totalScale)] = fl[o];
-					else if(lastCeil != (int)ceil(totalScale))
-						newBars[(int)ceil(totalScale)] = fl[o];
-					
-					if((int)ceil(totalScale) - lastCeil > 1) {
-						for(int i = lastCeil; i < (int)ceil(totalScale); i++) {
-							newBars[i] = (newBars[(int)ceil(totalScale)]-newBars[lastCeil])/(ceil(totalScale)-lastCeil)*(i-lastCeil) + newBars[lastCeil];
-						}
-						lastCeil = (int)ceil(totalScale);
-					}	
-				}
-				// replace the old ones
-				memcpy(fl, newBars, sizeof(int)*bars);
-			}
-
 			// process [smoothing]
 
 			if (p.monstercat) {
