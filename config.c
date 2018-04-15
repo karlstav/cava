@@ -12,7 +12,7 @@ char *inputMethod, *outputMethod, *channels;
 struct config_params {
 
 char *color, *bcolor, *raw_target, *audio_source, *gradient_color_1, *gradient_color_2, *shadow_color, *data_format;
-char bar_delim, frame_delim ;
+char bar_delim, frame_delim, oddoneout;
 double monstercat, integral, gravity, ignore, sens, foreground_opacity, logScale; 
 unsigned int lowcf, highcf, shdw, shdw_col;
 double *smooth;
@@ -430,6 +430,7 @@ p->integral = iniparser_getdouble(ini, "smoothing:integral", 90);
 p->gravity = iniparser_getdouble(ini, "smoothing:gravity", 100);
 p->ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
 p->logScale = iniparser_getdouble(ini, "smoothing:log", 1.0);
+p->oddoneout = iniparser_getdouble(ini, "smoothing:oddoneout", 0);
 
 p->color = (char *)iniparser_getstring(ini, "color:foreground", "default");
 p->bcolor = (char *)iniparser_getstring(ini, "color:background", "default");

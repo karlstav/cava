@@ -712,7 +712,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			{
 				switch(get_window_input_x(&should_reload, &p.bs, &p.sens, &p.bw, &w, &h, p.color, p.bcolor, p.gradient))
 				{
-					case -1: return EXIT_SUCCESS;
+					case -1:
+						cleanup(); 
+						return EXIT_SUCCESS;
 					case 1: break;
 					case 2:
 						adjust_x();	
@@ -726,7 +728,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			{
 				switch(get_window_input_sdl(&p.bs, &p.bw, &p.sens, &p.col, &p.bgcol, &w, &h, p.gradient))
 				{
-					case -1: return EXIT_FAILURE;
+					case -1:
+						cleanup(); 
+						return EXIT_SUCCESS;
 					case 1:
 						should_reload = 1;
 						break;
@@ -741,7 +745,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			{
 				switch(get_window_input_win(&should_reload, &p.bs, &p.sens, &p.bw, &w, &h))
 				{
-					case -1: return EXIT_SUCCESS;
+					case -1:
+						cleanup(); 
+						return EXIT_SUCCESS;
 					case 1: break;
 					case 2:
 						resizeTerminal = TRUE;
@@ -809,6 +815,19 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				req.tv_nsec = 0;
 				nanosleep (&req, NULL);
 				continue;
+			}
+
+			// process [oddoneout]
+			if(p.oddoneout) {
+				for(i=0; i<bars-1; i=i+2) {
+					if(fl[i+1] > f[i] || fl[i+1] > fl[i+2]){ 
+						if(fl[i+1] > fl[i+2])
+							fl[i] = fl[i+1];
+						else fl[i+2] = fl[i+1];
+					}
+					fl[i+1] = fl[i]/2+fl[i+2]/2;
+					if(i!=0) fl[i] = fl[i-1]/2+fl[i+1]/2;
+				}
 			}
 			
 			// process [smoothing]

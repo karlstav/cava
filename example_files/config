@@ -100,6 +100,7 @@
 ; method = portaudio
 ; source = default
 
+
 [output]
 
 # Ouput method. Can be 'ncurses', 'noncurses', 'raw', 'sdl' or 'x'. 
@@ -132,7 +133,6 @@
 # Use decimal value in ascii table (i.e. 59 = ';' and 10 = '\n' (line feed)).
 ; bar_delimiter = 59
 ; frame_delimiter = 10
-
 
 
 [color]
@@ -176,6 +176,9 @@
 
 # Variable logarithm (the higher the value, the more intense) 
 ; log = 1.0
+
+# Average out the value of each odd bar (just like the monstercat visualizer)
+; oddoneout = 0
 
 
 [shadow]
