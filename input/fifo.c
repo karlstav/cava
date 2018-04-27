@@ -1,11 +1,12 @@
 #include <unistd.h>
 #define BUFSIZE 1024
+#define FFTSIZE 16384
 int rc;
 
 struct audio_data {
 
-        int audio_out_r[2048];
-        int audio_out_l[2048];
+        int audio_out_r[FFTSIZE];
+        int audio_out_l[FFTSIZE];
         int format;
         unsigned int rate ;
         char *source; //alsa device, fifo path or pulse source

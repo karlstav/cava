@@ -1,5 +1,7 @@
 #define TRUE 1
 #define FALSE 0
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
 
 #define _XOPEN_SOURCE_EXTENDED
 #include <locale.h>
@@ -106,7 +108,7 @@
 
 struct termios oldtio, newtio;
 int rc;
-int M = 2048;
+int M = FFTSIZE;
 int output_mode;
 
 // whether we should reload the config or not
@@ -626,12 +628,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 
 		// freqconst contains the logarithm intensity
-		double freqconst = log(p.highcf-p.lowcf)/log((double)bars*p.logScale);
+		double freqconst = log(p.highcf-p.lowcf)/log(pow(bars, p.logScale));
 		//freqconst = -2;
 
 		// process: calculate cutoff frequencies
 		for (n = 0; n < bars + 1; n++) {
-			fc[n] = pow((n+1)+((p.logScale-1.0)*(((double)n+1.0)/(double)bars)*((double)n+1.0)), freqconst)+p.lowcf;
+			fc[n] = pow((n+1.0), freqconst*(1.0+(p.logScale-1.0)*((double)(n+1.0)/bars)))+p.lowcf;
 			fre[n] = fc[n] / (audio.rate / 2); 
 			//remember nyquist!, pr my calculations this should be rate/2 
 			//and  nyquist freq in M/2 but testing shows it is not... 
@@ -816,19 +818,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				nanosleep (&req, NULL);
 				continue;
 			}
-
-			// process [oddoneout]
-			if(p.oddoneout) {
-				for(i=0; i<bars-1; i=i+2) {
-					if(fl[i+1] > f[i] || fl[i+1] > fl[i+2]){ 
-						if(fl[i+1] > fl[i+2])
-							fl[i] = fl[i+1];
-						else fl[i+2] = fl[i+1];
-					}
-					fl[i+1] = fl[i]/2+fl[i+2]/2;
-					if(i!=0) fl[i] = fl[i-1]/2+fl[i+1]/2;
-				}
-			}
 			
 			// process [smoothing]
 
@@ -843,6 +832,18 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				}
 			}
 
+			// process [oddoneout]
+			if(p.oddoneout) {
+				for(i=0; i<bars-1; i=i+2) {
+					if(fl[i+1] > f[i] || fl[i+1] > fl[i+2]){ 
+						if(fl[i+1] > fl[i+2])
+							fl[i] = fl[i+1];
+						else fl[i+2] = fl[i+1];
+					}
+					fl[i+1] = fl[i]/2+fl[i+2]/2;
+					if(i!=0) fl[i] = fl[i-1]/2+fl[i+1]/2;
+				}
+			}
 
 			//preperaing signal for drawing
 			for (o = 0; o < bars; o++) {
