@@ -439,7 +439,7 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 	
 	#ifdef GLX
 	if(GLXmode) {
-		glDrawArrays(GL_QUADS, 0, bars_count*(shadow ? 12 : 4));
+		glDrawArrays(GL_QUADS, 0, bars_count*(shadow ? 20 : 4));
 		glXSwapBuffers(cavaXDisplay, cavaXWindow);
 		glXWaitGL();
 	}

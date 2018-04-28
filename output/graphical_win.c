@@ -365,7 +365,7 @@ void draw_graphical_win(int window_height, int bars_count, int bar_width, int ba
 	       	opacity[0], ((shadowColor>>24)%256)/255.0, ((shadowColor>>16)%256)/255.0, ((shadowColor>>8)%256)/255.0, (shadowColor%256)/255.0};
 	if(drawGLBars(cavaGLVertex, rest, bar_width, bar_spacing, bars_count, window_height, transparentFlag ? shadow : 0, gradient, glColors, f)) exit(EXIT_FAILURE);
 	
-	glDrawArrays(GL_QUADS, 0, bars_count*(shadow&&transparentFlag ? 12 : 4));
+	glDrawArrays(GL_QUADS, 0, bars_count*(shadow&&transparentFlag ? 20 : 4));
 	glFlush();
 
 	// swap buffers	
