@@ -246,6 +246,16 @@ Options:\n\
 	-p          path to config file\n\
 	-v          print version\n\
 \n\
+Keys:\n\
+        Up        Increase sensitivity\n\
+        Down      Decrease sensitivity\n\
+        Left      Decrease number of bars\n\
+        Right     Increase number of bars\n\
+        r         Reload config\n\
+        c         Cycle foreground color\n\
+        b         Cycle background color\n\
+        q         Quit\n\
+\n\
 as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n";
 
 	char ch = '\0';
