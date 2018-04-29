@@ -113,14 +113,8 @@ if [[ $have_gdi = "yes" ]] ; then
 		if [[ $have_wglu = "yes" ]] ; then
 			AC_CHECK_LIB(dwmapi, DwmFlush, have_dwmapi=yes, have_dwmapi=no)
 			if [[ $have_dwmapi = "yes" ]] ; then
-				AC_CHECK_LIB(GLU, gluOrtho2D, have_glu=yes, have_glu=no)
-				if [[ $have_glu = "yes" ]] ; then
-					LIBS="$LIBS -lgdi32 -lopengl32 -lglu32 -ldwmapi -mwindows -lGLU"
-					CPPFLAGS="$CPPFLAGS -DWIN"
-				fi
-				if [[ $have_glu = "no" ]] ; then
-					AC_MSG_NOTICE([WARNING: No GLU dev files found building without win32 support])
-				fi
+				LIBS="$LIBS -lgdi32 -lopengl32 -lglu32 -ldwmapi -mwindows"
+				CPPFLAGS="$CPPFLAGS -DWIN"
 			fi
 			if [[ $have_dwmapi = "no" ]] ; then
 				AC_MSG_NOTICE([WARNING: No dwmapi dev files found building without win32 support])

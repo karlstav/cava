@@ -14,7 +14,6 @@ unsigned int fgcolor, bgcolor;
 unsigned int gradientColor[2], grad = 0;
 unsigned int shadowColor, shadow = 0;
 double opacity[2] = {1.0, 1.0};
-GLVertex *cavaGLVertex = NULL;
 
 LRESULT CALLBACK WindowFunc(HWND hWnd,UINT msg, WPARAM wParam, LPARAM lParam) {
     switch(msg) {
@@ -273,10 +272,6 @@ int init_window_win(char *color, char *bcolor, double foreground_opacity, int co
 void apply_win_settings(int w, int h) {
 	resize_framebuffer(w, h);
 	ReleaseDC(cavaWinWindow, cavaWinFrame);
-	if(cavaGLVertex) {
-		free(cavaGLVertex);
-		cavaGLVertex = NULL;
-	}
 
 	if(!transparentFlag) glClearColor(((bgcolor>>16)%256)/255.0, ((bgcolor>>8)%256)/255.0,(bgcolor%256)/255.0, opacity[1]);
 	return;
@@ -363,9 +358,8 @@ void draw_graphical_win(int window_height, int bars_count, int bar_width, int ba
 	float glColors[11] = {gradient ? ((gradientColor[0]>>16)%256)/255.0 : ((fgcolor>>16)%256)/255.0, gradient ? ((gradientColor[0]>>8)%256)/255.0 : ((fgcolor>>8)%256)/255.0,
 		gradient ? (gradientColor[0]%256)/255.0 : (fgcolor%256)/255.0, ((gradientColor[1]>>16)%256)/255.0, ((gradientColor[1]>>8)%256)/255.0, (gradientColor[1]%256)/255.0,
 	       	opacity[0], ((shadowColor>>24)%256)/255.0, ((shadowColor>>16)%256)/255.0, ((shadowColor>>8)%256)/255.0, (shadowColor%256)/255.0};
-	if(drawGLBars(cavaGLVertex, rest, bar_width, bar_spacing, bars_count, window_height, transparentFlag ? shadow : 0, gradient, glColors, f)) exit(EXIT_FAILURE);
+	if(drawGLBars(rest, bar_width, bar_spacing, bars_count, window_height, transparentFlag ? shadow : 0, gradient, glColors, f)) exit(EXIT_FAILURE);
 	
-	glDrawArrays(GL_QUADS, 0, bars_count*(shadow&&transparentFlag ? 20 : 4));
 	glFlush();
 
 	// swap buffers	
@@ -374,7 +368,6 @@ void draw_graphical_win(int window_height, int bars_count, int bar_width, int ba
 }
 
 void cleanup_graphical_win(void) {
-	free(cavaGLVertex);
 	wglMakeCurrent(NULL, NULL);
         wglDeleteContext(cavaWinGLFrame);
 	ReleaseDC(cavaWinWindow, cavaWinFrame);

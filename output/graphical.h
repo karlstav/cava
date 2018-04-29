@@ -14,11 +14,7 @@
 
 #ifdef GL
 	#include <GL/gl.h>
-	typedef struct {
-		GLfloat x, y, r, g, b, a;
-	} GLVertex;
-
-	int drawGLBars(GLVertex *glVertex, int rest, int bw, int bs, int bars, int h, int shadow, int gradient, float colors[11], int *f);
+	int drawGLBars(int rest, int bw, int bs, int bars, int h, int shadow, int gradient, float colors[11], int *f);
 #endif
 
 int windowX, windowY;

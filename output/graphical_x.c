@@ -25,9 +25,6 @@ XClassHint cavaXClassHint;
 XWMHints cavaXWMHints;
 XEvent xev;
 
-#ifdef GLX
-GLVertex *cavaGLVertex = NULL;
-#endif
 
 // mwmHints helps us comunicate with the window manager
 struct mwmHints {
@@ -416,7 +413,7 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 		#ifdef GLX
 		float glColors[11] = {gradient ? xgrad[0].red/65535.0 : xcol.red/65535.0, gradient ? xgrad[0].green/65535.0 : xcol.green/65535.0, gradient ? xgrad[0].blue/65535.0 : xcol.blue/65535.0,
 							xgrad[1].red/65535.0, xgrad[1].green/65535.0, xgrad[1].blue/65535.0, foreground_opacity, ((unsigned int)shadow_color>>24)%256/255.0, ((unsigned int)shadow_color>>16)%256/255.0, ((unsigned int)shadow_color>>8)%256/255.0, (unsigned int)shadow_color%256/255.0};
-		if(drawGLBars(cavaGLVertex, rest, bar_width, bar_spacing, bars_count, window_height, shadow, gradient, glColors, f)) exit(EXIT_FAILURE);
+		if(drawGLBars(rest, bar_width, bar_spacing, bars_count, window_height, shadow, gradient, glColors, f)) exit(EXIT_FAILURE);
 		#endif
 	} else {	
 		// draw bars on the X11 window
@@ -439,7 +436,6 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 	
 	#ifdef GLX
 	if(GLXmode) {
-		glDrawArrays(GL_QUADS, 0, bars_count*(shadow ? 20 : 4));
 		glXSwapBuffers(cavaXDisplay, cavaXWindow);
 		glXWaitGL();
 	}
@@ -450,12 +446,7 @@ void draw_graphical_x(int window_height, int bars_count, int bar_width, int bar_
 }
 
 void adjust_x(void){
-	#ifdef GLX
-	if(GLXmode)
-		free(cavaGLVertex);
-	else
-	#endif
-		if(gradientBox != 0) { XFreePixmap(cavaXDisplay, gradientBox); gradientBox = 0; };
+	if(gradientBox != 0) { XFreePixmap(cavaXDisplay, gradientBox); gradientBox = 0; };
 }
 
 void cleanup_graphical_x(void)

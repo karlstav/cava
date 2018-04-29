@@ -154,9 +154,9 @@ void sig_handler(int sig_no)
 		return;
 	}
 
-	cleanup(4);
 	if (sig_no == SIGINT) {
 		printf("CTRL-C pressed -- goodbye\n");
+		cleanup();
 	}
 	signal(sig_no, SIG_DFL);
 	raise(sig_no);
