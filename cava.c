@@ -136,7 +136,7 @@ static bool directory_exists(const char * path) {
 
 #endif
 
-int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200],
+int * separate_freq_bands(fftw_complex out[M / 2 + 1], int bars, int lcf[200],
 			 int hcf[200], float k[200], int channel, double sens, double ignore) {
 	int o,i;
 	float peak[201];
@@ -155,7 +155,7 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200]
 		for (i = lcf[o]; i <= hcf[o]; i++) {
 
 			//getting r of compex
-			y[i] =  pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5);
+			y[i] = hypot(out[i][0], out[i][1]);
 			peak[o] += y[i]; //adding upp band
 		}
 
@@ -320,11 +320,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
     #endif
 
 	//fft: planning to rock
-	fftw_complex outl[M / 2 + 1][2];
-	fftw_plan pl =  fftw_plan_dft_r2c_1d(M, inl, *outl, FFTW_MEASURE);
+	fftw_complex outl[M / 2 + 1];
+	fftw_plan pl =  fftw_plan_dft_r2c_1d(M, inl, outl, FFTW_MEASURE);
 
-    fftw_complex outr[M / 2 + 1][2];
-    fftw_plan pr =  fftw_plan_dft_r2c_1d(M, inr, *outr, FFTW_MEASURE);
+	fftw_complex outr[M / 2 + 1];
+	fftw_plan pr =  fftw_plan_dft_r2c_1d(M, inr, outr, FFTW_MEASURE);
 
 	// general: main loop
 	while (1) {
@@ -575,7 +575,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			//or maybe the nq freq is in M/4
 
 			//lfc stores the lower cut frequency foo each bar in the fft out buffer
-			lcf[n] = fre[n] * (M /4); 
+			lcf[n] = fre[n] * (M /2);
 			if (n != 0) {
 				hcf[n - 1] = lcf[n] - 1;
 	
