@@ -1,7 +1,5 @@
 #define TRUE 1
 #define FALSE 0
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
 
 #define _XOPEN_SOURCE_EXTENDED
 #include <locale.h>
@@ -172,15 +170,15 @@ static bool is_loop_device_for_sure(const char * text) {
 static bool directory_exists(const char * path) {
 	DIR * const dir = opendir(path);
 	bool exists;// = dir != NULL;
-    if (dir == NULL) exists = FALSE;
-    else exists = TRUE; 
+    if (dir == NULL) exists = false;
+    else exists = true;
 	closedir(dir);
 	return exists;
 }
 
 #endif
 
-int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200],
+int * separate_freq_bands(fftw_complex out[M / 2 + 1], int bars, int lcf[200],
 			 int hcf[200], float k[200], int channel, double sens, double ignore) {
 	int o,i;
 	float peak[201];
@@ -197,7 +195,7 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1][2], int bars, int lcf[200]
 		// process: get peaks
 		for (i = lcf[o]; i <= hcf[o]; i++) {
 			//getting r of compex
-			y[i] =  pow(pow(*out[i][0], 2) + pow(*out[i][1], 2), 0.5);
+			y[i] = hypot(out[i][0], out[i][1]);
 			peak[o] += y[i]; //adding upp band
 		}
 
@@ -287,6 +285,16 @@ Options:\n\
 	-p          path to config file\n\
 	-v          print version\n\
 \n\
+Keys:\n\
+        Up        Increase sensitivity\n\
+        Down      Decrease sensitivity\n\
+        Left      Decrease number of bars\n\
+        Right     Increase number of bars\n\
+        r         Reload config\n\
+        c         Cycle foreground color\n\
+        b         Cycle background color\n\
+        q         Quit\n\
+\n\
 as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n";
 
 	char ch = '\0';
@@ -352,11 +360,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
     #endif
 
 	//fft: planning to rock
-	fftw_complex outl[M / 2 + 1][2];
-	fftw_plan pl =  fftw_plan_dft_r2c_1d(M, inl, *outl, FFTW_MEASURE);
+	fftw_complex outl[M / 2 + 1];
+	fftw_plan pl =  fftw_plan_dft_r2c_1d(M, inl, outl, FFTW_MEASURE);
 
-    fftw_complex outr[M / 2 + 1][2];
-    fftw_plan pr =  fftw_plan_dft_r2c_1d(M, inr, *outr, FFTW_MEASURE);
+	fftw_complex outr[M / 2 + 1];
+	fftw_plan pr =  fftw_plan_dft_r2c_1d(M, inr, outr, FFTW_MEASURE);
 
 	// general: main loop
 	while (1) {
@@ -479,8 +487,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 
 
-	bool reloadConf = FALSE;
-	bool senseLow = TRUE;
+	bool reloadConf = false;
+	bool senseLow = true;
 
 	// open XLIB window and set everything up
 	#ifdef XLIB
@@ -639,8 +647,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			//and  nyquist freq in M/2 but testing shows it is not... 
 			//or maybe the nq freq is in M/4
 
-			//lfc stores the lower cut frequency for each bar in the fft out buffer
-			lcf[n] = fre[n] * (M /4); 
+			//lfc stores the lower cut frequency foo each bar in the fft out buffer
+			lcf[n] = fre[n] * (M /2);
+			
 			if (n != 0) {
 				//hfc holds the high cut frequency for each bar
 				hcf[n-1] = lcf[n]; 
@@ -662,7 +671,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		if (p.stereo) bars = bars * 2;
 
-	   	bool resizeTerminal = FALSE;
+		bool resizeTerminal = false;
 
 		while  (!resizeTerminal) {
 
@@ -679,11 +688,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					break;
 				case 68:    // key right
 					p.bw++;
-					resizeTerminal = TRUE;
+					resizeTerminal = true;
 					break;
 				case 67:    // key left
 					if (p.bw > 1) p.bw--;
-					resizeTerminal = TRUE;
+					resizeTerminal = true;
 					break;
 				case 'a':
 					if (p.bs > 1) p.bs--;
@@ -698,12 +707,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				case 'c': //change forground color
 					if (p.col < 7) p.col++;
 					else p.col = 0;
-					resizeTerminal = TRUE;
+					resizeTerminal = true;
 					break;
 				case 'b': //change backround color
 					if (p.bgcol < 7) p.bgcol++;
 					else p.bgcol = 0;
-					resizeTerminal = TRUE;
+					resizeTerminal = true;
 					break;
 				case 'q':
 					cleanup();
@@ -760,8 +769,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 			if (should_reload) {
 
-				reloadConf = TRUE;
-				resizeTerminal = TRUE;
+				reloadConf = true;
+				resizeTerminal = true;
 				should_reload = 0;
 			}
 
@@ -911,7 +920,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			if (p.autosens) {
 				for (o = 0; o < bars; o++) {
 					if (f[o] > height ) {
-						senseLow = FALSE;
+						senseLow = false;
 						p.sens = p.sens * 0.985;
 						break;
 					}
@@ -974,7 +983,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				}
 
 				//terminal has been resized breaking to recalibrating values
-				if (rc == -1) resizeTerminal = TRUE; 
+				if (rc == -1) resizeTerminal = true;
 
 				struct timeval tv;
 				gettimeofday(&tv, NULL);
