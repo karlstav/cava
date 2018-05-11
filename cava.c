@@ -832,19 +832,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				}
 			}
 
-			// process [oddoneout]
-			if(p.oddoneout) {
-				for(i=0; i<bars-1; i=i+2) {
-					if(fl[i+1] > f[i] || fl[i+1] > fl[i+2]){ 
-						if(fl[i+1] > fl[i+2])
-							fl[i] = fl[i+1];
-						else fl[i+2] = fl[i+1];
-					}
-					fl[i+1] = fl[i]/2+fl[i+2]/2;
-					if(i!=0) fl[i] = fl[i-1]/2+fl[i+1]/2;
-				}
-			}
-
 			//preperaing signal for drawing
 			for (o = 0; o < bars; o++) {
 				if (p.stereo) {
@@ -892,6 +879,19 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 							 o, fc[o], fc[o + 1],
 									 lcf[o], hcf[o], f[o]);
 					#endif
+				}
+			}
+
+			// process [oddoneout]
+			if(p.oddoneout) {
+				for(i=0; i<bars-1; i=i+2) {
+					if(f[i+1] > f[i] && f[i+1] > f[i+2]){ 
+						if(f[i+1] > f[i+2])
+							f[i] = f[i+1];
+						else f[i+2] = f[i+1];
+					}
+					f[i+1] = f[i]/2+f[i+2]/2;
+					if(i!=0) f[i] = f[i-1]/2+f[i+1]/2;
 				}
 			}
 
