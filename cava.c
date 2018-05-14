@@ -13,11 +13,15 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include <termios.h>
+#ifdef __POSIX__
+	#include <termios.h>
+	#include <sys/ioctl.h>
+	#include "output/terminal_noncurses.h"
+	#include "output/terminal_noncurses.c"
+#endif
 #include <math.h>
 #include <fcntl.h> 
 
-#include <sys/ioctl.h>
 #include <fftw3.h>
 #define max(a,b) \
 	 ({ __typeof__ (a) _a = (a); \
@@ -41,8 +45,6 @@
 #include "output/terminal_bcircle.c"
 #endif
 
-#include "output/terminal_noncurses.h"
-#include "output/terminal_noncurses.c"
 
 #include "output/raw.h"
 #include "output/raw.c"
@@ -104,7 +106,10 @@
 #define GCC_UNUSED /* nothing */
 #endif
 
-struct termios oldtio, newtio;
+#ifdef __POSIX__
+	struct termios oldtio, newtio;
+#endif
+
 int rc;
 int M = FFTSIZE;
 int output_mode;
@@ -122,9 +127,11 @@ void cleanup()
 			cleanup_terminal_ncurses();
 			break;
 		#endif
+		#ifdef POSIX
 		case 3:
 			cleanup_terminal_noncurses();
 			break;
+		#endif
 		#ifdef XLIB
 		case 5:
 			cleanup_graphical_x();
@@ -148,7 +155,6 @@ long cavaSleep(long oldTime, int framerate) {
 	long newTime = 0;
 	if(framerate) {
 	#ifdef WIN
-		#pragma message( "Compiling for Windows" )
 		SYSTEMTIME time;
 		GetSystemTime(&time);
 		newTime = time.wSecond*1000+time.wMilliseconds;
@@ -156,7 +162,6 @@ long cavaSleep(long oldTime, int framerate) {
 		GetSystemTime(&time);
 		return time.wSecond*1000+time.wMilliseconds;
 	#else
-		#pragma message( "Compiling for UNIX compliant" )
 		struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
 		struct timeval tv;
 		gettimeofday(&tv, NULL);
@@ -178,6 +183,7 @@ long cavaSleep(long oldTime, int framerate) {
 	return 0;
 }
 
+#ifdef __POSIX__
 // general: handle signals
 void sig_handler(int sig_no)
 {
@@ -193,6 +199,7 @@ void sig_handler(int sig_no)
 	signal(sig_no, SIG_DFL);
 	raise(sig_no);
 }
+#endif
 
 
 #ifdef ALSA
@@ -290,7 +297,6 @@ int * monstercat_filter (int * f, int bars, int waves, double monstercat) {
 int main(int argc, char **argv)
 {
 
-
 	// general: define variables
 	pthread_t  p_thread;
 	int thr_id GCC_UNUSED;
@@ -302,7 +308,10 @@ int main(int argc, char **argv)
 	int flast[200];
 	int flastd[200];
 	int sleep = 0;
-	int i, n, o, height, h, w, c, rest, inAtty, silence, fp, fptest;
+	int i, n, o, height, h, w, c, rest, inAtty, silence;
+	#ifdef __POSIX__
+		int fp, fptest;
+	#endif
 	//int cont = 1;
 	int fall[200];
 	//float temp;
@@ -346,19 +355,23 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 
 	// general: console title
+	#ifdef __POSIX__
 	printf("%c]0;%s%c", '\033', PACKAGE, '\007');
-	
+	#endif	
+
 	configPath[0] = '\0';
 
 	setlocale(LC_ALL, "");
 
 	// general: handle Ctrl+C
+	#ifdef __POSIX__
 	struct sigaction action;
 	memset(&action, 0, sizeof(action));
 	action.sa_handler = &sig_handler;
 	sigaction(SIGINT, &action, NULL);
 	sigaction(SIGTERM, &action, NULL);
 	sigaction(SIGUSR1, &action, NULL);
+	#endif
 
 	// general: handle command-line arguments
 	while ((c = getopt (argc, argv, "p:vh")) != -1) {
@@ -408,7 +421,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	h = p.h;
     output_mode = p.om;
 	isGraphical = (output_mode==5)||(output_mode==6)||(output_mode==7);
-	
+
+	#ifdef __POSIX__
 	if (output_mode != 4 && !isGraphical) { 
 		// Check if we're running in a tty
 		inAtty = 0;
@@ -420,6 +434,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			system("setterm -blank 0");
 		}
 	}
+	#endif
 
 
 	//input: init
@@ -475,11 +490,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	}
 	#endif
 
+	#ifdef __POSIX__
 	if (p.im == 2) {
 		//starting fifomusic listener
 		thr_id = pthread_create(&p_thread, NULL, input_fifo, (void*)&audio); 
 		audio.rate = 44100;
 	}
+	#endif
 
 	#ifdef PULSE
 	if (p.im == 3) {
@@ -554,10 +571,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		}
 		#endif
 
+		#ifdef __POSIX__
 		if (output_mode == 3) get_terminal_dim_noncurses(&w, &h);
+		#endif
 
 		height = (h - 1) * (8-7*isGraphical);
 
+		#ifdef __POSIX__
 		// output open file/fifo for raw output
 		if (output_mode == 4) {
 
@@ -600,10 +620,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             } else {
                 height = p.ascii_range;
             }
-
-
-
 		}
+		#endif
 
 		// draw X11 background
 		#ifdef XLIB
@@ -654,9 +672,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						 h, bars, p.bw, rest);
 		#endif
 
+		#ifdef __POSIX__
 		//output: start noncurses mode
 		if (output_mode == 3) init_terminal_noncurses(p.col, p.bgcol, w, h, p.bw);
-
+		#endif
 
 
 		if (p.stereo) bars = bars / 2; // in stereo onle half number of bars per channel
@@ -973,14 +992,18 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						break;
 						#endif
 					case 3:
+						#ifdef __POSIX__
 						rc = draw_terminal_noncurses(inAtty, h, w, bars,
 							 p.bw, p.bs, rest, f, flastd);
 						break;
+						#endif
 					case 4:
+						#ifdef __POSIX__
 						rc = print_raw_out(bars, fp, p.is_bin, 
 							p.bit_format, p.ascii_range, p.bar_delim,
 							 p.frame_delim,f);
 						break;
+						#endif
 					case 5:
 					{
 						#ifdef XLIB

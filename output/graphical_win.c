@@ -206,7 +206,9 @@ int init_window_win(char *color, char *bcolor, double foreground_opacity, int co
 		// we'll just get the accent color (which is way easier and an better thing to do)
 
 		WINBOOL opaque = 1;
-		HRESULT error = DwmGetColorizationColor(&fgcolor, &opaque);
+		DWORD fancyVariable;
+		HRESULT error = DwmGetColorizationColor(&fancyVariable, &opaque);
+		fgcolor = fancyVariable;
 		if(!SUCCEEDED(error)) {
 			MessageBox(NULL, "DwmGetColorizationColor - failed", "Error", MB_OK | MB_ICONERROR);
 			return 1;
@@ -231,7 +233,9 @@ int init_window_win(char *color, char *bcolor, double foreground_opacity, int co
 		// we'll just get the accent color (which is way easier and a better thing to do)
 
 		WINBOOL opaque = 1;
-		HRESULT error = DwmGetColorizationColor(&bgcolor, &opaque);
+		DWORD fancyVariable;
+		HRESULT error = DwmGetColorizationColor(&fancyVariable, &opaque);
+		bgcolor = fancyVariable;
 		if(!SUCCEEDED(error)) {
 			MessageBox(NULL, "DwmGetColorizationColor - failed", "Error", MB_OK | MB_ICONERROR);
 			return 1;
@@ -361,7 +365,6 @@ void draw_graphical_win(int window_height, int bars_count, int bar_width, int ba
 	if(drawGLBars(rest, bar_width, bar_spacing, bars_count, window_height, transparentFlag ? shadow : 0, gradient, glColors, f)) exit(EXIT_FAILURE);
 	
 	glFlush();
-	glFinish();
 
 	// swap buffers	
 	SwapBuffers(hdc);
