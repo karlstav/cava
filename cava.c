@@ -28,7 +28,7 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <time.h>
+#include <sys/time.h>
 #include <getopt.h>
 #include <pthread.h>
 #include <dirent.h>
@@ -142,6 +142,40 @@ void cleanup()
 		#endif
 		default: break;
 	}
+}
+
+long cavaSleep(long oldTime, int framerate) {
+	long newTime = 0;
+	if(framerate) {
+	#ifdef WIN
+		#pragma message( "Compiling for Windows" )
+		SYSTEMTIME time;
+		GetSystemTime(&time);
+		newTime = time.wSecond*1000+time.wMilliseconds;
+		if(newTime-oldTime<1000/framerate&&newTime>oldTime) Sleep(1000/framerate-(newTime-oldTime));
+		GetSystemTime(&time);
+		return time.wSecond*1000+time.wMilliseconds;
+	#else
+		#pragma message( "Compiling for UNIX compliant" )
+		struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		newTime = tv.tv_sec*1000+tv.tv_usec/1000;
+		req.tv_sec = 0;
+		if(newTime-oldTime>1000/framerate || newTime<oldTime) req.tv_nsec = 0;
+		else req.tv_nsec = (1 / (framerate-(newTime-oldTime))) * 1000000000; 
+		nanosleep (&req, NULL);
+		gettimeofday(&tv, NULL);
+		return tv.tv_sec*1000+tv.tv_usec/1000;
+	#endif
+	}
+	#ifdef WIN
+	Sleep(oldTime);
+	#else
+	struct timespec req = { .tv_sec = oldTime/1000, .tv_nsec = oldTime%1000*1000 };
+	nanosleep(&req, NULL);
+	#endif
+	return 0;
 }
 
 // general: handle signals
@@ -275,7 +309,6 @@ int main(int argc, char **argv)
 	float fpeak[200];
 	float k[200];
 	float g;
-	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
 	char configPath[255];
 	char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
@@ -425,9 +458,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		n = 0;
 
 		while (audio.format == -1 || audio.rate == 0) {
-			req.tv_sec = 0;
-			req.tv_nsec = 1000000;
-			nanosleep (&req, NULL);
+			cavaSleep(1000, 0);
 			n++;
 			if (n > 2000) {
 			#ifdef DEBUG
@@ -822,9 +853,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					printw("no sound detected for 3 sec, going to sleep mode\n");
 				#endif
 				//wait 1 sec, then check sound again.
-				req.tv_sec = 1;
-				req.tv_nsec = 0;
-				nanosleep (&req, NULL);
+				cavaSleep(1000, 0);
 				continue;
 			}
 			
@@ -984,22 +1013,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 				//terminal has been resized breaking to recalibrating values
 				if (rc == -1) resizeTerminal = true;
-
-				struct timeval tv;
-				gettimeofday(&tv, NULL);
 				
-				long newTime = tv.tv_sec*1000+tv.tv_usec/1000, oldTime;
-
-				if (p.framerate <= 1) {
-					req.tv_sec = 1  / (float)p.framerate;
-				} else {
-					req.tv_sec = 0;
-					if(newTime-oldTime>1000/p.framerate || newTime<oldTime) req.tv_nsec = 0;
-					else req.tv_nsec = (1 / (p.framerate-(newTime-oldTime))) * 1000000000; 
-				}
-
-				nanosleep (&req, NULL);
-				oldTime = newTime;
+				long oldTime;
+				oldTime = cavaSleep(oldTime, p.framerate);
 			#endif
 
 			for (o = 0; o < bars; o++) {
@@ -1017,9 +1033,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		}//resize terminal
         
 	}//reloading config
-	req.tv_sec = 0;
-	req.tv_nsec = 100; //waiting some time to make shure audio is ready
-	nanosleep (&req, NULL);
+	cavaSleep(100, 0);
 
 	//**telling audio thread to terminate**//
 	audio.terminate = 1;

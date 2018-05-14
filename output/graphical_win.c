@@ -361,6 +361,7 @@ void draw_graphical_win(int window_height, int bars_count, int bar_width, int ba
 	if(drawGLBars(rest, bar_width, bar_spacing, bars_count, window_height, transparentFlag ? shadow : 0, gradient, glColors, f)) exit(EXIT_FAILURE);
 	
 	glFlush();
+	glFinish();
 
 	// swap buffers	
 	SwapBuffers(hdc);
