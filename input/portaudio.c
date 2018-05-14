@@ -108,10 +108,40 @@ void* input_portaudio(void *audiodata) {
 	}
 
 	// get portaudio device
-	inputParameters.device = Pa_GetDefaultInputDevice();
-	if(inputParameters.device == paNoDevice) {
-		fprintf(stderr, "Error: no portaudio input device.\n");
-		exit(EXIT_FAILURE);
+	if(!strcmp(audio->source, "list")) {
+		int numOfDevices = Pa_GetDeviceCount();
+		if(numOfDevices < 0) {
+			fprintf(stderr, "Error: portaudio was unable to find a audio device! Code: 0x%x\n", numOfDevices);
+			exit(EXIT_FAILURE);
+		}
+		for(int i = 0; i < numOfDevices; i++) {
+			const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(i);
+			printf("Device #%d: %s\n\
+\tInput Channels: %d\n\
+\tOutput Channels: %d\n\
+\tDefault SampleRate: %lf\n",\
+			i+1, deviceInfo->name, deviceInfo->maxInputChannels,\
+			deviceInfo->maxOutputChannels, deviceInfo->defaultSampleRate);
+		}
+		exit(EXIT_SUCCESS);
+	} else if(!strcmp(audio->source, "auto")) {
+		inputParameters.device = Pa_GetDefaultInputDevice();
+		
+		if(inputParameters.device == paNoDevice) {
+			fprintf(stderr, "Error: no portaudio input device.\n");
+			exit(EXIT_FAILURE);
+		}
+	} else {
+		int deviceNum;
+		if(!sscanf(audio->source,"%d", &deviceNum)) {
+			fprintf(stderr, "Error: portaudio device must be a number.\n");
+			exit(EXIT_FAILURE);
+		}
+		if(deviceNum > Pa_GetDeviceCount()) {
+			fprintf(stderr, "Error: Invalid input device!\n");
+			exit(EXIT_FAILURE);
+		}
+		inputParameters.device = deviceNum-1;
 	}
 
 	// set parameters

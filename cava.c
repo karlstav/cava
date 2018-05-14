@@ -362,6 +362,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	configPath[0] = '\0';
 
 	setlocale(LC_ALL, "");
+	setbuf(stdout,NULL);
+	setbuf(stderr,NULL);
 
 	// general: handle Ctrl+C
 	#ifdef __POSIX__
