@@ -351,7 +351,7 @@ FILE *fp;
 //config: creating path to default config file
 if (configPath[0] == '\0') {
 	char *configFile = "config";
-	#ifdef __POSIX__
+	#ifdef __unix__
 		char *configHome = getenv("XDG_CONFIG_HOME");
 	#elif defined(WIN)
 		char *configHome = getenv("APPDATA");
@@ -369,7 +369,7 @@ if (configPath[0] == '\0') {
 	}
 
 	// config: create directory
-	#ifdef __POSIX__
+	#ifdef __unix__
 		mkdir(configPath, 0777);
 	#else
 		mkdir(configPath);

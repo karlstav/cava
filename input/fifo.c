@@ -16,7 +16,7 @@ struct audio_data {
         char error_message[1024];
 };
 
-#ifdef __POSIX__
+#ifdef __unix__
 int open_fifo(const char *path)
 {
 	int fd = open(path, O_RDONLY);

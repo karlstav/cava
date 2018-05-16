@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
-#ifdef __POSIX__
+#ifdef __unix__
 	#include <termios.h>
 	#include <sys/ioctl.h>
 	#include "output/terminal_noncurses.h"
@@ -106,7 +106,7 @@
 #define GCC_UNUSED /* nothing */
 #endif
 
-#ifdef __POSIX__
+#ifdef __unix__
 	struct termios oldtio, newtio;
 #endif
 
@@ -183,7 +183,7 @@ long cavaSleep(long oldTime, int framerate) {
 	return 0;
 }
 
-#ifdef __POSIX__
+#ifdef __unix__
 // general: handle signals
 void sig_handler(int sig_no)
 {
@@ -309,7 +309,7 @@ int main(int argc, char **argv)
 	int flastd[200];
 	int sleep = 0;
 	int i, n, o, height, h, w, c, rest, inAtty, silence;
-	#ifdef __POSIX__
+	#ifdef __unix__
 		int fp, fptest;
 	#endif
 	//int cont = 1;
@@ -355,7 +355,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 
 	// general: console title
-	#ifdef __POSIX__
+	#ifdef __unix__
 	printf("%c]0;%s%c", '\033', PACKAGE, '\007');
 	#endif	
 
@@ -366,7 +366,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	setbuf(stderr,NULL);
 
 	// general: handle Ctrl+C
-	#ifdef __POSIX__
+	#ifdef __unix__
 	struct sigaction action;
 	memset(&action, 0, sizeof(action));
 	action.sa_handler = &sig_handler;
@@ -424,7 +424,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
     output_mode = p.om;
 	isGraphical = (output_mode==5)||(output_mode==6)||(output_mode==7);
 
-	#ifdef __POSIX__
+	#ifdef __unix__
 	if (output_mode != 4 && !isGraphical) { 
 		// Check if we're running in a tty
 		inAtty = 0;
@@ -492,7 +492,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	}
 	#endif
 
-	#ifdef __POSIX__
+	#ifdef __unix__
 	if (p.im == 2) {
 		//starting fifomusic listener
 		thr_id = pthread_create(&p_thread, NULL, input_fifo, (void*)&audio); 
@@ -573,13 +573,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		}
 		#endif
 
-		#ifdef __POSIX__
+		#ifdef __unix__
 		if (output_mode == 3) get_terminal_dim_noncurses(&w, &h);
 		#endif
 
 		height = (h - 1) * (8-7*isGraphical);
 
-		#ifdef __POSIX__
+		#ifdef __unix__
 		// output open file/fifo for raw output
 		if (output_mode == 4) {
 
@@ -674,7 +674,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						 h, bars, p.bw, rest);
 		#endif
 
-		#ifdef __POSIX__
+		#ifdef __unix__
 		//output: start noncurses mode
 		if (output_mode == 3) init_terminal_noncurses(p.col, p.bgcol, w, h, p.bw);
 		#endif
@@ -994,13 +994,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						break;
 						#endif
 					case 3:
-						#ifdef __POSIX__
+						#ifdef __unix__
 						rc = draw_terminal_noncurses(inAtty, h, w, bars,
 							 p.bw, p.bs, rest, f, flastd);
 						break;
 						#endif
 					case 4:
-						#ifdef __POSIX__
+						#ifdef __unix__
 						rc = print_raw_out(bars, fp, p.is_bin, 
 							p.bit_format, p.ascii_range, p.bar_delim,
 							 p.frame_delim,f);
