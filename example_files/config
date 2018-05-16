@@ -98,7 +98,7 @@
 ; source = /tmp/mpd.fifo
 
 ; method = portaudio
-; source = default
+; source = auto
 
 
 [output]
