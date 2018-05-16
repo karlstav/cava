@@ -398,7 +398,7 @@ Configuration
 
 As of version 0.4.0 all options are done in the config file, no more command-line arguments!
 
-By default a configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.config/cava/config`, but cava can also be made to use a different file with the `-p` option. Look in the default config file for details on the different options.
+By default a configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.config/cava/config` or in case of Windows in `%APPDATA%\cava\config` (you have to manually copy it from `example_files\config`), but cava can also be made to use a different file with the `-p` option. Look in the default config file for details on the different options.
 
 Sending cava a SIGUSR1 signal, will force cava to reload its configuration file. Thus, it behaves as if the user pressed <kbd>r</kbd> in the terminal. One might send a SIGUSR1 signal using `pkill` or `killall`.
 For example:
