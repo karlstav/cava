@@ -192,7 +192,26 @@ CAVA (graphical branch) is avaible in the Void repos:
 
 ### Windows
 
-You must compile from source, and it is only available under Cygwin. No mingw or VSC support yet since it's deeply tied to POSIX.
+It should work from Vista onwards, but on XP you can get it working by setting a color and disabling transparency.
+
+You can download the binary from the `Releases` tab of this project.
+
+The archive will contain `cava.exe` alongside all of the dlls needed to run this.
+
+If a dll is missing, please raise an issue.
+
+If you are on Windows, please use `portaudio` as the input method and `win` as the output method.
+
+
+#### Additional info
+
+This version doesn't include compatibility for noncurses and raw modes (since they depend on UNIX functions).
+
+To get them, compile this package with cygwin:
+	
+	apt-cyg install automake autoconf libtool gcc-base libportaudio-devel libfftw3-devel libncurses-devel w32api-runtime
+
+NOTE: You CANNOT BUILD this on a 32bit x86 system. You will need to run `./configure` on a 64bit system and manually change the Makefile's compiler.
 
 
 All distro specific instalation sources might be out of date.
@@ -213,9 +232,26 @@ To enable just uncomment:
 
 in the `[input]` section of your config.
 
-And once CAVA is running, on pulseaudio you should change it's input to the monitor.
+#### If the host is running Pulseaudio
 
-Or in case of Windows, you should set "Stereo Mix" as the default input device in the recording tab. In case you don't have it update/install your audio drivers or get a better sound card.
+Once CAVA is running, on pulseaudio you should change it's input to the device you want to use.
+
+
+#### If the host is Windows
+
+On Windows, you should have 'Stereo Mix' as a option on the Recording tab in Audio settings.
+
+If you don't, install better drivers or get a better sound card.
+
+Once you figured that out, continue below.
+
+
+#### Set source in Portaudio
+
+Set 'source' to 'list' and start CAVA. Start CAVA and it should print out all audio devices.
+
+Find the input device that you want to use and set 'source' to it's number!
+
 
 ### From Pulseaudio monitor source (Easy, default if supported)
 
