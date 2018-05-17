@@ -42,8 +42,8 @@ background = default
 ; foreground = "#29b9b0"	# Indie dance and Nu Disco
 ; foreground = "#c1c1c1"	# Misc
 
- foreground = "#000000"	# Everything Black xD
-; foreground = "#ffffff"	# New layout
+; foreground = "#000000"	# Everything Black xD
+ foreground = "#ffffff"	# New layout
 
 foreground_opacity = 1.0
 
