@@ -1,0 +1,84 @@
+[general]
+mode = normal
+framerate = 70
+autosens = 0
+overshoot = 0
+sensitivity = 70
+bars = 63
+lower_cutoff_freq = 10
+higher_cutoff_freq = 18000
+
+[window]
+bar_width = 18
+bar_spacing = 7
+width = 1650
+height = 420
+fullscreen = 0
+border = 0
+transparency = 1
+keep_below = 1
+set_win_props = 0
+alignment = 'center'
+x_padding = 0
+y_padding = -200
+opengl = 1
+
+[output]
+method = win
+channels = mono
+
+[color]
+background = default
+; foreground = "#e20809"	# Drum & Bass
+; foreground = "#e5890c"	# House 
+; foreground = "#0586e1"	# Trance
+; foreground = "#9004df"	# Dubstep
+; foreground = "#e20586" 	# Drumstep
+; foreground = "#e5d900"	# Electro
+; foreground = "#0bb304"	# Hardcore
+; foreground = "#17aa59"	# Glitch Hop or 110BPM
+; foreground = "#8a0e26"	# Trap
+; foreground = "#9999fd"	# Future Bass
+; foreground = "#29b9b0"	# Indie dance and Nu Disco
+; foreground = "#c1c1c1"	# Misc
+
+ foreground = "#000000"	# Everything Black xD
+; foreground = "#ffffff"	# New layout
+
+foreground_opacity = 1.0
+
+gradient = 0
+gradient_color_1 = '#0099ff'
+gradient_color_2 = '#ff3399'
+
+[smoothing]
+integral = 75
+monstercat = 0.0
+waves = 0.0
+gravity = 700
+ignore = 0
+log = 1.6
+oddoneout = 1
+
+[shadow]
+size = 5
+color = "#dd000000"
+
+[eq]
+1 = 5.5
+2 = 3.2
+3 = 2.5
+4 = 2.3
+r = 1.8
+6 = 1.4
+7 = 1.0
+
+[input]
+; method = pulse
+; source = auto
+; method = alsa
+; source = hw:Loopback,1
+; method = fifo
+; source = /tmp/mpd.fifo
+; method = portaudio
+; source = auto
