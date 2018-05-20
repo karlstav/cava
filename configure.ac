@@ -19,7 +19,7 @@ case "${host_os}" in
         build_windows=yes
         ;;
     mingw*)
-        AC_MSG_ERROR(["ERROR: Cannot compile under minGW"])
+		build_windows=yes
 	;;
     *);;
 esac
