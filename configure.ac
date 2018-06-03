@@ -5,9 +5,24 @@ AM_PROG_AR
 LT_INIT
 AC_PROG_CC
 AC_PROG_CC_STDC
+AC_CANONICAL_HOST
 
 AM_PROG_LIBTOOL
 
+AC_CANONICAL_HOST
+
+build_windows=no
+
+# Detect the target system
+case "${host_os}" in
+    cygwin*)
+        build_windows=yes
+        ;;
+    mingw*)
+		build_windows=yes
+	;;
+    *);;
+esac
 
 dnl ############################
 dnl checking if debug is enabled
@@ -37,6 +52,88 @@ AC_CHECK_HEADERS([pthread.h],
 )
 
 dnl ######################
+dnl checking for SDL2
+dnl ######################
+
+if [[ $build_windows = "no" ]] ; then
+	AC_CHECK_LIB(SDL2, SDL_Init, have_sdl=yes, have_sdl=no)
+	
+	if [[ $have_sdl = "yes" ]] ; then
+		LIBS="$LIBS -lSDL2"
+		CPPFLAGS="$CPPFLAGS -DSDL"
+	fi
+
+	if [[ $have_sdl = "no" ]] ; then
+		AC_MSG_NOTICE([WARNING: No SDL2 dev files found building without SDL support])
+	fi
+fi
+
+dnl ######################
+dnl checking for Xlib
+dnl ######################
+
+if [[ $build_windows = "no" ]] ; then
+	AC_CHECK_LIB(X11, XOpenDisplay, have_xlib=yes, have_xlib=no)
+
+	if [[ $have_xlib = "yes" ]] ; then
+		LIBS="$LIBS -lX11"
+		CPPFLAGS="$CPPFLAGS -DXLIB"
+	fi
+
+	if [[ $have_xlib = "no" ]] ; then
+		AC_MSG_NOTICE([WARNING: No xlib dev files found building without xlib support])
+	fi
+fi
+
+dnl #################
+dnl checking for GLX
+dnl #################
+if [[ $build_windows = "no" ]] ; then
+	AC_CHECK_LIB(GL, glEnable, have_gl=yes, have_gl=no)
+	if [[ $have_gl = "yes" ]] ; then
+		LIBS="$LIBS -lGL"
+		CPPFLAGS="$CPPFLAGS -DGLX"
+	fi
+	
+	if [[ $have_gl = "no" ]] ; then
+		AC_MSG_NOTICE([WARNING: No GL dev files found building without GLX support])
+	fi
+fi
+
+dnl ######################
+dnl checking for win32
+dnl ######################
+
+AC_CHECK_LIB(gdi32, CreateDCW, have_gdi=yes, have_gdi=no)
+
+if [[ $have_gdi = "yes" ]] ; then
+	AC_CHECK_LIB(opengl32, wglCreateContext, have_wgl=yes, have_wgl=no)
+	if [[ $have_wgl = "yes" ]] ; then
+		AC_CHECK_LIB(glu32, gluDisk, have_wglu=yes, have_wglu=no)
+		if [[ $have_wglu = "yes" ]] ; then
+			AC_CHECK_LIB(dwmapi, DwmFlush, have_dwmapi=yes, have_dwmapi=no)
+			if [[ $have_dwmapi = "yes" ]] ; then
+				LIBS="$LIBS -lgdi32 -lopengl32 -lglu32 -ldwmapi -mwindows"
+				CPPFLAGS="$CPPFLAGS -DWIN"
+			fi
+			if [[ $have_dwmapi = "no" ]] ; then
+				AC_MSG_NOTICE([WARNING: No dwmapi dev files found building without win32 support])
+			fi
+		fi
+		if [[ $have_wglu = "no" ]] ; then
+			AC_MSG_NOTICE([WARNING: No win glu dev files found building wihtout win32 support])
+		fi
+	fi
+	if [[ $have_wgl = "no" ]] ; then
+		AC_MSG_NOTICE([WARNING: No wgl dev files found building without win32 support])
+	fi
+fi
+
+if [[ $have_gdi = "no" ]] ; then
+	AC_MSG_NOTICE([WARNING: No GDI dev files found building without win32 support])
+fi
+
+dnl ######################
 dnl checking for alloca.h
 dnl ######################
 
@@ -59,7 +156,8 @@ AC_CHECK_LIB(asound, snd_pcm_open, have_alsa=yes, have_alsa=no)
 dnl ######################
 dnl checking for pulse dev
 dnl ######################
-AC_CHECK_LIB(pulse-simple, pa_simple_new, have_pulse=yes, have_pulse=no)
+if [[ $build_windows = "no" ]] ; then
+    AC_CHECK_LIB(pulse-simple, pa_simple_new, have_pulse=yes, have_pulse=no)
     if [[ $have_pulse = "yes" ]] ; then
       LIBS="$LIBS -lpulse-simple -lpulse"
       CPPFLAGS="$CPPFLAGS -DPULSE"
@@ -68,6 +166,7 @@ AC_CHECK_LIB(pulse-simple, pa_simple_new, have_pulse=yes, have_pulse=no)
     if [[ $have_pulse = "no" ]] ; then
       AC_MSG_NOTICE([WARNING: No pusleaudio dev files found building without pulseaudio support])
     fi
+fi
 
 dnl ######################
 dnl checking for sndio dev
@@ -80,6 +179,19 @@ AC_CHECK_LIB(sndio, sio_open, have_sndio=yes, have_sndio=no)
 
     if [[ $have_sndio = "no" ]] ; then
       AC_MSG_NOTICE([WARNING: No sndio dev files found building without sndio support])
+    fi
+
+dnl ######################
+dnl checking for portaudio
+dnl ######################
+AC_CHECK_LIB(portaudio, Pa_Initialize, have_portaudio=yes, have_portaudio=no)
+    if [[ $have_portaudio = "yes" ]] ; then
+      LIBS="$LIBS -lportaudio"
+      CPPFLAGS="$CPPFLAGS -DPORTAUDIO"
+    fi
+
+    if [[ $have_portaudio = "no" ]] ; then
+      AC_MSG_NOTICE([WARNING: No portaudio dev files found building without portaudio support])
     fi
 
 dnl ######################

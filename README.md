@@ -1,9 +1,9 @@
-C.A.V.A. (M.P.)
+C.A.V.A. (M.P.) - G.
 ====================
 
-**C**onsole-based **A**udio **V**isualizer for **A**LSA (**M**PD and **P**ulseaudio)
+**C**onsole-based **A**udio **V**isualizer for **A**LSA (**M**PD and **P**ulseaudio) - **G**raphical fork
 
-by [Karl Stavestrand](mailto:karl@stavestrand.no)
+by [Karl Stavestrand](mailto:karl@stavestrand.no) and this fork by [Nikola Pavlica](mailto:pavlica.nikola@gmail.com)
 
 Changes in 0.6:
 * Autosens of low values (dynamic range)
@@ -28,12 +28,15 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 - [Build requirements](#build-requirements)
 - [Getting started](#getting-started)
   - [Installing manually](#installing-manually)
+  - [Creating a desktop shortcut](#creating-a-desktop-shortcut)
   - [Uninstalling](#uninstalling)
   - [openSUSE](#opensuse)
   - [Fedora](#fedora)
   - [Arch](#arch)
   - [Ubuntu](#ubuntu)
+  - [Windows](#windows)
 - [Capturing audio](#capturing-audio)
+  - [From PortAudio (easy)](#from-portaudio-easy)
   - [From Pulseaudio monitor source (Easy, default if supported)](#from-pulseaudio-monitor-source-easy-default-if-supported)
   - [From ALSA-loopback device (Tricky)](#from-alsa-loopback-device-tricky)
   - [From mpd's fifo output](#from-mpds-fifo-output)
@@ -45,6 +48,12 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 - [Usage](#usage)
   - [Controls](#controls)
 - [Configuration](#configuration)
+- [Graphical modes](#graphical-modes)
+  - [Output modes](#output-modes)
+  - [OpenGL](#opengl)
+  - [Window options](#window-options)
+  - [Additional features](#additional-features)
+  - [Shadow](#shadow)
 - [Contribution](#contribution)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -53,7 +62,7 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
 What it is
 ----------
 
-C.A.V.A. is a bar spectrum audio visualizer for the Linux terminal using ALSA, pulseaudio or fifo buffer for input.
+C.A.V.A. is a bar spectrum audio visualizer for the Linux terminalusing ALSA, pulseaudio, portaudio or fifo buffer for input.
 
 This program is not intended for scientific use. It's written to look responsive and aesthetic when used to visualize music. 
 
@@ -62,9 +71,12 @@ Build requirements
 ------------------
 * [FFTW](http://www.fftw.org/)
 * [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
+* [Xlib/X11 dev files](http://x.org/)
+* [SDL2 dev files](https://libsdl.org/)
 * [ALSA dev files](http://alsa-project.org/)
 * [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/)
-* libtool
+* [Portaudio dev files](http://www.portaudio.com/)
+* [GNU libtool](https://www.gnu.org/software/libtool/)
 
 Only FFTW is actually required for CAVA to compile, but for maximum usage and performance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
 
@@ -72,20 +84,23 @@ All the requirements can be installed easily in all major distros:
 
 Debian/Raspbian:
 
-    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool
+    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool libx11-dev libsdl2-dev libportaudio-dev 
 
 ArchLinux:
 
-    pacman -S base-devel fftw ncurses alsa-lib iniparser pulseaudio
+    pacman -S base-devel fftw ncurses alsa-lib iniparser pulseaudio libx11 sdl2 portaudio
 
 openSUSE:
 
-    zypper install alsa-devel ncurses-devel fftw3-devel libpulse-devel libtool
+    zypper install alsa-devel ncurses-devel fftw3-devel libX11-devel libSDL2-devel libtool portaudio-devel
 
 Fedora:
 
-    dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel xorg-x11-devel SDL2-devel pulseaudio-libs-devel libtool portaudio-devel
 
+Cygwin dependencies (64bit ONLY):
+
+    gcc-core w32api-headers libfftw3-devel libportaudio-devel libncurses-devel portaudio
 
 Iniparser is also required, but if it is not already installed, a bundled version will be used.
 
@@ -116,7 +131,16 @@ Install `cava` to default `/usr/local`:
 
 Or you can change `PREFIX`, for example:
 
-   ./configure --prefix=PREFIX
+    ./configure --prefix=PREFIX
+
+### Creating a desktop shortcut
+
+In the example_files/desktop you will find an desktop entry for GNU/Linux systems and an icon file.
+
+To create a desktop shortcut you can do the following:
+
+	cp example_files/desktop/cava.desktop /usr/share/applications
+	cp example_files/desktop/cava.png /usr/share/icons/hicolor/64x64/apps
 
 ### Uninstalling
 
@@ -141,11 +165,13 @@ running:
 
     dnf install cava
 
+Unfourtunately for Fedora users the graphical branch is not availble and it must be compiled from source.
+
 ### Arch
 
-Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
+CAVA (graphical branch) is availble in [AUR](https://aur.archlinux.org/packages/cava-gui-git/).
 
-    pacaur -S cava
+    pacaur -S cava-gui-git
 
 ### Ubuntu
 
@@ -155,6 +181,37 @@ Michael Nguyen has added CAVA to his PPA, it can be installed with:
     sudo apt-get update
     sudo apt-get install cava
     
+Unfourtunately for Ubuntu users, you will have to compile this branch since there are no active repositories. 
+
+### VoidLinux
+
+CAVA (graphical branch) is avaible in the Void repos:
+	
+	xbps-install cava-gui
+
+
+### Windows
+
+It should work from Vista onwards, but on XP you can get it working by setting a color and disabling transparency.
+
+You can download the binary from the `Releases` tab of this project.
+
+The archive will contain `cava.exe` alongside all of the dlls needed to run this.
+
+If a dll is missing, please raise an issue.
+
+If you are on Windows, please use `portaudio` as the input method and `win` as the output method.
+
+
+#### Additional info
+
+This version doesn't include compatibility for noncurses and raw modes (since they depend on UNIX functions).
+
+To get them, compile this package with cygwin:
+	
+	apt-cyg install automake autoconf libtool gcc-base libportaudio-devel libfftw3-devel libncurses-devel w32api-runtime
+
+NOTE: You CANNOT BUILD this on a 32bit x86 system. You will need to run `./configure` on a 64bit system and manually change the Makefile's compiler.
 
 
 All distro specific instalation sources might be out of date.
@@ -162,6 +219,39 @@ All distro specific instalation sources might be out of date.
 
 Capturing audio
 ---------------
+
+### From portaudio (easy)
+
+First make sure you have portaudio dev files and that cava was built with portaudio support (it should have done so automatically if it found the dev files).
+
+Since portaudio combines the functionality of all audio systems, it should work "out of the box".
+
+To enable just uncomment:
+    
+    method = portaudio
+
+in the `[input]` section of your config.
+
+#### If the host is running Pulseaudio
+
+Once CAVA is running, on pulseaudio you should change it's input to the device you want to use.
+
+
+#### If the host is Windows
+
+On Windows, you should have 'Stereo Mix' as a option on the Recording tab in Audio settings.
+
+If you don't, install better drivers or get a better sound card.
+
+Once you figured that out, continue below.
+
+
+#### Set source in Portaudio
+
+Set 'source' to 'list' and start CAVA. Start CAVA and it should print out all audio devices.
+
+Find the input device that you want to use and set 'source' to it's number!
+
 
 ### From Pulseaudio monitor source (Easy, default if supported)
 
@@ -244,7 +334,7 @@ exit with ctrl+z then run 'bg' to keep it running after you log out.
 Font notes
 ----------
 
-Since the graphics are simply based on characters, performance is dependent on the terminal font.
+If you are running in terminal or raw modes the graphics are based on characters and thus the performance is dependent on the terminal font. Or you are running in graphical modes from which the graphics are pixel based and the performance depends on the window size you are running at.
 
 ### In ttys
 
@@ -266,11 +356,12 @@ Cava also disables the terminal cursor, and turns it back on on exit, but in cas
 
 Tip: Cava will look much nicer in small font sizes. Use a second terminal emulator for cava and set the font size to 1. Warning, can cause high CPU usage and latency if the terminal window is too large!
 
-
 Latency notes
 -------------
 
 If you see latency issues (sound before image) in a terminal emulator, try increasing the font size. This will reduce the number of characters that have to be shown.
+
+But if you are running in either in the graphical modes, you can shrink the window, enable GPU acceleration or enable OpenGL (if supported).
 
 If your audio device has a huge buffer, you might experience that cava is actually faster than the audio you hear. This reduces the experience of the visualization. To fix this, try decreasing the buffer settings in your audio playing software.
 
@@ -296,6 +387,8 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 | --- | ----------- |
 | <kbd>up</kbd> / <kbd>down</kbd>| increase/decrease sensitivity |
 | <kbd>left</kbd> / <kbd>right</kbd>| increase/decrease bar width |
+| <kbd>a</kbd> / <kbd>s</kbd> | increase/decrease bar spacing |
+| <kbd>f</kbd> | toggle fullscreen (only in window modes, besides win32) |
 | <kbd>c</kbd> / <kbd>b</kbd>| change forground/background color |
 | <kbd>r</kbd> | Reload configuration |
 | <kbd>q</kbd> or <kbd>CTRL-C</kbd>| Quit C.A.V.A. |
@@ -305,7 +398,7 @@ Configuration
 
 As of version 0.4.0 all options are done in the config file, no more command-line arguments!
 
-By default a configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.config/cava/config`, but cava can also be made to use a different file with the `-p` option. Look in the default config file for details on the different options.
+By default a configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.config/cava/config` or in case of Windows in `%APPDATA%\cava\config` (you have to manually copy it from `example_files\config`), but cava can also be made to use a different file with the `-p` option. Look in the default config file for details on the different options.
 
 Sending cava a SIGUSR1 signal, will force cava to reload its configuration file. Thus, it behaves as if the user pressed <kbd>r</kbd> in the terminal. One might send a SIGUSR1 signal using `pkill` or `killall`.
 For example:
@@ -334,8 +427,118 @@ $ pkill -USR1 cava
 
 ![3_139](https://cloud.githubusercontent.com/assets/6376571/8670181/9db0ef50-29e8-11e5-81bc-3e2bb9892da0.png)
 
+
+Graphical modes
+---------------
+
+CAVA (this branch) can now run in grapical modes.
+
+To achieve this you have to change `method` in the `[output]` category to one of the supported graphical modes.
+
+### Output modes
+
+CAVA currently supports these graphical modes:
+
+	x - standard XFree86 window
+
+	sdl - SDL2 window
+
+	win - win32 window
+
+
+### OpenGL
+
+To run CAVA in OpenGL:
+      
+	opengl = true
+
+WARNING: OpenGL isn't supported under SDL2.
+
+### Window options
+
+Toggle fullscreen:
+     
+	fullscreen = 1 or 0
+
+WARNING: On Windows it isn't supported.
+
+
+Toggle window border:
+    
+	border = 1 or 0
+
+WARNING: On Windows the border is always off.
+
+
+Change bar width/height (units are in pixels rather than characters):
+    
+	bar_width = (width in pixels)
+    
+	bar_spacing = (width in pixels)
+
+NOTE: It's located in the ```window``` category.
+
+
+Move the window on startup to a specific part of the screen:
+
+	alignment = 'top_left', 'top', 'top_right'. 'left', 'center', 'right', 'bottom_left', 'bottom', 'bottom_right' and by default 'none'
+
+
+In addition to window aligment you can adjust the window position further with:
+    
+	x_padding = (specify value)
+    
+	y_padding = (specify value)
+
+
+You can enable transparent windows:
+     
+	transparency = 1 or 0
+
+WARNING: SDL2 doesn't have transparency.
+
+
+Force the window to be behind any window (works only under Xlib):
+    
+	keep_below = 1
+
+Set window properties (Window Class):
+
+	set_win_props = 1
+
+This helps with removing blur and shadows from behind the window, but also removes the ability to interact with the window.
+
+### Additional features
+
+Setting foreground color to `default` will cause in Xlib to average out the color in the desktop. 
+
+On Windows it will grab the accent color (aka. your theme) instead.
+
+To enable this you just have to change:
+    
+    foreground = 'default'
+    
+Set foreground opacity:
+
+    foreground_opacity = (from 0.0 to 1.0)
+
+You need OpenGL and transparency support in order for it to work.
+
+### Shadow
+
+You can change the following options:
+    
+    size = (in pixels)
+
+and
+    
+    color = '#aarrggbb'
+
+You need to enable transparency for the shadows to work.
+
+
 Contribution
-------
+------------
 
 Please read CONTRIBUTING.md before opening a pull request.
 
@@ -344,6 +547,6 @@ Thanks to:
 * [anko](https://github.com/anko)
 * [livibetter](https://github.com/livibetter)
 
-for mayor contributions in the early development of this project.
+for major contributions in the early development of this project.
 
 Also thanks to [dpayne](https://github.com/dpayne/) for figuring out how to find the pulseaudio default sink name.

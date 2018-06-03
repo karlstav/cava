@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=0.4
+Name=CAVA-G visualizer
+Comment=Audio spectrum visualizer for Windows/macOS/Linux/BSD
+Exec=cava
+Icon=cava
+Terminal=false
+Categories=Audio;
+

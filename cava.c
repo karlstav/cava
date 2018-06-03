@@ -1,3 +1,6 @@
+#define TRUE 1
+#define FALSE 0
+
 #define _XOPEN_SOURCE_EXTENDED
 #include <locale.h>
 
@@ -10,11 +13,15 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include <termios.h>
+#ifdef __unix__
+	#include <termios.h>
+	#include <sys/ioctl.h>
+	#include "output/terminal_noncurses.h"
+	#include "output/terminal_noncurses.c"
+#endif
 #include <math.h>
 #include <fcntl.h> 
 
-#include <sys/ioctl.h>
 #include <fftw3.h>
 #define max(a,b) \
 	 ({ __typeof__ (a) _a = (a); \
@@ -25,7 +32,7 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <time.h>
+#include <sys/time.h>
 #include <getopt.h>
 #include <pthread.h>
 #include <dirent.h>
@@ -38,8 +45,6 @@
 #include "output/terminal_bcircle.c"
 #endif
 
-#include "output/terminal_noncurses.h"
-#include "output/terminal_noncurses.c"
 
 #include "output/raw.h"
 #include "output/raw.c"
@@ -59,8 +64,33 @@
 #include "input/pulse.c"
 #endif
 
+#ifdef XLIB
+#include "output/graphical_x.c"
+#include "output/graphical_x.h"
+#endif
+
+#ifdef SDL
+#include "output/graphical_sdl.c"
+#include "output/graphical_sdl.h"
+#endif
+
 #ifdef SNDIO
 #include "input/sndio.c"
+#endif
+
+#ifdef PORTAUDIO
+#include "input/portaudio.c"
+#include "input/portaudio.h"
+#endif
+
+#ifdef WIN
+#include "output/graphical_win.h"
+#include "output/graphical_win.c"
+#endif
+
+#if defined(WIN)||defined(SDL)||defined(XLIB)
+#include "output/graphical.c"
+#include "output/graphical.h"
 #endif
 
 #include <iniparser.h>
@@ -76,32 +106,84 @@
 #define GCC_UNUSED /* nothing */
 #endif
 
-struct termios oldtio, newtio;
+#ifdef __unix__
+	struct termios oldtio, newtio;
+#endif
+
 int rc;
-int M = 2048;
+int M = FFTSIZE;
 int output_mode;
-
-
 
 // whether we should reload the config or not
 int should_reload = 0;
 
-
 // general: cleanup
-void cleanup(void)
+void cleanup()
 {
-	if (output_mode == 1 || output_mode == 2 ) {
-	#ifdef NCURSES
-	    cleanup_terminal_ncurses();
-	#else
-		;
-	#endif
-    }
-    else if (output_mode ==3 ) {
-	    cleanup_terminal_noncurses();
-    }
+	switch(output_mode) {
+		#ifdef NCURSES
+		case 1:
+		case 2:
+			cleanup_terminal_ncurses();
+			break;
+		#endif
+		#ifdef POSIX
+		case 3:
+			cleanup_terminal_noncurses();
+			break;
+		#endif
+		#ifdef XLIB
+		case 5:
+			cleanup_graphical_x();
+			break;
+		#endif
+		#ifdef SDL
+		case 6:
+			cleanup_graphical_sdl();
+			break;
+		#endif
+		#ifdef WIN
+		case 7:
+			cleanup_graphical_win();
+			break;
+		#endif
+		default: break;
+	}
 }
 
+long cavaSleep(long oldTime, int framerate) {
+	long newTime = 0;
+	if(framerate) {
+	#ifdef WIN
+		SYSTEMTIME time;
+		GetSystemTime(&time);
+		newTime = time.wSecond*1000+time.wMilliseconds;
+		if(newTime-oldTime<1000/framerate&&newTime>oldTime) Sleep(1000/framerate-(newTime-oldTime));
+		GetSystemTime(&time);
+		return time.wSecond*1000+time.wMilliseconds;
+	#else
+		struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		newTime = tv.tv_sec*1000+tv.tv_usec/1000;
+		req.tv_sec = 0;
+		if(newTime-oldTime>1000/framerate || newTime<oldTime) req.tv_nsec = 0;
+		else req.tv_nsec = (1 / (framerate-(newTime-oldTime))) * 1000000000; 
+		nanosleep (&req, NULL);
+		gettimeofday(&tv, NULL);
+		return tv.tv_sec*1000+tv.tv_usec/1000;
+	#endif
+	}
+	#ifdef WIN
+	Sleep(oldTime);
+	#else
+	struct timespec req = { .tv_sec = oldTime/1000, .tv_nsec = oldTime%1000*1000 };
+	nanosleep(&req, NULL);
+	#endif
+	return 0;
+}
+
+#ifdef __unix__
 // general: handle signals
 void sig_handler(int sig_no)
 {
@@ -110,13 +192,14 @@ void sig_handler(int sig_no)
 		return;
 	}
 
-	cleanup();
 	if (sig_no == SIGINT) {
 		printf("CTRL-C pressed -- goodbye\n");
+		cleanup();
 	}
 	signal(sig_no, SIG_DFL);
 	raise(sig_no);
 }
+#endif
 
 
 #ifdef ALSA
@@ -148,12 +231,10 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1], int bars, int lcf[200],
 
 	// process: separate frequency bands
 	for (o = 0; o < bars; o++) {
-
 		peak[o] = 0;
 
 		// process: get peaks
 		for (i = lcf[o]; i <= hcf[o]; i++) {
-
 			//getting r of compex
 			y[i] = hypot(out[i][0], out[i][1]);
 			peak[o] += y[i]; //adding upp band
@@ -165,7 +246,6 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1], int bars, int lcf[200],
 		if (temp <= ignore) temp = 0;
 		if (channel == 1) fl[o] = temp;
 		else fr[o] = temp;
-
 	}
 
 	if (channel == 1) return fl;
@@ -217,7 +297,6 @@ int * monstercat_filter (int * f, int bars, int waves, double monstercat) {
 int main(int argc, char **argv)
 {
 
-
 	// general: define variables
 	pthread_t  p_thread;
 	int thr_id GCC_UNUSED;
@@ -229,14 +308,16 @@ int main(int argc, char **argv)
 	int flast[200];
 	int flastd[200];
 	int sleep = 0;
-	int i, n, o, height, h, w, c, rest, inAtty, silence, fp, fptest;
+	int i, n, o, height, h, w, c, rest, inAtty, silence;
+	#ifdef __unix__
+		int fp, fptest;
+	#endif
 	//int cont = 1;
 	int fall[200];
 	//float temp;
 	float fpeak[200];
 	float k[200];
 	float g;
-	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
 	char configPath[255];
 	char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
@@ -265,7 +346,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	char supportedInput[255] = "'fifo'";
 	int sourceIsAuto = 1;
 	double smh;
-
+	bool isGraphical = false;
+	
 	//int maxvalue = 0;
 
 	struct audio_data audio;
@@ -273,19 +355,25 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 
 	// general: console title
+	#ifdef __unix__
 	printf("%c]0;%s%c", '\033', PACKAGE, '\007');
-	
+	#endif	
+
 	configPath[0] = '\0';
 
 	setlocale(LC_ALL, "");
+	setbuf(stdout,NULL);
+	setbuf(stderr,NULL);
 
 	// general: handle Ctrl+C
+	#ifdef __unix__
 	struct sigaction action;
 	memset(&action, 0, sizeof(action));
 	action.sa_handler = &sig_handler;
 	sigaction(SIGINT, &action, NULL);
 	sigaction(SIGTERM, &action, NULL);
 	sigaction(SIGUSR1, &action, NULL);
+	#endif
 
 	// general: handle command-line arguments
 	while ((c = getopt (argc, argv, "p:vh")) != -1) {
@@ -331,10 +419,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	//config: load
 	load_config(configPath, supportedInput, (void *)&p);
-
+	w = p.w;
+	h = p.h;
     output_mode = p.om;
+	isGraphical = (output_mode==5)||(output_mode==6)||(output_mode==7);
 
-	if (p.om != 4) { 
+	#ifdef __unix__
+	if (output_mode != 4 && !isGraphical) { 
 		// Check if we're running in a tty
 		inAtty = 0;
 		if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0),
@@ -345,6 +436,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			system("setterm -blank 0");
 		}
 	}
+	#endif
 
 
 	//input: init
@@ -383,29 +475,30 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		n = 0;
 
 		while (audio.format == -1 || audio.rate == 0) {
-			req.tv_sec = 0;
-			req.tv_nsec = 1000000;
-			nanosleep (&req, NULL);
+			cavaSleep(1000, 0);
 			n++;
 			if (n > 2000) {
+			#ifdef DEBUG
 				cleanup();
 				fprintf(stderr,
 				"could not get rate and/or format, problems with audio thread? quiting...\n");
 				exit(EXIT_FAILURE);
+			#endif
 			}
 		}
 	#ifdef DEBUG
 		printf("got format: %d and rate %d\n", audio.format, audio.rate);
 	#endif
-
 	}
 	#endif
 
+	#ifdef __unix__
 	if (p.im == 2) {
 		//starting fifomusic listener
 		thr_id = pthread_create(&p_thread, NULL, input_fifo, (void*)&audio); 
 		audio.rate = 44100;
 	}
+	#endif
 
 	#ifdef PULSE
 	if (p.im == 3) {
@@ -426,6 +519,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		audio.rate = 44100;
 	}
 	#endif
+	
+	#ifdef PORTAUDIO
+	if (p.im == 5) {
+		thr_id = pthread_create(&p_thread, NULL, input_portaudio, (void*)&audio);
+		audio.rate = 44100;
+	}
+	#endif
 
 	if (p.highcf > audio.rate / 2) {
 		cleanup();
@@ -440,6 +540,20 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	bool reloadConf = false;
 	bool senseLow = true;
 
+	// open XLIB window and set everything up
+	#ifdef XLIB
+	if(output_mode == 5) if(init_window_x(p.color, p.bcolor, p.col, p.bgcol, p.set_win_props, argv, argc, p.gradient, p.gradient_color_1, p.gradient_color_2, p.shdw, p.shdw_col, w, h)) exit(EXIT_FAILURE);
+	#endif
+
+	// setting up sdl
+	#ifdef SDL
+	if(output_mode == 6) if(init_window_sdl(&p.col, &p.bgcol, p.color, p.bcolor, p.gradient, p.gradient_color_1, p.gradient_color_2, w, h)) exit(EXIT_FAILURE);
+	#endif
+
+	#ifdef WIN
+	if(output_mode == 7) if(init_window_win(p.color, p.bcolor, p.foreground_opacity, p.col, p.bgcol, p.gradient, p.gradient_color_1, p.gradient_color_2, p.shdw, p.shdw_col, w, h)) exit(EXIT_FAILURE);
+	#endif
+
 	while  (!reloadConf) {//jumbing back to this loop means that you resized the screen
 		for (i = 0; i < 200; i++) {
 			flast[i] = 0;
@@ -452,19 +566,22 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		#ifdef NCURSES
 		//output: start ncurses mode
-		if (p.om == 1 || p.om ==  2) {
+		if (output_mode == 1 || output_mode ==  2) {
 			init_terminal_ncurses(p.color, p.bcolor, p.col,
 			p.bgcol, p.gradient, p.gradient_color_1, p.gradient_color_2,&w, &h);
 			//get_terminal_dim_ncurses(&w, &h);
 		}
 		#endif
 
-		if (p.om == 3) get_terminal_dim_noncurses(&w, &h);
+		#ifdef __unix__
+		if (output_mode == 3) get_terminal_dim_noncurses(&w, &h);
+		#endif
 
-		height = (h - 1) * 8;
+		height = (h - 1) * (8-7*isGraphical);
 
+		#ifdef __unix__
 		// output open file/fifo for raw output
-		if (p.om == 4) {
+		if (output_mode == 4) {
 
 			if (strcmp(p.raw_target,"/dev/stdout") != 0) {
 
@@ -505,11 +622,20 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             } else {
                 height = p.ascii_range;
             }
-
-
-
 		}
+		#endif
 
+		// draw X11 background
+		#ifdef XLIB
+		if(output_mode == 5) apply_window_settings_x(&w, &h);
+		#endif
+		#ifdef SDL
+		if(output_mode == 6) apply_window_settings_sdl(p.bgcol, &w, &h);
+		#endif
+		#ifdef WIN
+		if(output_mode == 7) apply_win_settings(w, h);
+		#endif
+		
  		//handle for user setting too many bars
 		if (p.fixedbars) {
 			p.autobars = 0;
@@ -548,9 +674,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						 h, bars, p.bw, rest);
 		#endif
 
+		#ifdef __unix__
 		//output: start noncurses mode
-		if (p.om == 3) init_terminal_noncurses(p.col, p.bgcol, w, h, p.bw);
-
+		if (output_mode == 3) init_terminal_noncurses(p.col, p.bgcol, w, h, p.bw);
+		#endif
 
 
 		if (p.stereo) bars = bars / 2; // in stereo onle half number of bars per channel
@@ -560,15 +687,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		}
 
 
-		double freqconst = log10((float)p.lowcf / (float)p.highcf) /  
-			((float)1 / ((float)bars + (float)1) - 1);
-
+		// freqconst contains the logarithm intensity
+		double freqconst = log(p.highcf-p.lowcf)/log(pow(bars, p.logScale));
 		//freqconst = -2;
 
 		// process: calculate cutoff frequencies
 		for (n = 0; n < bars + 1; n++) {
-			fc[n] = p.highcf * pow(10, freqconst * (-1) + ((((float)n + 1) / 
-				((float)bars + 1)) * freqconst)); 
+			fc[n] = pow((n+1.0), freqconst*(1.0+(p.logScale-1.0)*((double)(n+1.0)/bars)))+p.lowcf;
 			fre[n] = fc[n] / (audio.rate / 2); 
 			//remember nyquist!, pr my calculations this should be rate/2 
 			//and  nyquist freq in M/2 but testing shows it is not... 
@@ -576,12 +701,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 			//lfc stores the lower cut frequency foo each bar in the fft out buffer
 			lcf[n] = fre[n] * (M /2);
+			
 			if (n != 0) {
-				hcf[n - 1] = lcf[n] - 1;
-	
-				//pushing the spectrum up if the expe function gets "clumped"
-				if (lcf[n] <= lcf[n - 1])lcf[n] = lcf[n - 1] + 1; 
-				hcf[n - 1] = lcf[n] - 1;
+				//hfc holds the high cut frequency for each bar
+				hcf[n-1] = lcf[n]; 
 			}
 
 			#ifdef DEBUG
@@ -604,11 +727,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		while  (!resizeTerminal) {
 
-			// general: keyboard controls
 			#ifdef NCURSES
-			if (p.om == 1 || p.om == 2) ch = getch();
+			if (output_mode == 1 || output_mode == 2) ch = getch();
 			#endif
-
+			
 			switch (ch) {
 				case 65:    // key up
 					p.sens = p.sens * 1.05;
@@ -624,6 +746,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					if (p.bw > 1) p.bw--;
 					resizeTerminal = true;
 					break;
+				case 'a':
+					if (p.bs > 1) p.bs--;
+					resizeTerminal = TRUE;
+					break;
+				case 's':
+					p.bs++;
+					break;
 				case 'r': //reload config
 					should_reload = 1;
 					break;
@@ -637,18 +766,64 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					else p.bgcol = 0;
 					resizeTerminal = true;
 					break;
-
 				case 'q':
 					cleanup();
 					return EXIT_SUCCESS;
 			}
+			#ifdef XLIB
+			if(output_mode == 5)
+			{
+				switch(get_window_input_x(&should_reload, &p.bs, &p.sens, &p.bw, &w, &h, p.color, p.bcolor, p.gradient))
+				{
+					case -1:
+						cleanup(); 
+						return EXIT_SUCCESS;
+					case 1: break;
+					case 2:
+						adjust_x();	
+						resizeTerminal = TRUE;
+						break;
+				}
+			}
+			#endif
+			#ifdef SDL
+			if(output_mode == 6) 
+			{
+				switch(get_window_input_sdl(&p.bs, &p.bw, &p.sens, &p.col, &p.bgcol, &w, &h, p.gradient))
+				{
+					case -1:
+						cleanup(); 
+						return EXIT_SUCCESS;
+					case 1:
+						should_reload = 1;
+						break;
+					case 2:
+						resizeTerminal = 1;
+						break;
+				}
+			}
+			#endif
+			#ifdef WIN
+			if(output_mode == 7)
+			{
+				switch(get_window_input_win(&should_reload, &p.bs, &p.sens, &p.bw, &w, &h))
+				{
+					case -1:
+						cleanup(); 
+						return EXIT_SUCCESS;
+					case 1: break;
+					case 2:
+						resizeTerminal = TRUE;
+						break;
+				}
+			}
+			#endif
 
 			if (should_reload) {
 
 				reloadConf = true;
 				resizeTerminal = true;
 				should_reload = 0;
-
 			}
 
 			//if (cont == 0) break;
@@ -699,12 +874,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					printw("no sound detected for 3 sec, going to sleep mode\n");
 				#endif
 				//wait 1 sec, then check sound again.
-				req.tv_sec = 1;
-				req.tv_nsec = 0;
-				nanosleep (&req, NULL);
+				cavaSleep(1000, 0);
 				continue;
 			}
-
+			
 			// process [smoothing]
 
 			if (p.monstercat) {
@@ -717,7 +890,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					fl = monstercat_filter(fl, bars, p.waves, p.monstercat);
 				}
 			}
-
 
 			//preperaing signal for drawing
 			for (o = 0; o < bars; o++) {
@@ -769,12 +941,25 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				}
 			}
 
+			// process [oddoneout]
+			if(p.oddoneout) {
+				for(i=0; i<bars-1; i=i+2) {
+					if(f[i+1] > f[i] && f[i+1] > f[i+2]){ 
+						if(f[i+1] > f[i+2])
+							f[i] = f[i+1];
+						else f[i+2] = f[i+1];
+					}
+					f[i+1] = f[i]/2+f[i+2]/2;
+					if(i!=0) f[i] = f[i-1]/2+f[i+1]/2;
+				}
+			}
+
 
 			// zero values causes divided by zero segfault
 			for (o = 0; o < bars; o++) {
 				if (f[o] < 1) {
 					f[o] = 1;
-					if (p.om == 4) f[o] = 0;
+					if (output_mode == 4) f[o] = 0;
 				}
 				//if(f[o] > maxvalue) maxvalue = f[o];
 			}
@@ -796,7 +981,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			
 			// output: draw processed input
 			#ifndef DEBUG
-				switch (p.om) {
+				switch (output_mode) {
 					case 1:
 						#ifdef NCURSES
 						rc = draw_terminal_ncurses(inAtty, h, w, bars, 
@@ -809,27 +994,53 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 						break;
 						#endif
 					case 3:
+						#ifdef __unix__
 						rc = draw_terminal_noncurses(inAtty, h, w, bars,
 							 p.bw, p.bs, rest, f, flastd);
 						break;
+						#endif
 					case 4:
+						#ifdef __unix__
 						rc = print_raw_out(bars, fp, p.is_bin, 
 							p.bit_format, p.ascii_range, p.bar_delim,
 							 p.frame_delim,f);
 						break;
+						#endif
+					case 5:
+					{
+						#ifdef XLIB
+						// this prevents invalid access
+						if(should_reload||reloadConf) break;
+						
+						draw_graphical_x(h, bars, p.bw, p.bs, rest, p.gradient, f, flastd, p.foreground_opacity);
+						break;
+						#endif
+					}
+					case 6:
+					{
+						#ifdef SDL
+						if(reloadConf) break;
+						
+						draw_graphical_sdl(bars, rest, p.bw, p.bs, f, flastd, p.col, p.bgcol, p.gradient, h);
+						break;
+						#endif
+					}
+					case 7:
+					{
+						#ifdef WIN
+						if(reloadConf) break;
+						
+						draw_graphical_win(h, bars, p.bw, p.bs, rest, p.gradient, f);
+						break;
+						#endif
+					}
 				}
 
 				//terminal has been resized breaking to recalibrating values
 				if (rc == -1) resizeTerminal = true;
-
-				if (p.framerate <= 1) {
-					req.tv_sec = 1  / (float)p.framerate;
-				} else {
-					req.tv_sec = 0;
-					req.tv_nsec = (1 / (float)p.framerate) * 1000000000; 
-				}
-
-				nanosleep (&req, NULL);
+				
+				long oldTime;
+				oldTime = cavaSleep(oldTime, p.framerate);
 			#endif
 
 			for (o = 0; o < bars; o++) {
@@ -847,9 +1058,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		}//resize terminal
         
 	}//reloading config
-	req.tv_sec = 0;
-	req.tv_nsec = 100; //waiting some time to make shure audio is ready
-	nanosleep (&req, NULL);
+	cavaSleep(100, 0);
 
 	//**telling audio thread to terminate**//
 	audio.terminate = 1;
