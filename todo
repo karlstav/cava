@@ -5,10 +5,10 @@ TODO
 * config option print cut-off frequencies on x-axis
 * config option different color for different threshold amplitude
 * configurable left OR right when in mono
-* switch to libconfig ?
 * downloag iniconfig from git instad of bundle
 * possibility to save settings to config file
 * openGL
 * plug-in api
 * new demo video
 * JACK support
+* document sndio, make pulse default all times
