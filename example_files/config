@@ -37,7 +37,7 @@
 
 [input]
 
-# Audio capturing method. Possible methods are: 'pulse', 'alsa' or 'fifo'.
+# Audio capturing method. Possible methods are: 'pulse', 'alsa', 'fifo' or 'sndio'.
 # Defaults to 'pulse', 'alsa' or 'fifo', in that order, dependent on what support cava was built with.
 #
 # All input methods uses the same config variable 'source'

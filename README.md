@@ -1,7 +1,9 @@
-C.A.V.A. (M.P.)
+C.A.V.A.
 ====================
 
-**C**onsole-based **A**udio **V**isualizer for **A**LSA (**M**PD and **P**ulseaudio)
+**C**onsole-based **A**udio **V**isualizer for **A**LSA
+
+also supports audio input from Pulseaudio, MPD and sndio.
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
@@ -37,6 +39,7 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
   - [From Pulseaudio monitor source (Easy, default if supported)](#from-pulseaudio-monitor-source-easy-default-if-supported)
   - [From ALSA-loopback device (Tricky)](#from-alsa-loopback-device-tricky)
   - [From mpd's fifo output](#from-mpds-fifo-output)
+  - [sndio](#sndio)
 - [Running via ssh](#running-via-ssh)
 - [Font notes](#font-notes)
   - [In ttys](#in-ttys)
@@ -226,6 +229,22 @@ I had some trouble with sync (the visualizer was ahead of the sound). Reducing t
             name            "My ALSA"
             buffer_time     "50000"   # (50ms); default is 500000 microseconds (0.5s)
     }
+
+### sndio
+
+sndio is the audio framework used on OpenBSD, but it's also available on
+FreeBSD and Linux. So far this is only tested on FreeBSD.
+
+To test it
+```bash
+# Start sndiod with a monitor sub-device
+$ sndiod -dd -s default -m mon -s monitor
+
+# Set the AUDIODEVICE environment variable to override the default
+# sndio device and run cava
+$ AUDIODEVICE=snd/0.monitor cava
+```
+
 
 
 Running via ssh

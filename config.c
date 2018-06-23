@@ -342,11 +342,6 @@ inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo");
 	inputMethod = (char *)iniparser_getstring(ini, "input:method", "pulse");
 #endif
 
-//setting sndio to defaualt if supported
-#ifdef SNDIO
-	inputMethod = (char *)iniparser_getstring(ini, "input:method", "sndio");
-#endif
-
 #ifdef NCURSES
 	outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
 #endif
