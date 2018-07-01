@@ -11,14 +11,14 @@ char *inputMethod, *outputMethod, *channels;
 
 struct config_params {
 
-char *color, *bcolor, *raw_target, *audio_source, *gradient_color_1, *gradient_color_2, *data_format;
+char *color, *bcolor, *raw_target, *audio_source, *gradient_color_1, *gradient_color_2, *data_format, *shadow_color;
 char bar_delim, frame_delim ;
-double monstercat, integral, gravity, ignore, sens; 
-unsigned int lowcf, highcf;
+double monstercat, integral, gravity, ignore, sens, foreground_opacity; 
+unsigned int lowcf, highcf, shdw, shdw_col;
 double *smooth;
 int smcount, customEQ, im, om, col, bgcol, autobars, stereo, is_bin, ascii_range,
- bit_format, gradient, fixedbars, framerate, bw, bs, autosens, overshoot, waves;
-
+ bit_format, gradient, fixedbars, framerate, bw, bs, autosens, overshoot, waves,
+ set_win_props, w, h;
 };
 
 
@@ -29,7 +29,7 @@ int validate_color(char *checkColor, int om)
 int validColor = 0;
 if (checkColor[0] == '#' && strlen(checkColor) == 7) {
 	// If the output mode is not ncurses, tell the user to use a named colour instead of hex colours.
-	if (om != 1 && om != 2) {
+	if (om != 1 && om != 2 && om != 5 && om != 6) {
 		fprintf(stderr, "Only 'ncurses' output method supports HTML colors. Please change the colours or the output method.\n");
 		exit(EXIT_FAILURE);
 	}
@@ -153,24 +153,41 @@ if (strcmp(outputMethod, "raw") == 0) {//raw:
 	exit(EXIT_FAILURE);
 	
 	}
-
-
-
+}
+if(strcmp(outputMethod, "x") == 0)
+{
+	p->om = 5;
+	#ifndef XLIB
+		fprintf(stderr,
+				"cava was built without Xorg support, install Xlib files and run make clean && ./configure && make again!\n"); 
+		exit(EXIT_FAILURE);
+	#endif
+}
+if(strcmp(outputMethod, "sdl") == 0)
+{
+	p->om = 6;
+	#ifndef SDL
+		fprintf(stderr,
+			"cava was built without SDL2 support, install SDL2 dev files and run make clean && ./configure && make again!\n");
+		exit(EXIT_FAILURE);
+	#endif
 }
 if (p->om == 0) {
-	#ifndef NCURSES
 	fprintf(stderr,
-		"output method %s is not supported, supported methods are: 'noncurses'\n",
+		"output method %s is not supported, supported methods are: 'noncurses'",
 					outputMethod);
-	exit(EXIT_FAILURE);
-	#endif
 
 	#ifdef NCURSES
-        fprintf(stderr,
-                "output method %s is not supported, supported methods are: 'ncurses' and 'noncurses'\n",
-                                        outputMethod);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, ",'ncurses'");
 	#endif	
+	#ifdef XLIB
+        fprintf(stderr, ",'x'");
+	#endif	
+	#ifdef SDL
+        fprintf(stderr, ",'sdl'");
+	#endif
+	fputc('\n', stderr);
+	exit(EXIT_FAILURE);
 }
 
 // validate: output channels
@@ -274,6 +291,38 @@ if (p->lowcf > p->highcf) {
 //setting sens
 p->sens = p->sens / 100;
 
+// validate: window settings
+if(p->om == 5 || p->om == 6 || p->om == 7)
+{
+	// validate: alignment
+	if(strcmp(windowAlignment, "top_left"))
+	if(strcmp(windowAlignment, "top_right"))
+	if(strcmp(windowAlignment, "bottom_left"))
+	if(strcmp(windowAlignment, "bottom_right"))
+	if(strcmp(windowAlignment, "left"))
+	if(strcmp(windowAlignment, "right"))
+	if(strcmp(windowAlignment, "top"))
+	if(strcmp(windowAlignment, "bottom"))
+	if(strcmp(windowAlignment, "center"))
+	if(strcmp(windowAlignment, "none"))
+		fprintf(stderr, "The value for alignment is invalid, '%s'!", windowAlignment);
+	
+	if(p->foreground_opacity > 1.0)
+	{
+		fprintf(stderr, "foreground_opacity cannot be above 1.0\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	// TUI used x8 height, let's fix that
+	p->sens /= 8;
+}
+
+// validate: shadow
+if(sscanf(p->shadow_color, "#%x", &p->shdw_col) != 1)
+{
+	fprintf(stderr, "shadow color is improperly formatted!\n");
+	exit(EXIT_FAILURE);
+}
 
 }
 
@@ -357,6 +406,7 @@ p->ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
 
 p->color = (char *)iniparser_getstring(ini, "color:foreground", "default");
 p->bcolor = (char *)iniparser_getstring(ini, "color:background", "default");
+p->foreground_opacity = iniparser_getdouble(ini, "color:foreground_opacity", 1.0);
 
 p->gradient = iniparser_getint(ini, "color:gradient", 0);
 if (p->gradient) {
@@ -374,6 +424,23 @@ p->overshoot = iniparser_getint(ini, "general:overshoot", 20);
 p->lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
 p->highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
 
+// config: window
+#ifdef GLX
+       GLXmode = iniparser_getint(ini, "window:opengl", 1);
+#endif
+if(!strcmp(outputMethod, "sdl") | !strcmp(outputMethod, "x") | !strcmp(outputMethod, "win")) {
+       p->w = iniparser_getint(ini, "window:width", 640);
+       p->h = iniparser_getint(ini, "window:height", 480);
+}
+windowAlignment = (char *)iniparser_getstring(ini, "window:alignment", "none");
+windowX = iniparser_getint(ini, "window:x_padding", 0);
+windowY = iniparser_getint(ini, "window:y_padding", 0);
+fs = iniparser_getboolean(ini, "window:fullscreen", FALSE);
+transparentFlag = iniparser_getboolean(ini, "window:transparency", FALSE);
+borderFlag = iniparser_getboolean(ini, "window:border", TRUE);
+keepInBottom = iniparser_getboolean(ini, "window:keep_below", FALSE);
+interactable = iniparser_getboolean(ini, "window:interactable", TRUE);
+
 // config: output
 channels =  (char *)iniparser_getstring(ini, "output:channels", "stereo");
 p->raw_target = (char *)iniparser_getstring(ini, "output:raw_target", "/dev/stdout");
@@ -383,12 +450,16 @@ p->frame_delim = (char)iniparser_getint(ini, "output:frame_delimiter", 10);
 p->ascii_range = iniparser_getint(ini, "output:ascii_max_range", 1000);
 p->bit_format = iniparser_getint(ini, "output:bit_format", 16);
 
+// config: shadow
+p->shdw = iniparser_getint(ini, "shadow:size", 0);
+p->shadow_color = (char *)iniparser_getstring(ini, "shadow:color", "#ff000000");
+
 // read & validate: eq
 p->smooth = smoothDef;
 p->smcount = iniparser_getsecnkeys(ini, "eq");
 if (p->smcount > 0) {
 	p->customEQ = 1;
-	p->smooth = malloc(p->smcount*sizeof(p->smooth));
+	p->smooth = malloc(p->smcount*sizeof(double));
 	#ifndef LEGACYINIPARSER
 	const char *keys[p->smcount];
 	iniparser_getseckeys(ini, "eq", keys);
@@ -424,6 +495,22 @@ if (strcmp(inputMethod, "sndio") == 0) {
 	p->audio_source = (char *)iniparser_getstring(ini, "input:source", SIO_DEVANY);
 }
 #endif
+
+// Get bar settings
+if(!strcmp(outputMethod, "x") | !strcmp(outputMethod, "sdl") | !strcmp(outputMethod, "win")) {
+	p->bw = iniparser_getint(ini, "window:bar_width", 20);
+	p->bs = iniparser_getint(ini, "window:bar_spacing", 4);
+}
+       
+// Set window properties
+p->set_win_props = iniparser_getint(ini, "window:set_win_props", 0);
+
+if(sscanf(p->shadow_color, "#%x", &p->shdw_col) != 1)
+{
+	fprintf(stderr, "shadow color is improperly formatted!\n");
+	exit(EXIT_FAILURE);
+}
+
 
 validate_config(supportedInput, params);
 //iniparser_freedict(ini);

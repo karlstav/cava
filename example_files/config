@@ -35,12 +35,56 @@
 
 
 
+[window]
+
+# Bars' width and space between bars in pixels.
+# Doesn't apply to terminal or serial modes.
+; bar_width = 20
+; bar_spacing = 4
+
+# Window width and height
+; width = 640
+; height = 480
+
+# Fullscreen toggle (1 = on, 0 = off)
+; fullscreen = 0
+
+# Enables or disables window borders (1 = on, 0 = off)
+; border = 1
+
+# Window transparency toggle (your system must have a compositing WM)
+; transparency = 0
+
+# Keeps the window under any other (works under X only)
+; keep_below = 0
+
+# Set window properties like WM_CLASS (works under X only)
+; set_win_props = 0
+
+# This allows for the window to be 'aligned' to a part of a screen
+# The following positions are supported:
+# top_left, top, top_right, left, center, right, bottom_left,
+# bottom, bottom_right and none if you don't want manual positioning
+; alignment = 'none'
+
+# Additionally we can further adjust the positions if needed (in pixels)
+; x_padding = 0
+; y_padding = 0
+
+# This option will drastically increase performance (in most cases).
+; opengl = 1
+
+# This option removes the ability to interact with the window (works under Xorg only)
+; interactable = 1
+
+
+
 [input]
 
 # Audio capturing method. Possible methods are: 'pulse', 'alsa', 'fifo' or 'sndio'.
 # Defaults to 'pulse', 'alsa' or 'fifo', in that order, dependent on what support cava was built with.
 #
-# All input methods uses the same config variable 'source'
+# All input methods uses the same config variable  'source'
 # to define where it should get the audio.
 #
 # For pulseaudio 'source' will be the source. Default: 'auto', which uses the monitor source of the default sink
@@ -61,10 +105,12 @@
 
 [output]
 
-# Ouput method. Can be 'ncurses', 'noncurses' or 'raw'. 
+# Ouput method. Can be 'ncurses', 'noncurses', 'raw', 'sdl' or 'x'. 
 # 'noncurses' is for systems that does not suport ncurses.
 # 'raw' is a 16 bit data stream of the bar heights that can be used to send to other applications.
 # 'raw' defaults to 200 bars, which can be adjusted in the 'bars' option above.
+# 'sdl' is for a graphical window using OpenGL
+# 'x' is for a graphical window using XRender (usually faster, unsupported in wayland however)
 ; method = ncurses
 
 # Visual channels. Can be 'stereo' or 'mono'.
@@ -125,6 +171,16 @@
 
 # In bar height, bars that would have been lower that this will not be drawn.
 ; ignore = 0
+
+
+[shadow]
+
+# Fake shadow effect (works with transparency only)
+# Make sure that the shadow size is NOT larger then the bar spacing
+; size = 0
+
+# Color format is #aarrggbb
+; color = "#ff000000"
 
 
 [eq]

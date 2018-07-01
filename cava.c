@@ -25,7 +25,7 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <time.h>
+#include <sys/time.h>
 #include <getopt.h>
 #include <pthread.h>
 #include <dirent.h>
@@ -36,6 +36,21 @@
 #include "output/terminal_ncurses.c"
 #include "output/terminal_bcircle.h"
 #include "output/terminal_bcircle.c"
+#endif
+
+#ifdef XLIB
+#include "output/graphical_x.c"
+#include "output/graphical_x.h"
+#endif
+
+#ifdef SDL
+#include "output/graphical_sdl.c"
+#include "output/graphical_sdl.h"
+#endif
+
+#if defined(XLIB)||defined(SDL)
+#include "output/graphical.c"
+#include "output/graphical.h"
 #endif
 
 #include "output/terminal_noncurses.h"
@@ -70,7 +85,7 @@
 
 #ifdef __GNUC__
 // curses.h or other sources may already define
-#undef  GCC_UNUSED
+#undef	GCC_UNUSED
 #define GCC_UNUSED __attribute__((unused))
 #else
 #define GCC_UNUSED /* nothing */
@@ -90,17 +105,38 @@ int should_reload = 0;
 // general: cleanup
 void cleanup(void)
 {
-	if (output_mode == 1 || output_mode == 2 ) {
-	#ifdef NCURSES
-	    cleanup_terminal_ncurses();
-	#else
-		;
-	#endif
-    }
-    else if (output_mode ==3 ) {
-	    cleanup_terminal_noncurses();
-    }
+	switch(output_mode)
+	{
+			#ifdef NCURSES
+			case 1:
+			case 2:
+					cleanup_terminal_ncurses();
+					break;
+			#endif
+			#ifdef POSIX
+			case 3:
+					cleanup_terminal_noncurses();
+					break;
+			#endif
+			#ifdef XLIB
+			case 5:
+					cleanup_graphical_x();
+					break;
+			#endif
+			#ifdef SDL
+			case 6:
+					cleanup_graphical_sdl();
+					break;
+			#endif
+			#ifdef WIN
+			case 7:
+					cleanup_graphical_win();
+					break;
+			#endif
+			default: break;
+	}
 }
+
 
 // general: handle signals
 void sig_handler(int sig_no)
@@ -128,8 +164,8 @@ static bool is_loop_device_for_sure(const char * text) {
 static bool directory_exists(const char * path) {
 	DIR * const dir = opendir(path);
 	bool exists;// = dir != NULL;
-    if (dir == NULL) exists = false;
-    else exists = true;
+	if (dir == NULL) exists = false;
+	else exists = true;
 	closedir(dir);
 	return exists;
 }
@@ -169,7 +205,7 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1], int bars, int lcf[200],
 	}
 
 	if (channel == 1) return fl;
- 	else return fr;
+	else return fr;
 } 
 
 
@@ -243,28 +279,29 @@ Usage : " PACKAGE " [options]\n\
 Visualize audio input in terminal. \n\
 \n\
 Options:\n\
-	-p          path to config file\n\
-	-v          print version\n\
+	-p			path to config file\n\
+	-v			print version\n\
 \n\
 Keys:\n\
-        Up        Increase sensitivity\n\
-        Down      Decrease sensitivity\n\
-        Left      Decrease number of bars\n\
-        Right     Increase number of bars\n\
-        r         Reload config\n\
-        c         Cycle foreground color\n\
-        b         Cycle background color\n\
-        q         Quit\n\
+		Up		  Increase sensitivity\n\
+		Down	  Decrease sensitivity\n\
+		Left	  Decrease number of bars\n\
+		Right	  Increase number of bars\n\
+		r		  Reload config\n\
+		c		  Cycle foreground color\n\
+		b		  Cycle background color\n\
+		q		  Quit\n\
 \n\
 as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n";
 
 	char ch = '\0';
 	double inr[2 * (M / 2 + 1)];
-    double inl[2 * (M / 2 + 1)];
+	double inl[2 * (M / 2 + 1)];
 	int bars = 25;
 	char supportedInput[255] = "'fifo'";
 	int sourceIsAuto = 1;
 	double smh;
+	bool isGraphical = 0;
 
 	//int maxvalue = 0;
 
@@ -309,22 +346,22 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		n = 0;
 	}
 
-    #ifdef ALSA
-        strcat(supportedInput,", 'alsa'");
-    #endif
-    #ifdef PULSE
-        strcat(supportedInput,", 'pulse'");
-    #endif
-    #ifdef SNDIO
-        strcat(supportedInput,", 'sndio'");
-    #endif
+	#ifdef ALSA
+		strcat(supportedInput,", 'alsa'");
+	#endif
+	#ifdef PULSE
+		strcat(supportedInput,", 'pulse'");
+	#endif
+	#ifdef SNDIO
+		strcat(supportedInput,", 'sndio'");
+	#endif
 
 	//fft: planning to rock
 	fftw_complex outl[M / 2 + 1];
-	fftw_plan pl =  fftw_plan_dft_r2c_1d(M, inl, outl, FFTW_MEASURE);
+	fftw_plan pl =	fftw_plan_dft_r2c_1d(M, inl, outl, FFTW_MEASURE);
 
 	fftw_complex outr[M / 2 + 1];
-	fftw_plan pr =  fftw_plan_dft_r2c_1d(M, inr, outr, FFTW_MEASURE);
+	fftw_plan pr =	fftw_plan_dft_r2c_1d(M, inr, outr, FFTW_MEASURE);
 
 	// general: main loop
 	while (1) {
@@ -332,9 +369,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	//config: load
 	load_config(configPath, supportedInput, (void *)&p);
 
-    output_mode = p.om;
+	output_mode = p.om;
+	w = p.w;
+	h = p.h;
+	isGraphical = (output_mode==5)||(output_mode==6)||(output_mode==7);
 
-	if (p.om != 4) { 
+	if (p.om != 4 && !isGraphical) { 
 		// Check if we're running in a tty
 		inAtty = 0;
 		if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0),
@@ -368,7 +408,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		if (is_loop_device_for_sure(audio.source)) {
 			if (directory_exists("/sys/")) {
 				if (! directory_exists("/sys/module/snd_aloop/")) {
-      				cleanup();
+					cleanup();
 					fprintf(stderr,
 					"Linux kernel module \"snd_aloop\" does not seem to  be loaded.\n"
 					"Maybe run \"sudo modprobe snd_aloop\".\n");
@@ -435,10 +475,18 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			exit(EXIT_FAILURE);
 	}
 
-
+	#ifdef XLIB
+	if(output_mode == 5) if(init_window_x(p.color, p.bcolor, p.col, p.bgcol, p.set_win_props, argv, argc, p.gradient, p.gradient_color_1, p.gradient_color_2, p.shdw, p.shdw_col, w, h)) exit(EXIT_FAILURE);
+	#endif
+	
+	#ifdef SDL
+	if(output_mode == 6) if(init_window_sdl(&p.col, &p.bgcol, p.color, p.bcolor, p.gradient, p.gradient_color_1, p.gradient_color_2, w, h)) exit(EXIT_FAILURE);
+	#endif
 
 	bool reloadConf = false;
 	bool senseLow = true;
+
+
 
 	while  (!reloadConf) {//jumbing back to this loop means that you resized the screen
 		for (i = 0; i < 200; i++) {
@@ -461,7 +509,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		if (p.om == 3) get_terminal_dim_noncurses(&w, &h);
 
-		height = (h - 1) * 8;
+		height = (h - 1) * (8-7*isGraphical);
 
 		// output open file/fifo for raw output
 		if (p.om == 4) {
@@ -488,7 +536,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					//fifo needs to be open for reading in order to write to it
 					fptest = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644); 
 				}
-		    }
+			}
 
 			fp = open(p.raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
 			if (fp == -1) {
@@ -497,20 +545,28 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			}
 			printf("open file %s for writing raw ouput\n",p.raw_target);
 
-            //width must be hardcoded for raw output.
+			//width must be hardcoded for raw output.
 			w = 200;
 
-    		if (strcmp(p.data_format, "binary") == 0) {
-                height = pow(2, p.bit_format) - 1;
-            } else {
-                height = p.ascii_range;
-            }
+			if (strcmp(p.data_format, "binary") == 0) {
+				height = pow(2, p.bit_format) - 1;
+			} else {
+				height = p.ascii_range;
+			}
 
 
 
 		}
 
- 		//handle for user setting too many bars
+		#ifdef XLIB
+		if(output_mode == 5) apply_window_settings_x(&w, &h);
+		#endif
+		#ifdef SDL
+		if(output_mode == 6) apply_window_settings_sdl(p.bgcol, &w, &h);
+		#endif
+
+
+		//handle for user setting too many bars
 		if (p.fixedbars) {
 			p.autobars = 0;
 			if (p.fixedbars * p.bw + p.fixedbars * p.bs - p.bs > w) p.autobars = 1;
@@ -524,7 +580,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 
 		if (bars < 1) bars = 1; // must have at least 1 bars
-        if (bars > 200) bars = 200; // cant have more than 200 bars
+		if (bars > 200) bars = 200; // cant have more than 200 bars
 
 		if (p.stereo) { //stereo must have even numbers of bars
 			if (bars%2 != 0) bars--;
@@ -585,10 +641,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			}
 
 			#ifdef DEBUG
-			 	if (n != 0) {
+				if (n != 0) {
 					mvprintw(n,0,"%d: %f -> %f (%d -> %d) \n", n, 
 						fc[n - 1], fc[n], lcf[n - 1],
-			 				 hcf[n - 1]);
+							 hcf[n - 1]);
 						}
 			#endif
 		}
@@ -610,17 +666,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			#endif
 
 			switch (ch) {
-				case 65:    // key up
+				case 65:	// key up
 					p.sens = p.sens * 1.05;
 					break;
-				case 66:    // key down
+				case 66:	// key down
 					p.sens = p.sens * 0.95;
 					break;
-				case 68:    // key right
+				case 68:	// key right
 					p.bw++;
 					resizeTerminal = true;
 					break;
-				case 67:    // key left
+				case 67:	// key left
 					if (p.bw > 1) p.bw--;
 					resizeTerminal = true;
 					break;
@@ -642,6 +698,40 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					cleanup();
 					return EXIT_SUCCESS;
 			}
+			#ifdef XLIB
+			if(output_mode == 5)
+			{
+					switch(get_window_input_x(&should_reload, &p.bs, &p.sens, &p.bw, &w, &h, p.color, p.bcolor, p.gradient))
+					{
+							case -1:
+									cleanup(); 
+									return EXIT_SUCCESS;
+							case 1: break;
+							case 2:
+									adjust_x();		
+									resizeTerminal = TRUE;
+									break;
+					}
+			}
+			#endif
+			#ifdef SDL
+			if(output_mode == 6) 
+			{
+					switch(get_window_input_sdl(&p.bs, &p.bw, &p.sens, &p.col, &p.bgcol, &w, &h, p.gradient))
+					{
+							case -1:
+									cleanup(); 
+									return EXIT_SUCCESS;
+							case 1:
+									should_reload = 1;
+									break;
+							case 2:
+									resizeTerminal = 1;
+									break;
+					}
+			}
+			#endif
+
 
 			if (should_reload) {
 
@@ -710,7 +800,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			if (p.monstercat) {
 				if (p.stereo) {
 					fl = monstercat_filter(fl, bars / 2, p.waves,
-					 	p.monstercat);
+						p.monstercat);
 					fr = monstercat_filter(fr, bars / 2, p.waves,
 						p.monstercat);	
 				} else {
@@ -740,7 +830,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					if (f[o] < flast[o]) {
 						f[o] = fpeak[o] - (g * fall[o] * fall[o]);
 						fall[o]++;
-					} else  {
+					} else	{
 						fpeak[o] = f[o];
 						fall[o] = 0;
 					}
@@ -817,13 +907,33 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 							p.bit_format, p.ascii_range, p.bar_delim,
 							 p.frame_delim,f);
 						break;
+					case 5:
+					{
+						#ifdef XLIB
+						// this prevents invalid access
+						if(should_reload||reloadConf) break;
+							
+						draw_graphical_x(h, bars, p.bw, p.bs, rest, p.gradient, f, flastd, p.foreground_opacity);
+						break;
+						#endif
+					}
+					case 6:
+					{
+						#ifdef SDL
+						if(reloadConf) break;
+							
+						draw_graphical_sdl(bars, rest, p.bw, p.bs, f, flastd, p.col, p.bgcol, p.gradient, h);
+						break;
+						#endif
+					}
+
 				}
 
 				//terminal has been resized breaking to recalibrating values
 				if (rc == -1) resizeTerminal = true;
 
 				if (p.framerate <= 1) {
-					req.tv_sec = 1  / (float)p.framerate;
+					req.tv_sec = 1	/ (float)p.framerate;
 				} else {
 					req.tv_sec = 0;
 					req.tv_nsec = (1 / (float)p.framerate) * 1000000000; 
@@ -836,16 +946,16 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				flastd[o] = f[o];
 			}
 
-            //checking if audio thread has exited unexpectedly
-            if (audio.terminate == 1) {
-                cleanup();
-   				fprintf(stderr,
-                "Audio thread exited unexpectedly. %s\n", audio.error_message);
-                exit(EXIT_FAILURE); 
-            } 
+			//checking if audio thread has exited unexpectedly
+			if (audio.terminate == 1) {
+				cleanup();
+				fprintf(stderr,
+				"Audio thread exited unexpectedly. %s\n", audio.error_message);
+				exit(EXIT_FAILURE); 
+			} 
 
 		}//resize terminal
-        
+		
 	}//reloading config
 	req.tv_sec = 0;
 	req.tv_nsec = 100; //waiting some time to make shure audio is ready
@@ -858,7 +968,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	if (p.customEQ) free(p.smooth);
 	if (sourceIsAuto) free(audio.source);
    
-    cleanup();
+	cleanup();
 
 	//fclose(fp);
 	}
