@@ -11,13 +11,13 @@ char *inputMethod, *outputMethod, *channels;
 
 struct config_params {
 
-char *color, *bcolor, *raw_target, *audio_source, *gradient_color_1, *gradient_color_2, *data_format;
+char *color, *bcolor, *raw_target, *audio_source, /**gradient_color_1, *gradient_color_2,*/ **gradient_colors, *data_format;
 char bar_delim, frame_delim ;
 double monstercat, integral, gravity, ignore, sens; 
 unsigned int lowcf, highcf;
 double *smooth;
 int smcount, customEQ, im, om, col, bgcol, autobars, stereo, is_bin, ascii_range,
- bit_format, gradient, fixedbars, framerate, bw, bs, autosens, overshoot, waves;
+ bit_format, gradient, gradient_count, fixedbars, framerate, bw, bs, autosens, overshoot, waves;
 
 };
 
@@ -214,13 +214,11 @@ if (!validate_color(p->bcolor, p->om)) {
 }
 
 if (p->gradient) {
-    if (!validate_color(p->gradient_color_1, p->om)) {
-	    fprintf(stderr, "The first gradient color is invalid. It must be HTML color of the form '#xxxxxx'.\n");
-	    exit(EXIT_FAILURE);
-    }
-    if (!validate_color(p->gradient_color_2, p->om)) {
-	    fprintf(stderr, "The second gradient color is invalid. It must be HTML color of the form '#xxxxxx'.\n");
-	    exit(EXIT_FAILURE);
+    for(int i = 0;i < p->gradient_count;i++){
+        if (!validate_color(p->gradient_colors[i], p->om)) {
+	        fprintf(stderr, "The first gradient color is invalid. It must be HTML color of the form '#xxxxxx'.\n");
+	        exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -360,8 +358,27 @@ p->bcolor = (char *)iniparser_getstring(ini, "color:background", "default");
 
 p->gradient = iniparser_getint(ini, "color:gradient", 0);
 if (p->gradient) {
-	p->gradient_color_1 = (char *)iniparser_getstring(ini, "color:gradient_color_1", "#0099ff");
-	p->gradient_color_2 = (char *)iniparser_getstring(ini, "color:gradient_color_2", "#ff3399");
+    p->gradient_count = iniparser_getint(ini, "color:gradient_count", 2);
+	if(p->gradient_count < 2){
+	    printf("\nAtleast two colors must be given as gradient!\n");
+	    exit(EXIT_FAILURE);
+	}
+	if(p->gradient_count > 8){
+	    printf("\nMaximum 8 colors can be specified as gradient!\n");
+	    exit(EXIT_FAILURE);
+	}
+	p->gradient_colors = (char **)malloc(sizeof(char*) * p->gradient_count);
+    for(int i = 0;i < p->gradient_count;i++){
+        char ini_config[23];
+        sprintf(ini_config, "color:gradient_color_%d", (i + 1));
+        p->gradient_colors[i] = (char *)iniparser_getstring(ini, ini_config, NULL);
+        if(p->gradient_colors[i] == NULL){
+            printf("\nGradient color not specified : gradient_color_%d\n", (i + 1));
+            exit(EXIT_FAILURE);
+        }
+    }
+    //p->gradient_color_1 = (char *)iniparser_getstring(ini, "color:gradient_color_1", "#0099ff");
+	//p->gradient_color_2 = (char *)iniparser_getstring(ini, "color:gradient_color_2", "#ff3399");
 }
 
 p->fixedbars = iniparser_getint(ini, "general:bars", 0);

@@ -454,7 +454,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		//output: start ncurses mode
 		if (p.om == 1 || p.om ==  2) {
 			init_terminal_ncurses(p.color, p.bcolor, p.col,
-			p.bgcol, p.gradient, p.gradient_color_1, p.gradient_color_2,&w, &h);
+			p.bgcol, p.gradient, p.gradient_count, p.gradient_colors,&w, &h);
 			//get_terminal_dim_ncurses(&w, &h);
 		}
 		#endif
