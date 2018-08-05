@@ -63,7 +63,7 @@ char* const color_string, NCURSES_COLOR_T predef_color) {
 
 void init_terminal_ncurses(char* const fg_color_string,
 char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradient,
- char* const gradient_color_1, char* const gradient_color_2, int* width, int* height) {
+ int gradient_count, char **gradient_colors, int* width, int* height) {
 	initscr();
 	curs_set(0);
 	timeout(0);
@@ -87,8 +87,9 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
         init_pair(color_pair_number, fg_color_number, bg_color_number);
 
     } else if (gradient) {
-        
-        short unsigned int rgb[3][3];
+       
+        // 0 -> col1, 1-> col1<=>col2, 2 -> col2 and so on
+        short unsigned int rgb[2 * gradient_count - 1][3];
         char next_color[8];
         
         gradient_size = *height;
@@ -99,24 +100,49 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
         
         if (gradient_size > MAX_COLOR_REDEFINITION) gradient_size = MAX_COLOR_REDEFINITION - 1;
 
-        sscanf(gradient_color_1 + 1, "%02hx%02hx%02hx", &rgb[0][0], &rgb[0][1], &rgb[0][2]);
-        sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0], &rgb[1][1], &rgb[1][2]);            
-
-        for (int n = 0; n < gradient_size; n++) {
-
-            for(int i = 0; i < 3; i++) {
-                rgb[2][i] = rgb[0][i] + (rgb[1][i] - rgb[0][i]) * n / (gradient_size * 0.85);
-                if (rgb[2][i] > 255) rgb[2][i] = 0;
-                if ( n > gradient_size * 0.85 ) rgb[2][i] = rgb[1][i];
-                }
-            
-            sprintf(next_color,"#%02x%02x%02x",rgb[2][0], rgb[2][1], rgb[2][2]);
-
-            change_color_definition(n + 1, next_color, n + 1);
-            init_pair(color_pair_number++, n + 1, bg_color_number);
-
+        for(int i = 0;i < gradient_count;i++){
+            int col = (i + 1)*2 - 2;
+            sscanf(gradient_colors[i]+1, "%02hx%02hx%02hx", &rgb[col][0], &rgb[col][1], &rgb[col][2]); 
         }
 
+        //sscanf(gradient_color_1 + 1, "%02hx%02hx%02hx", &rgb[0][0], &rgb[0][1], &rgb[0][2]);
+        //sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0], &rgb[1][1], &rgb[1][2]);            
+
+        int individual_size = gradient_size/(gradient_count - 1);
+
+        int row = 0;
+
+        for(int i = 0;i < gradient_count - 1;i++){
+            
+            int col = (i + 1)* 2 - 2;
+            if(i == gradient_count - 1)
+                col = 2*(gradient_count - 1) - 2;
+
+            for(int j = 0; j < individual_size;j++){
+
+                for(int k = 0; k < 3; k++) {
+                    rgb[col+1][k] = rgb[col][k] + (rgb[col+2][k] - rgb[col][k]) * (j / (individual_size * 0.85));
+                    if (rgb[col+1][k] > 255) rgb[col][k] = 0;
+                    if ( j > individual_size * 0.85 ) rgb[col+1][k] = rgb[col+2][k];
+                } 
+             
+                sprintf(next_color,"#%02x%02x%02x",rgb[col+1][0], rgb[col+1][1], rgb[col+1][2]);
+
+                change_color_definition(row + 1, next_color, row + 1);
+                init_pair(color_pair_number++, row + 1, bg_color_number);
+                row++;
+            }
+        }
+
+        int left = individual_size * (gradient_count - 1);
+        int col = 2*(gradient_count) - 2;
+        while(left < gradient_size){ 
+            sprintf(next_color,"#%02x%02x%02x",rgb[col][0], rgb[col][1], rgb[col][2]);
+            change_color_definition(row + 1, next_color, row + 1);
+            init_pair(color_pair_number++, row + 1, bg_color_number);
+            row++;
+            left++;
+        }
     }
 
 	if (bg_color_number != -1)
