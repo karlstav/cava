@@ -60,6 +60,56 @@ if (checkColor[0] == '#' && strlen(checkColor) == 7) {
 return validColor;
 }
 
+void validate_colors(void* params) {
+struct config_params *p = (struct config_params *)params;
+
+// validate: color
+if (!validate_color(p->color, p->om)) {
+	fprintf(stderr, "The value for 'foreground' is invalid. It can be either one of the 7 named colors or a HTML color of the form '#xxxxxx'.\n");
+	exit(EXIT_FAILURE);
+}
+
+// validate: background color
+if (!validate_color(p->bcolor, p->om)) {
+	fprintf(stderr, "The value for 'background' is invalid. It can be either one of the 7 named colors or a HTML color of the form '#xxxxxx'.\n");
+	exit(EXIT_FAILURE);
+}
+
+
+if (p->gradient) {
+    for(int i = 0;i < p->gradient_count;i++){
+        if (!validate_color(p->gradient_colors[i], p->om)) {
+	        fprintf(stderr, "Gradient color %d is invalid. It must be HTML color of the form '#xxxxxx'.\n", i+1);
+	        exit(EXIT_FAILURE);
+        }
+    }
+}
+
+// In case color is not html format set bgcol and col to predefinedint values
+p->col = 6;
+if (strcmp(p->color, "black") == 0) p->col = 0;
+if (strcmp(p->color, "red") == 0) p->col = 1;
+if (strcmp(p->color, "green") == 0) p->col = 2;
+if (strcmp(p->color, "yellow") == 0) p->col = 3;
+if (strcmp(p->color, "blue") == 0) p->col = 4;
+if (strcmp(p->color, "magenta") == 0) p->col = 5;
+if (strcmp(p->color, "cyan") == 0) p->col = 6;
+if (strcmp(p->color, "white") == 0) p->col = 7;
+// default if invalid
+
+// validate: background color
+if (strcmp(p->bcolor, "black") == 0) p->bgcol = 0;
+if (strcmp(p->bcolor, "red") == 0) p->bgcol = 1;
+if (strcmp(p->bcolor, "green") == 0) p->bgcol = 2;
+if (strcmp(p->bcolor, "yellow") == 0) p->bgcol = 3;
+if (strcmp(p->bcolor, "blue") == 0) p->bgcol = 4;
+if (strcmp(p->bcolor, "magenta") == 0) p->bgcol = 5;
+if (strcmp(p->bcolor, "cyan") == 0) p->bgcol = 6;
+if (strcmp(p->bcolor, "white") == 0) p->bgcol = 7;
+// default if invalid
+}
+
+
 void validate_config(char supportedInput[255], void* params)
 {
 
@@ -201,49 +251,7 @@ if (p->framerate < 0) {
 	exit(EXIT_FAILURE);
 }
 
-// validate: color
-if (!validate_color(p->color, p->om)) {
-	fprintf(stderr, "The value for 'foreground' is invalid. It can be either one of the 7 named colors or a HTML color of the form '#xxxxxx'.\n");
-	exit(EXIT_FAILURE);
-}
-
-// validate: background color
-if (!validate_color(p->bcolor, p->om)) {
-	fprintf(stderr, "The value for 'background' is invalid. It can be either one of the 7 named colors or a HTML color of the form '#xxxxxx'.\n");
-	exit(EXIT_FAILURE);
-}
-
-if (p->gradient) {
-    for(int i = 0;i < p->gradient_count;i++){
-        if (!validate_color(p->gradient_colors[i], p->om)) {
-	        fprintf(stderr, "The first gradient color is invalid. It must be HTML color of the form '#xxxxxx'.\n");
-	        exit(EXIT_FAILURE);
-        }
-    }
-}
-
-// In case color is not html format set bgcol and col to predefinedint values
-p->col = 6;
-if (strcmp(p->color, "black") == 0) p->col = 0;
-if (strcmp(p->color, "red") == 0) p->col = 1;
-if (strcmp(p->color, "green") == 0) p->col = 2;
-if (strcmp(p->color, "yellow") == 0) p->col = 3;
-if (strcmp(p->color, "blue") == 0) p->col = 4;
-if (strcmp(p->color, "magenta") == 0) p->col = 5;
-if (strcmp(p->color, "cyan") == 0) p->col = 6;
-if (strcmp(p->color, "white") == 0) p->col = 7;
-// default if invalid
-
-// validate: background color
-if (strcmp(p->bcolor, "black") == 0) p->bgcol = 0;
-if (strcmp(p->bcolor, "red") == 0) p->bgcol = 1;
-if (strcmp(p->bcolor, "green") == 0) p->bgcol = 2;
-if (strcmp(p->bcolor, "yellow") == 0) p->bgcol = 3;
-if (strcmp(p->bcolor, "blue") == 0) p->bgcol = 4;
-if (strcmp(p->bcolor, "magenta") == 0) p->bgcol = 5;
-if (strcmp(p->bcolor, "cyan") == 0) p->bgcol = 6;
-if (strcmp(p->bcolor, "white") == 0) p->bgcol = 7;
-// default if invalid
+validate_colors(p);
 
 
 // validate: gravity
@@ -275,7 +283,37 @@ p->sens = p->sens / 100;
 
 }
 
-void load_config(char configPath[255], char supportedInput[255], void* params)
+void load_colors(struct config_params * p, dictionary* ini) {
+    p->color = (char *)iniparser_getstring(ini, "color:foreground", "default");
+    p->bcolor = (char *)iniparser_getstring(ini, "color:background", "default");
+
+    p->gradient = iniparser_getint(ini, "color:gradient", 0);
+    if (p->gradient) {
+        p->gradient_count = iniparser_getint(ini, "color:gradient_count", 2);
+        if(p->gradient_count < 2){
+            printf("\nAtleast two colors must be given as gradient!\n");
+            exit(EXIT_FAILURE);
+        }
+        if(p->gradient_count > 8){
+            printf("\nMaximum 8 colors can be specified as gradient!\n");
+            exit(EXIT_FAILURE);
+        }
+        p->gradient_colors = (char **)malloc(sizeof(char*) * p->gradient_count);
+        for(int i = 0;i < p->gradient_count;i++){
+            char ini_config[23];
+            sprintf(ini_config, "color:gradient_color_%d", (i + 1));
+            p->gradient_colors[i] = (char *)iniparser_getstring(ini, ini_config, NULL);
+            if(p->gradient_colors[i] == NULL){
+                printf("\nGradient color not specified : gradient_color_%d\n", (i + 1));
+                exit(EXIT_FAILURE);
+            }
+        }
+        //p->gradient_color_1 = (char *)iniparser_getstring(ini, "color:gradient_color_1", "#0099ff");
+        //p->gradient_color_2 = (char *)iniparser_getstring(ini, "color:gradient_color_2", "#ff3399");
+    }
+}
+
+void load_config(char configPath[255], char supportedInput[255], void* params, bool reloadColorsOnly)
 {
 
 struct config_params *p = (struct config_params *)params;
@@ -327,6 +365,12 @@ if (configPath[0] == '\0') {
 dictionary* ini;
 ini = iniparser_load(configPath);
 
+if (reloadColorsOnly) {
+    load_colors(p, ini);
+    validate_colors(p);
+    return;
+}
+
 //setting fifo to defaualt if no other input modes supported
 inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo"); 
 
@@ -353,33 +397,7 @@ p->integral = iniparser_getdouble(ini, "smoothing:integral", 90);
 p->gravity = iniparser_getdouble(ini, "smoothing:gravity", 100);
 p->ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
 
-p->color = (char *)iniparser_getstring(ini, "color:foreground", "default");
-p->bcolor = (char *)iniparser_getstring(ini, "color:background", "default");
-
-p->gradient = iniparser_getint(ini, "color:gradient", 0);
-if (p->gradient) {
-    p->gradient_count = iniparser_getint(ini, "color:gradient_count", 2);
-	if(p->gradient_count < 2){
-	    printf("\nAtleast two colors must be given as gradient!\n");
-	    exit(EXIT_FAILURE);
-	}
-	if(p->gradient_count > 8){
-	    printf("\nMaximum 8 colors can be specified as gradient!\n");
-	    exit(EXIT_FAILURE);
-	}
-	p->gradient_colors = (char **)malloc(sizeof(char*) * p->gradient_count);
-    for(int i = 0;i < p->gradient_count;i++){
-        char ini_config[23];
-        sprintf(ini_config, "color:gradient_color_%d", (i + 1));
-        p->gradient_colors[i] = (char *)iniparser_getstring(ini, ini_config, NULL);
-        if(p->gradient_colors[i] == NULL){
-            printf("\nGradient color not specified : gradient_color_%d\n", (i + 1));
-            exit(EXIT_FAILURE);
-        }
-    }
-    //p->gradient_color_1 = (char *)iniparser_getstring(ini, "color:gradient_color_1", "#0099ff");
-	//p->gradient_color_2 = (char *)iniparser_getstring(ini, "color:gradient_color_2", "#ff3399");
-}
+load_colors(p, ini);
 
 p->fixedbars = iniparser_getint(ini, "general:bars", 0);
 p->bw = iniparser_getint(ini, "general:bar_width", 2);
