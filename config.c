@@ -1,3 +1,4 @@
+#define MAX_ERROR_LEN 1024
 
 double smoothDef[64] = {0.8, 0.8, 1, 1, 0.8, 0.8, 1, 0.8, 0.8, 1, 1, 0.8,
 					1, 1, 0.8, 0.6, 0.6, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8,
@@ -21,17 +22,28 @@ int smcount, customEQ, im, om, col, bgcol, autobars, stereo, is_bin, ascii_range
 
 };
 
+struct error_s {
+    char message[MAX_ERROR_LEN];
+    int length;
+};
 
+void write_errorf(void* err, const char* fmt, ...) {
+    struct error_s *error = (struct error_s *)err;
+    va_list args;
+    va_start(args, fmt);
+    error->length += vsnprintf((char*)error->message+error->length, MAX_ERROR_LEN-error->length, fmt, args);
+    va_end(args);
+}
 
-
-int validate_color(char *checkColor, int om)
+int validate_color(char *checkColor, int om, void* err)
 {
+struct error_s *error = (struct error_s *)err;
 int validColor = 0;
 if (checkColor[0] == '#' && strlen(checkColor) == 7) {
 	// If the output mode is not ncurses, tell the user to use a named colour instead of hex colours.
 	if (om != 1 && om != 2) {
-		fprintf(stderr, "Only 'ncurses' output method supports HTML colors. Please change the colours or the output method.\n");
-		exit(EXIT_FAILURE);
+		write_errorf(error, "Only 'ncurses' output method supports HTML colors. Please change the colours or the output method.\n");
+		return 0;
 	}
 	// 0 to 9 and a to f
 	for (int i = 1; checkColor[i]; ++i) {
@@ -60,27 +72,28 @@ if (checkColor[0] == '#' && strlen(checkColor) == 7) {
 return validColor;
 }
 
-void validate_colors(void* params) {
+bool validate_colors(void* params, void* err) {
 struct config_params *p = (struct config_params *)params;
+struct error_s *error = (struct error_s *)err;
 
 // validate: color
-if (!validate_color(p->color, p->om)) {
-	fprintf(stderr, "The value for 'foreground' is invalid. It can be either one of the 7 named colors or a HTML color of the form '#xxxxxx'.\n");
-	exit(EXIT_FAILURE);
+if (!validate_color(p->color, p->om, error)) {
+	write_errorf(error, "The value for 'foreground' is invalid. It can be either one of the 7 named colors or a HTML color of the form '#xxxxxx'.\n");
+	return false;
 }
 
 // validate: background color
-if (!validate_color(p->bcolor, p->om)) {
-	fprintf(stderr, "The value for 'background' is invalid. It can be either one of the 7 named colors or a HTML color of the form '#xxxxxx'.\n");
-	exit(EXIT_FAILURE);
+if (!validate_color(p->bcolor, p->om, error)) {
+	write_errorf(error, "The value for 'background' is invalid. It can be either one of the 7 named colors or a HTML color of the form '#xxxxxx'.\n");
+	return false;
 }
 
 
 if (p->gradient) {
     for(int i = 0;i < p->gradient_count;i++){
-        if (!validate_color(p->gradient_colors[i], p->om)) {
-	        fprintf(stderr, "Gradient color %d is invalid. It must be HTML color of the form '#xxxxxx'.\n", i+1);
-	        exit(EXIT_FAILURE);
+        if (!validate_color(p->gradient_colors[i], p->om, error)) {
+	        write_errorf(error, "Gradient color %d is invalid. It must be HTML color of the form '#xxxxxx'.\n", i+1);
+	        return false;
         }
     }
 }
@@ -107,22 +120,25 @@ if (strcmp(p->bcolor, "magenta") == 0) p->bgcol = 5;
 if (strcmp(p->bcolor, "cyan") == 0) p->bgcol = 6;
 if (strcmp(p->bcolor, "white") == 0) p->bgcol = 7;
 // default if invalid
+
+return true;
 }
 
 
-void validate_config(char supportedInput[255], void* params)
+bool validate_config(char supportedInput[255], void* params, void* err)
 {
 
 struct config_params *p = (struct config_params *)params;
+struct error_s *error = (struct error_s *)err;
 
 // validate: input method
 p->im = 0;
 if (strcmp(inputMethod, "alsa") == 0) {
 	p->im = 1;
 	#ifndef ALSA
-	        fprintf(stderr,
+	        write_errorf(error,
                         "cava was built without alsa support, install alsa dev files and run make clean && ./configure && make again\n");
-                exit(EXIT_FAILURE);
+                return false;
         #endif
 }
 if (strcmp(inputMethod, "fifo") == 0) {
@@ -131,24 +147,23 @@ if (strcmp(inputMethod, "fifo") == 0) {
 if (strcmp(inputMethod, "pulse") == 0) {
 	p->im = 3;
 	#ifndef PULSE
-	        fprintf(stderr,
+	        write_errorf(error,
                         "cava was built without pulseaudio support, install pulseaudio dev files and run make clean && ./configure && make again\n");
-                exit(EXIT_FAILURE);
+                return false;
         #endif
 
 }
 if (strcmp(inputMethod, "sndio") == 0) {
 	p->im = 4;
 	#ifndef SNDIO
-		fprintf(stderr, "cava was built without sndio support\n");
-		exit(EXIT_FAILURE);
+		write_errorf(error, "cava was built without sndio support\n");
+		return false;
 	#endif
 }
 if (p->im == 0) {
-	fprintf(stderr,
-		"input method '%s' is not supported, supported methods are: %s\n",
+	write_errorf(error, "input method '%s' is not supported, supported methods are: %s\n",
 					inputMethod, supportedInput);
-	exit(EXIT_FAILURE);
+	return false;
 }
 
 // validate: output method
@@ -157,17 +172,17 @@ if (strcmp(outputMethod, "ncurses") == 0) {
 	p->om = 1;
     p->bgcol = -1;
 	#ifndef NCURSES
-		fprintf(stderr,
+		write_errorf(error,
 			"cava was built without ncurses support, install ncursesw dev files and run make clean && ./configure && make again\n");
-		exit(EXIT_FAILURE);
+		return false;
 	#endif
 }
 if (strcmp(outputMethod, "circle") == 0) {
 	 p->om = 2;
 	#ifndef NCURSES
-		fprintf(stderr,
+		write_errorf(error,
 			"cava was built without ncurses support, install ncursesw dev files and run make clean && ./configure && make again\n");
-		exit(EXIT_FAILURE);
+		return false;
 	#endif
 }
 if (strcmp(outputMethod, "noncurses") == 0) {
@@ -183,24 +198,23 @@ if (strcmp(outputMethod, "raw") == 0) {//raw:
 		p->is_bin = 1;
 		//checking bit format:
 		if (p->bit_format != 8 && p->bit_format != 16 ) {
-		fprintf(stderr,
+		write_errorf(error,
 			"bit format  %d is not supported, supported data formats are: '8' and '16'\n",
 						p->bit_format );
-		exit(EXIT_FAILURE);
+		return false;
 	
 		}
 	} else if (strcmp(p->data_format, "ascii") == 0) {
 		p->is_bin = 0;
 		if (p->ascii_range < 1 ) {
-		fprintf(stderr,
-			"ascii max value must be a positive integer\n");
-		exit(EXIT_FAILURE);
+		write_errorf(error, "ascii max value must be a positive integer\n");
+		return false;
 		}
 	} else {
-	fprintf(stderr,
+	write_errorf(error,
 		"data format %s is not supported, supported data formats are: 'binary' and 'ascii'\n",
 					p->data_format);
-	exit(EXIT_FAILURE);
+	return false;
 	
 	}
 
@@ -209,17 +223,17 @@ if (strcmp(outputMethod, "raw") == 0) {//raw:
 }
 if (p->om == 0) {
 	#ifndef NCURSES
-	fprintf(stderr,
+	write_errorf(error,
 		"output method %s is not supported, supported methods are: 'noncurses'\n",
 					outputMethod);
-	exit(EXIT_FAILURE);
+	return false;
 	#endif
 
 	#ifdef NCURSES
-        fprintf(stderr,
+        write_errorf(error,
                 "output method %s is not supported, supported methods are: 'ncurses' and 'noncurses'\n",
                                         outputMethod);
-        exit(EXIT_FAILURE);
+        return false;
 	#endif	
 }
 
@@ -228,10 +242,10 @@ p->stereo = -1;
 if (strcmp(channels, "mono") == 0) p->stereo = 0;
 if (strcmp(channels, "stereo") == 0) p->stereo = 1;
 if (p->stereo == -1) {
-	fprintf(stderr,
+	write_errorf(error,
 		"output channels %s is not supported, supported channelss are: 'mono' and 'stereo'\n",
 					channels);
-	exit(EXIT_FAILURE);
+	return false;
 }
 
 
@@ -246,12 +260,13 @@ if (p->bw < 1) p->bw = 1;
 
 // validate: framerate
 if (p->framerate < 0) {
-	fprintf(stderr,
-		"framerate can't be negative!\n");
-	exit(EXIT_FAILURE);
+	write_errorf(error, "framerate can't be negative!\n");
+	return false;
 }
 
-validate_colors(p);
+if (!validate_colors(p, error)) {
+    return false;
+}
 
 
 // validate: gravity
@@ -272,18 +287,19 @@ if (p->integral < 0) {
 // validate: cutoff
 if (p->lowcf == 0 ) p->lowcf++;
 if (p->lowcf > p->highcf) {
-	fprintf(stderr,
+	write_errorf(error,
 		"lower cutoff frequency can't be higher than higher cutoff frequency\n");
-	exit(EXIT_FAILURE);
+	return false;
 }
 
 //setting sens
 p->sens = p->sens / 100;
 
-
+return true;
 }
 
-void load_colors(struct config_params * p, dictionary* ini) {
+bool load_colors(struct config_params * p, dictionary* ini, void* err) {
+    struct error_s *error = (struct error_s *)err;
     p->color = (char *)iniparser_getstring(ini, "color:foreground", "default");
     p->bcolor = (char *)iniparser_getstring(ini, "color:background", "default");
 
@@ -291,12 +307,12 @@ void load_colors(struct config_params * p, dictionary* ini) {
     if (p->gradient) {
         p->gradient_count = iniparser_getint(ini, "color:gradient_count", 2);
         if(p->gradient_count < 2){
-            printf("\nAtleast two colors must be given as gradient!\n");
-            exit(EXIT_FAILURE);
+            write_errorf(error, "\nAtleast two colors must be given as gradient!\n");
+            return false;
         }
         if(p->gradient_count > 8){
-            printf("\nMaximum 8 colors can be specified as gradient!\n");
-            exit(EXIT_FAILURE);
+            write_errorf(error, "\nMaximum 8 colors can be specified as gradient!\n");
+            return false;
         }
         p->gradient_colors = (char **)malloc(sizeof(char*) * p->gradient_count);
         for(int i = 0;i < p->gradient_count;i++){
@@ -304,19 +320,21 @@ void load_colors(struct config_params * p, dictionary* ini) {
             sprintf(ini_config, "color:gradient_color_%d", (i + 1));
             p->gradient_colors[i] = (char *)iniparser_getstring(ini, ini_config, NULL);
             if(p->gradient_colors[i] == NULL){
-                printf("\nGradient color not specified : gradient_color_%d\n", (i + 1));
-                exit(EXIT_FAILURE);
+                write_errorf(error, "\nGradient color not specified : gradient_color_%d\n", (i + 1));
+                return false;
             }
         }
         //p->gradient_color_1 = (char *)iniparser_getstring(ini, "color:gradient_color_1", "#0099ff");
         //p->gradient_color_2 = (char *)iniparser_getstring(ini, "color:gradient_color_2", "#ff3399");
     }
+    return true;
 }
 
-void load_config(char configPath[255], char supportedInput[255], void* params, bool reloadColorsOnly)
+bool load_config(char configPath[255], char supportedInput[255], void* params, bool colorsOnly, void* err)
 {
 
 struct config_params *p = (struct config_params *)params;
+struct error_s *error = (struct error *)err;
 FILE *fp;
 	
 //config: creating path to default config file
@@ -330,8 +348,8 @@ if (configPath[0] == '\0') {
 		if (configHome != NULL) {
 			sprintf(configPath,"%s/%s/%s/", configHome, ".config", PACKAGE);
 		} else {
-			printf("No HOME found (ERR_HOMELESS), exiting...");
-			exit(EXIT_FAILURE);
+    		write_errorf(error, "No HOME found (ERR_HOMELESS), exiting...");
+			return false;
 		}
 	}
 
@@ -345,8 +363,8 @@ if (configPath[0] == '\0') {
 	if (fp) {
 		fclose(fp);
 	} else {
-		printf("Unable to access config '%s', exiting...\n", configPath);
-		exit(EXIT_FAILURE);
+		write_errorf(error, "Unable to access config '%s', exiting...\n", configPath);
+		return false;
 	}
 
 
@@ -356,8 +374,8 @@ if (configPath[0] == '\0') {
 	if (fp) {
 		fclose(fp);
 	} else {
-		printf("Unable to open file '%s', exiting...\n", configPath);
-		exit(EXIT_FAILURE);
+		write_errorf(error, "Unable to open file '%s', exiting...\n", configPath);
+		return false;
 	}
 }
 
@@ -365,10 +383,11 @@ if (configPath[0] == '\0') {
 dictionary* ini;
 ini = iniparser_load(configPath);
 
-if (reloadColorsOnly) {
-    load_colors(p, ini);
-    validate_colors(p);
-    return;
+if (colorsOnly) {
+    if (!load_colors(p, ini, error)) {
+        return false;
+    }
+    return validate_colors(p, error);
 }
 
 //setting fifo to defaualt if no other input modes supported
@@ -397,7 +416,9 @@ p->integral = iniparser_getdouble(ini, "smoothing:integral", 90);
 p->gravity = iniparser_getdouble(ini, "smoothing:gravity", 100);
 p->ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
 
-load_colors(p, ini);
+if (!load_colors(p, ini, error)) {
+    return false;
+}
 
 p->fixedbars = iniparser_getint(ini, "general:bars", 0);
 p->bw = iniparser_getint(ini, "general:bar_width", 2);
@@ -460,7 +481,6 @@ if (strcmp(inputMethod, "sndio") == 0) {
 }
 #endif
 
-validate_config(supportedInput, params);
+return validate_config(supportedInput, params, error);
 //iniparser_freedict(ini);
-
 }

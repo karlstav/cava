@@ -339,7 +339,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	while (1) {
 
 	//config: load
-	load_config(configPath, supportedInput, (void *)&p, 0);
+	struct error_s error;
+	error.length = 0;
+	if (!load_config(configPath, supportedInput, (void *)&p, 0, &error)) {
+    	fprintf(stderr, "Error loading config. %s", error.message);
+        exit(EXIT_FAILURE);
+	}
 
     output_mode = p.om;
 
@@ -664,7 +669,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			}
 
 			if (reload_colors) {
-				load_config(configPath, supportedInput, (void *)&p, 1);
+    			struct error_s error;
+    			error.length = 0;
+				if (!load_config(configPath, supportedInput, (void *)&p, 1, &error)) {
+    			    cleanup();
+                	fprintf(stderr, "Error loading config. %s", error.message);
+                    exit(EXIT_FAILURE);
+				}
 				resizeTerminal = true;
 				reload_colors = 0;
 			}
