@@ -333,7 +333,7 @@ For example:
 $ pkill -USR1 cava
 ```
 
-Similarly, sending cava a SIGUSR2 signal will reload the colors fromt he configuring file, which is the same as pressing <kbd>c</kbd> in the terminal.
+Similarly, sending cava a SIGUSR2 signal will only reload the colors from the configuration file, which is the same as pressing <kbd>c</kbd> in the terminal. This is slightly faster than reloading the entire config as the audio processing does not need to reinitialize.  
 ```
 $ pkill -USR2 cava
 ```
