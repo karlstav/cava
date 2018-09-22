@@ -85,6 +85,8 @@ int output_mode;
 
 // whether we should reload the config or not
 int should_reload = 0;
+// whether we should only reload colors or not
+int reload_colors = 0;
 
 
 // general: cleanup
@@ -107,6 +109,11 @@ void sig_handler(int sig_no)
 {
 	if (sig_no == SIGUSR1) {
 		should_reload = 1;
+		return;
+	}
+
+	if (sig_no == SIGUSR2) {
+		reload_colors = 1;
 		return;
 	}
 
@@ -252,7 +259,8 @@ Keys:\n\
         Left      Decrease number of bars\n\
         Right     Increase number of bars\n\
         r         Reload config\n\
-        c         Cycle foreground color\n\
+        c         Reload colors only\n\
+        f         Cycle foreground color\n\
         b         Cycle background color\n\
         q         Quit\n\
 \n\
@@ -286,6 +294,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	sigaction(SIGINT, &action, NULL);
 	sigaction(SIGTERM, &action, NULL);
 	sigaction(SIGUSR1, &action, NULL);
+	sigaction(SIGUSR2, &action, NULL);
 
 	// general: handle command-line arguments
 	while ((c = getopt (argc, argv, "p:vh")) != -1) {
@@ -330,7 +339,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	while (1) {
 
 	//config: load
-	load_config(configPath, supportedInput, (void *)&p);
+	struct error_s error;
+	error.length = 0;
+	if (!load_config(configPath, supportedInput, (void *)&p, 0, &error)) {
+    	fprintf(stderr, "Error loading config. %s", error.message);
+        exit(EXIT_FAILURE);
+	}
 
     output_mode = p.om;
 
@@ -627,7 +641,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				case 'r': //reload config
 					should_reload = 1;
 					break;
-				case 'c': //change forground color
+				case 'c': //reload colors
+					reload_colors = 1;
+					break;
+				case 'f': //change forground color
 					if (p.col < 7) p.col++;
 					else p.col = 0;
 					resizeTerminal = true;
@@ -649,6 +666,18 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				resizeTerminal = true;
 				should_reload = 0;
 
+			}
+
+			if (reload_colors) {
+    			struct error_s error;
+    			error.length = 0;
+				if (!load_config(configPath, supportedInput, (void *)&p, 1, &error)) {
+    			    cleanup();
+                	fprintf(stderr, "Error loading config. %s", error.message);
+                    exit(EXIT_FAILURE);
+				}
+				resizeTerminal = true;
+				reload_colors = 0;
 			}
 
 			//if (cont == 0) break;

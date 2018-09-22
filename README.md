@@ -315,8 +315,9 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 | --- | ----------- |
 | <kbd>up</kbd> / <kbd>down</kbd>| increase/decrease sensitivity |
 | <kbd>left</kbd> / <kbd>right</kbd>| increase/decrease bar width |
-| <kbd>c</kbd> / <kbd>b</kbd>| change forground/background color |
+| <kbd>f</kbd> / <kbd>b</kbd>| change forground/background color |
 | <kbd>r</kbd> | Reload configuration |
+| <kbd>c</kbd> | Reload colors only |
 | <kbd>q</kbd> or <kbd>CTRL-C</kbd>| Quit C.A.V.A. |
 
 Configuration
@@ -332,6 +333,10 @@ For example:
 $ pkill -USR1 cava
 ```
 
+Similarly, sending cava a SIGUSR2 signal will reload the colors fromt he configuring file, which is the same as pressing <kbd>c</kbd> in the terminal.
+```
+$ pkill -USR2 cava
+```
 
 **Examples on how the equalizer works:**
 
