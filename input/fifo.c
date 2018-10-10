@@ -92,8 +92,8 @@ void* input_fifo(void* data)
 				if (templ >= 0)templ = templ + lo;
 				else templ = templ - lo;
 
-				if (audio->channels == 1) audio->audio_out_l[n] = (tempr + 
-templ) / 
+				if (audio->channels == 1) audio->audio_out_l[n] = (tempr +
+templ) /
 2;
 
 

@@ -14,7 +14,7 @@ struct config_params {
 
 char *color, *bcolor, *raw_target, *audio_source, /**gradient_color_1, *gradient_color_2,*/ **gradient_colors, *data_format;
 char bar_delim, frame_delim ;
-double monstercat, integral, gravity, ignore, sens; 
+double monstercat, integral, gravity, ignore, sens;
 unsigned int lowcf, highcf;
 double *smooth;
 int smcount, customEQ, im, om, col, bgcol, autobars, stereo, is_bin, ascii_range,
@@ -273,7 +273,7 @@ if (!validate_colors(p, error)) {
 p->gravity = p->gravity / 100;
 if (p->gravity < 0) {
 	p->gravity = 0;
-} 
+}
 
 
 // validate: integral
@@ -391,11 +391,11 @@ if (colorsOnly) {
 }
 
 //setting fifo to defaualt if no other input modes supported
-inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo"); 
+inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo");
 
 //setting alsa to defaualt if supported
 #ifdef ALSA
-	inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa"); 
+	inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa");
 #endif
 
 //setting pulse to defaualt if supported
