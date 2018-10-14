@@ -58,7 +58,7 @@ void pulseaudio_context_state_callback(pa_context *pulseaudio_context,
 	case PA_CONTEXT_TERMINATED:
 	printf("TERMINATED\n");
 	pa_mainloop_quit(m_pulseaudio_mainloop, 0);
-	break;	  
+	break;	
 	}
 }
 
@@ -138,7 +138,7 @@ void* input_pulse(void* data)
 	}
 
 	n = 0;
-               
+
 	while (1) {
         	/* Record some data ... */
         	if (pa_simple_read(s, buf, sizeof(buf), &error) < 0) {

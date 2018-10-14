@@ -87,33 +87,33 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
         init_pair(color_pair_number, fg_color_number, bg_color_number);
 
     } else if (gradient) {
-       
+
         // 0 -> col1, 1-> col1<=>col2, 2 -> col2 and so on
         short unsigned int rgb[2 * gradient_count - 1][3];
         char next_color[8];
-        
+
         gradient_size = *height;
 
         if (gradient_size > COLORS) gradient_size = COLORS - 1;
-	    
+	
         if (gradient_size > COLOR_PAIRS) gradient_size = COLOR_PAIRS - 1;
-        
+
         if (gradient_size > MAX_COLOR_REDEFINITION) gradient_size = MAX_COLOR_REDEFINITION - 1;
 
         for(int i = 0;i < gradient_count;i++){
             int col = (i + 1)*2 - 2;
-            sscanf(gradient_colors[i]+1, "%02hx%02hx%02hx", &rgb[col][0], &rgb[col][1], &rgb[col][2]); 
+            sscanf(gradient_colors[i]+1, "%02hx%02hx%02hx", &rgb[col][0], &rgb[col][1], &rgb[col][2]);
         }
 
         //sscanf(gradient_color_1 + 1, "%02hx%02hx%02hx", &rgb[0][0], &rgb[0][1], &rgb[0][2]);
-        //sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0], &rgb[1][1], &rgb[1][2]);            
+        //sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0], &rgb[1][1], &rgb[1][2]);
 
         int individual_size = gradient_size/(gradient_count - 1);
 
         int row = 0;
 
         for(int i = 0;i < gradient_count - 1;i++){
-            
+
             int col = (i + 1)* 2 - 2;
             if(i == gradient_count - 1)
                 col = 2*(gradient_count - 1) - 2;
@@ -124,8 +124,8 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
                     rgb[col+1][k] = rgb[col][k] + (rgb[col+2][k] - rgb[col][k]) * (j / (individual_size * 0.85));
                     if (rgb[col+1][k] > 255) rgb[col][k] = 0;
                     if ( j > individual_size * 0.85 ) rgb[col+1][k] = rgb[col+2][k];
-                } 
-             
+                }
+
                 sprintf(next_color,"#%02x%02x%02x",rgb[col+1][0], rgb[col+1][1], rgb[col+1][2]);
 
                 change_color_definition(row + 1, next_color, row + 1);
@@ -136,7 +136,7 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
 
         int left = individual_size * (gradient_count - 1);
         int col = 2*(gradient_count) - 2;
-        while(left < gradient_size){ 
+        while(left < gradient_size){
             sprintf(next_color,"#%02x%02x%02x",rgb[col][0], rgb[col][1], rgb[col][2]);
             change_color_definition(row + 1, next_color, row + 1);
             init_pair(color_pair_number++, row + 1, bg_color_number);
@@ -188,19 +188,19 @@ int flastd[200], int gradient) {
 		if (f[bar] > flastd[bar]) { // higher then last frame
 			if (is_tty) {
 				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++) {
-                    if (gradient) change_colors(n, height); 
+                    if (gradient) change_colors(n, height);
 					for (int width = 0; width < bar_width; width++)
 						mvprintw((height - n), CURRENT_COLUMN, "%d", 8);
                 }
 			} else {
-				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++) {                                 
-                    if (gradient) change_colors(n, height); 
+				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++) {                
+                    if (gradient) change_colors(n, height);
 					for (int width = 0; width < bar_width; width++)
 						mvaddwstr((height - n), CURRENT_COLUMN,
 								bar_heights[LAST]);
                 }
 			}
-            if (gradient) change_colors(f[bar] / 8, height); 
+            if (gradient) change_colors(f[bar] / 8, height);
 			if (f[bar] % 8) {
 				if (is_tty) {
 					for (int width = 0; width < bar_width; width++)
@@ -217,7 +217,7 @@ int flastd[200], int gradient) {
 				for (int width = 0; width < bar_width; width++)
 					mvaddstr((height - n), CURRENT_COLUMN, " ");
 			if (f[bar] % 8) {
-                 if (gradient) change_colors(f[bar] / 8, height); 
+                 if (gradient) change_colors(f[bar] / 8, height);
 				if (is_tty) {
 					for (int width = 0; width < bar_width; width++)
 						mvprintw((height - f[bar] / 8), CURRENT_COLUMN, "%d",
