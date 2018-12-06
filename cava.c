@@ -63,6 +63,10 @@
 #include "input/sndio.c"
 #endif
 
+#ifdef SHMEM
+#include "input/shmem.c"
+#endif
+
 #include <iniparser.h>
 
 #include "config.h"
@@ -327,6 +331,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
     #ifdef SNDIO
         strcat(supportedInput,", 'sndio'");
     #endif
+    #ifdef SHMEM
+        strcat(supportedInput,", 'shmem'");
+    #endif
 
 	//fft: planning to rock
 	fftw_complex outl[M / 2 + 1];
@@ -437,6 +444,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	#ifdef SNDIO
 	if (p.im == 4) {
 		thr_id = pthread_create(&p_thread, NULL, input_sndio, (void*)&audio);
+		audio.rate = 44100;
+	}
+	#endif
+
+	#ifdef SHMEM
+	if (p.im == 5) {
+		thr_id = pthread_create(&p_thread, NULL, input_shmem, (void*)&audio);
 		audio.rate = 44100;
 	}
 	#endif
