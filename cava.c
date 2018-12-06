@@ -451,7 +451,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	#ifdef SHMEM
 	if (p.im == 5) {
 		thr_id = pthread_create(&p_thread, NULL, input_shmem, (void*)&audio);
-		audio.rate = 44100;
+		//audio.rate = 44100;
 	}
 	#endif
 
