@@ -39,12 +39,6 @@ void* input_shmem(void* data)
 	vis_t *mmap_area;
 	int fd; /* file descriptor to mmaped area */
 	int mmap_count = sizeof( vis_t);
-	/*
-	struct timespec req = { .tv_sec = 0, .tv_nsec = 10000000 };
-	int16_t buf[BUFSIZE / 2];
-	int bytes = 0;
-	int t = 0;
-	*/
 	int n = 0;
 	int i;
 
