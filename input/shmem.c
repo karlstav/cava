@@ -18,20 +18,6 @@ typedef short s16_t;
 
 int rc;
 
-/*
-struct audio_data {
-	int audio_out_r[2048];
-	int audio_out_l[2048];
-	int format;
-	unsigned int rate ;
-	char *source; //alsa device, fifo path or pulse source
-	int im; //input mode alsa, fifo or pulse
-	int channels;
-	int terminate; // shared variable used to terminate audio thread
-	char error_message[1024];
-};
-*/
-
 #define VIS_BUF_SIZE 16384
 #define VB_OFFSET 8192+4096
 
@@ -76,11 +62,10 @@ void* input_shmem(void* data)
 			exit(EXIT_FAILURE);
 		}
 	}
-	printf("bufs: %u / run: %u / rate: %u\n",mmap_area->buf_size, mmap_area->running, mmap_area->rate);
+	// printf("bufs: %u / run: %u / rate: %u\n",mmap_area->buf_size, mmap_area->running, mmap_area->rate);
 	audio->rate = mmap_area->rate;
 
 	while (1) {
-//		for (i = 0; i < BUFSIZE; i += 2) { // BUFSIZE / 2
 		for (i = VB_OFFSET; i < BUFSIZE+VB_OFFSET; i += 2) {
 			if (audio->channels == 1) {
 				audio->audio_out_l[n] = (mmap_area->buffer[i] + mmap_area->buffer[i + 1]) / 2;
