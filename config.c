@@ -160,6 +160,13 @@ if (strcmp(inputMethod, "sndio") == 0) {
 		return false;
 	#endif
 }
+if (strcmp(inputMethod, "shmem") == 0) {
+	p->im = 5;
+	#ifndef SHMEM
+		write_errorf(error, "cava was built without shmem support\n");
+		return false;
+	#endif
+}
 if (p->im == 0) {
 	write_errorf(error, "input method '%s' is not supported, supported methods are: %s\n",
 					inputMethod, supportedInput);
@@ -478,6 +485,12 @@ if (strcmp(inputMethod, "pulse") == 0) {
 if (strcmp(inputMethod, "sndio") == 0) {
 	p->im = 4;
 	p->audio_source = (char *)iniparser_getstring(ini, "input:source", SIO_DEVANY);
+}
+#endif
+#ifdef SHMEM
+if (strcmp(inputMethod, "shmem") == 0) {
+	p->im = 5;
+	p->audio_source = (char *)iniparser_getstring(ini, "input:source", "/squeezelite-00:00:00:00:00:00");
 }
 #endif
 

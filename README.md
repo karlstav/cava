@@ -40,6 +40,7 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
   - [From ALSA-loopback device (Tricky)](#from-alsa-loopback-device-tricky)
   - [From mpd's fifo output](#from-mpds-fifo-output)
   - [sndio](#sndio)
+  - [squeezelite](#squeezelite)
 - [Running via ssh](#running-via-ssh)
 - [Font notes](#font-notes)
   - [In ttys](#in-ttys)
@@ -245,7 +246,15 @@ $ sndiod -dd -s default -m mon -s monitor
 $ AUDIODEVICE=snd/0.monitor cava
 ```
 
-
+### squeezelite
+[squeezelite](https://en.wikipedia.org/wiki/Squeezelite) is one of several software clients available for the Logitech Media Server. Squeezelite can export it's audio data as shared memory, which is what this input module uses.
+Configure C.A.V.A. with the `--enable-shmem` option, then adapt your config:
+```
+method = shmem
+source = /squeezelite-AA:BB:CC:DD:EE:FF
+```
+where `AA:BB:CC:DD:EE:FF` is squeezelite's MAC address (check the LMS Web GUI (Settings>Information) if unsure).
+Note: squeezelite must be started with the `-v` flag to enable visualizer support.
 
 Running via ssh
 ---------------

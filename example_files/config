@@ -37,7 +37,7 @@
 
 [input]
 
-# Audio capturing method. Possible methods are: 'pulse', 'alsa', 'fifo' or 'sndio'.
+# Audio capturing method. Possible methods are: 'pulse', 'alsa', 'fifo', 'sndio' or 'shmem'
 # Defaults to 'pulse', 'alsa' or 'fifo', in that order, dependent on what support cava was built with.
 #
 # All input methods uses the same config variable 'source'
@@ -48,6 +48,7 @@
 # 
 # For alsa 'source' will be the capture device.
 # For fifo 'source' will be the path to fifo-file.
+# For shmem 'source' will be /squeezelite-AA:BB:CC:DD:EE:FF where 'AA:BB:CC:DD:EE:FF' will be squeezelite's MAC address
 ; method = pulse
 ; source = auto
 
@@ -57,6 +58,8 @@
 ; method = fifo
 ; source = /tmp/mpd.fifo
 
+; method = shmem
+; source = /squeezelite-AA:BB:CC:DD:EE:FF
 
 
 [output]

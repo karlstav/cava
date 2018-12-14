@@ -168,6 +168,24 @@ AS_IF([test "x$enable_legacy_iniparser" = "xyes"], [
 ])
 
 dnl ############################
+dnl checking if shared memory input is enabled
+dnl ############################
+
+AC_ARG_ENABLE([shmem],
+  AS_HELP_STRING([--enable-shmem],
+    [enable shared memory input (e.g. for squeezelite)])
+)
+
+AS_IF([test "x$enable_shmem" = "xyes"], [
+  dnl enabling shared memory input
+  AC_MSG_NOTICE([enabling shared memory input])
+  CPPFLAGS="$CPPFLAGS -DSHMEM"
+  LIBS="$LIBS -lrt"
+])
+
+
+
+dnl ############################
 dnl Set font directory
 dnl ############################
 DEFAULT_FONT_DIR="/usr/share/consolefonts"
