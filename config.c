@@ -198,7 +198,9 @@ if (strcmp(outputMethod, "noncurses") == 0) {
 }
 if (strcmp(outputMethod, "raw") == 0) {//raw:
 	p->om = 4;
-	
+	p->bs = 0;
+	p->bw = 1;
+
 	//checking data format
 	p->is_bin = -1;
 	if (strcmp(p->data_format, "binary") == 0) {
