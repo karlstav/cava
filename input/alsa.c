@@ -96,23 +96,32 @@ const int size) {
 #define FRAMES_NUMBER 256
 
 void* input_alsa(void* data) {
-    int err;
+	int err;
 	struct audio_data* audio = (struct audio_data*)data;
 	snd_pcm_t* handle;
+	snd_pcm_uframes_t buffer_size;
+	snd_pcm_uframes_t period_size;
 	snd_pcm_uframes_t frames = FRAMES_NUMBER;
-    int16_t buf[FRAMES_NUMBER * 2];
+
 	initialize_audio_parameters(&handle, audio, &frames);
+	snd_pcm_get_params(handle, &buffer_size, &period_size);
+	
+	int16_t buf[period_size];
+	frames = period_size / ((audio->format / 8) * CHANNELS_COUNT);
+	//printf("period size: %lu\n", period_size);
+	//exit(0);
+
 	// frames * bits/8 * channels
-	const int size = frames * (audio->format / 8) * CHANNELS_COUNT;
-	signed char* buffer = malloc(size);
-    int n = 0;
+	//const int size = frames * (audio->format / 8) * CHANNELS_COUNT;
+	signed char* buffer = malloc(period_size);
+	int n = 0;
 
 	while (1) {
         switch (audio->format) {
         case 16:
             err = snd_pcm_readi(handle, buf, frames);
-	        for (int i = 0; i < FRAMES_NUMBER * 2; i += 2) {
-                if (audio->channels == 1) audio->audio_out_l[n] = (buf[i] + buf[i + 1]) / 2;
+	    for (int i = 0; i < frames * 2; i += 2) {
+		if (audio->channels == 1) audio->audio_out_l[n] = (buf[i] + buf[i + 1]) / 2;
                 //stereo storing channels in buffer
                 if (audio->channels == 2) {
                         audio->audio_out_l[n] = buf[i];
@@ -123,8 +132,8 @@ void* input_alsa(void* data) {
             }
             break;
         default:
-		    err = snd_pcm_readi(handle, buffer, frames);
-            fill_audio_outs(audio, buffer, size);
+		err = snd_pcm_readi(handle, buffer, frames);
+		fill_audio_outs(audio, buffer, period_size);
             break;
         }
 
