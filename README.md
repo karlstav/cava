@@ -3,18 +3,9 @@ C.A.V.A.
 
 **C**onsole-based **A**udio **V**isualizer for **A**LSA
 
-also supports audio input from Pulseaudio, MPD and sndio.
+also supports audio input from Pulseaudio, fifo (mpd), sndio and squeezelite.
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
-
-Changes in 0.6:
-* Autosens of low values (dynamic range)
-* Removed config parameter 'overshoot'
-* Removed config parameter 'mode'
-* New config parameter 'waves'
-* Changed config parameter 'style' to 'channels' (was either 'mono' or 'stereo' anyway)
-* Parameters 'integral' and 'gravity' are now in percentage
-
 
 ![spectrum](https://raw.githubusercontent.com/karlstav/cava/gh-pages/cava_gradient.gif "spectrum")
 
