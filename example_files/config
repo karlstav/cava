@@ -66,8 +66,8 @@
 
 # Ouput method. Can be 'ncurses', 'noncurses' or 'raw'. 
 # 'noncurses' is for systems that does not suport ncurses.
-# 'raw' is an 8 or 16 bit (configurable via 'bit_format' option) data stream of
-# the bar heights that can be used to send to other applications.
+# 'raw' is an 8 or 16 bit (configurable via the 'bit_format' option) data
+# stream of the bar heights that can be used to send to other applications.
 # 'raw' defaults to 200 bars, which can be adjusted in the 'bars' option above.
 ; method = ncurses
 
