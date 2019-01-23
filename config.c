@@ -343,7 +343,7 @@ bool load_config(char configPath[255], char supportedInput[255], void* params, b
 {
 
 struct config_params *p = (struct config_params *)params;
-struct error_s *error = (struct error *)err;
+struct error_s *error = (struct error_s *)err;
 FILE *fp;
 	
 //config: creating path to default config file
