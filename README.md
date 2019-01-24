@@ -372,6 +372,6 @@ Thanks to:
 * [anko](https://github.com/anko)
 * [livibetter](https://github.com/livibetter)
 
-for mayor contributions in the early development of this project.
+for major contributions in the early development of this project.
 
 Also thanks to [dpayne](https://github.com/dpayne/) for figuring out how to find the pulseaudio default sink name.
