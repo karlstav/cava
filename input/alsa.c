@@ -2,6 +2,11 @@
 
 // assuming stereo
 #define CHANNELS_COUNT 2
+#define USE_LEFT
+/*
+#define USE_RIGHT
+// defines, but this will change to arg 
+*/
 #define SAMPLE_RATE 44100
 
 static void initialize_audio_parameters(snd_pcm_t** handle, struct audio_data* audio,
@@ -120,7 +125,14 @@ void* input_alsa(void* data) {
         switch (audio->format) {
         case 16:
             err = snd_pcm_readi(handle, buf, frames);
+            
 	    for (int i = 0; i < frames * 2; i += 2) {
+		#ifdef USE_LEFT
+			buf[i + 1] = buf[i];
+	        #endif
+		#ifdef USE_RIGHT
+			buf[i] = buf[i + 1];
+		#endif
 		if (audio->channels == 1) audio->audio_out_l[n] = (buf[i] + buf[i + 1]) / 2;
                 //stereo storing channels in buffer
                 if (audio->channels == 2) {
