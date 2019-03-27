@@ -162,7 +162,7 @@ void* input_pulse(void* data)
                                         }
 
                                 n++;
-                                if (n == 2048 - 1)n = 0;
+                                if (n == 8192 - 1)n = 0;
                         }
 
 		if (audio->terminate == 1) {            		

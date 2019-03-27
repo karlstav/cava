@@ -4,8 +4,9 @@ int rc;
 
 struct audio_data {
 
-        int audio_out_r[2048];
-        int audio_out_l[2048];
+	int sampleSize;
+        int audio_out_r[8192];
+        int audio_out_l[8192];
         int format;
         unsigned int rate ;
         char *source; //alsa device, fifo path or pulse source

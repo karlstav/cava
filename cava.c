@@ -82,7 +82,7 @@
 
 struct termios oldtio, newtio;
 int rc;
-int M = 2048;
+int M = 8 * 1024;
 int output_mode;
 
 
