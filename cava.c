@@ -603,7 +603,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			//or maybe the nq freq is in M/4
 
 			//lfc stores the lower cut frequency foo each bar in the fft out buffer
-			lcf[n] = fre[n] * (M /2);
+			lcf[n] = fre[n] * (M /2) + 1;
 			if (n != 0) {
 				hcf[n - 1] = lcf[n] - 1;
 	
