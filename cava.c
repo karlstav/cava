@@ -150,11 +150,11 @@ static bool directory_exists(const char * path) {
 int * separate_freq_bands(fftw_complex out[M / 2 + 1], int bars, int lcf[200],
 			 int hcf[200], float k[200], int channel, double sens, double ignore) {
 	int o,i;
-	float peak[201];
+	double peak[201];
 	static int fl[200];
 	static int fr[200];
-	int y[M / 2 + 1];
-	float temp;
+	double y[M / 2 + 1];
+	double temp;
 
 
 	// process: separate frequency bands
@@ -171,8 +171,8 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1], int bars, int lcf[200],
 		}
 
 
-		peak[o] = peak[o] / (hcf[o]-lcf[o]+1); //getting average
-		temp = peak[o] * k[o] * sens; //multiplying with k and adjusting to sens settings
+		peak[o] = peak[o] / (hcf[o]-lcf[o] + 1); //getting average
+		temp = peak[o] * sens * k[o] / 100000; //multiplying with k and sens
 		if (temp <= ignore) temp = 0;
 		if (channel == 1) fl[o] = temp;
 		else fr[o] = temp;
@@ -621,10 +621,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			#endif
 		}
 
-		// process: weigh signal to frequencies
-		for (n = 0; n < bars;
-			n++)k[n] = pow(fc[n],0.85) * ((float)height/(M*32000)) *
-				p.smooth[(int)floor(((double)n) * smh)];
+		// process: weigh signal to frequencies height and EQ
+		for (n = 0; n < bars; n++) {
+			k[n] = pow(fc[n],0.85);
+			k[n] *= (float)height /  100; 
+			k[n] *=	p.smooth[(int)floor(((double)n) * smh)];
+			}
 
 		if (p.stereo) bars = bars * 2;
 
@@ -805,9 +807,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					fmem[o] = fmem[o] * (1 - div / 20);
 
 					#ifdef DEBUG
-						mvprintw(o,0,"%d: f:%f->%f (%d->%d)peak:%d \n",
+						mvprintw(o,0,"%d: f:%f->%f (%d->%d), k-value: %f, peak:%d \n",
 							 o, fc[o], fc[o + 1],
-									 lcf[o], hcf[o], f[o]);
+									 lcf[o], hcf[o], k[o], f[o]);
 					#endif
 				}
 			}
