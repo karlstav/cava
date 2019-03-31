@@ -18,7 +18,7 @@ double monstercat, integral, gravity, ignore, sens;
 unsigned int lowcf, highcf;
 double *smooth;
 int smcount, customEQ, im, om, col, bgcol, autobars, stereo, is_bin, ascii_range,
- bit_format, gradient, gradient_count, fixedbars, framerate, bw, bs, autosens, overshoot, waves;
+ bit_format, gradient, gradient_count, fixedbars, framerate, bw, bs, autosens, overshoot, waves, FFTbufferSize;
 
 };
 
@@ -304,6 +304,16 @@ if (p->lowcf > p->highcf) {
 //setting sens
 p->sens = p->sens / 100;
 
+//validate FFT buffer
+if (p->FFTbufferSize >= 8 && p->FFTbufferSize <= 16) {
+	p->FFTbufferSize = pow(2, p->FFTbufferSize);
+} else {
+	write_errorf(error,
+		"FFT buffer is set in the exponent of 2 and must be between 8 - 16\n");
+	return false;	
+}
+
+
 return true;
 }
 
@@ -421,7 +431,7 @@ inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo");
 
 p->monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
 p->waves = iniparser_getint(ini, "smoothing:waves", 0);
-p->integral = iniparser_getdouble(ini, "smoothing:integral", 90);
+p->integral = iniparser_getdouble(ini, "smoothing:integral", 75);
 p->gravity = iniparser_getdouble(ini, "smoothing:gravity", 100);
 p->ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
 
@@ -438,6 +448,7 @@ p->autosens = iniparser_getint(ini, "general:autosens", 1);
 p->overshoot = iniparser_getint(ini, "general:overshoot", 20);
 p->lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
 p->highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
+p->FFTbufferSize = iniparser_getint(ini, "general:FFTbufferSize", 13); 
 
 // config: output
 channels =  (char *)iniparser_getstring(ini, "output:channels", "stereo");

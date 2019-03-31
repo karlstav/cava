@@ -5,7 +5,7 @@
 #include <pulse/simple.h>
 #include <pulse/error.h>
 #include <pulse/pulseaudio.h>
-#define BUFSIZE 4096
+#define BUFFERSIZE 4096
 
 pa_mainloop *m_pulseaudio_mainloop;
 
@@ -114,7 +114,7 @@ void* input_pulse(void* data)
 
     struct audio_data *audio = (struct audio_data *)data;
     int i, n;
-	int16_t buf[BUFSIZE / 2];
+	int16_t buf[BUFFERSIZE / 2];
 
 	/* The sample type to use */
 	static const pa_sample_spec ss = {
@@ -124,7 +124,7 @@ void* input_pulse(void* data)
 		};
 	static const pa_buffer_attr pb = {
 	.maxlength = (uint32_t) -1, //BUFSIZE * 2,
-	.fragsize = BUFSIZE
+	.fragsize = BUFFERSIZE
 	};
 
 	pa_simple *s = NULL;
@@ -151,7 +151,7 @@ void* input_pulse(void* data)
 
 		 //sorting out channels
 
-	        for (i = 0; i < BUFSIZE / 2; i += 2) {
+	        for (i = 0; i < BUFFERSIZE / 2; i += 2) {
 
                                 if (audio->channels == 1) audio->audio_out_l[n] = (buf[i] + buf[i + 1]) / 2;
 
@@ -162,7 +162,7 @@ void* input_pulse(void* data)
                                         }
 
                                 n++;
-                                if (n == 8192 - 1)n = 0;
+                                if (n == audio->FFTbufferSize - 1)n = 0;
                         }
 
 		if (audio->terminate == 1) {            		

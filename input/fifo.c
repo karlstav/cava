@@ -1,12 +1,13 @@
 #include <unistd.h>
 #define BUFSIZE 1024
+#define MAX_FFTBUFERSIZE
 int rc;
 
 struct audio_data {
 
-	int sampleSize;
-        int audio_out_r[8192];
-        int audio_out_l[8192];
+	int FFTbufferSize;
+        int *audio_out_r;
+        int *audio_out_l;
         int format;
         unsigned int rate ;
         char *source; //alsa device, fifo path or pulse source
@@ -53,8 +54,8 @@ void* input_fifo(void* data)
 			nanosleep (&req, NULL);
 			t++;
 			if (t > 10) {
-				for (i = 0; i < 2048; i++)audio->audio_out_l[i] = 0;
-				for (i = 0; i < 2048; i++)audio->audio_out_r[i] = 0;
+				for (i = 0; i < audio->FFTbufferSize; i++)audio->audio_out_l[i] = 0;
+				for (i = 0; i < audio->FFTbufferSize; i++)audio->audio_out_r[i] = 0;
 				close(fd);
 				fd = open_fifo(audio->source);
 				t = 0;
@@ -73,7 +74,7 @@ void* input_fifo(void* data)
                         }
 
                 n++;
-                if (n == 2048 - 1) n = 0;
+                if (n == audio->FFTbufferSize - 1) n = 0;
         }
 
 /*

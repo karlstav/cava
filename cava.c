@@ -82,7 +82,7 @@
 
 struct termios oldtio, newtio;
 int rc;
-int M = 8 * 1024;
+//int M = 8 * 1024;
 int output_mode;
 
 
@@ -147,15 +147,15 @@ static bool directory_exists(const char * path) {
 
 #endif
 
-int * separate_freq_bands(fftw_complex out[M / 2 + 1], int bars, int lcf[200],
-			 int hcf[200], float k[200], int channel, double sens, double ignore) {
+int * separate_freq_bands(int FFTbufferSize, fftw_complex out[FFTbufferSize / 2 + 1], 
+			int bars, int lcf[200],  int hcf[200], float k[200], int channel, 
+			double sens, double ignore) {
 	int o,i;
 	double peak[201];
 	static int fl[200];
 	static int fr[200];
-	double y[M / 2 + 1];
+	double y[FFTbufferSize / 2 + 1];
 	double temp;
-
 
 	// process: separate frequency bands
 	for (o = 0; o < bars; o++) {
@@ -164,8 +164,6 @@ int * separate_freq_bands(fftw_complex out[M / 2 + 1], int bars, int lcf[200],
 
 		// process: get peaks
 		for (i = lcf[o]; i <= hcf[o]; i++) {
-
-			//getting r of compex
 			y[i] = hypot(out[i][0], out[i][1]);
 			peak[o] += y[i]; //adding upp band
 		}
@@ -271,19 +269,20 @@ Keys:\n\
 as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n";
 
 	char ch = '\0';
-	double inr[2 * (M / 2 + 1)];
-    double inl[2 * (M / 2 + 1)];
 	int bars = 25;
 	char supportedInput[255] = "'fifo'";
 	int sourceIsAuto = 1;
 	double smh;
 
-	//int maxvalue = 0;
+	double *inr, *inl;	
+	fftw_complex *outl, *outr;
 
 	struct audio_data audio;
 	struct config_params p;
 
 
+	//int maxvalue = 0;
+	
 	// general: console title
 	printf("%c]0;%s%c", '\033', PACKAGE, '\007');
 	
@@ -335,12 +334,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         strcat(supportedInput,", 'shmem'");
     #endif
 
-	//fft: planning to rock
-	fftw_complex outl[M / 2 + 1];
-	fftw_plan pl =  fftw_plan_dft_r2c_1d(M, inl, outl, FFTW_MEASURE);
 
-	fftw_complex outr[M / 2 + 1];
-	fftw_plan pr =  fftw_plan_dft_r2c_1d(M, inr, outr, FFTW_MEASURE);
 
 	// general: main loop
 	while (1) {
@@ -353,7 +347,23 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         exit(EXIT_FAILURE);
 	}
 
-    output_mode = p.om;
+	audio.FFTbufferSize = p.FFTbufferSize;
+
+
+	inr = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(double));
+	inl = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(double));
+	
+	audio.audio_out_l = (int*) malloc(p.FFTbufferSize * sizeof(int));
+	audio.audio_out_r = (int*) malloc(p.FFTbufferSize * sizeof(int));
+
+	
+	outl = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(fftw_complex));
+	outr = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(fftw_complex));
+	
+	fftw_plan pl =  fftw_plan_dft_r2c_1d(p.FFTbufferSize, inl, outl, FFTW_MEASURE);
+	fftw_plan pr =  fftw_plan_dft_r2c_1d(p.FFTbufferSize, inr, outr, FFTW_MEASURE);
+	
+	output_mode = p.om;
 
 	if (p.om != 4) {
 		// Check if we're running in a tty
@@ -378,7 +388,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	if (p.stereo) audio.channels = 2;
 	if (!p.stereo) audio.channels = 1;
 
-	for (i = 0; i < M; i++) {
+	for (i = 0; i < p.FFTbufferSize; i++) {
 		audio.audio_out_l[i] = 0;
 		audio.audio_out_r[i] = 0;
 	}
@@ -603,7 +613,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			//or maybe the nq freq is in M/4
 
 			//lfc stores the lower cut frequency foo each bar in the fft out buffer
-			lcf[n] = fre[n] * (M /2) + 1;
+			lcf[n] = fre[n] * (p.FFTbufferSize /2) + 1;
 			if (n != 0) {
 				hcf[n - 1] = lcf[n] - 1;
 	
@@ -705,8 +715,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 			// process: populate input buffer and check if input is present
 			silence = 1;
-			for (i = 0; i < (2 * (M / 2 + 1)); i++) {
-				if (i < M) {
+			for (i = 0; i < (2 * (p.FFTbufferSize / 2 + 1)); i++) {
+				if (i < p.FFTbufferSize) {
 					inl[i] = audio.audio_out_l[i];
 					if (p.stereo) inr[i] = audio.audio_out_r[i];
 					if (inl[i] || inr[i]) silence = 0;
@@ -727,14 +737,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					fftw_execute(pl);
 					fftw_execute(pr);
 
-					fl = separate_freq_bands(outl,bars/2,lcf,hcf, k, 1,
-						p.sens, p.ignore);
-					fr = separate_freq_bands(outr,bars/2,lcf,hcf, k, 2,
-						p.sens, p.ignore);
+					fl = separate_freq_bands(p.FFTbufferSize, outl,bars/2,
+							lcf,hcf, k, 1, p.sens, p.ignore);
+					fr = separate_freq_bands(p.FFTbufferSize, outr,bars/2,
+							lcf,hcf, k, 2, p.sens, p.ignore);
 				} else {
 					fftw_execute(pl);
-					fl = separate_freq_bands(outl,bars,lcf,hcf, k, 1,
-						p.sens, p.ignore);
+					fl = separate_freq_bands(p.FFTbufferSize, outl,bars,
+							lcf,hcf, k, 1, p.sens, p.ignore);
 				}
 
 
@@ -903,7 +913,16 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	if (p.customEQ) free(p.smooth);
 	if (sourceIsAuto) free(audio.source);
 
-    cleanup();
+	free(inr);
+	free(inl);
+	fftw_free(outr);
+	fftw_free(outl);
+	free(audio.audio_out_l);
+	free(audio.audio_out_r);
+	fftw_destroy_plan(pl);
+	fftw_destroy_plan(pr);
+
+    	cleanup();
 
 	//fclose(fp);
 	}
