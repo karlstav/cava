@@ -448,7 +448,7 @@ p->autosens = iniparser_getint(ini, "general:autosens", 1);
 p->overshoot = iniparser_getint(ini, "general:overshoot", 20);
 p->lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
 p->highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
-p->FFTbufferSize = iniparser_getint(ini, "general:FFTbufferSize", 13); 
+p->FFTbufferSize = iniparser_getint(ini, "general:FFTbufferSize", 12); 
 
 // config: output
 channels =  (char *)iniparser_getstring(ini, "output:channels", "stereo");

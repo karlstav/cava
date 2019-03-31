@@ -38,7 +38,7 @@
 # increasing the will improve the accuracy of the visualization, 
 # but will also make it slower and increase CPU usage
 # anything below 10 and above 13 is considered experimental. 
-; FFTbufferSize = 13;
+; FFTbufferSize = 12;
 
 
 
