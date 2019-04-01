@@ -90,7 +90,7 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
 
         // 0 -> col1, 1-> col1<=>col2, 2 -> col2 and so on
         short unsigned int rgb[2 * gradient_count - 1][3];
-        char next_color[8];
+        char next_color[14];
 
         gradient_size = *height;
 

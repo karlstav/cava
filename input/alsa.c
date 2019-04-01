@@ -120,7 +120,7 @@ void* input_alsa(void* data) {
         switch (audio->format) {
         case 16:
             err = snd_pcm_readi(handle, buf, frames);
-	    for (int i = 0; i < frames * 2; i += 2) {
+	    for (uint16_t i = 0; i < frames * 2; i += 2) {
 		if (audio->channels == 1) audio->audio_out_l[n] = (buf[i] + buf[i + 1]) / 2;
                 //stereo storing channels in buffer
                 if (audio->channels == 2) {
