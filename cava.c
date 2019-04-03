@@ -148,7 +148,7 @@ static bool directory_exists(const char * path) {
 #endif
 
 int * separate_freq_bands(int FFTbufferSize, fftw_complex out[FFTbufferSize / 2 + 1], 
-			int bars, int lcf[200],  int hcf[200], float k[200], int channel, 
+			int bars, int lcf[200],  int hcf[200], double k[200], int channel, 
 			double sens, double ignore) {
 	int o,i;
 	double peak[201];
@@ -168,9 +168,8 @@ int * separate_freq_bands(int FFTbufferSize, fftw_complex out[FFTbufferSize / 2 
 			peak[o] += y[i]; //adding upp band
 		}
 
-
 		peak[o] = peak[o] / (hcf[o]-lcf[o] + 1); //getting average
-		temp = peak[o] * sens * k[o] / 100000; //multiplying with k and sens
+		temp = peak[o] * sens * k[o]; //multiplying with k and sens
 		if (temp <= ignore) temp = 0;
 		if (channel == 1) fl[o] = temp;
 		else fr[o] = temp;
@@ -243,7 +242,7 @@ int main(int argc, char **argv)
 	int fall[200];
 	//float temp;
 	float fpeak[200];
-	float k[200];
+	double k[200];
 	float g;
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 0 };
 	char configPath[255];
@@ -353,8 +352,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	inr = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(double));
 	inl = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(double));
 	
-	audio.audio_out_l = (int*) malloc(p.FFTbufferSize * sizeof(int));
-	audio.audio_out_r = (int*) malloc(p.FFTbufferSize * sizeof(int));
+	audio.audio_out_l = (uint16_t*) malloc(p.FFTbufferSize * sizeof(uint16_t));
+	audio.audio_out_r = (uint16_t*) malloc(p.FFTbufferSize * sizeof(uint16_t));
 
 	
 	outl = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(fftw_complex));
@@ -634,7 +633,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		// process: weigh signal to frequencies height and EQ
 		for (n = 0; n < bars; n++) {
 			k[n] = pow(fc[n],0.85);
-			k[n] *= (float)height /  100; 
+			k[n] *= (float)height / pow(2,32); 
 			k[n] *=	p.smooth[(int)floor(((double)n) * smh)];
 			}
 
@@ -774,7 +773,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			}
 
 
-			//preperaing signal for drawing
+			//mirroring stereo channels
 			for (o = 0; o < bars; o++) {
 				if (p.stereo) {
 					if (o < bars / 2) {
@@ -817,7 +816,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					fmem[o] = fmem[o] * (1 - div / 20);
 
 					#ifdef DEBUG
-						mvprintw(o,0,"%d: f:%f->%f (%d->%d), k-value: %f, peak:%d \n",
+						mvprintw(o,0,"%d: f:%f->%f (%d->%d), k-value: %15e, peak:%d \n",
 							 o, fc[o], fc[o + 1],
 									 lcf[o], hcf[o], k[o], f[o]);
 					#endif

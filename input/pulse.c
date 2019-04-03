@@ -109,11 +109,10 @@ void getPulseDefaultSink(void* data) {
 
 }
 
-void* input_pulse(void* data)
-{
+void* input_pulse(void* data) {
 
-    struct audio_data *audio = (struct audio_data *)data;
-    int i, n;
+	struct audio_data *audio = (struct audio_data *)data;
+	int i, n;
 	int16_t buf[BUFFERSIZE / 2];
 
 	/* The sample type to use */
@@ -121,54 +120,58 @@ void* input_pulse(void* data)
 		.format = PA_SAMPLE_S16LE,
 		.rate =  44100,
 		.channels = 2
-		};
+	};
 	static const pa_buffer_attr pb = {
-	.maxlength = (uint32_t) -1, //BUFSIZE * 2,
-	.fragsize = BUFFERSIZE
+		.maxlength = (uint32_t) -1, //BUFSIZE * 2,
+		.fragsize = BUFFERSIZE
 	};
 
 	pa_simple *s = NULL;
 	int error;
 
-	if (!(s = pa_simple_new(NULL, "cava", PA_STREAM_RECORD, audio->source, "audio for cava", &ss, NULL, &pb, &error))) {
-		//fprintf(stderr, __FILE__": Could not open pulseaudio source: %s, %s. To find a list of your pulseaudio sources run 'pacmd list-sources'\n",audio->source, pa_strerror(error));
-        sprintf(audio->error_message, __FILE__": Could not open pulseaudio source: %s, %s. To find a list of your pulseaudio sources run 'pacmd list-sources'\n",audio->source, pa_strerror(error));
+	if (!(s = pa_simple_new(NULL, "cava", PA_STREAM_RECORD, audio->source, 
+		"audio for cava", &ss, NULL, &pb, &error))) {
+        	sprintf(audio->error_message, 
+		__FILE__": Could not open pulseaudio source: %s, %s. \
+		To find a list of your pulseaudio sources run 'pacmd list-sources'\n",
+		audio->source, pa_strerror(error));
+
 		audio->terminate = 1;
-        pthread_exit(NULL);
+		pthread_exit(NULL);
 	}
 
 	n = 0;
 
 	while (1) {
-        	/* Record some data ... */
         	if (pa_simple_read(s, buf, sizeof(buf), &error) < 0) {
-            //fprintf(stderr, __FILE__": pa_simple_read() failed: %s\n", pa_strerror(error));
-        	//exit(EXIT_FAILURE);
-            sprintf(audio->error_message, __FILE__": pa_simple_read() failed: %s\n", pa_strerror(error));
-            audio->terminate = 1;
-            pthread_exit(NULL);
+            		sprintf(audio->error_message, __FILE__": pa_simple_read() failed: %s\n",
+			pa_strerror(error));
+            		audio->terminate = 1;
+            		pthread_exit(NULL);
 		}
 
 		 //sorting out channels
 
 	        for (i = 0; i < BUFFERSIZE / 2; i += 2) {
 
-                                if (audio->channels == 1) audio->audio_out_l[n] = (buf[i] + buf[i + 1]) / 2;
+                                if (audio->channels == 1) {
+					audio->audio_out_l[n] = (buf[i] + buf[i + 1]) / 2;
+				}
 
                                 //stereo storing channels in buffer
                                 if (audio->channels == 2) {
                                         audio->audio_out_l[n] = buf[i];
                                         audio->audio_out_r[n] = buf[i + 1];
-                                        }
+				}
 
                                 n++;
-                                if (n == audio->FFTbufferSize - 1)n = 0;
+                                if (n == audio->FFTbufferSize - 1) n = 0;
                         }
 
 		if (audio->terminate == 1) {            		
 			pa_simple_free(s);
 			break;
-		    }
+		}
         }
 
 	return 0;
