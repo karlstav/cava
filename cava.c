@@ -642,7 +642,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		// process: weigh signal to frequencies height and EQ
 		for (n = 0; n < bars; n++) {
 			k[n] = pow(fc[n],0.85);
-			k[n] *= (float)height / pow(2,32); 
+			k[n] *= (float)height / pow(2,33);
 			k[n] *=	p.smooth[(int)floor(((double)n) * smh)];
 			}
 
@@ -849,12 +849,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				for (o = 0; o < bars; o++) {
 					if (f[o] > height ) {
 						senseLow = false;
-						p.sens = p.sens * 0.985;
+						p.sens = p.sens * 0.98;
 						break;
 					}
-					if (senseLow && !silence) p.sens = p.sens * 1.01;
-				if (o == bars - 1) p.sens = p.sens * 1.002;
-				}
+					if (senseLow && !silence) p.sens = p.sens * 1.005;
+				}	
+				p.sens = p.sens * 1.001;
 			}
 			
 			// output: draw processed input
