@@ -170,6 +170,7 @@ int * separate_freq_bands(int FFTbufferSize, fftw_complex out[FFTbufferSize / 2 
 
 		peak[o] = peak[o] / (hcf[o]-lcf[o] + 1); //getting average
 		temp = peak[o] * sens * k[o]; //multiplying with k and sens
+		//printf("%d peak o: %f * sens: %f * k: %f = f: %f\n", o, peak[o], sens, k[o], temp);
 		if (temp <= ignore) temp = 0;
 		if (channel == 1) fl[o] = temp;
 		else fr[o] = temp;
@@ -387,9 +388,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	if (p.stereo) audio.channels = 2;
 	if (!p.stereo) audio.channels = 1;
 
-	for (i = 0; i < p.FFTbufferSize; i++) {
-		audio.audio_out_l[i] = 0;
-		audio.audio_out_r[i] = 0;
+	for (i = 0; i < (p.FFTbufferSize / 2 + 1); i++) {
+		if (i < p.FFTbufferSize) {
+			audio.audio_out_l[i] = 0;
+			audio.audio_out_r[i] = 0;
+		}
+		inl[i] = 0;
+		inr[i] = 0;
+		for (n = 0; n < 2; n++) {
+			outl[i][n] = 0;
+			outr[i][n] = 0;	
+		}
 	}
 
 	#ifdef ALSA
