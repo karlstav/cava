@@ -354,10 +354,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	inr = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(double));
 	inl = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(double));
 	
-	audio.audio_out_l = (int16_t*) malloc(p.FFTbufferSize * sizeof(int16_t));
-	audio.audio_out_r = (int16_t*) malloc(p.FFTbufferSize * sizeof(int16_t));
-
-	
 	outl = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(fftw_complex));
 	outr = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(fftw_complex));
 	
@@ -922,8 +918,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	free(inl);
 	fftw_free(outr);
 	fftw_free(outl);
-	free(audio.audio_out_l);
-	free(audio.audio_out_r);
 	fftw_destroy_plan(pl);
 	fftw_destroy_plan(pr);
 

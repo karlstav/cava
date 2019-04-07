@@ -6,8 +6,8 @@ int rc;
 struct audio_data {
 
 	int FFTbufferSize;
-        int16_t *audio_out_r;
-        int16_t *audio_out_l;
+        int16_t audio_out_r[65536];
+        int16_t audio_out_l[65536];
         int format;
         unsigned int rate ;
         char *source; //alsa device, fifo path or pulse source
