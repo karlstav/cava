@@ -238,7 +238,8 @@ int main(int argc, char **argv)
 	int flast[200];
 	int flastd[200];
 	int sleep = 0;
-	int i, n, o, height, h, w, c, rest, inAtty, silence, fp, fptest;
+	int i, n, o, height, h, w, c, rest, inAtty, fp, fptest;
+	bool silence;
 	//int cont = 1;
 	int fall[200];
 	//float temp;
@@ -484,7 +485,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 
 	bool reloadConf = false;
-	bool senseLow = true;
 
 	while  (!reloadConf) {//jumbing back to this loop means that you resized the screen
 		for (i = 0; i < 200; i++) {
@@ -534,7 +534,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					//fifo needs to be open for reading in order to write to it
 					fptest = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644);
 				}
-		    }
+			}
 
 			fp = open(p.raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
 			if (fp == -1) {
@@ -543,16 +543,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			}
 			printf("open file %s for writing raw ouput\n",p.raw_target);
 
-            //width must be hardcoded for raw output.
+           		 //width must be hardcoded for raw output.
 			w = 200;
-
-    		if (strcmp(p.data_format, "binary") == 0) {
-                height = pow(2, p.bit_format) - 1;
-            } else {
-                height = p.ascii_range;
-            }
-
-
+		
+			if (strcmp(p.data_format, "binary") == 0) {
+				height = pow(2, p.bit_format) - 1;
+			} else {
+				height = p.ascii_range;
+			}
 
 		}
 
@@ -570,7 +568,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 
 		if (bars < 1) bars = 1; // must have at least 1 bars
-        if (bars > 200) bars = 200; // cant have more than 200 bars
+		if (bars > 200) bars = 200; // cant have more than 200 bars
 
 		if (p.stereo) { //stereo must have even numbers of bars
 			if (bars%2 != 0) bars--;
@@ -613,6 +611,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 		// process: calculate cutoff frequencies
 		for (n = 0; n < bars + 1; n++) {
+			double pot = freqconst * (-1); 
+			pot +=  (n + 1) / (bars + 1) * freqconst;
 			fc[n] = p.highcf * pow(10, freqconst * (-1) + ((((float)n + 1) /
 				((float)bars + 1)) * freqconst));
 			fre[n] = fc[n] / (audio.rate / 2);
@@ -642,7 +642,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		// process: weigh signal to frequencies height and EQ
 		for (n = 0; n < bars; n++) {
 			k[n] = pow(fc[n],0.85);
-			k[n] *= (float)height / pow(2,33);
+			k[n] *= (float)height / pow(2,28);
 			k[n] *=	p.smooth[(int)floor(((double)n) * smh)];
 			}
 
@@ -722,19 +722,19 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			#endif
 
 			// process: populate input buffer and check if input is present
-			silence = 1;
+			silence = true;
 			for (i = 0; i < (2 * (p.FFTbufferSize / 2 + 1)); i++) {
 				if (i < p.FFTbufferSize) {
 					inl[i] = audio.audio_out_l[i];
 					if (p.stereo) inr[i] = audio.audio_out_r[i];
-					if (inl[i] || inr[i]) silence = 0;
+					if (inl[i] || inr[i]) silence = false;
 				} else {
 					inl[i] = 0;
 					if (p.stereo) inr[i] = 0;
 				}
 			}
 
-			if (silence == 1)sleep++;
+			if (silence) sleep++;
 			else sleep = 0;
 
 			// process: if input was present for the last 5 seconds apply FFT to it
@@ -768,7 +768,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				continue;
 			}
 
-			// process [smoothing]
+			// process [filter]
 
 			if (p.monstercat) {
 				if (p.stereo) {
@@ -782,8 +782,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			}
 
 
-			//mirroring stereo channels
+			// processing signal
+		
+			bool senselow = true;
+
 			for (o = 0; o < bars; o++) {
+				//mirroring stereo channels
 				if (p.stereo) {
 					if (o < bars / 2) {
 						f[o] = fl[bars / 2 - o - 1];
@@ -794,12 +798,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				} else {
 					f[o] = fl[o];
 				}
-			}
 
-
-			// process [smoothing]: falloff
-			if (g > 0) {
-				for (o = 0; o < bars; o++) {
+				// process [smoothing]: falloff
+				if (g > 0) {
 					if (f[o] < flast[o]) {
 						f[o] = fpeak[o] - (g * fall[o] * fall[o]);
 						fall[o]++;
@@ -810,11 +811,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 					flast[o] = f[o];
 				}
-			}
 
-			// process [smoothing]: integral
-			if (p.integral > 0) {
-				for (o = 0; o < bars; o++) {
+				// process [smoothing]: integral
+				if (p.integral > 0) {
 					f[o] = fmem[o] * p.integral + f[o];
 					fmem[o] = f[o];
 
@@ -825,37 +824,35 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					fmem[o] = fmem[o] * (1 - div / 20);
 
 					#ifdef DEBUG
-						mvprintw(o,0,"%d: f:%f->%f (%d->%d), k-value: %15e, peak:%d \n",
-							 o, fc[o], fc[o + 1],
-									 lcf[o], hcf[o], k[o], f[o]);
+						mvprintw(o,0,"%d: f:%f->%f (%d->%d), k-value:\
+						%15e, peak:%d \n", o, fc[o], fc[o + 1], 
+						lcf[o], hcf[o], k[o], f[o]);
+						//if(f[o] > maxvalue) maxvalue = f[o];
 					#endif
 				}
-			}
 
-
-			// zero values causes divided by zero segfault
-			for (o = 0; o < bars; o++) {
+				// zero values causes divided by zero segfault (if not raw)
 				if (f[o] < 1) {
 					f[o] = 1;
 					if (p.om == 4) f[o] = 0;
 				}
-				//if(f[o] > maxvalue) maxvalue = f[o];
-			}
 
-			//printf("%d\n",maxvalue); //checking maxvalue I keep forgetting its about 10000
-
-			//autmatic sens adjustment
-			if (p.autosens) {
-				for (o = 0; o < bars; o++) {
-					if (f[o] > height ) {
-						senseLow = false;
+				//autmatic sens adjustment
+				if (p.autosens) {
+					if (f[o] > height && senselow) {
 						p.sens = p.sens * 0.98;
-						break;
+						senselow = false;
 					}
-					if (senseLow && !silence) p.sens = p.sens * 1.005;
 				}	
-				p.sens = p.sens * 1.001;
 			}
+
+			if (p.autosens && !silence && senselow) p.sens = p.sens * 1.001;
+
+
+			#ifdef DEBUG
+				//printf("%d\n",maxvalue); //checking maxvalue 10000
+			#endif
+
 			
 			// output: draw processed input
 			#ifndef DEBUG
@@ -899,13 +896,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				flastd[o] = f[o];
 			}
 
-            //checking if audio thread has exited unexpectedly
-            if (audio.terminate == 1) {
-                cleanup();
-   				fprintf(stderr,
-                "Audio thread exited unexpectedly. %s\n", audio.error_message);
-                exit(EXIT_FAILURE);
-            }
+			//checking if audio thread has exited unexpectedly
+			if (audio.terminate == 1) {
+				cleanup();
+				fprintf(stderr,
+				"Audio thread exited unexpectedly. %s\n", audio.error_message);
+				exit(EXIT_FAILURE);
+			}
 
 		}//resize terminal
 
