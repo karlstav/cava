@@ -35,11 +35,11 @@ snd_pcm_uframes_t* frames) {
 		exit(EXIT_FAILURE);
 	}
 
-    if ((err = snd_pcm_prepare (*handle)) < 0) {
-    fprintf (stderr, "cannot prepare audio interface for use (%s)\n",
-             snd_strerror (err));
-    exit (EXIT_FAILURE);
-    }
+	if ((err = snd_pcm_prepare (*handle)) < 0) {
+	fprintf (stderr, "cannot prepare audio interface for use (%s)\n",
+		snd_strerror (err));
+	exit (EXIT_FAILURE);
+	}
 
 	// getting actual format
 	snd_pcm_hw_params_get_format(params, (snd_pcm_format_t*)&sample_rate);
@@ -89,7 +89,7 @@ const int size) {
 		}
 
 		++audio_out_buffer_index;
-		audio_out_buffer_index %= 2048;
+		audio_out_buffer_index %= audio->FFTbufferSize;
 	}
 }
 
@@ -107,6 +107,7 @@ void* input_alsa(void* data) {
 	snd_pcm_get_params(handle, &buffer_size, &period_size);
 	
 	int16_t buf[period_size];
+	int32_t buffer32[period_size];
 	frames = period_size / ((audio->format / 8) * CHANNELS_COUNT);
 	//printf("period size: %lu\n", period_size);
 	//exit(0);
@@ -128,7 +129,23 @@ void* input_alsa(void* data) {
                         audio->audio_out_r[n] = buf[i + 1];
                         }
                 n++;
-                if (n == 2048 - 1)n = 0;
+                if (n == audio->FFTbufferSize - 1) n = 0;
+            }
+            break;
+	case 32:
+		err = snd_pcm_readi(handle, buffer32, frames);
+	    for (uint16_t i = 0; i < frames * 2; i += 2) {
+		if (audio->channels == 1) {
+			audio->audio_out_l[n] = (buffer32[i] / pow(2,16)) / 2;
+			audio->audio_out_l[n] += (buffer32[i + 1] / pow(2,16)) / 2;
+		}
+                //stereo storing channels in buffer
+                if (audio->channels == 2) {
+                        audio->audio_out_l[n] = buffer32[i] / pow(2,16);
+                        audio->audio_out_r[n] = buffer32[i + 1] / pow(2,16);
+		}
+                n++;
+                if (n == audio->FFTbufferSize - 1) n = 0;
             }
             break;
         default:

@@ -52,7 +52,7 @@ void* input_sndio(void* data)
 				audio->audio_out_l[n] = buf[i];
 				audio->audio_out_r[n] = buf[i + 1];
 			}
-			n = (n + 1) % 2048;
+			n = (n + 1) % audio->FFTbufferSize;
 		}
 	}
 

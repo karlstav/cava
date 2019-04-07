@@ -68,7 +68,7 @@ void* input_shmem(void* data)
 				audio->audio_out_r[n] = mmap_area->buffer[i + 1];
 			}
 			n++;
-			if (n == 2048 - 1) n = 0;
+			if (n == audio->FFTbufferSize - 1) n = 0;
 		}
 		if (audio->terminate == 1) {
 			break;
