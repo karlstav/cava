@@ -80,13 +80,14 @@
 #define GCC_UNUSED /* nothing */
 #endif
 
-struct termios oldtio, newtio;
-int rc;
+//struct termios oldtio, newtio;
 //int M = 8 * 1024;
-int output_mode;
 
 
 
+//used by sig handler 
+//needs to know output mode in orer to clean up terminal
+int output_mode; 
 // whether we should reload the config or not
 int should_reload = 0;
 // whether we should only reload colors or not
@@ -238,7 +239,7 @@ int main(int argc, char **argv)
 	int flast[200];
 	int flastd[200];
 	int sleep = 0;
-	int i, n, o, height, h, w, c, rest, inAtty, fp, fptest;
+	int i, n, o, height, h, w, c, rest, inAtty, fp, fptest, rc;
 	bool silence;
 	//int cont = 1;
 	int fall[200];
@@ -608,9 +609,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		// process: calculate cutoff frequencies
 		for (n = 0; n < bars + 1; n++) {
 			double pot = freqconst * (-1); 
-			pot +=  (n + 1) / (bars + 1) * freqconst;
-			fc[n] = p.highcf * pow(10, freqconst * (-1) + ((((float)n + 1) /
-				((float)bars + 1)) * freqconst));
+			pot +=  ((float)n + 1) / ((float)bars + 1) * freqconst;
+			fc[n] = p.highcf * pow(10, pot);
 			fre[n] = fc[n] / (audio.rate / 2);
 			//remember nyquist!, pr my calculations this should be rate/2
 			//and  nyquist freq in M/2 but testing shows it is not...
