@@ -52,7 +52,7 @@ void pulseaudio_context_state_callback(pa_context *pulseaudio_context,
 	pulseaudio_context, cb, userdata));
 	break;
 	case PA_CONTEXT_FAILED:
-	printf("failed to coennect to pulseaudio server\n");
+	printf("failed to connect to pulseaudio server\n");
 	exit(EXIT_FAILURE);
 	break;
 	case PA_CONTEXT_TERMINATED:
