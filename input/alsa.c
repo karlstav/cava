@@ -122,31 +122,49 @@ void* input_alsa(void* data) {
         case 16:
             err = snd_pcm_readi(handle, buf, frames);
 	    for (uint16_t i = 0; i < frames * 2; i += 2) {
-		if (audio->channels == 1) audio->audio_out_l[n] = (buf[i] + buf[i + 1]) / 2;
-                //stereo storing channels in buffer
-                if (audio->channels == 2) {
-                        audio->audio_out_l[n] = buf[i];
-                        audio->audio_out_r[n] = buf[i + 1];
-                        }
-                n++;
-                if (n == audio->FFTbufferSize - 1) n = 0;
-            }
+		    if (audio->channels == 1){
+			    if (audio->average) {
+				    audio->audio_out_l[n] = (buf[i] + buf[i + 1]) / 2;
+			    }
+			    if (audio->left) {
+				    audio->audio_out_l[n] = buf[i];
+			    }
+			    if (audio->right) {
+				    audio->audio_out_l[n] = buf[i + 1];
+			    }
+		    }
+		    //stereo storing channels in buffer
+		    if (audio->channels == 2) {
+			    audio->audio_out_l[n] = buf[i];
+			    audio->audio_out_r[n] = buf[i + 1];
+		    }
+		    n++;
+		    if (n == audio->FFTbufferSize - 1) n = 0;
+	    }
             break;
 	case 32:
 		err = snd_pcm_readi(handle, buffer32, frames);
-	    for (uint16_t i = 0; i < frames * 2; i += 2) {
-		if (audio->channels == 1) {
-			audio->audio_out_l[n] = (buffer32[i] / pow(2,16)) / 2;
-			audio->audio_out_l[n] += (buffer32[i + 1] / pow(2,16)) / 2;
+		for (uint16_t i = 0; i < frames * 2; i += 2) {
+			if (audio->channels == 1) {
+				if (audio->average) {
+					audio->audio_out_l[n] = (buffer32[i] / pow(2,16)) / 2;
+					audio->audio_out_l[n] += (buffer32[i + 1] / pow(2,16)) / 2;
+				}
+				if (audio->left) {
+					audio->audio_out_l[n] = (buffer32[i] / pow(2,16));
+				}
+				if (audio->right) {
+					audio->audio_out_l[n] = (buffer32[i + 1] / pow(2,16));
+				}
+			}
+			//stereo storing channels in buffer
+			if (audio->channels == 2) {
+				audio->audio_out_l[n] = buffer32[i] / pow(2,16);
+				audio->audio_out_r[n] = buffer32[i + 1] / pow(2,16);
+			}
+			n++;
+			if (n == audio->FFTbufferSize - 1) n = 0;
 		}
-                //stereo storing channels in buffer
-                if (audio->channels == 2) {
-                        audio->audio_out_l[n] = buffer32[i] / pow(2,16);
-                        audio->audio_out_r[n] = buffer32[i + 1] / pow(2,16);
-		}
-                n++;
-                if (n == audio->FFTbufferSize - 1) n = 0;
-            }
             break;
         default:
 		err = snd_pcm_readi(handle, buffer, frames);

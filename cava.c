@@ -385,6 +385,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	audio.terminate = 0;
 	if (p.stereo) audio.channels = 2;
 	if (!p.stereo) audio.channels = 1;
+	audio.average = false;
+	audio.left = false;
+	audio.right = false;
+	if (strcmp(p.mono_option, "average") == 0) audio.average = true;
+	if (strcmp(p.mono_option, "left") == 0) audio.left = true;
+	if (strcmp(p.mono_option, "right") == 0) audio.right = true;
 
 	for (i = 0; i < (p.FFTbufferSize / 2 + 1); i++) {
 		if (i < p.FFTbufferSize) {

@@ -80,8 +80,10 @@
 
 # Visual channels. Can be 'stereo' or 'mono'.
 # 'stereo' mirrors both channels with low frequencies in center.
-# 'mono' averages both channels and outputs left to right lowest to highest frequencies.
+# 'mono' outputs left to right lowest to highest frequencies.
+# 'mono_option' set mono to either take input from 'left', 'right' or 'average'.
 ; channels = stereo
+; mono_option = average
 
 # Raw output target. A fifo will be created if target does not exist.
 ; raw_target = /dev/stdout

@@ -13,6 +13,7 @@ struct audio_data {
         char *source; //alsa device, fifo path or pulse source
         int im; //input mode alsa, fifo or pulse
         int channels;
+	bool left, right, average;
 	int terminate; // shared variable used to terminate audio thread
         char error_message[1024];
 };
@@ -40,7 +41,7 @@ void* input_fifo(void* data)
 	int bytes = 0;
 	int16_t buf[BUFSIZE / 2];
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 10000000 };
-
+	
 
 
 

@@ -12,7 +12,7 @@ char *inputMethod, *outputMethod, *channels;
 
 struct config_params {
 
-char *color, *bcolor, *raw_target, *audio_source, /**gradient_color_1, *gradient_color_2,*/ **gradient_colors, *data_format;
+char *color, *bcolor, *raw_target, *audio_source, /**gradient_color_1, *gradient_color_2,*/ **gradient_colors, *data_format, *mono_option;
 char bar_delim, frame_delim ;
 double monstercat, integral, gravity, ignore, sens;
 unsigned int lowcf, highcf;
@@ -248,7 +248,18 @@ if (p->om == 0) {
 
 // validate: output channels
 p->stereo = -1;
-if (strcmp(channels, "mono") == 0) p->stereo = 0;
+if (strcmp(channels, "mono") == 0) {
+	p->stereo = 0;
+	if (strcmp(p->mono_option, "average") != 0 && \
+			strcmp(p->mono_option, "left") != 0 && \
+			strcmp(p->mono_option, "right") != 0 ){
+
+		write_errorf(error,
+				"mono option %s is not supported, supported options are: 'average', 'left' or 'right'\n",
+				p->mono_option);
+		return false;
+	}
+}
 if (strcmp(channels, "stereo") == 0) p->stereo = 1;
 if (p->stereo == -1) {
 	write_errorf(error,
@@ -452,6 +463,7 @@ p->FFTbufferSize = iniparser_getint(ini, "general:FFTbufferSize", 12);
 
 // config: output
 channels =  (char *)iniparser_getstring(ini, "output:channels", "stereo");
+p->mono_option = (char *)iniparser_getstring(ini, "output:mono_option", "average");
 p->raw_target = (char *)iniparser_getstring(ini, "output:raw_target", "/dev/stdout");
 p->data_format = (char *)iniparser_getstring(ini, "output:data_format", "binary");
 p->bar_delim = (char)iniparser_getint(ini, "output:bar_delimiter", 59);
