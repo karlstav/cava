@@ -353,7 +353,7 @@ bool load_colors(struct config_params * p, dictionary* ini, void* err) {
         }
         p->gradient_colors = (char **)malloc(sizeof(char*) * p->gradient_count);
         for(int i = 0;i < p->gradient_count;i++){
-            char ini_config[23];
+            char ini_config[32];
             sprintf(ini_config, "color:gradient_color_%d", (i + 1));
             p->gradient_colors[i] = (char *)iniparser_getstring(ini, ini_config, NULL);
             if(p->gradient_colors[i] == NULL){
