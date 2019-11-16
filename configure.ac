@@ -70,6 +70,19 @@ AC_CHECK_LIB(pulse-simple, pa_simple_new, have_pulse=yes, have_pulse=no)
     fi
 
 dnl ######################
+dnl checking for portaudio dev
+dnl ######################
+AC_CHECK_LIB(portaudio, Pa_Initialize, have_portaudio=yes, have_portaudio=no)
+    if [[ $have_portaudio = "yes" ]] ; then
+      LIBS="$LIBS -lportaudio"
+      CPPFLAGS="$CPPFLAGS -DPORTAUDIO"
+    fi
+
+    if [[ $have_portaudio = "no" ]] ; then
+      AC_MSG_NOTICE([WARNING: No portaudio dev files found building without portaudio support])
+    fi
+
+dnl ######################
 dnl checking for sndio dev
 dnl ######################
 AC_CHECK_LIB(sndio, sio_open, have_sndio=yes, have_sndio=no)

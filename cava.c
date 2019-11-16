@@ -54,6 +54,11 @@
 #include "input/alsa.c"
 #endif
 
+#ifdef PORTAUDIO
+#include "input/portaudio.c"
+#include "input/portaudio.h"
+#endif
+
 #ifdef PULSE
 #include "input/pulse.h"
 #include "input/pulse.c"
@@ -474,6 +479,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	if (p.im == 5) {
 		thr_id = pthread_create(&p_thread, NULL, input_shmem, (void*)&audio);
 		//audio.rate = 44100;
+	}
+	#endif
+
+	#ifdef PORTAUDIO
+	if (p.im == 6) {
+		thr_id = pthread_create(&p_thread, NULL, input_portaudio, (void*)&audio);
+		audio.rate = 44100;
 	}
 	#endif
 

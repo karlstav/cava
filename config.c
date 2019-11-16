@@ -167,6 +167,13 @@ if (strcmp(inputMethod, "shmem") == 0) {
 		return false;
 	#endif
 }
+if (strcmp(inputMethod, "portaudio") == 0) {
+	p->im = 6;
+	#ifndef PORTAUDIO
+		write_errorf(error, "cava was built without portaudio support\n");
+		return false;
+	#endif
+}
 if (p->im == 0) {
 	write_errorf(error, "input method '%s' is not supported, supported methods are: %s\n",
 					inputMethod, supportedInput);
@@ -423,6 +430,11 @@ if (colorsOnly) {
 //setting fifo to defaualt if no other input modes supported
 inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo");
 
+//setting portaudio to default if supported
+#ifdef ALSA
+	inputMethod = (char *)iniparser_getstring(ini, "input:method", "portaudio");
+#endif
+
 //setting alsa to defaualt if supported
 #ifdef ALSA
 	inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa");
@@ -516,6 +528,12 @@ if (strcmp(inputMethod, "sndio") == 0) {
 if (strcmp(inputMethod, "shmem") == 0) {
 	p->im = 5;
 	p->audio_source = (char *)iniparser_getstring(ini, "input:source", "/squeezelite-00:00:00:00:00:00");
+}
+#endif
+#ifdef PORTAUDIO
+if (strcmp(inputMethod, "portaudio") == 0) {
+	p->im = 6;
+	p->audio_source = (char *)iniparser_getstring(ini, "input:source", "auto");
 }
 #endif
 
