@@ -67,7 +67,7 @@ static int get_certain_frame(signed char* buffer, int buffer_index, int adjustme
 		temp -= lo;
 	return temp;
 }
-
+/*
 static void fill_audio_outs(struct audio_data* audio, signed char* buffer,
 const int size) {
 	int radj = audio->format / 4; // adjustments for interleaved
@@ -92,7 +92,7 @@ const int size) {
 		audio_out_buffer_index %= audio->FFTbufferSize;
 	}
 }
-
+*/
 #define FRAMES_NUMBER 256
 
 void* input_alsa(void* data) {
@@ -105,7 +105,9 @@ void* input_alsa(void* data) {
 
 	initialize_audio_parameters(&handle, audio, &frames);
 	snd_pcm_get_params(handle, &buffer_size, &period_size);
-	
+
+	int radj = audio->format / 4; // adjustments for interleaved
+	int ladj = audio->format / 8;
 	int16_t buf[period_size];
 	int32_t buffer32[period_size];
 	frames = period_size / ((audio->format / 8) * CHANNELS_COUNT);
@@ -115,80 +117,50 @@ void* input_alsa(void* data) {
 	// frames * bits/8 * channels
 	//const int size = frames * (audio->format / 8) * CHANNELS_COUNT;
 	signed char* buffer = malloc(period_size);
-	int n = 0;
 
 	while (1) {
-        switch (audio->format) {
-        case 16:
-            err = snd_pcm_readi(handle, buf, frames);
-	    for (uint16_t i = 0; i < frames * 2; i += 2) {
-		    if (audio->channels == 1){
-			    if (audio->average) {
-				    audio->audio_out_l[n] = (buf[i] + buf[i + 1]) / 2;
-			    }
-			    if (audio->left) {
-				    audio->audio_out_l[n] = buf[i];
-			    }
-			    if (audio->right) {
-				    audio->audio_out_l[n] = buf[i + 1];
-			    }
-		    }
-		    //stereo storing channels in buffer
-		    if (audio->channels == 2) {
-			    audio->audio_out_l[n] = buf[i];
-			    audio->audio_out_r[n] = buf[i + 1];
-		    }
-		    n++;
-		    if (n == audio->FFTbufferSize - 1) n = 0;
-	    }
-            break;
-	case 32:
-		err = snd_pcm_readi(handle, buffer32, frames);
-		for (uint16_t i = 0; i < frames * 2; i += 2) {
-			if (audio->channels == 1) {
-				if (audio->average) {
-					audio->audio_out_l[n] = (buffer32[i] / pow(2,16)) / 2;
-					audio->audio_out_l[n] += (buffer32[i + 1] / pow(2,16)) / 2;
+		switch (audio->format) {
+			case 16:
+				err = snd_pcm_readi(handle, buf, frames);
+				break;
+			case 32:
+				err = snd_pcm_readi(handle, buffer32, frames);
+				for (uint16_t i = 0; i < frames * 2; i++) {
+					buf[i] = buffer32[i] / pow(2,16);
 				}
-				if (audio->left) {
-					audio->audio_out_l[n] = (buffer32[i] / pow(2,16));
+				break;
+			default:
+				err = snd_pcm_readi(handle, buffer, frames);
+				// sorting out one channel and only biggest octet
+				for (uint16_t i = 0; i < period_size * 2; i += ladj * 2) {
+					// first channel
+					buf[i] = get_certain_frame(buffer, i, ladj);
+					// second channel
+					buf[i + 1] = get_certain_frame(buffer, i, radj);
+
 				}
-				if (audio->right) {
-					audio->audio_out_l[n] = (buffer32[i + 1] / pow(2,16));
-				}
-			}
-			//stereo storing channels in buffer
-			if (audio->channels == 2) {
-				audio->audio_out_l[n] = buffer32[i] / pow(2,16);
-				audio->audio_out_r[n] = buffer32[i + 1] / pow(2,16);
-			}
-			n++;
-			if (n == audio->FFTbufferSize - 1) n = 0;
+				//fill_audio_outs(audio, buffer, period_size);
+				break;
 		}
-            break;
-        default:
-		err = snd_pcm_readi(handle, buffer, frames);
-		fill_audio_outs(audio, buffer, period_size);
-            break;
-        }
 
-	    if (err == -EPIPE) {
-		    /* EPIPE means overrun */
-		    #ifdef DEBUG
-			    fprintf(stderr, "overrun occurred\n");
-		    #endif
-        snd_pcm_prepare(handle);
-	    } else if (err < 0) {
-		    #ifdef DEBUG
-			    fprintf(stderr, "error from read: %s\n", snd_strerror(err));
-		    #endif
-	    } else if (err != (int)frames) {
-		    #ifdef DEBUG
-			    fprintf(stderr, "short read, read %d %d frames\n", err, (int)frames);
-		    #endif
-	    }
+		if (err == -EPIPE) {
+			/* EPIPE means overrun */
+#ifdef DEBUG
+			fprintf(stderr, "overrun occurred\n");
+#endif
+			snd_pcm_prepare(handle);
+		} else if (err < 0) {
+#ifdef DEBUG
+			fprintf(stderr, "error from read: %s\n", snd_strerror(err));
+#endif
+		} else if (err != (int)frames) {
+#ifdef DEBUG
+			fprintf(stderr, "short read, read %d %d frames\n", err, (int)frames);
+#endif
+		}
 
 
+		write_to_fftw_input_buffers(buf, frames, data);
 
 
 		if (audio->terminate == 1) {

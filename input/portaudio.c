@@ -17,18 +17,18 @@ typedef struct {
 } paTestData;
 
 static struct audio_data *audio;
-static int n = 0;
+//static int n = 0;
 
 static int recordCallback(const void *inputBuffer, void *outputBuffer,
 	unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo,
 	PaStreamCallbackFlags statusFlags, void *userData) {
 	paTestData *data = (paTestData*)userData;
-	const SAMPLE *rptr = (const SAMPLE*)inputBuffer;
+	SAMPLE *rptr = (SAMPLE*)inputBuffer;
 	long framesToCalc;
-	long i;
+	//long i;
 	int finished;
 	unsigned long framesLeft = data->maxFrameIndex - data->frameIndex;
-
+	int16_t silence_buffer[BUFSIZE] = { SAMPLE_SILENCE };
 	(void) outputBuffer; // Prevent unused variable warnings.
 	(void) timeInfo;
 	(void) statusFlags;
@@ -43,6 +43,8 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
 	}
 
 	if(inputBuffer == NULL) {
+		write_to_fftw_input_buffers(silence_buffer, framesToCalc, audio);
+/*
 		for(i=0; i<framesToCalc; i++) {
 			if(audio->channels == 1) audio->audio_out_l[n] = SAMPLE_SILENCE;
 			if(audio->channels == 2) {
@@ -51,7 +53,10 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
 			}
 			if(n == BUFSIZE-1) n = 0;
 		}
+*/
 	} else {
+		write_to_fftw_input_buffers(rptr, framesToCalc, audio);
+/*
 		for(i=0; i<framesToCalc; i++) {
 			if(audio->channels == 1) {
 				audio->audio_out_l[n] = (rptr[0] + rptr[1]) / 2;
@@ -64,6 +69,7 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
 			n++;
 			if(n == BUFSIZE-1) n = 0;
 		}
+*/
 	}
 
 	data->frameIndex += framesToCalc;

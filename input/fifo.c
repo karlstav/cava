@@ -5,18 +5,68 @@ int rc;
 
 struct audio_data {
 
-	int FFTbufferSize;
-        int16_t audio_out_r[65536];
-        int16_t audio_out_l[65536];
-        int format;
-        unsigned int rate ;
-        char *source; //alsa device, fifo path or pulse source
-        int im; //input mode alsa, fifo or pulse
-        int channels;
+	int FFTbassbufferSize;
+	int FFTmidbufferSize;
+	int FFTtreblebufferSize;
+	int bass_index;
+	int mid_index;
+	int treble_index;
+	int16_t audio_out_bass_r[65536];
+	int16_t audio_out_bass_l[65536];
+	int16_t audio_out_mid_r[65536];
+	int16_t audio_out_mid_l[65536];
+	int16_t audio_out_treble_r[65536];
+	int16_t audio_out_treble_l[65536];
+	int format;
+	unsigned int rate ;
+	char *source; //alsa device, fifo path or pulse source
+	int im; //input mode alsa, fifo or pulse
+	int channels;
 	bool left, right, average;
 	int terminate; // shared variable used to terminate audio thread
-        char error_message[1024];
+	char error_message[1024];
 };
+
+int write_to_fftw_input_buffers(int16_t buf[], int16_t frames, void* data) {
+
+	struct audio_data* audio = (struct audio_data*)data;
+
+	for (uint16_t i = 0; i < frames * 2; i += 2) {
+		if (audio->channels == 1){
+			if (audio->average) {
+				audio->audio_out_bass_l[audio->bass_index] = (buf[i] + buf[i + 1]) / 2;
+			}
+			if (audio->left) {
+				audio->audio_out_bass_l[audio->bass_index] = buf[i];
+			}
+			if (audio->right) {
+				audio->audio_out_bass_l[audio->bass_index] = buf[i + 1];
+			}
+		}
+		//stereo storing channels in buffer
+		if (audio->channels == 2) {
+			audio->audio_out_bass_l[audio->bass_index] = buf[i];
+			audio->audio_out_bass_r[audio->bass_index] = buf[i + 1];
+
+			audio->audio_out_mid_r[audio->mid_index] = audio->audio_out_bass_r[audio->bass_index];
+			audio->audio_out_treble_r[audio->treble_index] = audio->audio_out_bass_r[audio->bass_index];
+		}
+
+		audio->audio_out_mid_l[audio->mid_index] = audio->audio_out_bass_l[audio->bass_index];
+		audio->audio_out_treble_l[audio->treble_index] = audio->audio_out_bass_l[audio->bass_index];
+
+		audio->bass_index++;
+		audio->mid_index++;
+		audio->treble_index++;
+		if (audio->bass_index == audio->FFTbassbufferSize - 1) audio->bass_index = 0;
+		if (audio->mid_index == audio->FFTmidbufferSize - 1) audio->mid_index = 0;
+		if (audio->treble_index == audio->FFTtreblebufferSize - 1) audio->treble_index = 0;
+	}
+
+	return 0;
+
+
+}
 
 int open_fifo(const char *path)
 {
@@ -32,18 +82,12 @@ void* input_fifo(void* data)
 {
 	struct audio_data *audio = (struct audio_data *)data;
 	int fd;
-	int n = 0;
-	//signed char buf[1024];
-	//int tempr, templ, lo, q;
 	int i;
 	int t = 0;
-	//int size = 1024;
 	int bytes = 0;
 	int16_t buf[BUFSIZE / 2];
 	struct timespec req = { .tv_sec = 0, .tv_nsec = 10000000 };
-	
-
-
+	uint16_t frames = BUFSIZE / 4;
 
 	fd = open_fifo(audio->source);
 
@@ -55,8 +99,12 @@ void* input_fifo(void* data)
 			nanosleep (&req, NULL);
 			t++;
 			if (t > 10) {
-				for (i = 0; i < audio->FFTbufferSize; i++)audio->audio_out_l[i] = 0;
-				for (i = 0; i < audio->FFTbufferSize; i++)audio->audio_out_r[i] = 0;
+				for (i = 0; i < audio->FFTbassbufferSize; i++)audio->audio_out_bass_l[i] = 0;
+				for (i = 0; i < audio->FFTbassbufferSize; i++)audio->audio_out_bass_r[i] = 0;
+				for (i = 0; i < audio->FFTmidbufferSize; i++)audio->audio_out_mid_l[i] = 0;
+				for (i = 0; i < audio->FFTmidbufferSize; i++)audio->audio_out_mid_l[i] = 0;
+				for (i = 0; i < audio->FFTtreblebufferSize; i++)audio->audio_out_treble_r[i] = 0;
+				for (i = 0; i < audio->FFTtreblebufferSize; i++)audio->audio_out_treble_r[i] = 0;
 				close(fd);
 				fd = open_fifo(audio->source);
 				t = 0;
@@ -64,54 +112,7 @@ void* input_fifo(void* data)
 		} else { //if bytes read go ahead
 			t = 0;
 
-            for (i = 0; i < BUFSIZE / 2; i += 2) {
-
-                if (audio->channels == 1) audio->audio_out_l[n] = (buf[i] + buf[i + 1]) / 2;
-
-                //stereo storing channels in buffer
-                if (audio->channels == 2) {
-                        audio->audio_out_l[n] = buf[i];
-                        audio->audio_out_r[n] = buf[i + 1];
-                        }
-
-                n++;
-                if (n == audio->FFTbufferSize - 1) n = 0;
-        }
-
-/*
-			for (q = 0; q < (size / 4); q++) {
-
-				tempr = ( buf[ 4 * q + 3] << 2);
-
-				lo =  ( buf[4 * q + 2] >> 6);
-				if (lo < 0)lo = abs(lo) + 1;
-				if (tempr >= 0)tempr = tempr + lo;
-				else tempr = tempr - lo;
-
-				templ = ( buf[ 4 * q + 1] << 2);
-
-				lo =  ( buf[ 4 * q] >> 6);
-				if (lo < 0)lo = abs(lo) + 1;
-				if (templ >= 0)templ = templ + lo;
-				else templ = templ - lo;
-
-				if (audio->channels == 1) audio->audio_out_l[n] = (tempr +
-templ) /
-2;
-
-
-				//stereo storing channels in buffer
-				if (audio->channels == 2) {
-					audio->audio_out_l[n] = templ;
-					audio->audio_out_r[n] = tempr;
-					}
-
-
-
-				n++;
-				if (n == 2048 - 1)n = 0;
-			}
-*/
+			write_to_fftw_input_buffers(buf, frames, audio);
 		}
 
 		if (audio->terminate == 1) {

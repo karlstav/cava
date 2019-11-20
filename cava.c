@@ -153,24 +153,35 @@ static bool directory_exists(const char * path) {
 
 #endif
 
-int * separate_freq_bands(int FFTbufferSize, fftw_complex out[FFTbufferSize / 2 + 1], 
+int * separate_freq_bands(int FFTbassbufferSize, fftw_complex out_bass[FFTbassbufferSize / 2 + 1],
+		int FFTmidbufferSize, fftw_complex out_mid[FFTmidbufferSize / 2 + 1],
+		int FFTtreblebufferSize, fftw_complex out_treble[FFTtreblebufferSize / 2 + 1],
+		int bass_cut_off_bar, int treble_cut_off_bar,
 			int bars, int lcf[200],  int hcf[200], double k[200], int channel, 
 			double sens, double ignore) {
-	int o,i;
+	int o, i;
 	double peak[201];
 	static int fl[200];
 	static int fr[200];
-	double y[FFTbufferSize / 2 + 1];
+	double y[FFTbassbufferSize / 2 + 1];
 	double temp;
 
 	// process: separate frequency bands
 	for (o = 0; o < bars; o++) {
 
 		peak[o] = 0;
+		i = 0;
 
 		// process: get peaks
 		for (i = lcf[o]; i <= hcf[o]; i++) {
-			y[i] = hypot(out[i][0], out[i][1]);
+			if (o <= bass_cut_off_bar) {
+				y[i] = hypot(out_bass[i][0], out_bass[i][1]);
+			} else if (o > bass_cut_off_bar && o <= treble_cut_off_bar) {
+				y[i] = hypot(out_mid[i][0], out_mid[i][1]);
+			} else if (o > treble_cut_off_bar) {
+				y[i] = hypot(out_treble[i][0], out_treble[i][1]);
+			}
+			
 			peak[o] += y[i]; //adding upp band
 		}
 
@@ -281,8 +292,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	int sourceIsAuto = 1;
 	double smh;
 
-	double *inr, *inl;	
-	fftw_complex *outl, *outr;
+	double *in_bass_r, *in_bass_l;
+	fftw_complex *out_bass_l, *out_bass_r;
+	double *in_mid_r, *in_mid_l;
+	fftw_complex *out_mid_l, *out_mid_r;
+	double *in_treble_r, *in_treble_l;
+	fftw_complex *out_treble_l, *out_treble_r;
 
 	struct audio_data audio;
 	struct config_params p;
@@ -346,6 +361,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	// general: main loop
 	while (1) {
 
+	#ifdef DEBUG
+		printf("loading config\n");
+	#endif
 	//config: load
 	struct error_s error;
 	error.length = 0;
@@ -354,17 +372,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         exit(EXIT_FAILURE);
 	}
 
-	audio.FFTbufferSize = p.FFTbufferSize;
-
-
-	inr = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(double));
-	inl = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(double));
-	
-	outl = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(fftw_complex));
-	outr = malloc(2 * (p.FFTbufferSize / 2 + 1) * sizeof(fftw_complex));
-	
-	fftw_plan pl =  fftw_plan_dft_r2c_1d(p.FFTbufferSize, inl, outl, FFTW_MEASURE);
-	fftw_plan pr =  fftw_plan_dft_r2c_1d(p.FFTbufferSize, inr, outr, FFTW_MEASURE);
 	
 	output_mode = p.om;
 
@@ -382,11 +389,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 
 	//input: init
+	int bass_cut_off = 150;
+	int treble_cut_off = 1500;
+
 	audio.source = malloc(1 +  strlen(p.audio_source));
 	strcpy(audio.source, p.audio_source);
 
 	audio.format = -1;
 	audio.rate = 0;
+	audio.FFTbassbufferSize = 4096;
+	audio.FFTmidbufferSize = 1024;
+	audio.FFTtreblebufferSize = 512;
 	audio.terminate = 0;
 	if (p.stereo) audio.channels = 2;
 	if (!p.stereo) audio.channels = 1;
@@ -396,20 +409,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	if (strcmp(p.mono_option, "average") == 0) audio.average = true;
 	if (strcmp(p.mono_option, "left") == 0) audio.left = true;
 	if (strcmp(p.mono_option, "right") == 0) audio.right = true;
+	audio.bass_index = 0;
+	audio.mid_index = 0;
+	audio.treble_index = 0;
 
-	for (i = 0; i < (p.FFTbufferSize / 2 + 1); i++) {
-		if (i < p.FFTbufferSize) {
-			audio.audio_out_l[i] = 0;
-			audio.audio_out_r[i] = 0;
-		}
-		inl[i] = 0;
-		inr[i] = 0;
-		for (n = 0; n < 2; n++) {
-			outl[i][n] = 0;
-			outr[i][n] = 0;	
-		}
-	}
 
+	#ifdef DEBUG
+		printf("starting audio thread\n");
+	#endif
 	#ifdef ALSA
 	// input_alsa: wait for the input to be ready
 	if (p.im == 1) {
@@ -495,6 +502,83 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			"higher cuttoff frequency can't be higher then sample rate / 2"
 		);
 			exit(EXIT_FAILURE);
+	}
+
+	//BASS
+	//audio.FFTbassbufferSize =  audio.rate / 20; // audio.FFTbassbufferSize;
+
+	in_bass_r = malloc(2 * (audio.FFTbassbufferSize / 2 + 1) * sizeof(double));
+	in_bass_l = malloc(2 * (audio.FFTbassbufferSize / 2 + 1) * sizeof(double));
+
+	out_bass_l = malloc(2 * (audio.FFTbassbufferSize / 2 + 1) * sizeof(fftw_complex));
+	out_bass_r = malloc(2 * (audio.FFTbassbufferSize / 2 + 1) * sizeof(fftw_complex));
+
+	fftw_plan p_bass_l =  fftw_plan_dft_r2c_1d(audio.FFTbassbufferSize, in_bass_l, out_bass_l, FFTW_MEASURE);
+	fftw_plan p_bass_r =  fftw_plan_dft_r2c_1d(audio.FFTbassbufferSize, in_bass_r, out_bass_r, FFTW_MEASURE);
+
+	//MID
+	//audio.FFTmidbufferSize =  audio.rate / bass_cut_off; // audio.FFTbassbufferSize;
+	in_mid_r = malloc(2 * (audio.FFTmidbufferSize / 2 + 1) * sizeof(double));
+	in_mid_l = malloc(2 * (audio.FFTmidbufferSize / 2 + 1) * sizeof(double));
+
+	out_mid_l = malloc(2 * (audio.FFTmidbufferSize / 2 + 1) * sizeof(fftw_complex));
+	out_mid_r = malloc(2 * (audio.FFTmidbufferSize / 2 + 1) * sizeof(fftw_complex));
+
+	fftw_plan p_mid_l =  fftw_plan_dft_r2c_1d(audio.FFTmidbufferSize, in_mid_l, out_mid_l, FFTW_MEASURE);
+	fftw_plan p_mid_r =  fftw_plan_dft_r2c_1d(audio.FFTmidbufferSize, in_mid_r, out_mid_r, FFTW_MEASURE);
+
+	//TRIEBLE
+	//audio.FFTtreblebufferSize =  audio.rate / treble_cut_off; // audio.FFTbassbufferSize;
+	in_treble_r = malloc(2 * (audio.FFTtreblebufferSize / 2 + 1) * sizeof(double));
+	in_treble_l = malloc(2 * (audio.FFTtreblebufferSize / 2 + 1) * sizeof(double));
+
+	out_treble_l = malloc(2 * (audio.FFTtreblebufferSize / 2 + 1) * sizeof(fftw_complex));
+	out_treble_r = malloc(2 * (audio.FFTtreblebufferSize / 2 + 1) * sizeof(fftw_complex));
+
+	fftw_plan p_treble_l =  fftw_plan_dft_r2c_1d(audio.FFTtreblebufferSize, in_treble_l, out_treble_l, FFTW_MEASURE);
+	fftw_plan p_treble_r =  fftw_plan_dft_r2c_1d(audio.FFTtreblebufferSize, in_treble_r, out_treble_r, FFTW_MEASURE);
+
+	#ifdef DEBUG
+		printf("got buffer size: %d, %d, %d", audio.FFTbassbufferSize, audio.FFTmidbufferSize, audio.FFTtreblebufferSize);
+		printf("zeroing buffers\n");
+	#endif
+	for (i = 0; i < (audio.FFTbassbufferSize / 2 + 1); i++) {
+		if (i < audio.FFTbassbufferSize) {
+			audio.audio_out_bass_l[i] = 0;
+			audio.audio_out_bass_r[i] = 0;
+		}
+		in_bass_l[i] = 0;
+		in_bass_r[i] = 0;
+		for (n = 0; n < 2; n++) {
+			out_bass_l[i][n] = 0;
+			out_bass_r[i][n] = 0;
+		}
+	}
+
+	for (i = 0; i < (audio.FFTmidbufferSize / 2 + 1); i++) {
+		if (i < audio.FFTmidbufferSize) {
+			audio.audio_out_mid_l[i] = 0;
+			audio.audio_out_mid_r[i] = 0;
+		}
+		in_mid_l[i] = 0;
+		in_mid_r[i] = 0;
+		for (n = 0; n < 2; n++) {
+			out_mid_l[i][n] = 0;
+			out_mid_r[i][n] = 0;
+		}
+	}
+
+	for (i = 0; i < (audio.FFTtreblebufferSize / 2 + 1); i++) {
+		if (i < audio.FFTtreblebufferSize) {
+			audio.audio_out_treble_l[i] = 0;
+			audio.audio_out_treble_r[i] = 0;
+		}
+		in_treble_l[i] = 0;
+		in_treble_r[i] = 0;
+		for (n = 0; n < 2; n++) {
+			out_treble_l[i][n] = 0;
+			out_treble_r[i][n] = 0;
+		}
 	}
 
 
@@ -625,6 +709,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		//freqconst = -2;
 
 		// process: calculate cutoff frequencies
+		int bass_cut_off_bar = -1;
+		int treble_cut_off_bar = -1;
+		bool first_bar = false;
+		int first_treble_bar = 0;
 		for (n = 0; n < bars + 1; n++) {
 			double pot = freqconst * (-1); 
 			pot +=  ((float)n + 1) / ((float)bars + 1) * freqconst;
@@ -634,30 +722,61 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			//and  nyquist freq in M/2 but testing shows it is not...
 			//or maybe the nq freq is in M/4
 
+			k[n] = pow(fc[n],1);
+			k[n] *= (float)height / pow(2,28);
+			k[n] *=	p.smooth[(int)floor(((double)n) * smh)];
+			k[n] /= log2(audio.FFTbassbufferSize);
 			//lfc stores the lower cut frequency foo each bar in the fft out buffer
-			lcf[n] = fre[n] * (p.FFTbufferSize /2) + 1;
-			if (n != 0) {
+			if (fc[n] < bass_cut_off ) {
+				lcf[n] = fre[n] * (audio.FFTbassbufferSize /2) + 1;
+				bass_cut_off_bar++;
+				treble_cut_off_bar++;
+				k[n] *= log2(audio.FFTbassbufferSize);
+			} else if (fc[n] > bass_cut_off && fc[n] < treble_cut_off) {
+				lcf[n] = fre[n] * (audio.FFTmidbufferSize /2) + 1;
+				treble_cut_off_bar++;
+				if ((treble_cut_off_bar - bass_cut_off_bar) == 1) {
+					first_bar = true;
+					hcf[n - 1] = fre[n] * (audio.FFTbassbufferSize /2);
+					if (hcf[n - 1] < lcf[n - 1]) hcf[n - 1] = lcf[n - 1];
+				} else {
+					first_bar = false;
+				}
+
+				k[n] *= log2(audio.FFTmidbufferSize);
+			} else {
+				lcf[n] = fre[n] * (audio.FFTtreblebufferSize /2) + 1;
+				first_treble_bar++;
+				if (first_treble_bar == 1) {
+					first_bar = true;
+					hcf[n - 1] = fre[n] * (audio.FFTmidbufferSize /2);
+					if (hcf[n - 1] < lcf[n - 1]) hcf[n - 1] = lcf[n - 1];
+				} else {
+					first_bar = false;
+				}
+
+				k[n] *= log2(audio.FFTtreblebufferSize);
+			}
+
+			if (n != 0 && !first_bar) {
 				hcf[n - 1] = lcf[n] - 1;
-	
+
 				//pushing the spectrum up if the expe function gets "clumped"
 				if (lcf[n] <= lcf[n - 1])lcf[n] = lcf[n - 1] + 1;
 				hcf[n - 1] = lcf[n] - 1;
 			}
 
-			#ifdef DEBUG
-			 	if (n != 0) {
-					mvprintw(n,0,"%d: %f -> %f (%d -> %d) \n", n,
+#ifdef DEBUG
+			if (n != 0) {
+				mvprintw(n,0,"%d: %f -> %f (%d -> %d) bass: %d, treble:%d \n", n,
 						fc[n - 1], fc[n], lcf[n - 1],
-			 				 hcf[n - 1]);
-						}
-			#endif
+						hcf[n - 1], bass_cut_off_bar, treble_cut_off_bar);
+			}
+#endif
 		}
 
 		// process: weigh signal to frequencies height and EQ
 		for (n = 0; n < bars; n++) {
-			k[n] = pow(fc[n],0.85);
-			k[n] *= (float)height / pow(2,28);
-			k[n] *=	p.smooth[(int)floor(((double)n) * smh)];
 			}
 
 		if (p.stereo) bars = bars * 2;
@@ -737,17 +856,36 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 			// process: populate input buffer and check if input is present
 			silence = true;
-			for (i = 0; i < (2 * (p.FFTbufferSize / 2 + 1)); i++) {
-				if (i < p.FFTbufferSize) {
-					inl[i] = audio.audio_out_l[i];
-					if (p.stereo) inr[i] = audio.audio_out_r[i];
-					if (inl[i] || inr[i]) silence = false;
+			for (i = 0; i < (2 * (audio.FFTbassbufferSize / 2 + 1)); i++) {
+				if (i < audio.FFTbassbufferSize) {
+					in_bass_l[i] = audio.audio_out_bass_l[i];
+					if (p.stereo) in_bass_r[i] = audio.audio_out_bass_r[i];
+					if (in_bass_l[i] || in_bass_r[i]) silence = false;
 				} else {
-					inl[i] = 0;
-					if (p.stereo) inr[i] = 0;
+					in_bass_l[i] = 0;
+					if (p.stereo) in_bass_r[i] = 0;
 				}
 			}
 
+			for (i = 0; i < (2 * (audio.FFTmidbufferSize / 2 + 1)); i++) {
+				if (i < audio.FFTmidbufferSize) {
+					in_mid_l[i] = audio.audio_out_mid_l[i];
+					if (p.stereo) in_mid_r[i] = audio.audio_out_mid_r[i];
+				} else {
+					in_mid_l[i] = 0;
+					if (p.stereo) in_mid_r[i] = 0;
+				}
+			}
+
+			for (i = 0; i < (2 * (audio.FFTtreblebufferSize / 2 + 1)); i++) {
+				if (i < audio.FFTtreblebufferSize) {
+					in_treble_l[i] = audio.audio_out_treble_l[i];
+					if (p.stereo) in_treble_r[i] = audio.audio_out_treble_r[i];
+				} else {
+					in_treble_l[i] = 0;
+					if (p.stereo) in_treble_r[i] = 0;
+				}
+			}
 			if (silence) sleep++;
 			else sleep = 0;
 
@@ -756,17 +894,34 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 				// process: execute FFT and sort frequency bands
 				if (p.stereo) {
-					fftw_execute(pl);
-					fftw_execute(pr);
+					fftw_execute(p_bass_l);
+					fftw_execute(p_bass_r);
+					fftw_execute(p_mid_l);
+					fftw_execute(p_mid_r);
+					fftw_execute(p_treble_l);
+					fftw_execute(p_treble_r);
 
-					fl = separate_freq_bands(p.FFTbufferSize, outl,bars/2,
-							lcf,hcf, k, 1, p.sens, p.ignore);
-					fr = separate_freq_bands(p.FFTbufferSize, outr,bars/2,
-							lcf,hcf, k, 2, p.sens, p.ignore);
+					fl = separate_freq_bands(audio.FFTbassbufferSize, out_bass_l,
+							audio.FFTmidbufferSize, out_mid_l,
+							audio.FFTtreblebufferSize, out_treble_l,
+							bass_cut_off_bar, treble_cut_off_bar,
+							bars/2,	lcf, hcf, k, 1, p.sens, p.ignore);
+
+					fr = separate_freq_bands(audio.FFTbassbufferSize, out_bass_r,
+							audio.FFTmidbufferSize, out_mid_r,
+							audio.FFTtreblebufferSize, out_treble_r,
+							bass_cut_off_bar, treble_cut_off_bar,
+							bars/2,	lcf, hcf, k, 1, p.sens, p.ignore);
+
 				} else {
-					fftw_execute(pl);
-					fl = separate_freq_bands(p.FFTbufferSize, outl,bars,
-							lcf,hcf, k, 1, p.sens, p.ignore);
+					fftw_execute(p_bass_l);
+					fftw_execute(p_mid_l);
+					fftw_execute(p_treble_l);
+					fl = separate_freq_bands(audio.FFTbassbufferSize, out_bass_l,
+							audio.FFTmidbufferSize, out_mid_l, 
+							audio.FFTtreblebufferSize, out_treble_l, 
+							bass_cut_off_bar, treble_cut_off_bar, 
+							bars, lcf, hcf, k, 1, p.sens, p.ignore);
 				}
 
 
@@ -932,12 +1087,26 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	if (p.customEQ) free(p.smooth);
 	if (sourceIsAuto) free(audio.source);
 
-	free(inr);
-	free(inl);
-	fftw_free(outr);
-	fftw_free(outl);
-	fftw_destroy_plan(pl);
-	fftw_destroy_plan(pr);
+	free(in_bass_r);
+	free(in_bass_l);
+	fftw_free(out_bass_r);
+	fftw_free(out_bass_l);
+	fftw_destroy_plan(p_bass_l);
+	fftw_destroy_plan(p_bass_r);
+
+	free(in_mid_r);
+	free(in_mid_l);
+	fftw_free(out_mid_r);
+	fftw_free(out_mid_l);
+	fftw_destroy_plan(p_mid_l);
+	fftw_destroy_plan(p_mid_r);
+
+	free(in_treble_r);
+	free(in_treble_l);
+	fftw_free(out_treble_r);
+	fftw_free(out_treble_l);
+	fftw_destroy_plan(p_treble_l);
+	fftw_destroy_plan(p_treble_r);
 
     	cleanup();
 

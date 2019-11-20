@@ -60,6 +60,8 @@ void* input_shmem(void* data)
 	audio->rate = mmap_area->rate;
 
 	while (1) {
+		write_to_fftw_input_buffers(mmap_area->buffer, BUFSIZE, audio);
+/*
 		for (i = VB_OFFSET; i < BUFSIZE+VB_OFFSET; i += 2) {
 			if (audio->channels == 1) {
 				audio->audio_out_l[n] = (mmap_area->buffer[i] + mmap_area->buffer[i + 1]) / 2;
@@ -70,6 +72,7 @@ void* input_shmem(void* data)
 			n++;
 			if (n == audio->FFTbufferSize - 1) n = 0;
 		}
+*/|
 		if (audio->terminate == 1) {
 			break;
 		}

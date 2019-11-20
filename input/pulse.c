@@ -112,7 +112,6 @@ void getPulseDefaultSink(void* data) {
 void* input_pulse(void* data) {
 
 	struct audio_data *audio = (struct audio_data *)data;
-	int i, n;
 	int16_t buf[BUFFERSIZE / 2];
 
 	/* The sample type to use */
@@ -121,10 +120,16 @@ void* input_pulse(void* data) {
 		.rate =  44100,
 		.channels = 2
 	};
+
+	audio->format = 16;
+
 	static const pa_buffer_attr pb = {
 		.maxlength = (uint32_t) -1, //BUFSIZE * 2,
 		.fragsize = BUFFERSIZE
 	};
+
+
+	uint16_t frames = BUFFERSIZE / 4;
 
 	pa_simple *s = NULL;
 	int error;
@@ -140,7 +145,6 @@ void* input_pulse(void* data) {
 		pthread_exit(NULL);
 	}
 
-	n = 0;
 
 	while (1) {
         	if (pa_simple_read(s, buf, sizeof(buf), &error) < 0) {
@@ -152,21 +156,7 @@ void* input_pulse(void* data) {
 
 		 //sorting out channels
 
-	        for (i = 0; i < BUFFERSIZE / 2; i += 2) {
-
-                                if (audio->channels == 1) {
-					audio->audio_out_l[n] = (buf[i] + buf[i + 1]) / 2;
-				}
-
-                                //stereo storing channels in buffer
-                                if (audio->channels == 2) {
-                                        audio->audio_out_l[n] = buf[i];
-                                        audio->audio_out_r[n] = buf[i + 1];
-				}
-
-                                n++;
-                                if (n == audio->FFTbufferSize - 1) n = 0;
-                        }
+		write_to_fftw_input_buffers(buf, frames, data);
 
 		if (audio->terminate == 1) {            		
 			pa_simple_free(s);

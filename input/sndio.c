@@ -11,15 +11,12 @@ void* input_sndio(void* data)
 	int16_t buf[256];
 	unsigned int i, n, channels;
 
-	assert(audio->channels > 0);
-	channels = audio->channels;
-
 	sio_initpar(&par);
 	par.sig = 1;
 	par.bits = 16;
 	par.le = 1;
 	par.rate = 44100;
-	par.rchan = channels;
+	par.rchan = 2;
 	par.appbufsz = sizeof(buf) / channels;
 
 	if ((hdl = sio_open(audio->source, SIO_REC, 0)) == NULL) {
@@ -38,12 +35,15 @@ void* input_sndio(void* data)
 	}
 
 	n = 0;
+        uint16_t frames = (sizeof(buf)/sizeof(buf[0]))/channels;
 	while (audio->terminate != 1) {
 		if (sio_read(hdl, buf, sizeof(buf)) == 0) {
 			fprintf(stderr, __FILE__": sio_read() failed: %s\n", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 
+		write_to_fftw_input_buffers(buf, frames, audio);
+/*
 		for (i = 0; i < sizeof(buf)/sizeof(buf[0]); i += 2) {
 			if (par.rchan == 1) {
 				// sndiod has already taken care of averaging the samples
@@ -54,6 +54,7 @@ void* input_sndio(void* data)
 			}
 			n = (n + 1) % audio->FFTbufferSize;
 		}
+*/
 	}
 
 	sio_stop(hdl);
