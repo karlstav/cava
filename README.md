@@ -67,7 +67,7 @@ All the requirements can be installed easily in all major distros:
 
 Debian/Raspbian:
 
-    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool
+    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake
 
 ArchLinux:
 
