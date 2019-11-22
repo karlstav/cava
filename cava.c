@@ -381,6 +381,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0),
 			 "/dev/console") == 0) inAtty = 1;
 
+		//in macos vitual terminals are called ttys(xyz) and there are no ttys
+		if (strncmp(ttyname(0), "/dev/ttys", 9) == 0)  inAtty = 0;
 		if (inAtty) {
 			system("setfont cava.psf  >/dev/null 2>&1");
 			system("setterm -blank 0");
