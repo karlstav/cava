@@ -4,7 +4,7 @@
 #include <portaudio.h>
 #include "portaudio.h"
 #include "fifo.h"
-#define BUFFERSIZE 4096
+#define PORTBUFSIZE 512
 
 #define SAMPLE_SILENCE 32768
 #define PA_SAMPLE_TYPE paInt16
@@ -28,7 +28,7 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
 	//long i;
 	int finished;
 	unsigned long framesLeft = data->maxFrameIndex - data->frameIndex;
-	int16_t silence_buffer[BUFSIZE] = { SAMPLE_SILENCE };
+	int16_t silence_buffer[PORTBUFSIZE] = { SAMPLE_SILENCE };
 	(void) outputBuffer; // Prevent unused variable warnings.
 	(void) timeInfo;
 	(void) statusFlags;
@@ -51,7 +51,7 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
 				audio->audio_out_l[n] = SAMPLE_SILENCE;
 				audio->audio_out_r[n] = SAMPLE_SILENCE;
 			}
-			if(n == BUFSIZE-1) n = 0;
+			if(n == PORTBUFSIZE-1) n = 0;
 		}
 */
 	} else {
@@ -67,7 +67,7 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
 				audio->audio_out_r[n] = *rptr++;
 			}
 			n++;
-			if(n == BUFSIZE-1) n = 0;
+			if(n == PORTBUFSIZE-1) n = 0;
 		}
 */
 	}
@@ -147,12 +147,12 @@ void* input_portaudio(void *audiodata) {
 	inputParameters.device = deviceNum;
 
 	// set parameters
-	data.maxFrameIndex = BUFSIZE;
-	data.recordedSamples = (SAMPLE *)malloc(2*BUFSIZE*sizeof(SAMPLE));
+	data.maxFrameIndex = PORTBUFSIZE;
+	data.recordedSamples = (SAMPLE *)malloc(2*PORTBUFSIZE*sizeof(SAMPLE));
 	if(data.recordedSamples == NULL) {
 		fprintf(stderr, "Error: failure in memory allocation!\n");
 		exit(EXIT_FAILURE);
-	} else memset(data.recordedSamples, 0x00, 2*BUFSIZE);
+	} else memset(data.recordedSamples, 0x00, 2*PORTBUFSIZE);
 
 	inputParameters.channelCount = 2;
 	inputParameters.sampleFormat = PA_SAMPLE_TYPE;
@@ -160,7 +160,7 @@ void* input_portaudio(void *audiodata) {
 	inputParameters.hostApiSpecificStreamInfo = NULL;
 
 	// set it to work
-	err = Pa_OpenStream(&stream, &inputParameters, NULL, audio->rate, BUFSIZE,
+	err = Pa_OpenStream(&stream, &inputParameters, NULL, audio->rate, PORTBUFSIZE,
 		paClipOff, recordCallback, &data);
 	if(err != paNoError) {
 		fprintf(stderr, "Error: failure in opening stream (%x)\n", err);
