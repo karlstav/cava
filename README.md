@@ -3,7 +3,9 @@ C.A.V.A.
 
 **C**onsole-based **A**udio **V**isualizer for **A**LSA
 
-also supports audio input from Pulseaudio, fifo (mpd), sndio and squeezelite.
+also supports audio input from Pulseaudio, fifo (mpd), sndio, squeezelite and portaudio.
+
+Now also works on macOS!
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
@@ -53,13 +55,19 @@ C.A.V.A. is a bar spectrum audio visualizer for the Linux terminal using ALSA, p
 This program is not intended for scientific use. It's written to look responsive and aesthetic when used to visualize music. 
 
 
-Build requirements
+Installing
 ------------------
+### From Source
+#### Installing Build Requirements
+
+Required components:
 * [FFTW](http://www.fftw.org/)
 * [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
 * [ALSA dev files](http://alsa-project.org/)
 * [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/)
 * libtool
+* automake
+* build-essentials
 
 Only FFTW is actually required for CAVA to compile, but for maximum usage and performance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
 
@@ -80,16 +88,30 @@ openSUSE:
 Fedora:
 
     dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool
+    
+macOS:
+
+First install homebrew if you have't already:
+
+    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+
+Then install prerequesits:
+
+    brew install fftw ncurses libtool automake portaudio
+    
+Then fix macOS not finding libtool and ncursesw:
+
+    export LIBTOOL=`which glibtool`
+    export LIBTOOLIZE=`which glibtoolize`
+    ln -s `which glibtoolize` libtoolize
+    ln -s /usr/lib/libncurses.dylib /usr/local/lib/libncursesw.dylib
 
 
 Iniparser is also required, but if it is not already installed, a bundled version will be used.
 
-To run the autogen script you will also need `automake`, `libtool` and `git`.
-
-
-Getting started
----------------
-
+#### Building
+ First of all clone this repo and cd in to it, then run:
+ 
     ./autogen.sh
     ./configure
     make
@@ -103,7 +125,7 @@ For example, turning on debugging messages:
 
     ./configure --enable-debug 
     
-### Installing manually
+#### Installing 
 
 Install `cava` to default `/usr/local`:
 
@@ -113,11 +135,13 @@ Or you can change `PREFIX`, for example:
 
    ./configure --prefix=PREFIX
 
-### Uninstalling
+#### Uninstalling
 
     make uninstall
 
-### openSUSE
+
+### Some distro specific pre-made binaries/recipes    
+#### openSUSE
 
 Tumbleweed users have cava in their repo. They can just use:
 
@@ -129,20 +153,20 @@ Leap users need to add the multimedia:apps repository first:
 
 If you use another version just replace *openSUSE_Leap_42.2* with *openSUSE_13.2*, adjust it to your version.
 
-### Fedora
+#### Fedora
 
 Cava is available in Fedora 26 and later.  You can install Cava by
 running:
 
     dnf install cava
 
-### Arch
+#### Arch
 
 Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
 
     pacaur -S cava
 
-### Ubuntu
+#### Ubuntu
 
 Michael Nguyen has added CAVA to his PPA, it can be installed with:
 
@@ -246,6 +270,16 @@ source = /squeezelite-AA:BB:CC:DD:EE:FF
 ```
 where `AA:BB:CC:DD:EE:FF` is squeezelite's MAC address (check the LMS Web GUI (Settings>Information) if unsure).
 Note: squeezelite must be started with the `-v` flag to enable visualizer support.
+
+### macOS
+Install [Soundflower](https://github.com/mattingalls/Soundflower) to create a loopback interface. Use Audio MIDI Setup to configure a virtual interface that outputs audio to both your speakers and the loopbacl interface, following [this](https://github.com/RogueAmoeba/Soundflower-Original/issues/44#issuecomment-151586106) recipe.
+
+Then edit your config to use this interface with portaudio:
+
+```
+method = portaudio
+source = "Soundflower (2ch)"
+```
 
 Running via ssh
 ---------------
