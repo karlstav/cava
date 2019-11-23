@@ -82,17 +82,21 @@ Debian/Raspbian:
 
     apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake
 
+
 ArchLinux:
 
     pacman -S base-devel fftw ncurses alsa-lib iniparser pulseaudio
+
 
 openSUSE:
 
     zypper install alsa-devel ncurses-devel fftw3-devel libpulse-devel libtool
 
+
 Fedora:
 
     dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool
+
     
 macOS:
 
@@ -110,6 +114,8 @@ Then fix macOS not finding libtool and ncursesw:
     export LIBTOOLIZE=`which glibtoolize`
     ln -s `which glibtoolize` libtoolize
     ln -s /usr/lib/libncurses.dylib /usr/local/lib/libncursesw.dylib
+
+Tested on macOS High Sierra.
 
 
 Iniparser is also required, but if it is not already installed, a bundled version will be used.
@@ -285,6 +291,9 @@ Then edit your config to use this interface with portaudio:
 method = portaudio
 source = "Soundflower (2ch)"
 ```
+
+Note: cava looks no good in the default macOS terminal. For a better look install [kitty](https://sw.kovidgoyal.net/kitty/index.html). Be where that you might run into #109, that can be fixed like [this](https://stackoverflow.com/questions/7165108/in-os-x-lion-lang-is-not-set-to-utf-8-how-to-fix-it).
+
 
 Running via ssh
 ---------------
