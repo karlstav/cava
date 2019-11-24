@@ -67,14 +67,21 @@ Installing
 
 Required components:
 * [FFTW](http://www.fftw.org/)
-* [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
-* [ALSA dev files](http://alsa-project.org/)
-* [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/)
 * libtool
 * automake
 * build-essentials
+Recomended components:
+* [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
+* [ALSA dev files](http://alsa-project.org/), or
+* [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/), or
+* Portaudio, or
+* Sndio
 
-Only FFTW is actually required for CAVA to compile, but for maximum usage and performance ncurses and pulseaudio and/or alsa dev files are recommended. Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
+Only FFTW and the other build tools are actually required for CAVA to compile, but this will only give you the ability to read from fifo files. To more easly grab audio from your system pulseaudio, alsa, sndio or portaudio dev files are recommended (depending on what audio system you are using). Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio. 
+
+For better a better visual experience ncurses is also recomended.
+
+Iniparser is also required, but if it is not already installed, a bundled version will be used.
 
 All the requirements can be installed easily in all major distros:
 
@@ -104,7 +111,7 @@ First install homebrew if you have't already:
 
     /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 
-Then install prerequesits:
+Then install prerequisites:
 
     brew install fftw ncurses libtool automake portaudio
     
@@ -118,7 +125,6 @@ Then fix macOS not finding libtool and ncursesw:
 Tested on macOS High Sierra.
 
 
-Iniparser is also required, but if it is not already installed, a bundled version will be used.
 
 #### Building
  First of all clone this repo and cd in to it, then run:
