@@ -454,9 +454,9 @@ inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo");
 	outputMethod = (char *)iniparser_getstring(ini, "output:method", "noncurses");
 #endif
 
-p->monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 1);
+p->monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 0);
 p->waves = iniparser_getint(ini, "smoothing:waves", 0);
-p->integral = iniparser_getdouble(ini, "smoothing:integral", 75);
+p->integral = iniparser_getdouble(ini, "smoothing:integral", 77);
 p->gravity = iniparser_getdouble(ini, "smoothing:gravity", 100);
 p->ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
 
