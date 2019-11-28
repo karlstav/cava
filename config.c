@@ -383,6 +383,8 @@ if (configPath[0] == '\0') {
 	} else {
 		configHome = getenv("HOME");
 		if (configHome != NULL) {
+			sprintf(configPath,"%s/%s/", configHome, ".config");
+			mkdir(configPath, 0777);
 			sprintf(configPath,"%s/%s/%s/", configHome, ".config", PACKAGE);
 		} else {
     		write_errorf(error, "No HOME found (ERR_HOMELESS), exiting...");
