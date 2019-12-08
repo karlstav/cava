@@ -155,30 +155,24 @@ AC_SEARCH_LIBS([iniparser_load], [iniparser], [
 	AC_CHECK_HEADERS([iniparser.h], [have_system_iniparser=yes])
 ])
 AM_CONDITIONAL([SYSTEM_LIBINIPARSER], [test "x$have_system_iniparser" = "xyes"])
-if test "x$have_system_iniparser" = "xyes"; then
-    AC_SUBST(SYSTEM_LIBINIPARSER, 1)
-    AC_MSG_NOTICE([Using installed iniparser])
-else
-    AC_SUBST(SYSTEM_LIBINIPARSER, 0)
-    AC_CONFIG_FILES(iniparser/Makefile)
-    AC_MSG_NOTICE([Building iniparser])
-fi
+	if test "x$have_system_iniparser" = "xyes"; then
+	AC_SUBST(SYSTEM_LIBINIPARSER, 1)
+	AC_MSG_NOTICE([Using installed iniparser])
+        LIBS="$LIBS -liniparser"
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <iniparser.h>]],
+			[[dictionary* ini;
+			const char *keys[3];
+			iniparser_getseckeys(ini, "eq", keys);]])],
+			[AC_MSG_RESULT(iniparser > 3.2 detected)],
+			[AC_MSG_RESULT(iniparser < 3.2 detected enabling legacy mode)
+                        CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"])
 
+	else
+	AC_SUBST(SYSTEM_LIBINIPARSER, 0)
+	AC_CONFIG_FILES(iniparser/Makefile)
+	AC_MSG_NOTICE([Building iniparser])
+	fi
 
-
-dnl ############################
-dnl checking if legacy iniparser is enabled
-dnl ############################
-
-AC_ARG_ENABLE([legacy_iniparser],
-  AS_HELP_STRING([--enable-legacy_iniparser],
-    [enable legacy iniparser mode necessary to build cava with iniparser < 4.0])
-)
-
-AS_IF([test "x$enable_legacy_iniparser" = "xyes"], [
-  dnl enabling legacy-iniparser mode
-  CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"
-])
 
 dnl ############################
 dnl checking if shared memory input is enabled

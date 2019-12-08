@@ -136,7 +136,6 @@ Tested on macOS High Sierra.
 You can use the following for compilation options:
 
     --enable-debug          	enable debug messages and frequency table output
-    --enable-legacy_iniparser	enable legacy iniparser mode necessary to build cava with iniparser < 4.0
 
 For example, turning on debugging messages:
 
