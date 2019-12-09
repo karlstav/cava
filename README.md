@@ -62,7 +62,9 @@ This program is not intended for scientific use. It's written to look responsive
 
 Installing
 ------------------
+
 ### From Source
+
 #### Installing Build Requirements
 
 Required components:
@@ -70,6 +72,8 @@ Required components:
 * libtool
 * automake
 * build-essentials
+
+
 Recomended components:
 * [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
 * [ALSA dev files](http://alsa-project.org/), or
@@ -77,9 +81,12 @@ Recomended components:
 * Portaudio, or
 * Sndio
 
+
 Only FFTW and the other build tools are actually required for CAVA to compile, but this will only give you the ability to read from fifo files. To more easly grab audio from your system pulseaudio, alsa, sndio or portaudio dev files are recommended (depending on what audio system you are using). Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio. 
 
+
 For better a better visual experience ncurses is also recomended.
+
 
 All the requirements can be installed easily in all major distros:
 
