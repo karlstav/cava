@@ -168,9 +168,7 @@ AM_CONDITIONAL([SYSTEM_LIBINIPARSER], [test "x$have_system_iniparser" = "xyes"])
                         CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"])
 
 	else
-	AC_SUBST(SYSTEM_LIBINIPARSER, 0)
-	AC_CONFIG_FILES(iniparser/Makefile)
-	AC_MSG_NOTICE([Building iniparser])
+	 AC_MSG_ERROR([iniparser is required!])
 	fi
 
 

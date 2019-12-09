@@ -81,13 +81,11 @@ Only FFTW and the other build tools are actually required for CAVA to compile, b
 
 For better a better visual experience ncurses is also recomended.
 
-Iniparser is also required, but if it is not already installed, a bundled version will be used.
-
 All the requirements can be installed easily in all major distros:
 
 Debian/Raspbian:
 
-    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake
+    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake iniparser
 
 
 ArchLinux:
@@ -97,12 +95,12 @@ ArchLinux:
 
 openSUSE:
 
-    zypper install alsa-devel ncurses-devel fftw3-devel libpulse-devel libtool
+    zypper install alsa-devel ncurses-devel fftw3-devel libpulse-devel libtool iniparser
 
 
 Fedora:
 
-    dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool iniparser
 
     
 macOS:
@@ -113,7 +111,7 @@ First install homebrew if you have't already:
 
 Then install prerequisites:
 
-    brew install fftw ncurses libtool automake portaudio
+    brew install fftw ncurses libtool automake portaudio iniparser
     
 Then fix macOS not finding libtool and ncursesw:
 
