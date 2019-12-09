@@ -163,8 +163,8 @@ AM_CONDITIONAL([SYSTEM_LIBINIPARSER], [test "x$have_system_iniparser" = "xyes"])
 			[[dictionary* ini;
 			const char *keys[3];
 			iniparser_getseckeys(ini, "eq", keys);]])],
-			[AC_MSG_RESULT(iniparser > 3.2 detected)],
-			[AC_MSG_RESULT(iniparser < 3.2 detected enabling legacy mode)
+			[AC_MSG_RESULT(iniparser > 3.2 test OK)],
+			[AC_MSG_RESULT(iniparser > 3.2 test failed falling back to legacy iniparser mode)
                         CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"])
 
 	else
