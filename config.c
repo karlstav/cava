@@ -13,7 +13,7 @@ double monstercat, integral, gravity, ignore, sens;
 unsigned int lowcf, highcf;
 double *smooth;
 int smcount, customEQ, im, om, col, bgcol, autobars, stereo, is_bin, ascii_range,
- bit_format, gradient, gradient_count, fixedbars, framerate, bw, bs, autosens, overshoot, waves, FFTbufferSize;
+ bit_format, gradient, gradient_count, fixedbars, framerate, bw, bs, autosens, overshoot, waves, FFTbufferSize, fifoSample;
 
 };
 
@@ -510,6 +510,7 @@ if (strcmp(inputMethod, "alsa") == 0) {
 if (strcmp(inputMethod, "fifo") == 0) {
 	p->im = 2;
 	p->audio_source = (char *)iniparser_getstring(ini, "input:source", "/tmp/mpd.fifo");
+	p->fifoSample = iniparser_getint(ini, "input:sample_rate", 44100);
 }
 if (strcmp(inputMethod, "pulse") == 0) {
 	p->im = 3;

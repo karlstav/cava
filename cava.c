@@ -461,7 +461,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	if (p.im == 2) {
 		//starting fifomusic listener
 		thr_id = pthread_create(&p_thread, NULL, input_fifo, (void*)&audio);
-		audio.rate = 44100;
+		audio.rate = p.fifoSample;
 	}
 
 	#ifdef PULSE
