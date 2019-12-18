@@ -1,0 +1,17 @@
+name: build
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake libiniparser-dev
+    - name: Generate configure
+      run: ./autogen.sh
+    - name: Run ./configure
+      run: CPPFLAGS=-I/usr/include/iniparser ./configure
+    - name: Run make
+      run: make
