@@ -498,7 +498,7 @@ if (p->smcount > 0) {
 	}
 } else {
 	p->customEQ = 0;
-	p->smcount = 64; //back to the default one
+	p->smcount = sizeof(smoothDef)/sizeof(smoothDef[0]); //back to the default one
 }
 
 // config: input
