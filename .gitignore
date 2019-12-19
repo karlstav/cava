@@ -4,6 +4,7 @@ cava
 *.o
 *.a
 .deps/
+.libs/
 Makefile
 Makefile.in
 aclocal.m4
