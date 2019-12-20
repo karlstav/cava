@@ -100,6 +100,17 @@ int should_reload = 0;
 // whether we should only reload colors or not
 int reload_colors = 0;
 
+// these variables are used only in main, but making them global
+// will allow us to not free them on exit without ASan complaining
+struct config_params p;
+
+double *in_bass_r, *in_bass_l;
+fftw_complex *out_bass_l, *out_bass_r;
+double *in_mid_r, *in_mid_l;
+fftw_complex *out_mid_l, *out_mid_r;
+double *in_treble_r, *in_treble_l;
+fftw_complex *out_treble_l, *out_treble_r;
+
 
 // general: cleanup
 void cleanup(void)
@@ -294,16 +305,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	int sourceIsAuto = 1;
 	double smh;
 
-	double *in_bass_r, *in_bass_l;
-	fftw_complex *out_bass_l, *out_bass_r;
-	double *in_mid_r, *in_mid_l;
-	fftw_complex *out_mid_l, *out_mid_r;
-	double *in_treble_r, *in_treble_l;
-	fftw_complex *out_treble_l, *out_treble_r;
-
 	struct audio_data audio;
 	memset(&audio, 0, sizeof(audio));
-	struct config_params p;
 
 
 	//int maxvalue = 0;
