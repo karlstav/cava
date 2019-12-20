@@ -1046,22 +1046,22 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 	free(in_bass_r);
 	free(in_bass_l);
-	fftw_free(out_bass_r);
-	fftw_free(out_bass_l);
+	free(out_bass_r);
+	free(out_bass_l);
 	fftw_destroy_plan(p_bass_l);
 	fftw_destroy_plan(p_bass_r);
 
 	free(in_mid_r);
 	free(in_mid_l);
-	fftw_free(out_mid_r);
-	fftw_free(out_mid_l);
+	free(out_mid_r);
+	free(out_mid_l);
 	fftw_destroy_plan(p_mid_l);
 	fftw_destroy_plan(p_mid_r);
 
 	free(in_treble_r);
 	free(in_treble_l);
-	fftw_free(out_treble_r);
-	fftw_free(out_treble_l);
+	free(out_treble_r);
+	free(out_treble_l);
 	fftw_destroy_plan(p_treble_l);
 	fftw_destroy_plan(p_treble_r);
 
