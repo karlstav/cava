@@ -102,8 +102,8 @@ void* input_fifo(void* data)
 				for (i = 0; i < audio->FFTbassbufferSize; i++)audio->audio_out_bass_l[i] = 0;
 				for (i = 0; i < audio->FFTbassbufferSize; i++)audio->audio_out_bass_r[i] = 0;
 				for (i = 0; i < audio->FFTmidbufferSize; i++)audio->audio_out_mid_l[i] = 0;
-				for (i = 0; i < audio->FFTmidbufferSize; i++)audio->audio_out_mid_l[i] = 0;
-				for (i = 0; i < audio->FFTtreblebufferSize; i++)audio->audio_out_treble_r[i] = 0;
+				for (i = 0; i < audio->FFTmidbufferSize; i++)audio->audio_out_mid_r[i] = 0;
+				for (i = 0; i < audio->FFTtreblebufferSize; i++)audio->audio_out_treble_l[i] = 0;
 				for (i = 0; i < audio->FFTtreblebufferSize; i++)audio->audio_out_treble_r[i] = 0;
 				close(fd);
 				fd = open_fifo(audio->source);
