@@ -71,79 +71,79 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
 	start_color();
 	use_default_colors();
 
-    getmaxyx(stdscr, *height, *width);
+	getmaxyx(stdscr, *height, *width);
 	clear();
 
-    NCURSES_COLOR_T color_pair_number = 1;
+	NCURSES_COLOR_T color_pair_number = 1;
 
-    NCURSES_COLOR_T bg_color_number;
-    bg_color_number = change_color_definition(0, bg_color_string, predef_bg_color);
+	NCURSES_COLOR_T bg_color_number;
+	bg_color_number = change_color_definition(0, bg_color_string, predef_bg_color);
 
-    if (!gradient) {
+	if (!gradient) {
 
-	    NCURSES_COLOR_T fg_color_number;
-        fg_color_number = change_color_definition(1, fg_color_string, predef_fg_color);
+		NCURSES_COLOR_T fg_color_number;
+		fg_color_number = change_color_definition(1, fg_color_string, predef_fg_color);
 
-        init_pair(color_pair_number, fg_color_number, bg_color_number);
+		init_pair(color_pair_number, fg_color_number, bg_color_number);
 
-    } else if (gradient) {
+	} else if (gradient) {
 
-        // 0 -> col1, 1-> col1<=>col2, 2 -> col2 and so on
-        short unsigned int rgb[2 * gradient_count - 1][3];
-        char next_color[14];
+		// 0 -> col1, 1-> col1<=>col2, 2 -> col2 and so on
+		short unsigned int rgb[2 * gradient_count - 1][3];
+		char next_color[14];
 
-        gradient_size = *height;
+		gradient_size = *height;
 
-        if (gradient_size > COLORS) gradient_size = COLORS - 1;
+		if (gradient_size > COLORS) gradient_size = COLORS - 1;
 	
-        if (gradient_size > COLOR_PAIRS) gradient_size = COLOR_PAIRS - 1;
+		if (gradient_size > COLOR_PAIRS) gradient_size = COLOR_PAIRS - 1;
 
-        if (gradient_size > MAX_COLOR_REDEFINITION) gradient_size = MAX_COLOR_REDEFINITION - 1;
+		if (gradient_size > MAX_COLOR_REDEFINITION) gradient_size = MAX_COLOR_REDEFINITION - 1;
 
-        for(int i = 0;i < gradient_count;i++){
-            int col = (i + 1)*2 - 2;
-            sscanf(gradient_colors[i]+1, "%02hx%02hx%02hx", &rgb[col][0], &rgb[col][1], &rgb[col][2]);
-        }
+		for(int i = 0;i < gradient_count;i++){
+			int col = (i + 1)*2 - 2;
+			sscanf(gradient_colors[i]+1, "%02hx%02hx%02hx", &rgb[col][0], &rgb[col][1], &rgb[col][2]);
+		}
 
-        //sscanf(gradient_color_1 + 1, "%02hx%02hx%02hx", &rgb[0][0], &rgb[0][1], &rgb[0][2]);
-        //sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0], &rgb[1][1], &rgb[1][2]);
+		//sscanf(gradient_color_1 + 1, "%02hx%02hx%02hx", &rgb[0][0], &rgb[0][1], &rgb[0][2]);
+		//sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0], &rgb[1][1], &rgb[1][2]);
 
-        int individual_size = gradient_size/(gradient_count - 1);
+		int individual_size = gradient_size/(gradient_count - 1);
 
-        int row = 0;
+		int row = 0;
 
-        for(int i = 0;i < gradient_count - 1;i++){
+		for(int i = 0;i < gradient_count - 1;i++){
 
-            int col = (i + 1)* 2 - 2;
-            if(i == gradient_count - 1)
-                col = 2*(gradient_count - 1) - 2;
+			int col = (i + 1)* 2 - 2;
+			if(i == gradient_count - 1)
+				col = 2*(gradient_count - 1) - 2;
 
-            for(int j = 0; j < individual_size;j++){
+			for(int j = 0; j < individual_size;j++){
 
-                for(int k = 0; k < 3; k++) {
-                    rgb[col+1][k] = rgb[col][k] + (rgb[col+2][k] - rgb[col][k]) * (j / (individual_size * 0.85));
-                    if (rgb[col+1][k] > 255) rgb[col][k] = 0;
-                    if ( j > individual_size * 0.85 ) rgb[col+1][k] = rgb[col+2][k];
-                }
+				for(int k = 0; k < 3; k++) {
+					rgb[col+1][k] = rgb[col][k] + (rgb[col+2][k] - rgb[col][k]) * (j / (individual_size * 0.85));
+					if (rgb[col+1][k] > 255) rgb[col][k] = 0;
+					if ( j > individual_size * 0.85 ) rgb[col+1][k] = rgb[col+2][k];
+				}
 
-                sprintf(next_color,"#%02x%02x%02x",rgb[col+1][0], rgb[col+1][1], rgb[col+1][2]);
+				sprintf(next_color,"#%02x%02x%02x",rgb[col+1][0], rgb[col+1][1], rgb[col+1][2]);
 
-                change_color_definition(row + 1, next_color, row + 1);
-                init_pair(color_pair_number++, row + 1, bg_color_number);
-                row++;
-            }
-        }
+				change_color_definition(row + 1, next_color, row + 1);
+				init_pair(color_pair_number++, row + 1, bg_color_number);
+				row++;
+			}
+		}
 
-        int left = individual_size * (gradient_count - 1);
-        int col = 2*(gradient_count) - 2;
-        while(left < gradient_size){
-            sprintf(next_color,"#%02x%02x%02x",rgb[col][0], rgb[col][1], rgb[col][2]);
-            change_color_definition(row + 1, next_color, row + 1);
-            init_pair(color_pair_number++, row + 1, bg_color_number);
-            row++;
-            left++;
-        }
-    }
+		int left = individual_size * (gradient_count - 1);
+		int col = 2*(gradient_count) - 2;
+		while(left < gradient_size){
+			sprintf(next_color,"#%02x%02x%02x",rgb[col][0], rgb[col][1], rgb[col][2]);
+			change_color_definition(row + 1, next_color, row + 1);
+			init_pair(color_pair_number++, row + 1, bg_color_number);
+			row++;
+			left++;
+		}
+	}
 
 	if (bg_color_number != -1)
 		bkgd(COLOR_PAIR(color_pair_number));
@@ -153,16 +153,16 @@ char* const bg_color_string, int predef_fg_color, int predef_bg_color, int gradi
 }
 
 void change_colors(int cur_height, int tot_height) {
-    tot_height /= gradient_size ;
-    if (tot_height < 1) tot_height = 1;
-    cur_height /= tot_height;
-    if (cur_height > gradient_size  - 1) cur_height = gradient_size - 1;
-    attron(COLOR_PAIR(cur_height + 1));
+	tot_height /= gradient_size ;
+	if (tot_height < 1) tot_height = 1;
+	cur_height /= tot_height;
+	if (cur_height > gradient_size  - 1) cur_height = gradient_size - 1;
+	attron(COLOR_PAIR(cur_height + 1));
 }
 
 void get_terminal_dim_ncurses(int* width, int* height) {
 	getmaxyx(stdscr, *height, *width);
-    gradient_size = *height;
+	gradient_size = *height;
 	clear(); // clearing in case of resieze
 }
 
@@ -171,10 +171,10 @@ void get_terminal_dim_ncurses(int* width, int* height) {
 int draw_terminal_ncurses(int is_tty, int terminal_height, int terminal_width,
 int bars_count, int bar_width, int bar_spacing, int rest, const int f[200],
 int flastd[200], int gradient) {
-
+	const int height = terminal_height - 1;
 	const wchar_t* bar_heights[] = {L"\u2581", L"\u2582", L"\u2583",
 		L"\u2584", L"\u2585", L"\u2586", L"\u2587", L"\u2588"};
-	#define LAST ((sizeof(bar_heights) / sizeof(bar_heights[0])) - 1)
+	int num_bar_heights = (sizeof(bar_heights) / sizeof(bar_heights[0]));
 
 	// output: check if terminal has been resized
 	if (!is_tty) {
@@ -182,54 +182,62 @@ int flastd[200], int gradient) {
 			return TERMINAL_RESIZED;
 		}
 	}
-	const int height = terminal_height - 1;
-	#define CURRENT_COLUMN bar*bar_width + width + bar*bar_spacing + rest
+
+	// Compute how much of the screen we possibly need to update ahead-of-time.
+	int max_update_y = 0;
 	for (int bar = 0; bar < bars_count; bar++) {
-		if (f[bar] > flastd[bar]) { // higher then last frame
-			if (is_tty) {
-				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++) {
-                    if (gradient) change_colors(n, height);
-					for (int width = 0; width < bar_width; width++)
-						mvaddch((height - n), CURRENT_COLUMN, '8');
-                }
-			} else {
-				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++) {                
-                    if (gradient) change_colors(n, height);
-					for (int width = 0; width < bar_width; width++)
-						mvaddwstr((height - n), CURRENT_COLUMN,
-								bar_heights[LAST]);
-                }
+		max_update_y = max(max_update_y, max(f[bar], flastd[bar]));
+	}
+
+	max_update_y = (max_update_y + num_bar_heights) / num_bar_heights;
+
+	for (int y = 0; y < max_update_y; y++) {
+		if (gradient) {
+			change_colors(y, height);
+		}
+
+		for (int bar = 0; bar < bars_count; bar++) {
+			if (f[bar] == flastd[bar]) {
+				continue;
 			}
-            if (gradient) change_colors(f[bar] / 8, height);
-			if (f[bar] % 8) {
-				if (is_tty) {
-					for (int width = 0; width < bar_width; width++)
-						mvaddch((height - f[bar] / 8), CURRENT_COLUMN, '0' + (f[bar] % 8));
+
+			int cur_col = bar * bar_width + bar * bar_spacing + rest;
+			int f_cell = f[bar] / num_bar_heights;
+			int f_last_cell = flastd[bar] / num_bar_heights;
+
+			if (f_cell >= y) {
+				int bar_step;
+
+				if (f_cell == y) {
+					// The "cap" of the bar occurs at this [y].
+					bar_step = f[bar] % num_bar_heights;
+				} else if (f_last_cell <= y) {
+					// The bar is full at this [y].
+					bar_step = num_bar_heights - 1;
 				} else {
-					for (int width = 0; width < bar_width; width++)
-						mvaddwstr((height - f[bar] / 8), CURRENT_COLUMN,
-								bar_heights[(f[bar] % 8) - 1]);
+					// No update necessary since last frame.
+					continue;
 				}
-			}
-		} else if(f[bar] < flastd[bar]) { // lower then last frame
-			for (int n = f[bar] / 8; n < flastd[bar]/8 + 1; n++)
-				for (int width = 0; width < bar_width; width++)
-					mvaddstr((height - n), CURRENT_COLUMN, " ");
-			if (f[bar] % 8) {
-                 if (gradient) change_colors(f[bar] / 8, height);
-				if (is_tty) {
-					for (int width = 0; width < bar_width; width++)
-						mvaddch((height - f[bar] / 8), CURRENT_COLUMN, '0' + (f[bar] % 8));
-				} else {
-					for (int width = 0; width < bar_width; width++)
-						mvaddwstr((height - f[bar] / 8), CURRENT_COLUMN,
-								bar_heights[(f[bar] % 8) - 1]);
+
+				for (int col = cur_col, i = 0; i < bar_width; i++, col++) {
+					if (is_tty) {
+						mvaddch(height - y, col, '0' + bar_step);
+					} else {
+						mvaddwstr(height - y, col, bar_heights[bar_step]);
+					}
+				}
+			} else if (f_last_cell >= y) {
+				// This bar was taller during the last frame than during this frame, so
+				// clear the excess characters.
+				for (int col = cur_col, i = 0; i < bar_width; i++, col++) {
+					mvaddch(height - y, col, ' ');
 				}
 			}
 		}
-		#undef CURRENT_COLUMN
-		flastd[bar] = f[bar]; // memory for falloff func
 	}
+
+	memcpy(flastd, f, sizeof(*f));  // Memory for falloff func
+
 	refresh();
 	return 0;
 }
@@ -253,6 +261,6 @@ void cleanup_terminal_ncurses(void) {
   */
 	endwin();
 	system("clear");
-    system("reset");
+	system("reset");
 }
 
