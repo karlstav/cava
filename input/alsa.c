@@ -12,9 +12,7 @@ snd_pcm_uframes_t* frames) {
 		fprintf(stderr, "error opening stream: %s\n", snd_strerror(err));
 		exit(EXIT_FAILURE);
 	}
-	#ifdef DEBUG
-		else printf("open stream successful\n");
-	#endif
+	else debug("open stream successful\n");
 
 	snd_pcm_hw_params_t* params;
 	snd_pcm_hw_params_alloca(&params); // assembling params
@@ -145,18 +143,12 @@ void* input_alsa(void* data) {
 
 		if (err == -EPIPE) {
 			/* EPIPE means overrun */
-#ifdef DEBUG
-			fprintf(stderr, "overrun occurred\n");
-#endif
+			debug("overrun occurred\n");
 			snd_pcm_prepare(handle);
 		} else if (err < 0) {
-#ifdef DEBUG
-			fprintf(stderr, "error from read: %s\n", snd_strerror(err));
-#endif
+			debug("error from read: %s\n", snd_strerror(err));
 		} else if (err != (int)frames) {
-#ifdef DEBUG
-			fprintf(stderr, "short read, read %d %d frames\n", err, (int)frames);
-#endif
+			debug("short read, read %d %d frames\n", err, (int)frames);
 		}
 
 

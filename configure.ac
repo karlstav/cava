@@ -18,9 +18,9 @@ AC_ARG_ENABLE([debug],
     [enable debug messages and frequency table output])
 )
 
-AS_IF([test "x$enable_debug" = "xyes"], [
+AS_IF([test "x$enable_debug" != "xyes"], [
   dnl enabling debug mode
-  CPPFLAGS="$CPPFLAGS -DDEBUG"
+  CPPFLAGS="$CPPFLAGS -DNDEBUG"
 ])
 
 
