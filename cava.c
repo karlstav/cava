@@ -31,6 +31,8 @@
 #include <dirent.h>
 #include <ctype.h>
 
+#include "debug.h"
+
 #ifdef NCURSES
 #include "output/terminal_ncurses.h"
 #include "output/terminal_ncurses.c"
@@ -361,9 +363,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	// general: main loop
 	while (1) {
 
-	#ifdef DEBUG
-		printf("loading config\n");
-	#endif
+	debug("loading config\n");
 	//config: load
 	struct error_s error;
 	error.length = 0;
@@ -416,9 +416,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	audio.treble_index = 0;
 
 
-	#ifdef DEBUG
-		printf("starting audio thread\n");
-	#endif
+	debug("starting audio thread\n");
 	#ifdef ALSA
 	// input_alsa: wait for the input to be ready
 	if (p.im == 1) {
@@ -451,9 +449,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				exit(EXIT_FAILURE);
 			}
 		}
-	#ifdef DEBUG
-		printf("got format: %d and rate %d\n", audio.format, audio.rate);
-	#endif
+	debug("got format: %d and rate %d\n", audio.format, audio.rate);
 
 	}
 	#endif
@@ -540,10 +536,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	fftw_plan p_treble_l =  fftw_plan_dft_r2c_1d(audio.FFTtreblebufferSize, in_treble_l, out_treble_l, FFTW_MEASURE);
 	fftw_plan p_treble_r =  fftw_plan_dft_r2c_1d(audio.FFTtreblebufferSize, in_treble_r, out_treble_r, FFTW_MEASURE);
 
-	#ifdef DEBUG
-		printf("got buffer size: %d, %d, %d", audio.FFTbassbufferSize, audio.FFTmidbufferSize, audio.FFTtreblebufferSize);
-		printf("zeroing buffers\n");
-	#endif
+	debug("got buffer size: %d, %d, %d", audio.FFTbassbufferSize, audio.FFTmidbufferSize, audio.FFTtreblebufferSize);
+	debug("zeroing buffers\n");
 	for (i = 0; i < (audio.FFTbassbufferSize / 2 + 1); i++) {
 		if (i < audio.FFTbassbufferSize) {
 			audio.audio_out_bass_l[i] = 0;
@@ -687,7 +681,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 		rest = (w - bars * p.bw - bars * p.bs + p.bs) / 2;
 		if (rest < 0)rest = 0;
 
-		#ifdef DEBUG
+		#ifndef NDEBUG
 			printw("height: %d width: %d bars:%d bar width: %d rest: %d\n",
 						 w,
 						 h, bars, p.bw, rest);
@@ -768,7 +762,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 				hcf[n - 1] = lcf[n] - 1;
 			}
 
-#ifdef DEBUG
+#ifndef NDEBUG
 			if (n != 0) {
 				mvprintw(n,0,"%d: %f -> %f (%d -> %d) bass: %d, treble:%d \n", n,
 						fc[n - 1], fc[n], lcf[n - 1],
@@ -851,7 +845,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 			//if (cont == 0) break;
 
-			#ifdef DEBUG
+			#ifndef NDEBUG
 				//clear();
 				refresh();
 			#endif
@@ -1020,13 +1014,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 			if (p.autosens && !silence && senselow) p.sens = p.sens * 1.001;
 
 
-			#ifdef DEBUG
-				//printf("%d\n",maxvalue); //checking maxvalue 10000
-			#endif
+			//debug("%d\n",maxvalue); //checking maxvalue 10000
 
 			
 			// output: draw processed input
-			#ifndef DEBUG
+			#ifdef NDEBUG
 				switch (p.om) {
 					case 1:
 						#ifdef NCURSES
