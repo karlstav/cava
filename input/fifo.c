@@ -91,7 +91,7 @@ void* input_fifo(void* data)
 
 	fd = open_fifo(audio->source);
 
-	while (1) {
+	while (!audio->terminate) {
 
 		bytes = read(fd, buf, sizeof(buf));
 
@@ -114,13 +114,8 @@ void* input_fifo(void* data)
 
 			write_to_fftw_input_buffers(buf, frames, audio);
 		}
-
-		if (audio->terminate == 1) {
-			close(fd);
-			break;
-		}
-
 	}
 
+	close(fd);
 	return 0;
 }
