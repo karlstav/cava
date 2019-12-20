@@ -221,7 +221,7 @@ int flastd[200], int gradient) {
 
 				for (int col = cur_col, i = 0; i < bar_width; i++, col++) {
 					if (is_tty) {
-						mvaddch(height - y, col, '0' + bar_step);
+						mvaddch(height - y, col, '1' + bar_step);
 					} else {
 						mvaddwstr(height - y, col, bar_heights[bar_step]);
 					}
