@@ -471,10 +471,15 @@ p->highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
 p->FFTbufferSize = iniparser_getint(ini, "general:FFTbufferSize", 12); 
 
 // config: output
-channels =  (char *)iniparser_getstring(ini, "output:channels", "stereo");
-p->mono_option = (char *)iniparser_getstring(ini, "output:mono_option", "average");
-p->raw_target = (char *)iniparser_getstring(ini, "output:raw_target", "/dev/stdout");
-p->data_format = (char *)iniparser_getstring(ini, "output:data_format", "binary");
+free(channels);
+free(p->mono_option);
+free(p->raw_target);
+free(p->data_format);
+
+channels =  strdup(iniparser_getstring(ini, "output:channels", "stereo"));
+p->mono_option = strdup(iniparser_getstring(ini, "output:mono_option", "average"));
+p->raw_target = strdup(iniparser_getstring(ini, "output:raw_target", "/dev/stdout"));
+p->data_format = strdup(iniparser_getstring(ini, "output:data_format", "binary"));
 p->bar_delim = (char)iniparser_getint(ini, "output:bar_delimiter", 59);
 p->frame_delim = (char)iniparser_getint(ini, "output:frame_delimiter", 10);
 p->ascii_range = iniparser_getint(ini, "output:ascii_max_range", 1000);
@@ -501,40 +506,43 @@ if (p->smcount > 0) {
 	p->smcount = sizeof(smoothDef)/sizeof(smoothDef[0]); //back to the default one
 }
 
+free(p->audio_source);
+
 // config: input
 p->im = 0;
 if (strcmp(inputMethod, "alsa") == 0) {
 	p->im = 1;
-	p->audio_source = (char *)iniparser_getstring(ini, "input:source", "hw:Loopback,1");
+	p->audio_source = strdup(iniparser_getstring(ini, "input:source", "hw:Loopback,1"));
 }
 if (strcmp(inputMethod, "fifo") == 0) {
 	p->im = 2;
-	p->audio_source = (char *)iniparser_getstring(ini, "input:source", "/tmp/mpd.fifo");
+	p->audio_source = strdup(iniparser_getstring(ini, "input:source", "/tmp/mpd.fifo"));
 	p->fifoSample = iniparser_getint(ini, "input:sample_rate", 44100);
 }
 if (strcmp(inputMethod, "pulse") == 0) {
 	p->im = 3;
-	p->audio_source = (char *)iniparser_getstring(ini, "input:source", "auto");
+	p->audio_source = strdup(iniparser_getstring(ini, "input:source", "auto"));
 }
 #ifdef SNDIO
 if (strcmp(inputMethod, "sndio") == 0) {
 	p->im = 4;
-	p->audio_source = (char *)iniparser_getstring(ini, "input:source", SIO_DEVANY);
+	p->audio_source = strdup(iniparser_getstring(ini, "input:source", SIO_DEVANY));
 }
 #endif
 #ifdef SHMEM
 if (strcmp(inputMethod, "shmem") == 0) {
 	p->im = 5;
-	p->audio_source = (char *)iniparser_getstring(ini, "input:source", "/squeezelite-00:00:00:00:00:00");
+	p->audio_source = strdup(iniparser_getstring(ini, "input:source", "/squeezelite-00:00:00:00:00:00"));
 }
 #endif
 #ifdef PORTAUDIO
 if (strcmp(inputMethod, "portaudio") == 0) {
 	p->im = 6;
-	p->audio_source = (char *)iniparser_getstring(ini, "input:source", "auto");
+	p->audio_source = strdup(iniparser_getstring(ini, "input:source", "auto"));
 }
 #endif
 
-return validate_config(supportedInput, params, error);
-//iniparser_freedict(ini);
+bool result = validate_config(supportedInput, params, error);
+iniparser_freedict(ini);
+return result;
 }
