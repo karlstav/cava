@@ -146,7 +146,7 @@ void* input_pulse(void* data) {
 	}
 
 
-	while (1) {
+	while (!audio->terminate) {
         	if (pa_simple_read(s, buf, sizeof(buf), &error) < 0) {
             		sprintf(audio->error_message, __FILE__": pa_simple_read() failed: %s\n",
 			pa_strerror(error));
@@ -157,12 +157,8 @@ void* input_pulse(void* data) {
 		 //sorting out channels
 
 		write_to_fftw_input_buffers(buf, frames, data);
+	}
 
-		if (audio->terminate == 1) {            		
-			pa_simple_free(s);
-			break;
-		}
-        }
-
+	pa_simple_free(s);
 	return 0;
 }

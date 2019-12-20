@@ -116,7 +116,7 @@ void* input_alsa(void* data) {
 	//const int size = frames * (audio->format / 8) * CHANNELS_COUNT;
 	signed char* buffer = malloc(period_size);
 
-	while (1) {
+	while (!audio->terminate) {
 		switch (audio->format) {
 			case 16:
 				err = snd_pcm_readi(handle, buf, frames);
@@ -153,12 +153,9 @@ void* input_alsa(void* data) {
 
 
 		write_to_fftw_input_buffers(buf, frames, data);
-
-
-		if (audio->terminate == 1) {
-			free(buffer);
-			snd_pcm_close(handle);
-			return NULL;
-		}
 	}
+
+	free(buffer);
+	snd_pcm_close(handle);
+	return NULL;
 }

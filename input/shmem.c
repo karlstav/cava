@@ -59,7 +59,7 @@ void* input_shmem(void* data)
 	// printf("bufs: %u / run: %u / rate: %u\n",mmap_area->buf_size, mmap_area->running, mmap_area->rate);
 	audio->rate = mmap_area->rate;
 
-	while (1) {
+	while (!audio->terminate) {
 		write_to_fftw_input_buffers(mmap_area->buffer, BUFSIZE, audio);
 /*
 		for (i = VB_OFFSET; i < BUFSIZE+VB_OFFSET; i += 2) {
@@ -73,9 +73,6 @@ void* input_shmem(void* data)
 			if (n == audio->FFTbufferSize - 1) n = 0;
 		}
 */
-		if (audio->terminate == 1) {
-			break;
-		}
 	}
 
 	// cleanup
