@@ -302,6 +302,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	fftw_complex *out_treble_l, *out_treble_r;
 
 	struct audio_data audio;
+	memset(&audio, 0, sizeof(audio));
 	struct config_params p;
 
 
@@ -505,79 +506,38 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 	//BASS
 	//audio.FFTbassbufferSize =  audio.rate / 20; // audio.FFTbassbufferSize;
 
-	in_bass_r = malloc(2 * (audio.FFTbassbufferSize / 2 + 1) * sizeof(double));
-	in_bass_l = malloc(2 * (audio.FFTbassbufferSize / 2 + 1) * sizeof(double));
+	in_bass_r = calloc(2 * (audio.FFTbassbufferSize / 2 + 1), sizeof(double));
+	in_bass_l = calloc(2 * (audio.FFTbassbufferSize / 2 + 1), sizeof(double));
 
-	out_bass_l = malloc(2 * (audio.FFTbassbufferSize / 2 + 1) * sizeof(fftw_complex));
-	out_bass_r = malloc(2 * (audio.FFTbassbufferSize / 2 + 1) * sizeof(fftw_complex));
+	out_bass_l = calloc(2 * (audio.FFTbassbufferSize / 2 + 1), sizeof(fftw_complex));
+	out_bass_r = calloc(2 * (audio.FFTbassbufferSize / 2 + 1), sizeof(fftw_complex));
 
 	fftw_plan p_bass_l =  fftw_plan_dft_r2c_1d(audio.FFTbassbufferSize, in_bass_l, out_bass_l, FFTW_MEASURE);
 	fftw_plan p_bass_r =  fftw_plan_dft_r2c_1d(audio.FFTbassbufferSize, in_bass_r, out_bass_r, FFTW_MEASURE);
 
 	//MID
 	//audio.FFTmidbufferSize =  audio.rate / bass_cut_off; // audio.FFTbassbufferSize;
-	in_mid_r = malloc(2 * (audio.FFTmidbufferSize / 2 + 1) * sizeof(double));
-	in_mid_l = malloc(2 * (audio.FFTmidbufferSize / 2 + 1) * sizeof(double));
+	in_mid_r = calloc(2 * (audio.FFTmidbufferSize / 2 + 1), sizeof(double));
+	in_mid_l = calloc(2 * (audio.FFTmidbufferSize / 2 + 1), sizeof(double));
 
-	out_mid_l = malloc(2 * (audio.FFTmidbufferSize / 2 + 1) * sizeof(fftw_complex));
-	out_mid_r = malloc(2 * (audio.FFTmidbufferSize / 2 + 1) * sizeof(fftw_complex));
+	out_mid_l = calloc(2 * (audio.FFTmidbufferSize / 2 + 1), sizeof(fftw_complex));
+	out_mid_r = calloc(2 * (audio.FFTmidbufferSize / 2 + 1), sizeof(fftw_complex));
 
 	fftw_plan p_mid_l =  fftw_plan_dft_r2c_1d(audio.FFTmidbufferSize, in_mid_l, out_mid_l, FFTW_MEASURE);
 	fftw_plan p_mid_r =  fftw_plan_dft_r2c_1d(audio.FFTmidbufferSize, in_mid_r, out_mid_r, FFTW_MEASURE);
 
 	//TRIEBLE
 	//audio.FFTtreblebufferSize =  audio.rate / treble_cut_off; // audio.FFTbassbufferSize;
-	in_treble_r = malloc(2 * (audio.FFTtreblebufferSize / 2 + 1) * sizeof(double));
-	in_treble_l = malloc(2 * (audio.FFTtreblebufferSize / 2 + 1) * sizeof(double));
+	in_treble_r = calloc(2 * (audio.FFTtreblebufferSize / 2 + 1), sizeof(double));
+	in_treble_l = calloc(2 * (audio.FFTtreblebufferSize / 2 + 1), sizeof(double));
 
-	out_treble_l = malloc(2 * (audio.FFTtreblebufferSize / 2 + 1) * sizeof(fftw_complex));
-	out_treble_r = malloc(2 * (audio.FFTtreblebufferSize / 2 + 1) * sizeof(fftw_complex));
+	out_treble_l = calloc(2 * (audio.FFTtreblebufferSize / 2 + 1), sizeof(fftw_complex));
+	out_treble_r = calloc(2 * (audio.FFTtreblebufferSize / 2 + 1), sizeof(fftw_complex));
 
 	fftw_plan p_treble_l =  fftw_plan_dft_r2c_1d(audio.FFTtreblebufferSize, in_treble_l, out_treble_l, FFTW_MEASURE);
 	fftw_plan p_treble_r =  fftw_plan_dft_r2c_1d(audio.FFTtreblebufferSize, in_treble_r, out_treble_r, FFTW_MEASURE);
 
 	debug("got buffer size: %d, %d, %d", audio.FFTbassbufferSize, audio.FFTmidbufferSize, audio.FFTtreblebufferSize);
-	debug("zeroing buffers\n");
-	for (i = 0; i < (audio.FFTbassbufferSize / 2 + 1); i++) {
-		if (i < audio.FFTbassbufferSize) {
-			audio.audio_out_bass_l[i] = 0;
-			audio.audio_out_bass_r[i] = 0;
-		}
-		in_bass_l[i] = 0;
-		in_bass_r[i] = 0;
-		for (n = 0; n < 2; n++) {
-			out_bass_l[i][n] = 0;
-			out_bass_r[i][n] = 0;
-		}
-	}
-
-	for (i = 0; i < (audio.FFTmidbufferSize / 2 + 1); i++) {
-		if (i < audio.FFTmidbufferSize) {
-			audio.audio_out_mid_l[i] = 0;
-			audio.audio_out_mid_r[i] = 0;
-		}
-		in_mid_l[i] = 0;
-		in_mid_r[i] = 0;
-		for (n = 0; n < 2; n++) {
-			out_mid_l[i][n] = 0;
-			out_mid_r[i][n] = 0;
-		}
-	}
-
-	for (i = 0; i < (audio.FFTtreblebufferSize / 2 + 1); i++) {
-		if (i < audio.FFTtreblebufferSize) {
-			audio.audio_out_treble_l[i] = 0;
-			audio.audio_out_treble_r[i] = 0;
-		}
-		in_treble_l[i] = 0;
-		in_treble_r[i] = 0;
-		for (n = 0; n < 2; n++) {
-			out_treble_l[i][n] = 0;
-			out_treble_r[i][n] = 0;
-		}
-	}
-
-
 
 	bool reloadConf = false;
 
