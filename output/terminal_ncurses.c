@@ -190,7 +190,7 @@ int flastd[200], int gradient) {
 				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++) {
                     if (gradient) change_colors(n, height);
 					for (int width = 0; width < bar_width; width++)
-						mvprintw((height - n), CURRENT_COLUMN, "%d", 8);
+						mvaddch((height - n), CURRENT_COLUMN, '8');
                 }
 			} else {
 				for (int n = flastd[bar] / 8; n < f[bar] / 8; n++) {                
@@ -204,8 +204,7 @@ int flastd[200], int gradient) {
 			if (f[bar] % 8) {
 				if (is_tty) {
 					for (int width = 0; width < bar_width; width++)
-						mvprintw((height - f[bar] / 8), CURRENT_COLUMN, "%d",
-								(f[bar] % 8));
+						mvaddch((height - f[bar] / 8), CURRENT_COLUMN, '0' + (f[bar] % 8));
 				} else {
 					for (int width = 0; width < bar_width; width++)
 						mvaddwstr((height - f[bar] / 8), CURRENT_COLUMN,
@@ -220,8 +219,7 @@ int flastd[200], int gradient) {
                  if (gradient) change_colors(f[bar] / 8, height);
 				if (is_tty) {
 					for (int width = 0; width < bar_width; width++)
-						mvprintw((height - f[bar] / 8), CURRENT_COLUMN, "%d",
-								(f[bar] % 8));
+						mvaddch((height - f[bar] / 8), CURRENT_COLUMN, '0' + (f[bar] % 8));
 				} else {
 					for (int width = 0; width < bar_width; width++)
 						mvaddwstr((height - f[bar] / 8), CURRENT_COLUMN,
