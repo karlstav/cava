@@ -23,6 +23,16 @@ AS_IF([test "x$enable_debug" != "xyes"], [
   CPPFLAGS="$CPPFLAGS -DNDEBUG"
 ])
 
+AC_ARG_ENABLE([asan],
+  AS_HELP_STRING([--enable-asan],
+    [build with AddressSanitizer])
+)
+
+AS_IF([test "x$enable_asan" = "xyes"], [
+  dnl enabling asan
+  CPPFLAGS="$CPPFLAGS -fsanitize=address"
+  LDFLAGS="$LDFLAGS -fsanitize=address"
+])
 
 
 dnl ######################
