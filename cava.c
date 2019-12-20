@@ -923,7 +923,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 			}
 			 else { //**if in sleep mode wait and continue**//
-				#ifdef DEBUG
+				#ifndef NDEBUG
 					printw("no sound detected for 3 sec, going to sleep mode\n");
 				#endif
 				//wait 1 sec, then check sound again.
@@ -988,7 +988,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 					//f[o] = f[o] - pow(div, 10) * (height + 1);
 					fmem[o] = fmem[o] * (1 - div / 20);
 
-					#ifdef DEBUG
+					#ifndef NDEBUG
 						mvprintw(o,0,"%d: f:%f->%f (%d->%d), k-value:\
 						%15e, peak:%d \n", o, fc[o], fc[o + 1], 
 						lcf[o], hcf[o], k[o], f[o]);
