@@ -1,1 +1,1 @@
-void* input_portaudio(void *audiodata);
+void *input_portaudio(void *audiodata);

@@ -1,4 +1,3 @@
-//header file for alsa, part of cava.
+// header file for alsa, part of cava.
 
-void* input_alsa(void* data);
-
+void *input_alsa(void *data);
