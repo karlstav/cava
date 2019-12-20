@@ -485,7 +485,7 @@ p->smooth = smoothDef;
 p->smcount = iniparser_getsecnkeys(ini, "eq");
 if (p->smcount > 0) {
 	p->customEQ = 1;
-	p->smooth = malloc(p->smcount*sizeof(p->smooth));
+	p->smooth = calloc(p->smcount + 1, sizeof(p->smooth));
 	#ifndef LEGACYINIPARSER
 	const char *keys[p->smcount];
 	iniparser_getseckeys(ini, "eq", keys);
