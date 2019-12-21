@@ -1,5 +1,3 @@
-#ifdef SHMEM
-
 #include "input/shmem.h"
 #include "input/common.h"
 
@@ -90,5 +88,3 @@ void *input_shmem(void *data) {
     }
     return 0;
 }
-
-#endif // SHMEM

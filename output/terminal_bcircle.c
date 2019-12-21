@@ -1,5 +1,3 @@
-#ifdef NCURSES
-
 #include "output/terminal_bcircle.h"
 
 #include <curses.h>
@@ -85,5 +83,3 @@ void cleanup_terminal_bcircle(void) {
     endwin();
     system("clear");
 }
-
-#endif // NCURSES

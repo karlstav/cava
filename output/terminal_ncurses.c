@@ -1,5 +1,3 @@
-#ifdef NCURSES
-
 #include "output/terminal_ncurses.h"
 
 #include <curses.h>
@@ -276,5 +274,3 @@ void cleanup_terminal_ncurses(void) {
     system("clear");
     system("reset");
 }
-
-#endif // NCURSES

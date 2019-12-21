@@ -1,5 +1,3 @@
-#ifdef SNDIO
-
 #include "input/sndio.h"
 
 #include <assert.h>
@@ -66,5 +64,3 @@ void *input_sndio(void *data) {
 
     return 0;
 }
-
-#endif // SNDIO

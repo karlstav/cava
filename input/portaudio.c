@@ -1,5 +1,3 @@
-#ifdef PORTAUDIO
-
 #include "input/portaudio.h"
 #include "input/common.h"
 
@@ -207,5 +205,3 @@ void *input_portaudio(void *audiodata) {
     portaudio_simple_free(data);
     return 0;
 }
-
-#endif // PORTAUDIO

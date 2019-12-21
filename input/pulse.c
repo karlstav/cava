@@ -1,5 +1,3 @@
-#ifdef PULSE
-
 #include "input/pulse.h"
 #include "input/common.h"
 
@@ -147,5 +145,3 @@ void *input_pulse(void *data) {
     pa_simple_free(s);
     return 0;
 }
-
-#endif // PULSE

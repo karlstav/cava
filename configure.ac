@@ -65,6 +65,8 @@ AC_CHECK_LIB(asound, snd_pcm_open, have_alsa=yes, have_alsa=no)
       AC_MSG_NOTICE([WARNING: No alsa dev files found building without alsa support])
     fi
 
+    AM_CONDITIONAL([ALSA], [test x$have_alsa = xyes])
+
 
 dnl ######################
 dnl checking for pulse dev
@@ -79,6 +81,8 @@ AC_CHECK_LIB(pulse-simple, pa_simple_new, have_pulse=yes, have_pulse=no)
       AC_MSG_NOTICE([WARNING: No pusleaudio dev files found building without pulseaudio support])
     fi
 
+    AM_CONDITIONAL([PULSE], [test x$have_pulse = xyes])
+
 dnl ######################
 dnl checking for portaudio dev
 dnl ######################
@@ -92,6 +96,8 @@ AC_CHECK_LIB(portaudio, Pa_Initialize, have_portaudio=yes, have_portaudio=no)
       AC_MSG_NOTICE([WARNING: No portaudio dev files found building without portaudio support])
     fi
 
+    AM_CONDITIONAL([PORTAUDIO], [test x$have_portaudio = xyes])
+
 dnl ######################
 dnl checking for sndio dev
 dnl ######################
@@ -104,6 +110,8 @@ AC_CHECK_LIB(sndio, sio_open, have_sndio=yes, have_sndio=no)
     if [[ $have_sndio = "no" ]] ; then
       AC_MSG_NOTICE([WARNING: No sndio dev files found building without sndio support])
     fi
+
+    AM_CONDITIONAL([SNDIO], [test x$have_sndio = xyes])
 
 dnl ######################
 dnl checking for math lib
@@ -151,8 +159,10 @@ AC_CHECK_LIB($curses_lib, initscr,
 		LIBS="$LIBS `$CURSES_CONFIG --libs`"
 	fi
 	AC_CHECK_HEADERS([curses.h], , AC_MSG_ERROR([missing curses.h header]))
+	AM_CONDITIONAL([NCURSES], [true])
 	,
 	AC_MSG_NOTICE([WARNING: building without ncursesw support ncursesw is recomended!])
+	AM_CONDITIONAL([NCURSES], [false])
 	)
 
 
@@ -199,6 +209,7 @@ AS_IF([test "x$enable_shmem" = "xyes"], [
   CPPFLAGS="$CPPFLAGS -DSHMEM"
   LIBS="$LIBS -lrt"
 ])
+AM_CONDITIONAL([SHMEM], [test "x$enable_shmem" = xyes])
 
 
 

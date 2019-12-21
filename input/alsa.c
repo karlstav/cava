@@ -1,6 +1,4 @@
 // input: ALSA
-#ifdef ALSA
-
 #include "input/alsa.h"
 #include "debug.h"
 #include "input/common.h"
@@ -164,5 +162,3 @@ void *input_alsa(void *data) {
     snd_pcm_close(handle);
     return NULL;
 }
-
-#endif // ALSA
