@@ -9,7 +9,26 @@
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
 
-char *inputMethod, *outputMethod, *channels;
+char *outputMethod, *channels;
+
+const char *input_method_names[] = {
+    "fifo", "portaudio", "alsa", "pulse", "sndio", "shmem",
+};
+
+const bool has_input_method[] = {
+    true, /** Always have at least FIFO input. */
+    HAS_PORTAUDIO, HAS_ALSA, HAS_PULSE, HAS_SNDIO, HAS_SHMEM,
+};
+
+enum input_method input_method_by_name(const char *str) {
+    for (int i = 0; i < INPUT_MAX; i++) {
+        if (!strcmp(str, input_method_names[i])) {
+            return (enum input_method)i;
+        }
+    }
+
+    return INPUT_MAX;
+}
 
 void write_errorf(void *err, const char *fmt, ...) {
     struct error_s *error = (struct error_s *)err;
@@ -127,55 +146,7 @@ bool validate_colors(void *params, void *err) {
     return true;
 }
 
-bool validate_config(char supportedInput[255], struct config_params *p, struct error_s *error) {
-    // validate: input method
-    p->im = 0;
-    if (strcmp(inputMethod, "alsa") == 0) {
-        p->im = 1;
-#ifndef ALSA
-        write_errorf(error, "cava was built without alsa support, install alsa dev files and run "
-                            "make clean && ./configure && make again\n");
-        return false;
-#endif
-    }
-    if (strcmp(inputMethod, "fifo") == 0) {
-        p->im = 2;
-    }
-    if (strcmp(inputMethod, "pulse") == 0) {
-        p->im = 3;
-#ifndef PULSE
-        write_errorf(error, "cava was built without pulseaudio support, install pulseaudio dev "
-                            "files and run make clean && ./configure && make again\n");
-        return false;
-#endif
-    }
-    if (strcmp(inputMethod, "sndio") == 0) {
-        p->im = 4;
-#ifndef SNDIO
-        write_errorf(error, "cava was built without sndio support\n");
-        return false;
-#endif
-    }
-    if (strcmp(inputMethod, "shmem") == 0) {
-        p->im = 5;
-#ifndef SHMEM
-        write_errorf(error, "cava was built without shmem support\n");
-        return false;
-#endif
-    }
-    if (strcmp(inputMethod, "portaudio") == 0) {
-        p->im = 6;
-#ifndef PORTAUDIO
-        write_errorf(error, "cava was built without portaudio support\n");
-        return false;
-#endif
-    }
-    if (p->im == 0) {
-        write_errorf(error, "input method '%s' is not supported, supported methods are: %s\n",
-                     inputMethod, supportedInput);
-        return false;
-    }
-
+bool validate_config(struct config_params *p, struct error_s *error) {
     // validate: output method
     p->om = 0;
     if (strcmp(outputMethod, "ncurses") == 0) {
@@ -370,8 +341,8 @@ bool load_colors(struct config_params *p, dictionary *ini, void *err) {
     return true;
 }
 
-bool load_config(char configPath[255], char supportedInput[255], struct config_params *p,
-                 bool colorsOnly, struct error_s *error) {
+bool load_config(char configPath[255], struct config_params *p, bool colorsOnly,
+                 struct error_s *error) {
     FILE *fp;
 
     // config: creating path to default config file
@@ -427,24 +398,6 @@ bool load_config(char configPath[255], char supportedInput[255], struct config_p
         }
         return validate_colors(p, error);
     }
-
-    // setting fifo to defaualt if no other input modes supported
-    inputMethod = (char *)iniparser_getstring(ini, "input:method", "fifo");
-
-// setting portaudio to default if supported
-#ifdef ALSA
-    inputMethod = (char *)iniparser_getstring(ini, "input:method", "portaudio");
-#endif
-
-// setting alsa to defaualt if supported
-#ifdef ALSA
-    inputMethod = (char *)iniparser_getstring(ini, "input:method", "alsa");
-#endif
-
-// setting pulse to defaualt if supported
-#ifdef PULSE
-    inputMethod = (char *)iniparser_getstring(ini, "input:method", "pulse");
-#endif
 
 #ifdef NCURSES
     outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
@@ -512,42 +465,66 @@ bool load_config(char configPath[255], char supportedInput[255], struct config_p
 
     free(p->audio_source);
 
-    // config: input
-    p->im = 0;
-    if (strcmp(inputMethod, "alsa") == 0) {
-        p->im = 1;
-        p->audio_source = strdup(iniparser_getstring(ini, "input:source", "hw:Loopback,1"));
+    char *input_method_name;
+    for (int i = INPUT_MAX - 1; i >= 0; i--) {
+        if (has_input_method[i]) {
+            input_method_name =
+                (char *)iniparser_getstring(ini, "input:method", input_method_names[i]);
+        }
     }
-    if (strcmp(inputMethod, "fifo") == 0) {
-        p->im = 2;
+
+    p->im = input_method_by_name(input_method_name);
+    switch (p->im) {
+#ifdef ALSA
+    case INPUT_ALSA:
+        p->audio_source = strdup(iniparser_getstring(ini, "input:source", "hw:Loopback,1"));
+        break;
+#endif
+    case INPUT_FIFO:
         p->audio_source = strdup(iniparser_getstring(ini, "input:source", "/tmp/mpd.fifo"));
         p->fifoSample = iniparser_getint(ini, "input:sample_rate", 44100);
-    }
-    if (strcmp(inputMethod, "pulse") == 0) {
-        p->im = 3;
+        break;
+#ifdef PULSE
+    case INPUT_PULSE:
         p->audio_source = strdup(iniparser_getstring(ini, "input:source", "auto"));
-    }
+        break;
+#endif
 #ifdef SNDIO
-    if (strcmp(inputMethod, "sndio") == 0) {
-        p->im = 4;
+    case INPUT_SNDIO:
         p->audio_source = strdup(iniparser_getstring(ini, "input:source", SIO_DEVANY));
-    }
+        break;
 #endif
 #ifdef SHMEM
-    if (strcmp(inputMethod, "shmem") == 0) {
-        p->im = 5;
+    case INPUT_SHMEM:
         p->audio_source =
             strdup(iniparser_getstring(ini, "input:source", "/squeezelite-00:00:00:00:00:00"));
-    }
+        break;
 #endif
 #ifdef PORTAUDIO
-    if (strcmp(inputMethod, "portaudio") == 0) {
-        p->im = 6;
+    case INPUT_PORTAUDIO:
         p->audio_source = strdup(iniparser_getstring(ini, "input:source", "auto"));
-    }
+        break;
 #endif
+    case INPUT_MAX: {
+        char supported_methods[255] = "";
+        for (int i = 0; i < INPUT_MAX; i++) {
+            if (has_input_method[i]) {
+                strcat(supported_methods, "'");
+                strcat(supported_methods, input_method_names[i]);
+                strcat(supported_methods, "' ");
+            }
+        }
+        write_errorf(error, "input method '%s' is not supported, supported methods are: %s\n",
+                     input_method_name, supported_methods);
+        return false;
+    }
+    default:
+        write_errorf(error, "cava was built without '%s' input support\n",
+                     input_method_names[p->im]);
+        return false;
+    }
 
-    bool result = validate_config(supportedInput, p, error);
+    bool result = validate_config(p, error);
     iniparser_freedict(ini);
     return result;
 }
