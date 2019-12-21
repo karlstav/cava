@@ -1,6 +1,11 @@
+#include "output/terminal_ncurses.h"
+
 #include <curses.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wchar.h>
+
+#include "util.h"
 
 int gradient_size = 64;
 

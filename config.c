@@ -1,26 +1,15 @@
-#define MAX_ERROR_LEN 1024
+#include "config.h"
+
+#include <ctype.h>
+#include <iniparser.h>
+#include <math.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <sys/stat.h>
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
 
 char *inputMethod, *outputMethod, *channels;
-
-struct config_params {
-
-    char *color, *bcolor, *raw_target, *audio_source,
-        /**gradient_color_1, *gradient_color_2,*/ **gradient_colors, *data_format, *mono_option;
-    char bar_delim, frame_delim;
-    double monstercat, integral, gravity, ignore, sens;
-    unsigned int lowcf, highcf;
-    double *smooth;
-    int smcount, customEQ, im, om, col, bgcol, autobars, stereo, is_bin, ascii_range, bit_format,
-        gradient, gradient_count, fixedbars, framerate, bw, bs, autosens, overshoot, waves,
-        FFTbufferSize, fifoSample;
-};
-
-struct error_s {
-    char message[MAX_ERROR_LEN];
-    int length;
-};
 
 void write_errorf(void *err, const char *fmt, ...) {
     struct error_s *error = (struct error_s *)err;
@@ -138,11 +127,7 @@ bool validate_colors(void *params, void *err) {
     return true;
 }
 
-bool validate_config(char supportedInput[255], void *params, void *err) {
-
-    struct config_params *p = (struct config_params *)params;
-    struct error_s *error = (struct error_s *)err;
-
+bool validate_config(char supportedInput[255], struct config_params *p, struct error_s *error) {
     // validate: input method
     p->im = 0;
     if (strcmp(inputMethod, "alsa") == 0) {
@@ -385,11 +370,8 @@ bool load_colors(struct config_params *p, dictionary *ini, void *err) {
     return true;
 }
 
-bool load_config(char configPath[255], char supportedInput[255], void *params, bool colorsOnly,
-                 void *err) {
-
-    struct config_params *p = (struct config_params *)params;
-    struct error_s *error = (struct error_s *)err;
+bool load_config(char configPath[255], char supportedInput[255], struct config_params *p,
+                 bool colorsOnly, struct error_s *error) {
     FILE *fp;
 
     // config: creating path to default config file
@@ -565,7 +547,7 @@ bool load_config(char configPath[255], char supportedInput[255], void *params, b
     }
 #endif
 
-    bool result = validate_config(supportedInput, params, error);
+    bool result = validate_config(supportedInput, p, error);
     iniparser_freedict(ini);
     return result;
 }

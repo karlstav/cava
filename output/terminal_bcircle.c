@@ -1,3 +1,5 @@
+#include "output/terminal_bcircle.h"
+
 #include <curses.h>
 #include <locale.h>
 #include <math.h>

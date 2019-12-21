@@ -1,3 +1,5 @@
+#include "input/sndio.h"
+
 #include <assert.h>
 #include <errno.h>
 #include <sndio.h>

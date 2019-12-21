@@ -1,4 +1,10 @@
 // input: ALSA
+#include "input/alsa.h"
+#include "debug.h"
+#include "input/common.h"
+
+#include <alsa/asoundlib.h>
+#include <math.h>
 
 // assuming stereo
 #define CHANNELS_COUNT 2

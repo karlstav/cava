@@ -1,3 +1,4 @@
+#pragma once
 
 int init_terminal_bcircle(int col, int bgcol);
 void get_terminal_dim_bcircle(int *w, int *h);

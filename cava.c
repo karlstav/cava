@@ -12,76 +12,43 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <termios.h>
 
-#include <fftw3.h>
-#include <sys/ioctl.h>
-#define max(a, b)                                                                                  \
-    ({                                                                                             \
-        __typeof__(a) _a = (a);                                                                    \
-        __typeof__(b) _b = (b);                                                                    \
-        _a > _b ? _a : _b;                                                                         \
-    })
 #include <ctype.h>
 #include <dirent.h>
+#include <fftw3.h>
 #include <getopt.h>
 #include <pthread.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
 #include "debug.h"
+#include "util.h"
 
-// We need to make sure that clang-format does not order the .h files before the .c files.
-// clang-format off
 #ifdef NCURSES
 #include "output/terminal_bcircle.h"
-#include "output/terminal_bcircle.c"
 #include "output/terminal_ncurses.h"
-#include "output/terminal_ncurses.c"
+#include <curses.h>
 #endif
-
-#include "output/terminal_noncurses.h"
-#include "output/terminal_noncurses.c"
 
 #include "output/raw.h"
-#include "output/raw.c"
+#include "output/terminal_noncurses.h"
 
-#include "input/fifo.h"
-#include "input/fifo.c"
-
-#ifdef ALSA
-#include <alsa/asoundlib.h>
 #include "input/alsa.h"
-#include "input/alsa.c"
-#endif
-
-#ifdef PORTAUDIO
+#include "input/common.h"
+#include "input/fifo.h"
 #include "input/portaudio.h"
-#include "input/portaudio.c"
-#endif
-
-#ifdef PULSE
 #include "input/pulse.h"
-#include "input/pulse.c"
-#endif
-
-#ifdef SNDIO
-#include "input/sndio.c"
-#endif
-
-#ifdef SHMEM
-#include "input/shmem.c"
-#endif
-
-#include <iniparser.h>
+#include "input/shmem.h"
+#include "input/sndio.h"
 
 #include "config.h"
-#include "config.c"
-// clang-format on
 
 #ifdef __GNUC__
 // curses.h or other sources may already define
