@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -66,5 +67,5 @@ struct error_s {
     int length;
 };
 
-bool load_config(char configPath[255], struct config_params *p, bool colorsOnly,
+bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colorsOnly,
                  struct error_s *error);
