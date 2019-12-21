@@ -210,15 +210,15 @@ int draw_terminal_ncurses(int is_tty, int terminal_height, int terminal_width, i
             }
 
             int cur_col = bar * bar_width + bar * bar_spacing + rest;
-            int f_cell = f[bar] / num_bar_heights;
-            int f_last_cell = flastd[bar] / num_bar_heights;
+            int f_cell = (f[bar] - 1) / num_bar_heights;
+            int f_last_cell = (flastd[bar] - 1) / num_bar_heights;
 
             if (f_cell >= y) {
                 int bar_step;
 
                 if (f_cell == y) {
                     // The "cap" of the bar occurs at this [y].
-                    bar_step = f[bar] % num_bar_heights;
+                    bar_step = (f[bar] - 1) % num_bar_heights;
                 } else if (f_last_cell <= y) {
                     // The bar is full at this [y].
                     bar_step = num_bar_heights - 1;
