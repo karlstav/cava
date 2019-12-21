@@ -34,6 +34,16 @@ AS_IF([test "x$enable_asan" = "xyes"], [
   LDFLAGS="$LDFLAGS -fsanitize=address"
 ])
 
+AC_ARG_ENABLE([tsan],
+  AS_HELP_STRING([--enable-tsan],
+    [build with ThreadSanitizer])
+)
+
+AS_IF([test "x$enable_tsan" = "xyes"], [
+  dnl enabling tsan
+  CPPFLAGS="$CPPFLAGS -fsanitize=thread"
+  LDFLAGS="$LDFLAGS -fsanitize=thread"
+])
 
 AC_ARG_ENABLE([ubsan],
   AS_HELP_STRING([--enable-ubsan],
