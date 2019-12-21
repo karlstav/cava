@@ -1,4 +1,12 @@
 // input: ALSA
+#ifdef ALSA
+
+#include "input/alsa.h"
+#include "debug.h"
+#include "input/common.h"
+
+#include <alsa/asoundlib.h>
+#include <math.h>
 
 // assuming stereo
 #define CHANNELS_COUNT 2
@@ -156,3 +164,5 @@ void *input_alsa(void *data) {
     snd_pcm_close(handle);
     return NULL;
 }
+
+#endif // ALSA

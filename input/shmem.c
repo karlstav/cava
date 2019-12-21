@@ -1,6 +1,12 @@
+#ifdef SHMEM
+
+#include "input/shmem.h"
+#include "input/common.h"
+
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -36,8 +42,6 @@ void *input_shmem(void *data) {
     vis_t *mmap_area;
     int fd; /* file descriptor to mmaped area */
     int mmap_count = sizeof(vis_t);
-    int n = 0;
-    int i;
 
     printf("input_shmem: source: %s", audio->source);
 
@@ -86,3 +90,5 @@ void *input_shmem(void *data) {
     }
     return 0;
 }
+
+#endif // SHMEM

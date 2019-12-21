@@ -1,10 +1,17 @@
+#ifdef PULSE
+
+#include "input/pulse.h"
+#include "input/common.h"
+
 #include <errno.h>
+#include <pthread.h>
 #include <pulse/error.h>
 #include <pulse/pulseaudio.h>
 #include <pulse/simple.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
 #define BUFFERSIZE 4096
 
 pa_mainloop *m_pulseaudio_mainloop;
@@ -140,3 +147,5 @@ void *input_pulse(void *data) {
     pa_simple_free(s);
     return 0;
 }
+
+#endif // PULSE

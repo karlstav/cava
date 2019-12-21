@@ -50,32 +50,13 @@
 #include "output/raw.h"
 #include "output/raw.c"
 
+#include "input/common.h"
 #include "input/fifo.h"
-#include "input/fifo.c"
-
-#ifdef ALSA
-#include <alsa/asoundlib.h>
 #include "input/alsa.h"
-#include "input/alsa.c"
-#endif
-
-#ifdef PORTAUDIO
 #include "input/portaudio.h"
-#include "input/portaudio.c"
-#endif
-
-#ifdef PULSE
 #include "input/pulse.h"
-#include "input/pulse.c"
-#endif
-
-#ifdef SNDIO
-#include "input/sndio.c"
-#endif
-
-#ifdef SHMEM
-#include "input/shmem.c"
-#endif
+#include "input/shmem.h"
+#include "input/sndio.h"
 
 #include <iniparser.h>
 
