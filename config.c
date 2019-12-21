@@ -1,4 +1,5 @@
 #include "config.h"
+#include "util.h"
 
 #include <ctype.h>
 #include <iniparser.h>
@@ -8,6 +9,13 @@
 #include <sys/stat.h>
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
+
+enum input_method default_methods[] = {
+    INPUT_FIFO,
+    INPUT_PORTAUDIO,
+    INPUT_ALSA,
+    INPUT_PULSE,
+};
 
 char *outputMethod, *channels;
 
@@ -466,10 +474,11 @@ bool load_config(char configPath[255], struct config_params *p, bool colorsOnly,
     free(p->audio_source);
 
     char *input_method_name;
-    for (int i = INPUT_MAX - 1; i >= 0; i--) {
-        if (has_input_method[i]) {
+    for (size_t i = 0; i < ARRAY_SIZE(default_methods); i++) {
+        enum input_method method = default_methods[i];
+        if (has_input_method[method]) {
             input_method_name =
-                (char *)iniparser_getstring(ini, "input:method", input_method_names[i]);
+                (char *)iniparser_getstring(ini, "input:method", input_method_names[method]);
         }
     }
 
