@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <termios.h>
 
 #include <ctype.h>
@@ -47,13 +48,7 @@
 #include "input/shmem.h"
 #include "input/sndio.h"
 
-#include <iniparser.h>
-
-// We need to make sure that clang-format does not order the .h files before the .c files.
-// clang-format off
 #include "config.h"
-#include "config.c"
-// clang-format on
 
 #ifdef __GNUC__
 // curses.h or other sources may already define
