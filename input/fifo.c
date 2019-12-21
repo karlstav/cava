@@ -1,13 +1,14 @@
 #include "input/fifo.h"
 #include "input/common.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 #include <fcntl.h>
 #include <time.h>
 #include <unistd.h>
 
-#define BUFSIZE 1024
-#define MAX_FFTBUFERSIZE
-int rc;
+#define SAMPLES_PER_BUFFER 512
 
 int open_fifo(const char *path) {
     int fd = open(path, O_RDONLY);
@@ -19,47 +20,65 @@ int open_fifo(const char *path) {
 // input: FIFO
 void *input_fifo(void *data) {
     struct audio_data *audio = (struct audio_data *)data;
-    int fd;
-    int i;
-    int t = 0;
-    int bytes = 0;
-    int16_t buf[BUFSIZE / 2];
-    struct timespec req = {.tv_sec = 0, .tv_nsec = 10000000};
-    uint16_t frames = BUFSIZE / 4;
+    int bytes_per_sample = audio->format / 8;
+    uint8_t buf[SAMPLES_PER_BUFFER * bytes_per_sample];
+    uint16_t *samples =
+        bytes_per_sample == 2 ? (uint16_t *)&buf : calloc(SAMPLES_PER_BUFFER, sizeof(uint16_t));
 
-    fd = open_fifo(audio->source);
+    int fd = open_fifo(audio->source);
 
     while (!audio->terminate) {
+        int time_since_last_input = 0;
+        unsigned int offset = 0;
+        do {
+            int num_read = read(fd, buf + offset, sizeof(buf) - offset);
 
-        bytes = read(fd, buf, sizeof(buf));
+            if (num_read < 1) { // if no bytes read sleep 10ms and zero shared buffer
+                nanosleep(&(struct timespec){.tv_sec = 0, .tv_nsec = 10000000}, NULL);
+                time_since_last_input++;
 
-        if (bytes < 1) { // if no bytes read sleep 10ms and zero shared buffer
-            nanosleep(&req, NULL);
-            t++;
-            if (t > 10) {
-                for (i = 0; i < audio->FFTbassbufferSize; i++)
-                    audio->audio_out_bass_l[i] = 0;
-                for (i = 0; i < audio->FFTbassbufferSize; i++)
-                    audio->audio_out_bass_r[i] = 0;
-                for (i = 0; i < audio->FFTmidbufferSize; i++)
-                    audio->audio_out_mid_l[i] = 0;
-                for (i = 0; i < audio->FFTmidbufferSize; i++)
-                    audio->audio_out_mid_r[i] = 0;
-                for (i = 0; i < audio->FFTtreblebufferSize; i++)
-                    audio->audio_out_treble_l[i] = 0;
-                for (i = 0; i < audio->FFTtreblebufferSize; i++)
-                    audio->audio_out_treble_r[i] = 0;
-                close(fd);
-                fd = open_fifo(audio->source);
-                t = 0;
+                if (time_since_last_input > 10) {
+                    reset_output_buffers(audio);
+                    close(fd);
+
+                    fd = open_fifo(audio->source);
+                    time_since_last_input = 0;
+                    offset = 0;
+                }
+            } else {
+                offset += num_read;
+                time_since_last_input = 0;
             }
-        } else { // if bytes read go ahead
-            t = 0;
+        } while (offset < sizeof(buf));
 
-            write_to_fftw_input_buffers(buf, frames, audio);
+        switch (bytes_per_sample) {
+        case 2:
+            // [samples] = [buf] so there's nothing to do here.
+            break;
+        case 3:
+            for (int i = 0; i < SAMPLES_PER_BUFFER; i++) {
+                // Really, a sample is composed of buf[3i + 2] | buf[3i + 1] | buf[3i], but our FFT
+                // only takes 16-bit samples. Since we need to scale them eventually, we can just
+                // do so here by taking the top 2 bytes.
+                samples[i] = (buf[3 * i + 2] << 8) | buf[3 * i + 1];
+            }
+            break;
+        case 4:
+            for (int i = 0; i < SAMPLES_PER_BUFFER; i++) {
+                samples[i] = (buf[4 * i + 3] << 8) | buf[4 * i + 2];
+            }
+            break;
         }
+
+        // We worked with unsigned ints up until now to save on sign extension, but the FFT wants
+        // signed ints.
+        write_to_fftw_input_buffers((int16_t *)samples, SAMPLES_PER_BUFFER / 2, audio);
     }
 
     close(fd);
+    if (bytes_per_sample == 2) {
+        free(samples);
+    }
+
     return 0;
 }

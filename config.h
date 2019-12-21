@@ -58,7 +58,7 @@ struct config_params {
     enum input_method im;
     int smcount, customEQ, om, col, bgcol, autobars, stereo, is_bin, ascii_range, bit_format,
         gradient, gradient_count, fixedbars, framerate, bw, bs, autosens, overshoot, waves,
-        FFTbufferSize, fifoSample;
+        FFTbufferSize, fifoSample, fifoSampleBits;
 };
 
 struct error_s {

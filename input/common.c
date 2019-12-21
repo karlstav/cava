@@ -1,5 +1,14 @@
 #include "input/common.h"
 
+void reset_output_buffers(struct audio_data *data) {
+    memset(data->audio_out_bass_r, 0, sizeof(int16_t) * data->FFTbassbufferSize);
+    memset(data->audio_out_bass_l, 0, sizeof(int16_t) * data->FFTbassbufferSize);
+    memset(data->audio_out_mid_r, 0, sizeof(int16_t) * data->FFTmidbufferSize);
+    memset(data->audio_out_mid_l, 0, sizeof(int16_t) * data->FFTmidbufferSize);
+    memset(data->audio_out_treble_r, 0, sizeof(int16_t) * data->FFTtreblebufferSize);
+    memset(data->audio_out_treble_l, 0, sizeof(int16_t) * data->FFTtreblebufferSize);
+}
+
 int write_to_fftw_input_buffers(int16_t buf[], int16_t frames, void *data) {
     struct audio_data *audio = (struct audio_data *)data;
 

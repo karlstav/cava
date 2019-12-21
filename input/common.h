@@ -26,4 +26,6 @@ struct audio_data {
     char error_message[1024];
 };
 
+void reset_output_buffers(struct audio_data *data);
+
 int write_to_fftw_input_buffers(int16_t buf[], int16_t frames, void *data);
