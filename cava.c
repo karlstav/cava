@@ -414,6 +414,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             // starting fifomusic listener
             thr_id = pthread_create(&p_thread, NULL, input_fifo, (void *)&audio);
             audio.rate = p.fifoSample;
+            audio.format = p.fifoSampleBits;
             break;
 #ifdef PULSE
         case INPUT_PULSE:
