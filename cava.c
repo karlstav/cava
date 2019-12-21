@@ -268,7 +268,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
     char ch = '\0';
     int bars = 25;
-    char supportedInput[255] = "'fifo'";
     int sourceIsAuto = 1;
     double smh;
 
@@ -315,19 +314,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         n = 0;
     }
 
-#ifdef ALSA
-    strcat(supportedInput, ", 'alsa'");
-#endif
-#ifdef PULSE
-    strcat(supportedInput, ", 'pulse'");
-#endif
-#ifdef SNDIO
-    strcat(supportedInput, ", 'sndio'");
-#endif
-#ifdef SHMEM
-    strcat(supportedInput, ", 'shmem'");
-#endif
-
     // general: main loop
     while (1) {
 
@@ -335,7 +321,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         // config: load
         struct error_s error;
         error.length = 0;
-        if (!load_config(configPath, supportedInput, (void *)&p, 0, &error)) {
+        if (!load_config(configPath, &p, 0, &error)) {
             fprintf(stderr, "Error loading config. %s", error.message);
             exit(EXIT_FAILURE);
         }
@@ -388,9 +374,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         audio.treble_index = 0;
 
         debug("starting audio thread\n");
+        switch (p.im) {
 #ifdef ALSA
-        // input_alsa: wait for the input to be ready
-        if (p.im == 1) {
+        case INPUT_ALSA:
+            // input_alsa: wait for the input to be ready
             if (is_loop_device_for_sure(audio.source)) {
                 if (directory_exists("/sys/")) {
                     if (!directory_exists("/sys/module/snd_aloop/")) {
@@ -421,17 +408,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
             }
             debug("got format: %d and rate %d\n", audio.format, audio.rate);
-        }
+            break;
 #endif
-
-        if (p.im == 2) {
+        case INPUT_FIFO:
             // starting fifomusic listener
             thr_id = pthread_create(&p_thread, NULL, input_fifo, (void *)&audio);
             audio.rate = p.fifoSample;
-        }
-
+            break;
 #ifdef PULSE
-        if (p.im == 3) {
+        case INPUT_PULSE:
             if (strcmp(audio.source, "auto") == 0) {
                 getPulseDefaultSink((void *)&audio);
                 sourceIsAuto = 1;
@@ -440,29 +425,30 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             // starting pulsemusic listener
             thr_id = pthread_create(&p_thread, NULL, input_pulse, (void *)&audio);
             audio.rate = 44100;
-        }
+            break;
 #endif
-
 #ifdef SNDIO
-        if (p.im == 4) {
+        case INPUT_SNDIO:
             thr_id = pthread_create(&p_thread, NULL, input_sndio, (void *)&audio);
             audio.rate = 44100;
-        }
+            break;
 #endif
 
 #ifdef SHMEM
-        if (p.im == 5) {
+        case INPUT_SHMEM:
             thr_id = pthread_create(&p_thread, NULL, input_shmem, (void *)&audio);
             // audio.rate = 44100;
-        }
+            break;
 #endif
-
 #ifdef PORTAUDIO
-        if (p.im == 6) {
+        case INPUT_PORTAUDIO:
             thr_id = pthread_create(&p_thread, NULL, input_portaudio, (void *)&audio);
             audio.rate = 44100;
-        }
+            break;
 #endif
+        default:
+            exit(EXIT_FAILURE); // Can't happen.
+        }
 
         if (p.highcf > audio.rate / 2) {
             cleanup();
@@ -783,7 +769,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 if (reload_colors) {
                     struct error_s error;
                     error.length = 0;
-                    if (!load_config(configPath, supportedInput, (void *)&p, 1, &error)) {
+                    if (!load_config(configPath, (void *)&p, 1, &error)) {
                         cleanup();
                         fprintf(stderr, "Error loading config. %s", error.message);
                         exit(EXIT_FAILURE);
