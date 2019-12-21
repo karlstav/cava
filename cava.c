@@ -1005,9 +1005,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 nanosleep(&req, NULL);
 #endif
 
-                for (o = 0; o < bars; o++) {
-                    flastd[o] = f[o];
-                }
+                memcpy(flastd, f, 200 * sizeof(int));
 
                 // checking if audio thread has exited unexpectedly
                 if (audio.terminate == 1) {

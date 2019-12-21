@@ -249,8 +249,6 @@ int draw_terminal_ncurses(int is_tty, int terminal_height, int terminal_width, i
         }
     }
 
-    memcpy(flastd, f, sizeof(*f)); // Memory for falloff func
-
     refresh();
     return 0;
 }
