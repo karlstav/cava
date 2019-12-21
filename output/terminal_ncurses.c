@@ -1,6 +1,13 @@
+#ifdef NCURSES
+
+#include "output/terminal_ncurses.h"
+
 #include <curses.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wchar.h>
+
+#include "util.h"
 
 int gradient_size = 64;
 
@@ -269,3 +276,5 @@ void cleanup_terminal_ncurses(void) {
     system("clear");
     system("reset");
 }
+
+#endif // NCURSES

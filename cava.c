@@ -14,45 +14,34 @@
 #include <stdio.h>
 #include <termios.h>
 
-#include <fftw3.h>
-#include <sys/ioctl.h>
-#define max(a, b)                                                                                  \
-    ({                                                                                             \
-        __typeof__(a) _a = (a);                                                                    \
-        __typeof__(b) _b = (b);                                                                    \
-        _a > _b ? _a : _b;                                                                         \
-    })
 #include <ctype.h>
 #include <dirent.h>
+#include <fftw3.h>
 #include <getopt.h>
 #include <pthread.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
 #include "debug.h"
+#include "util.h"
 
-// We need to make sure that clang-format does not order the .h files before the .c files.
-// clang-format off
 #ifdef NCURSES
 #include "output/terminal_bcircle.h"
-#include "output/terminal_bcircle.c"
 #include "output/terminal_ncurses.h"
-#include "output/terminal_ncurses.c"
+#include <curses.h>
 #endif
 
-#include "output/terminal_noncurses.h"
-#include "output/terminal_noncurses.c"
-
 #include "output/raw.h"
-#include "output/raw.c"
+#include "output/terminal_noncurses.h"
 
+#include "input/alsa.h"
 #include "input/common.h"
 #include "input/fifo.h"
-#include "input/alsa.h"
 #include "input/portaudio.h"
 #include "input/pulse.h"
 #include "input/shmem.h"
@@ -60,6 +49,8 @@
 
 #include <iniparser.h>
 
+// We need to make sure that clang-format does not order the .h files before the .c files.
+// clang-format off
 #include "config.h"
 #include "config.c"
 // clang-format on
