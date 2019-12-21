@@ -1,4 +1,4 @@
-C.A.V.A.
+C.A.V.A. [![Build Status](https://github.com/karlstav/cava/workflows/build/badge.svg)](https://github.com/karlstav/cava/actions)
 ====================
 
 **C**onsole-based **A**udio **V**isualizer for **A**LSA
