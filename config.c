@@ -341,7 +341,7 @@ bool load_colors(struct config_params *p, dictionary *ini, void *err) {
     return true;
 }
 
-bool load_config(char configPath[255], struct config_params *p, bool colorsOnly,
+bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colorsOnly,
                  struct error_s *error) {
     FILE *fp;
 

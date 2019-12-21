@@ -1,5 +1,7 @@
 #include "input/common.h"
 
+#include <string.h>
+
 void reset_output_buffers(struct audio_data *data) {
     memset(data->audio_out_bass_r, 0, sizeof(int16_t) * data->FFTbassbufferSize);
     memset(data->audio_out_bass_l, 0, sizeof(int16_t) * data->FFTbassbufferSize);

@@ -244,7 +244,7 @@ int main(int argc, char **argv) {
     double k[200];
     float g;
     struct timespec req = {.tv_sec = 0, .tv_nsec = 0};
-    char configPath[255];
+    char configPath[PATH_MAX];
     char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
 Visualize audio input in terminal. \n\
