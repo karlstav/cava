@@ -35,6 +35,18 @@ AS_IF([test "x$enable_asan" = "xyes"], [
 ])
 
 
+AC_ARG_ENABLE([ubsan],
+  AS_HELP_STRING([--enable-ubsan],
+    [build with UndefinedBehaviorSanitizer])
+)
+
+AS_IF([test "x$enable_ubsan" = "xyes"], [
+  dnl enabling ubsan
+  CPPFLAGS="$CPPFLAGS -fsanitize=undefined"
+  LDFLAGS="$LDFLAGS -fsanitize=undefined"
+])
+
+
 dnl ######################
 dnl checking for pthread
 dnl ######################
