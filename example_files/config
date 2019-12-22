@@ -5,7 +5,7 @@
 
 # Smoothing mode. Can be 'normal', 'scientific' or 'waves'. DEPRECATED as of 0.6.0
 ; mode = normal
- 
+
 # Accepts only non-negative values.
 ; framerate = 60
 
@@ -35,9 +35,9 @@
 
 # FFT buffer is set in the exponent of 2 and must be between 8 - 16, 8 = 256, 16 = 65536
 # this is the audio buffer used to create the spectrum
-# increasing the will improve the accuracy of the visualization, 
+# increasing the will improve the accuracy of the visualization,
 # but will also make it slower and increase CPU usage
-# anything below 10 and above 13 is considered experimental. 
+# anything below 10 and above 13 is considered experimental.
 ; FFTbufferSize = 12;
 
 
@@ -52,7 +52,7 @@
 #
 # For pulseaudio 'source' will be the source. Default: 'auto', which uses the monitor source of the default sink
 # (all pulseaudio sinks(outputs) have 'monitor' sources(inputs) associated with them).
-# 
+#
 # For alsa 'source' will be the capture device.
 # For fifo 'source' will be the path to fifo-file.
 # For shmem 'source' will be /squeezelite-AA:BB:CC:DD:EE:FF where 'AA:BB:CC:DD:EE:FF' will be squeezelite's MAC address
@@ -64,17 +64,19 @@
 
 ; method = fifo
 ; source = /tmp/mpd.fifo
+; sample_rate = 44100
+; sample_bits = 16
 
 ; method = shmem
 ; source = /squeezelite-AA:BB:CC:DD:EE:FF
 
 ; method = portaudio
-; source = auto 
+; source = auto
 
 
 [output]
 
-# Ouput method. Can be 'ncurses', 'noncurses' or 'raw'. 
+# Ouput method. Can be 'ncurses', 'noncurses' or 'raw'.
 # 'noncurses' is for systems that does not suport ncurses.
 # 'raw' is an 8 or 16 bit (configurable via the 'bit_format' option) data
 # stream of the bar heights that can be used to send to other applications.
@@ -131,7 +133,7 @@
 # Higher values means smoother, but less precise. 0 to disable.
 ; integral = 77
 
-# Disables or enables the so-called "Monstercat smoothing" with or without "waves". Set to 0 to disable. 
+# Disables or enables the so-called "Monstercat smoothing" with or without "waves". Set to 0 to disable.
 ; monstercat = 0
 ; waves = 0
 
