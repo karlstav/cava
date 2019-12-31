@@ -5,6 +5,7 @@
 
 #include <alsa/asoundlib.h>
 #include <math.h>
+#include <alloca.h>
 
 // assuming stereo
 #define CHANNELS_COUNT 2
