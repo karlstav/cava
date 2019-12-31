@@ -605,6 +605,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             // process [smoothing]: calculate gravity
             g = p.gravity * ((float)height / 2160) * pow((60 / (float)p.framerate), 2.5);
 
+            // calculate integral value
+            double integral = p.integral * sqrt(log10(h / 3 + 1));
+
             // checks if there is stil extra room, will use this to center
             rest = (w - bars * p.bw - bars * p.bs + p.bs) / 2;
             if (rest < 0)
@@ -916,7 +919,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                     // process [smoothing]: integral
                     if (p.integral > 0) {
-                        f[o] = fmem[o] * p.integral + f[o];
+                        f[o] = fmem[o] * integral + f[o];
                         fmem[o] = f[o];
 
                         int diff = (height + 1) - f[o];
