@@ -6,7 +6,7 @@
 #include <math.h>
 
 #ifdef SNDIO
-    #include <sndio.h>
+#include <sndio.h>
 #endif
 
 #include <stdarg.h>
