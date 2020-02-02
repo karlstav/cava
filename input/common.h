@@ -20,7 +20,7 @@ struct audio_data {
     unsigned int rate;
     char *source; // alsa device, fifo path or pulse source
     int im;       // input mode alsa, fifo or pulse
-    int channels;
+    unsigned int channels;
     bool left, right, average;
     int terminate; // shared variable used to terminate audio thread
     char error_message[1024];

@@ -4,6 +4,11 @@
 #include <ctype.h>
 #include <iniparser.h>
 #include <math.h>
+
+#ifdef SNDIO
+    #include <sndio.h>
+#endif
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <sys/stat.h>

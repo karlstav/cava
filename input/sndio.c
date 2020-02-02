@@ -1,16 +1,21 @@
 #include "input/sndio.h"
+#include "input/common.h"
 
 #include <assert.h>
 #include <errno.h>
+#include <pthread.h>
 #include <sndio.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 void *input_sndio(void *data) {
     struct audio_data *audio = (struct audio_data *)data;
     struct sio_par par;
     struct sio_hdl *hdl;
     int16_t buf[256];
-    unsigned int i, n, channels;
+    unsigned int channels;
 
     sio_initpar(&par);
     par.sig = 1;
@@ -18,7 +23,7 @@ void *input_sndio(void *data) {
     par.le = 1;
     par.rate = 44100;
     par.rchan = 2;
-    par.appbufsz = sizeof(buf) / channels;
+    par.appbufsz = sizeof(buf) / par.rchan;
 
     if ((hdl = sio_open(audio->source, SIO_REC, 0)) == NULL) {
         fprintf(stderr, __FILE__ ": Could not open sndio source: %s\n", audio->source);
@@ -26,7 +31,7 @@ void *input_sndio(void *data) {
     }
 
     if (!sio_setpar(hdl, &par) || !sio_getpar(hdl, &par) || par.sig != 1 || par.le != 1 ||
-        par.rate != 44100 || par.rchan != channels) {
+        par.rate != 44100 || par.rchan != audio->channels) {
         fprintf(stderr, __FILE__ ": Could not set required audio parameters\n");
         exit(EXIT_FAILURE);
     }
@@ -36,7 +41,6 @@ void *input_sndio(void *data) {
         exit(EXIT_FAILURE);
     }
 
-    n = 0;
     uint16_t frames = (sizeof(buf) / sizeof(buf[0])) / channels;
     while (audio->terminate != 1) {
         if (sio_read(hdl, buf, sizeof(buf)) == 0) {
