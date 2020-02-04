@@ -225,7 +225,31 @@ if test -z "$FONT_DIR" ; then
   FONT_DIR="$DEFAULT_FONT_DIR"
 fi
 
+AC_CANONICAL_HOST
 
+build_linux=no
+build_windows=no
+build_mac=no
+
+AC_MSG_NOTICE([Checking OS])
+# Detect the target system
+case "${host_os}" in
+    linux*)
+        AC_MSG_NOTICE([Linux detected])
+        build_linux=yes
+        ;;
+    darwin*)
+        AC_MSG_NOTICE([OSX detected])
+        build_mac=yes
+        ;;
+    *)
+        AC_MSG_ERROR(["OS $host_os is not supported"])
+        ;;
+esac
+
+# Pass the conditionals to automake
+AM_CONDITIONAL([LINUX], [test "$build_linux" = "yes"])
+AM_CONDITIONAL([OSX], [test "$build_mac" = "yes"])
 
 
 AC_CONFIG_FILES([Makefile])
