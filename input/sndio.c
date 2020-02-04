@@ -1,14 +1,7 @@
 #include "input/sndio.h"
 #include "input/common.h"
 
-#include <assert.h>
-#include <errno.h>
-#include <pthread.h>
 #include <sndio.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 void *input_sndio(void *data) {
     struct audio_data *audio = (struct audio_data *)data;

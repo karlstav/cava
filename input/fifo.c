@@ -1,12 +1,7 @@
 #include "input/fifo.h"
 #include "input/common.h"
 
-#include <stdlib.h>
-#include <string.h>
-
-#include <fcntl.h>
 #include <time.h>
-#include <unistd.h>
 
 #define SAMPLES_PER_BUFFER 512
 

@@ -2,9 +2,6 @@
 #include "input/common.h"
 
 #include <portaudio.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #define PORTBUFSIZE 512
 
 #define SAMPLE_SILENCE 32768

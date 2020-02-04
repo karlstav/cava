@@ -1,14 +1,9 @@
 #include "input/pulse.h"
 #include "input/common.h"
 
-#include <errno.h>
-#include <pthread.h>
 #include <pulse/error.h>
 #include <pulse/pulseaudio.h>
 #include <pulse/simple.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
 
 #define BUFFERSIZE 4096
 

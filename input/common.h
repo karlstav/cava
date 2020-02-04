@@ -1,7 +1,15 @@
 #pragma once
 
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <inttypes.h>
+#include <pthread.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 struct audio_data {
     int FFTbassbufferSize;
