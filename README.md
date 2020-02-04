@@ -292,7 +292,7 @@ $ AUDIODEVICE=snd/0.monitor cava
 
 ### squeezelite
 [squeezelite](https://en.wikipedia.org/wiki/Squeezelite) is one of several software clients available for the Logitech Media Server. Squeezelite can export its audio data as shared memory, which is what this input module uses.
-Configure C.A.V.A. with the `--enable-shmem` option, then adapt your config:
+Just adapt your config:
 ```
 method = shmem
 source = /squeezelite-AA:BB:CC:DD:EE:FF
