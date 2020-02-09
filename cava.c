@@ -58,6 +58,9 @@
 #define GCC_UNUSED /* nothing */
 #endif
 
+#define LEFT_CHANNEL 1
+#define RIGHT_CHANNEL 2
+
 // struct termios oldtio, newtio;
 // int M = 8 * 1024;
 
@@ -170,13 +173,13 @@ int *separate_freq_bands(int FFTbassbufferSize, fftw_complex out_bass[FFTbassbuf
         // printf("%d peak o: %f * sens: %f * k: %f = f: %f\n", o, peak[o], sens, k[o], temp);
         if (temp <= ignore)
             temp = 0;
-        if (channel == 1)
+        if (channel == LEFT_CHANNEL)
             fl[o] = temp;
         else
             fr[o] = temp;
     }
 
-    if (channel == 1)
+    if (channel == LEFT_CHANNEL)
         return fl;
     else
         return fr;
@@ -843,15 +846,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         fftw_execute(p_treble_l);
                         fftw_execute(p_treble_r);
 
-                        fl = separate_freq_bands(
-                            audio.FFTbassbufferSize, out_bass_l, audio.FFTmidbufferSize, out_mid_l,
-                            audio.FFTtreblebufferSize, out_treble_l, bass_cut_off_bar,
-                            treble_cut_off_bar, bars / 2, lcf, hcf, k, 1, p.sens, p.ignore);
+                        fl = separate_freq_bands(audio.FFTbassbufferSize, out_bass_l,
+                                                 audio.FFTmidbufferSize, out_mid_l,
+                                                 audio.FFTtreblebufferSize, out_treble_l,
+                                                 bass_cut_off_bar, treble_cut_off_bar, bars / 2,
+                                                 lcf, hcf, k, LEFT_CHANNEL, p.sens, p.ignore);
 
-                        fr = separate_freq_bands(
-                            audio.FFTbassbufferSize, out_bass_r, audio.FFTmidbufferSize, out_mid_r,
-                            audio.FFTtreblebufferSize, out_treble_r, bass_cut_off_bar,
-                            treble_cut_off_bar, bars / 2, lcf, hcf, k, 1, p.sens, p.ignore);
+                        fr = separate_freq_bands(audio.FFTbassbufferSize, out_bass_r,
+                                                 audio.FFTmidbufferSize, out_mid_r,
+                                                 audio.FFTtreblebufferSize, out_treble_r,
+                                                 bass_cut_off_bar, treble_cut_off_bar, bars / 2,
+                                                 lcf, hcf, k, RIGHT_CHANNEL, p.sens, p.ignore);
 
                     } else {
                         fftw_execute(p_bass_l);
@@ -860,7 +865,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         fl = separate_freq_bands(
                             audio.FFTbassbufferSize, out_bass_l, audio.FFTmidbufferSize, out_mid_l,
                             audio.FFTtreblebufferSize, out_treble_l, bass_cut_off_bar,
-                            treble_cut_off_bar, bars, lcf, hcf, k, 1, p.sens, p.ignore);
+                            treble_cut_off_bar, bars, lcf, hcf, k, LEFT_CHANNEL, p.sens, p.ignore);
                     }
 
                 } else { //**if in sleep mode wait and continue**//
