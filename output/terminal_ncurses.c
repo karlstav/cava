@@ -78,7 +78,7 @@ void init_terminal_ncurses(char *const fg_color_string, char *const bg_color_str
     getmaxyx(stdscr, *height, *width);
     clear();
 
-    NCURSES_COLOR_T color_pair_number = 1;
+    NCURSES_COLOR_T color_pair_number = 16;
 
     NCURSES_COLOR_T bg_color_number;
     bg_color_number = change_color_definition(0, bg_color_string, predef_bg_color);
@@ -118,8 +118,6 @@ void init_terminal_ncurses(char *const fg_color_string, char *const bg_color_str
 
         int individual_size = gradient_size / (gradient_count - 1);
 
-        int row = 0;
-
         for (int i = 0; i < gradient_count - 1; i++) {
 
             int col = (i + 1) * 2 - 2;
@@ -140,9 +138,9 @@ void init_terminal_ncurses(char *const fg_color_string, char *const bg_color_str
                 sprintf(next_color, "#%02x%02x%02x", rgb[col + 1][0], rgb[col + 1][1],
                         rgb[col + 1][2]);
 
-                change_color_definition(row + 1, next_color, row + 1);
-                init_pair(color_pair_number++, row + 1, bg_color_number);
-                row++;
+                change_color_definition(color_pair_number, next_color, color_pair_number);
+                init_pair(color_pair_number, color_pair_number, bg_color_number);
+                color_pair_number++;
             }
         }
 
@@ -150,9 +148,9 @@ void init_terminal_ncurses(char *const fg_color_string, char *const bg_color_str
         int col = 2 * (gradient_count)-2;
         while (left < gradient_size) {
             sprintf(next_color, "#%02x%02x%02x", rgb[col][0], rgb[col][1], rgb[col][2]);
-            change_color_definition(row + 1, next_color, row + 1);
-            init_pair(color_pair_number++, row + 1, bg_color_number);
-            row++;
+            change_color_definition(color_pair_number, next_color, color_pair_number);
+            init_pair(color_pair_number, color_pair_number, bg_color_number);
+            color_pair_number++;
             left++;
         }
     }
@@ -170,7 +168,7 @@ void change_colors(int cur_height, int tot_height) {
     cur_height /= tot_height;
     if (cur_height > gradient_size - 1)
         cur_height = gradient_size - 1;
-    attron(COLOR_PAIR(cur_height + 1));
+    attron(COLOR_PAIR(cur_height + 16));
 }
 
 void get_terminal_dim_ncurses(int *width, int *height) {
@@ -268,7 +266,7 @@ void cleanup_terminal_ncurses(void) {
             }
     }
 */
+    standend();
     endwin();
     system("clear");
-    system("reset");
 }
