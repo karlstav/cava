@@ -53,7 +53,7 @@ void pulseaudio_context_state_callback(pa_context *pulseaudio_context, void *use
         exit(EXIT_FAILURE);
         break;
     case PA_CONTEXT_TERMINATED:
-        printf("TERMINATED\n");
+        //printf("TERMINATED\n");
         pa_mainloop_quit(m_pulseaudio_mainloop, 0);
         break;
     }
