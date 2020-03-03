@@ -77,63 +77,94 @@ AC_CHECK_HEADER([alloca.h], [CPPFLAGS="$CPPFLAGS -DHAVE_ALLOCA_H"])
 dnl ######################
 dnl checking for alsa dev
 dnl ######################
-AC_CHECK_LIB(asound, snd_pcm_open, have_alsa=yes, have_alsa=no)
-    if [[ $have_alsa = "yes" ]] ; then
-      LIBS="$LIBS -lasound"
-      CPPFLAGS="$CPPFLAGS -DALSA"
-    fi
+AC_ARG_ENABLE([input_alsa],
+  AS_HELP_STRING([--disable-input-alsa],
+    [do not include support for input from alsa streams])
+)
 
-    if [[ $have_alsa = "no" ]] ; then
-      AC_MSG_NOTICE([WARNING: No alsa dev files found building without alsa support])
-    fi
+AS_IF([test "x$enable_input_alsa" != "xno"], [
+  AC_CHECK_LIB(asound, snd_pcm_open, have_alsa=yes, have_alsa=no)
+  if [[ $have_alsa = "yes" ]] ; then
+    LIBS="$LIBS -lasound"
+    CPPFLAGS="$CPPFLAGS -DALSA"
+  fi
+  if [[ $have_alsa = "no" ]] ; then
+    AC_MSG_NOTICE([WARNING: No alsa dev files found building without alsa support])
+  fi],
+  [have_alsa=no]
+)
 
-    AM_CONDITIONAL([ALSA], [test x$have_alsa = xyes])
+AM_CONDITIONAL([ALSA], [test "x$have_alsa" = "xyes"])
 
 
 dnl ######################
 dnl checking for pulse dev
 dnl ######################
-AC_CHECK_LIB(pulse-simple, pa_simple_new, have_pulse=yes, have_pulse=no)
-    if [[ $have_pulse = "yes" ]] ; then
-      LIBS="$LIBS -lpulse-simple -lpulse"
-      CPPFLAGS="$CPPFLAGS -DPULSE"
-    fi
+AC_ARG_ENABLE([input_pulse],
+  AS_HELP_STRING([--disable-input-pulse],
+    [do not include support for input from pulseaudio])
+)
 
-    if [[ $have_pulse = "no" ]] ; then
-      AC_MSG_NOTICE([WARNING: No pusleaudio dev files found building without pulseaudio support])
-    fi
+AS_IF([test "x$enable_input_pulse" != "xno"], [
+  AC_CHECK_LIB(pulse-simple, pa_simple_new, have_pulse=yes, have_pulse=no)
+  if [[ $have_pulse = "yes" ]] ; then
+    LIBS="$LIBS -lpulse-simple -lpulse"
+    CPPFLAGS="$CPPFLAGS -DPULSE"
+  fi
 
-    AM_CONDITIONAL([PULSE], [test x$have_pulse = xyes])
+  if [[ $have_pulse = "no" ]] ; then
+    AC_MSG_NOTICE([WARNING: No pusleaudio dev files found building without pulseaudio support])
+  fi],
+  [have_pulse=no]
+)
+
+AM_CONDITIONAL([PULSE], [test "x$have_pulse" = "xyes"])
 
 dnl ######################
 dnl checking for portaudio dev
 dnl ######################
-AC_CHECK_LIB(portaudio, Pa_Initialize, have_portaudio=yes, have_portaudio=no)
-    if [[ $have_portaudio = "yes" ]] ; then
-      LIBS="$LIBS -lportaudio"
-      CPPFLAGS="$CPPFLAGS -DPORTAUDIO"
-    fi
+AC_ARG_ENABLE([input_portaudio],
+  AS_HELP_STRING([--disable-input-portaudio],
+    [do not include support for input from portaudio])
+)
 
-    if [[ $have_portaudio = "no" ]] ; then
-      AC_MSG_NOTICE([WARNING: No portaudio dev files found building without portaudio support])
-    fi
+AS_IF([test "x$enable_input_portaudio" != "xno"], [
+  AC_CHECK_LIB(portaudio, Pa_Initialize, have_portaudio=yes, have_portaudio=no)
+  if [[ $have_portaudio = "yes" ]] ; then
+    LIBS="$LIBS -lportaudio"
+    CPPFLAGS="$CPPFLAGS -DPORTAUDIO"
+  fi
 
-    AM_CONDITIONAL([PORTAUDIO], [test x$have_portaudio = xyes])
+  if [[ $have_portaudio = "no" ]] ; then
+    AC_MSG_NOTICE([WARNING: No portaudio dev files found building without portaudio support])
+  fi],
+  [have_portaudio=no]
+)
+
+AM_CONDITIONAL([PORTAUDIO], [test "x$have_portaudio" = "xyes"])
 
 dnl ######################
 dnl checking for sndio dev
 dnl ######################
-AC_CHECK_LIB(sndio, sio_open, have_sndio=yes, have_sndio=no)
-    if [[ $have_sndio = "yes" ]] ; then
-      LIBS="$LIBS -lsndio"
-      CPPFLAGS="$CPPFLAGS -DSNDIO"
-    fi
+AC_ARG_ENABLE([input_sndio],
+  AS_HELP_STRING([--disable-input-sndio],
+    [do not include support for input from sndio])
+)
 
-    if [[ $have_sndio = "no" ]] ; then
-      AC_MSG_NOTICE([WARNING: No sndio dev files found building without sndio support])
-    fi
+AS_IF([test "x$enable_input_sndio" != "xno"], [
+  AC_CHECK_LIB(sndio, sio_open, have_sndio=yes, have_sndio=no)
+  if [[ $have_sndio = "yes" ]] ; then
+    LIBS="$LIBS -lsndio"
+    CPPFLAGS="$CPPFLAGS -DSNDIO"
+  fi
 
-    AM_CONDITIONAL([SNDIO], [test x$have_sndio = xyes])
+  if [[ $have_sndio = "no" ]] ; then
+    AC_MSG_NOTICE([WARNING: No sndio dev files found building without sndio support])
+  fi],
+  [have_portaudio=no]
+)
+
+AM_CONDITIONAL([SNDIO], [test "x$have_sndio" = "xyes"])
 
 dnl ######################
 dnl checking for math lib
@@ -163,57 +194,77 @@ AC_CHECK_LIB(fftw3,fftw_execute, have_fftw=yes, have_fftw=no)
 dnl ######################
 dnl checking for ncursesw
 dnl ######################
-curses_config_bin="ncursesw6-config ncursesw5-config"
-
-AC_PATH_PROGS(CURSES_CONFIG, $curses_config_bin)
-
-AC_CHECK_LIB(ncursesw, initscr,
-	curses_lib=ncursesw
+AC_ARG_ENABLE([output_ncurses],
+  AS_HELP_STRING([--disable-output-ncurses],
+    [do not include support for output with ncurses])
 )
 
-AC_CHECK_LIB($curses_lib, initscr,
-	if test "$CURSES_CONFIG" = "" ; then
-		LIBS="$LIBS -l$curses_lib"
-  		CPPFLAGS="$CPPFLAGS -DNCURSES"
-	fi
-	if test "$CURSES_CONFIG" != "" ; then
-		CPPFLAGS="$CPPFLAGS `$CURSES_CONFIG --cflags` -DNCURSES"
-		LIBS="$LIBS `$CURSES_CONFIG --libs`"
-	fi
-	AC_CHECK_HEADERS([curses.h], , AC_MSG_ERROR([missing curses.h header]))
-	AM_CONDITIONAL([NCURSES], [true])
-	,
-	AC_MSG_NOTICE([WARNING: building without ncursesw support ncursesw is recomended!])
-	AM_CONDITIONAL([NCURSES], [false])
-	)
+AS_IF([test "x$enable_output_ncurses" != "xno"], [
+  curses_config_bin="ncursesw6-config ncursesw5-config"
 
+  AC_PATH_PROGS(CURSES_CONFIG, $curses_config_bin)
+
+  AC_CHECK_LIB(ncursesw, initscr,
+    curses_lib=ncursesw
+  )
+
+  AC_CHECK_LIB($curses_lib, initscr,
+    if test "$CURSES_CONFIG" = "" ; then
+      LIBS="$LIBS -l$curses_lib"
+      CPPFLAGS="$CPPFLAGS -DNCURSES"
+    fi
+    if test "$CURSES_CONFIG" != "" ; then
+      CPPFLAGS="$CPPFLAGS `$CURSES_CONFIG --cflags` -DNCURSES"
+      LIBS="$LIBS `$CURSES_CONFIG --libs`"
+    fi
+
+    AC_CHECK_HEADERS([curses.h], , AC_MSG_ERROR([missing curses.h header]))
+    have_ncurses=yes,
+
+    AC_MSG_NOTICE([WARNING: building without ncursesw support ncursesw is recomended!])
+    have_ncurses=no
+  )],
+  [have_ncurses=no]
+)
+
+AM_CONDITIONAL([NCURSES], [test "x$have_ncurses" = "xyes"])
 
 
 dnl ######################
 dnl checking for system iniparser
 dnl ######################
 
-AC_SEARCH_LIBS([iniparser_load], [iniparser], [
-	AC_CHECK_HEADERS([iniparser.h], [have_system_iniparser=yes])
-])
-AM_CONDITIONAL([SYSTEM_LIBINIPARSER], [test "x$have_system_iniparser" = "xyes"])
-	if test "x$have_system_iniparser" = "xyes"; then
-	AC_SUBST(SYSTEM_LIBINIPARSER, 1)
-	AC_MSG_NOTICE([Using installed iniparser])
-        LIBS="$LIBS -liniparser"
-	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <iniparser.h>]],
-			[[dictionary* ini;
-			const char *keys[3];
-			iniparser_getseckeys(ini, "eq", keys);]])],
-			[AC_MSG_RESULT(iniparser > 3.2 test OK)],
-			[AC_MSG_RESULT(iniparser > 3.2 test failed falling back to legacy iniparser mode)
-                        CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"])
+AC_ARG_ENABLE([system_iniparser],
+  AS_HELP_STRING([--disable-system-iniparser],
+    [do not use system iniparser library (use bundled iniparser library)])
+)
 
-	else
-	AC_SUBST(SYSTEM_LIBINIPARSER, 0)
-	AC_CONFIG_FILES(iniparser/Makefile)
-	AC_MSG_NOTICE([Building iniparser])
-	fi
+AS_IF([test "x$enable_system_iniparser" != "xno"], [
+  AC_SEARCH_LIBS([iniparser_load], [iniparser], [
+    AC_CHECK_HEADERS([iniparser.h], [have_system_iniparser=yes])
+    ])
+  ],
+  [have_system_iniparser=no]
+)
+
+AM_CONDITIONAL([SYSTEM_LIBINIPARSER], [test "x$have_system_iniparser" = "xyes"])
+
+if test "x$have_system_iniparser" = "xyes"; then
+  AC_SUBST(SYSTEM_LIBINIPARSER, 1)
+  AC_MSG_NOTICE([Using installed iniparser])
+  LIBS="$LIBS -liniparser"
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <iniparser.h>]],
+    [[dictionary* ini;
+    const char *keys[3];
+    iniparser_getseckeys(ini, "eq", keys);]])],
+    [AC_MSG_RESULT(iniparser > 3.2 test OK)],
+    [AC_MSG_RESULT(iniparser > 3.2 test failed falling back to legacy iniparser mode)
+    CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"])
+else
+  AC_SUBST(SYSTEM_LIBINIPARSER, 0)
+  AC_CONFIG_FILES(iniparser/Makefile)
+  AC_MSG_NOTICE([Building iniparser])
+fi
 
 
 dnl ############################
