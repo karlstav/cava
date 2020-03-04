@@ -82,7 +82,6 @@ Recomended components:
 * Portaudio, or
 * Sndio
 
-
 Only FFTW and the other build tools are actually required for CAVA to compile, but this will only give you the ability to read from fifo files. To more easly grab audio from your system pulseaudio, alsa, sndio or portaudio dev files are recommended (depending on what audio system you are using). Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio. 
 
 
@@ -146,13 +145,9 @@ Tested on macOS High Sierra.
     ./configure
     make
 
-You can use the following for compilation options:
+If you have a recommended component installed, but do not wish to use it (perhaps if building a binary on one machine to be used on another), then the corresponding feature can be disabled during configuration (see configure --help for details).
 
-    --enable-debug          	enable debug messages and frequency table output
 
-For example, turning on debugging messages:
-
-    ./configure --enable-debug 
     
 #### Installing 
 
