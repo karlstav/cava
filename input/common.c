@@ -3,12 +3,12 @@
 #include <string.h>
 
 void reset_output_buffers(struct audio_data *data) {
-    memset(data->audio_out_bass_r, 0, sizeof(int16_t) * data->FFTbassbufferSize);
-    memset(data->audio_out_bass_l, 0, sizeof(int16_t) * data->FFTbassbufferSize);
-    memset(data->audio_out_mid_r, 0, sizeof(int16_t) * data->FFTmidbufferSize);
-    memset(data->audio_out_mid_l, 0, sizeof(int16_t) * data->FFTmidbufferSize);
-    memset(data->audio_out_treble_r, 0, sizeof(int16_t) * data->FFTtreblebufferSize);
-    memset(data->audio_out_treble_l, 0, sizeof(int16_t) * data->FFTtreblebufferSize);
+    memset(data->in_bass_r, 0, sizeof(double) * data->FFTbassbufferSize);
+    memset(data->in_bass_l, 0, sizeof(double) * data->FFTbassbufferSize);
+    memset(data->in_mid_r, 0, sizeof(double) * data->FFTmidbufferSize);
+    memset(data->in_mid_l, 0, sizeof(double) * data->FFTmidbufferSize);
+    memset(data->in_treble_r, 0, sizeof(double) * data->FFTtreblebufferSize);
+    memset(data->in_treble_l, 0, sizeof(double) * data->FFTtreblebufferSize);
 }
 
 int write_to_fftw_input_buffers(int16_t buf[], int16_t frames, void *data) {
@@ -17,27 +17,26 @@ int write_to_fftw_input_buffers(int16_t buf[], int16_t frames, void *data) {
     for (uint16_t i = 0; i < frames * 2; i += 2) {
         if (audio->channels == 1) {
             if (audio->average) {
-                audio->audio_out_bass_l[audio->bass_index] = (buf[i] + buf[i + 1]) / 2;
+                audio->in_bass_l[audio->bass_index] = (buf[i] + buf[i + 1]) / 2;
             }
             if (audio->left) {
-                audio->audio_out_bass_l[audio->bass_index] = buf[i];
+                audio->in_bass_l[audio->bass_index] = buf[i];
             }
             if (audio->right) {
-                audio->audio_out_bass_l[audio->bass_index] = buf[i + 1];
+                audio->in_bass_l[audio->bass_index] = buf[i + 1];
             }
         }
         // stereo storing channels in buffer
         if (audio->channels == 2) {
-            audio->audio_out_bass_l[audio->bass_index] = buf[i];
-            audio->audio_out_bass_r[audio->bass_index] = buf[i + 1];
+            audio->in_bass_l[audio->bass_index] = buf[i];
+            audio->in_bass_r[audio->bass_index] = buf[i + 1];
 
-            audio->audio_out_mid_r[audio->mid_index] = audio->audio_out_bass_r[audio->bass_index];
-            audio->audio_out_treble_r[audio->treble_index] =
-                audio->audio_out_bass_r[audio->bass_index];
+            audio->in_mid_r[audio->mid_index] = audio->in_bass_r[audio->bass_index];
+            audio->in_treble_r[audio->treble_index] = audio->in_bass_r[audio->bass_index];
         }
 
-        audio->audio_out_mid_l[audio->mid_index] = audio->audio_out_bass_l[audio->bass_index];
-        audio->audio_out_treble_l[audio->treble_index] = audio->audio_out_bass_l[audio->bass_index];
+        audio->in_mid_l[audio->mid_index] = audio->in_bass_l[audio->bass_index];
+        audio->in_treble_l[audio->treble_index] = audio->in_bass_l[audio->bass_index];
 
         audio->bass_index++;
         audio->mid_index++;

@@ -18,12 +18,9 @@ struct audio_data {
     int bass_index;
     int mid_index;
     int treble_index;
-    int16_t audio_out_bass_r[65536];
-    int16_t audio_out_bass_l[65536];
-    int16_t audio_out_mid_r[65536];
-    int16_t audio_out_mid_l[65536];
-    int16_t audio_out_treble_r[65536];
-    int16_t audio_out_treble_l[65536];
+    double *in_bass_r, *in_bass_l;
+    double *in_mid_r, *in_mid_l;
+    double *in_treble_r, *in_treble_l;
     int format;
     unsigned int rate;
     char *source; // alsa device, fifo path or pulse source
