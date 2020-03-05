@@ -3,12 +3,12 @@
 #include <string.h>
 
 void reset_output_buffers(struct audio_data *data) {
-    memset(data->in_bass_r, 0, sizeof(double) * data->FFTbassbufferSize);
-    memset(data->in_bass_l, 0, sizeof(double) * data->FFTbassbufferSize);
-    memset(data->in_mid_r, 0, sizeof(double) * data->FFTmidbufferSize);
-    memset(data->in_mid_l, 0, sizeof(double) * data->FFTmidbufferSize);
-    memset(data->in_treble_r, 0, sizeof(double) * data->FFTtreblebufferSize);
-    memset(data->in_treble_l, 0, sizeof(double) * data->FFTtreblebufferSize);
+    memset(data->in_bass_r, 0, sizeof(double) * 2 * (data->FFTbassbufferSize / 2 + 1));
+    memset(data->in_bass_l, 0, sizeof(double) * 2 * (data->FFTbassbufferSize / 2 + 1));
+    memset(data->in_mid_r, 0, sizeof(double) * 2 * (data->FFTmidbufferSize / 2 + 1));
+    memset(data->in_mid_l, 0, sizeof(double) * 2 * (data->FFTmidbufferSize / 2 + 1));
+    memset(data->in_treble_r, 0, sizeof(double) * 2 * (data->FFTtreblebufferSize / 2 + 1));
+    memset(data->in_treble_l, 0, sizeof(double) * 2 * (data->FFTtreblebufferSize / 2 + 1));
 }
 
 int write_to_fftw_input_buffers(int16_t buf[], int16_t frames, void *data) {

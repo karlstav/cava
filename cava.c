@@ -704,10 +704,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
             }
 
-            // process: weigh signal to frequencies height and EQ
-            for (n = 0; n < bars; n++) {
-            }
-
             if (p.stereo)
                 bars = bars * 2;
 
@@ -791,36 +787,16 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 refresh();
 #endif
 
-                // process: populate input buffer and check if input is present
+                // process: check if input is present
                 silence = true;
-                for (i = 0; i < (2 * (audio.FFTbassbufferSize / 2 + 1)); i++) {
-                    if (i < audio.FFTbassbufferSize) {
-                        if (audio.in_bass_l[i] || audio.in_bass_r[i])
-                            silence = false;
-                    } else {
-                        audio.in_bass_l[i] = 0;
-                        if (p.stereo)
-                            audio.in_bass_r[i] = 0;
+
+                for (i = 0; i < audio.FFTbassbufferSize; i++) {
+                    if (audio.in_bass_l[i] || audio.in_bass_r[i]) {
+                        silence = false;
+                        break;
                     }
                 }
 
-                for (i = 0; i < (2 * (audio.FFTmidbufferSize / 2 + 1)); i++) {
-                    if (i < audio.FFTmidbufferSize) {
-                    } else {
-                        audio.in_mid_l[i] = 0;
-                        if (p.stereo)
-                            audio.in_mid_r[i] = 0;
-                    }
-                }
-
-                for (i = 0; i < (2 * (audio.FFTtreblebufferSize / 2 + 1)); i++) {
-                    if (i < audio.FFTtreblebufferSize) {
-                    } else {
-                        audio.in_treble_l[i] = 0;
-                        if (p.stereo)
-                            audio.in_treble_r[i] = 0;
-                    }
-                }
                 if (silence)
                     sleep++;
                 else
