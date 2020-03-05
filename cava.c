@@ -838,11 +838,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                 } else { //**if in sleep mode wait and continue**//
 #ifndef NDEBUG
-                    printw("no sound detected for 3 sec, going to sleep mode\n");
+                    printw("no sound detected for 5 sec, going to sleep mode\n");
 #endif
-                    // wait 1 sec, then check sound again.
-                    req.tv_sec = 1;
-                    req.tv_nsec = 0;
+                    // wait 0.1 sec, then check sound again.
+                    req.tv_sec = 0;
+                    req.tv_nsec = 100000000;
                     nanosleep(&req, NULL);
                     continue;
                 }
