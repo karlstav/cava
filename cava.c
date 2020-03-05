@@ -137,12 +137,12 @@ int *separate_freq_bands(int FFTbassbufferSize, fftw_complex out_bass[FFTbassbuf
                          int FFTmidbufferSize, fftw_complex out_mid[FFTmidbufferSize / 2 + 1],
                          int FFTtreblebufferSize,
                          fftw_complex out_treble[FFTtreblebufferSize / 2 + 1], int bass_cut_off_bar,
-                         int treble_cut_off_bar, int bars, int lcf[200], int hcf[200],
-                         double k[200], int channel, double sens, double ignore) {
+                         int treble_cut_off_bar, int bars, int lcf[256], int hcf[256],
+                         double k[256], int channel, double sens, double ignore) {
     int o, i;
-    double peak[201];
-    static int fl[200];
-    static int fr[200];
+    double peak[257];
+    static int fl[256];
+    static int fr[256];
     double y[FFTbassbufferSize / 2 + 1];
     double temp;
 
@@ -225,21 +225,21 @@ int main(int argc, char **argv) {
     // general: define variables
     pthread_t p_thread;
     int thr_id GCC_UNUSED;
-    float fc[200];
-    float fre[200];
-    int f[200], lcf[200], hcf[200];
+    float fc[256];
+    float fre[256];
+    int f[256], lcf[256], hcf[256];
     int *fl, *fr;
-    int fmem[200];
-    int flast[200];
-    int flastd[200];
+    int fmem[256];
+    int flast[256];
+    int flastd[256];
     int sleep = 0;
     int i, n, o, height, h, w, c, rest, inAtty, fp, fptest, rc;
     bool silence;
     // int cont = 1;
-    int fall[200];
+    int fall[256];
     // float temp;
-    float fpeak[200];
-    double k[200];
+    float fpeak[256];
+    double k[256];
     float g;
     struct timespec req = {.tv_sec = 0, .tv_nsec = 0};
     char configPath[PATH_MAX];
@@ -515,7 +515,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         bool reloadConf = false;
 
         while (!reloadConf) { // jumbing back to this loop means that you resized the screen
-            for (i = 0; i < 200; i++) {
+            for (i = 0; i < 256; i++) {
                 flast[i] = 0;
                 flastd[i] = 0;
                 fall[i] = 0;
@@ -571,7 +571,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 printf("open file %s for writing raw ouput\n", p.raw_target);
 
                 // width must be hardcoded for raw output.
-                w = 200;
+                w = 256;
 
                 if (strcmp(p.data_format, "binary") == 0) {
                     height = pow(2, p.bit_format) - 1;
@@ -596,8 +596,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
             if (bars < 1)
                 bars = 1; // must have at least 1 bars
-            if (bars > 200)
-                bars = 200; // cant have more than 200 bars
+            if (bars > 256)
+                bars = 256; // cant have more than 256 bars
 
             if (p.stereo) { // stereo must have even numbers of bars
                 if (bars % 2 != 0)
@@ -990,7 +990,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 nanosleep(&req, NULL);
 #endif
 
-                memcpy(flastd, f, 200 * sizeof(int));
+                memcpy(flastd, f, 256 * sizeof(int));
 
                 // checking if audio thread has exited unexpectedly
                 if (audio.terminate == 1) {
