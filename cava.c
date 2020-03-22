@@ -651,7 +651,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                 k[n] = pow(fc[n], 1);
                 k[n] *= (float)height / pow(2, 28);
-                if(p.customEQ)
+                if (p.customEQ)
                     k[n] *= p.smooth[(int)floor(((double)n) * smh)];
                 k[n] /= log2(audio.FFTbassbufferSize);
                 // lfc stores the lower cut frequency foo each bar in the fft out buffer
