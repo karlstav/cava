@@ -16,7 +16,7 @@ int open_fifo(const char *path) {
 void *input_fifo(void *data) {
     struct audio_data *audio = (struct audio_data *)data;
     int bytes_per_sample = audio->format / 8;
-    uint8_t buf[SAMPLES_PER_BUFFER * bytes_per_sample];
+    __attribute__((aligned(sizeof(uint16_t)))) uint8_t buf[SAMPLES_PER_BUFFER * bytes_per_sample];
     uint16_t *samples =
         bytes_per_sample == 2 ? (uint16_t *)&buf : calloc(SAMPLES_PER_BUFFER, sizeof(uint16_t));
 
@@ -71,7 +71,7 @@ void *input_fifo(void *data) {
     }
 
     close(fd);
-    if (bytes_per_sample == 2) {
+    if (bytes_per_sample != 2) {
         free(samples);
     }
 
