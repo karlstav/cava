@@ -626,7 +626,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             if (p.stereo)
                 bars = bars / 2; // in stereo onle half number of bars per channel
 
-            if ((p.smcount > 0) && (bars > 0)) {
+            if (p.customEQ && (bars > 0)) {
                 smh = (double)(((double)p.smcount) / ((double)bars));
             }
 
@@ -651,7 +651,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                 k[n] = pow(fc[n], 1);
                 k[n] *= (float)height / pow(2, 28);
-                k[n] *= p.smooth[(int)floor(((double)n) * smh)];
+                if(p.customEQ)
+                    k[n] *= p.smooth[(int)floor(((double)n) * smh)];
                 k[n] /= log2(audio.FFTbassbufferSize);
                 // lfc stores the lower cut frequency foo each bar in the fft out buffer
                 if (fc[n] < bass_cut_off) {

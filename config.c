@@ -456,7 +456,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->bit_format = iniparser_getint(ini, "output:bit_format", 16);
 
     // read & validate: eq
-    p->smooth = smoothDef;
     p->smcount = iniparser_getsecnkeys(ini, "eq");
     if (p->smcount > 0) {
         p->customEQ = 1;
@@ -473,7 +472,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         }
     } else {
         p->customEQ = 0;
-        p->smcount = sizeof(smoothDef) / sizeof(smoothDef[0]); // back to the default one
     }
 
     free(p->audio_source);
