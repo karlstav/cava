@@ -67,7 +67,7 @@ static NCURSES_COLOR_T change_color_definition(NCURSES_COLOR_T color_number,
 
 void init_terminal_ncurses(char *const fg_color_string, char *const bg_color_string,
                            int predef_fg_color, int predef_bg_color, int gradient,
-                           int gradient_count, char **gradient_colors, int *width, int *height) {
+                           int gradient_count, char **gradient_colors, int *width, int *lines) {
     initscr();
     curs_set(0);
     timeout(0);
@@ -75,7 +75,7 @@ void init_terminal_ncurses(char *const fg_color_string, char *const bg_color_str
     start_color();
     use_default_colors();
 
-    getmaxyx(stdscr, *height, *width);
+    getmaxyx(stdscr, *lines, *width);
     clear();
 
     NCURSES_COLOR_T color_pair_number = 16;
@@ -96,7 +96,7 @@ void init_terminal_ncurses(char *const fg_color_string, char *const bg_color_str
         short unsigned int rgb[2 * gradient_count - 1][3];
         char next_color[14];
 
-        gradient_size = *height;
+        gradient_size = *lines;
 
         if (gradient_size > COLORS)
             gradient_size = COLORS - 1;
