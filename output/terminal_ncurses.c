@@ -155,9 +155,16 @@ void init_terminal_ncurses(char *const fg_color_string, char *const bg_color_str
         }
     }
 
+    attron(COLOR_PAIR(color_pair_number));
+
     if (bg_color_number != -1)
         bkgd(COLOR_PAIR(color_pair_number));
-    attron(COLOR_PAIR(color_pair_number));
+
+    for (int y = 0; y < *lines; y++) {
+        for (int x = 0; x < *width; x++) {
+            mvaddch(y, x, ' ');
+        }
+    }
     refresh();
 }
 
