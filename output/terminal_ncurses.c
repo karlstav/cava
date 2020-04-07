@@ -153,6 +153,7 @@ void init_terminal_ncurses(char *const fg_color_string, char *const bg_color_str
             color_pair_number++;
             left++;
         }
+        color_pair_number--;
     }
 
     attron(COLOR_PAIR(color_pair_number));
