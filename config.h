@@ -49,17 +49,20 @@ enum input_method {
     INPUT_MAX
 };
 
+enum output_method { OUTPUT_NCURSES, OUTPUT_NONCURSES, OUTPUT_RAW, OUTPUT_NOT_SUPORTED };
+
 struct config_params {
     char *color, *bcolor, *raw_target, *audio_source,
         /**gradient_color_1, *gradient_color_2,*/ **gradient_colors, *data_format, *mono_option;
     char bar_delim, frame_delim;
     double monstercat, integral, gravity, ignore, sens;
-    unsigned int lowcf, highcf;
-    double *smooth;
+    unsigned int lower_cut_off, upper_cut_off;
+    double *userEQ;
     enum input_method im;
-    int smcount, customEQ, om, col, bgcol, autobars, stereo, is_bin, ascii_range, bit_format,
-        gradient, gradient_count, fixedbars, framerate, bw, bs, autosens, overshoot, waves,
-        FFTbufferSize, fifoSample, fifoSampleBits;
+    enum output_method om;
+    int userEQ_keys, userEQ_enabled, col, bgcol, autobars, stereo, is_bin, ascii_range, bit_format,
+        gradient, gradient_count, fixedbars, framerate, bar_width, bar_spacing, autosens, overshoot,
+        waves, FFTbufferSize, fifoSample, fifoSampleBits;
 };
 
 struct error_s {
