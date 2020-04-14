@@ -120,7 +120,7 @@ int draw_terminal_noncurses(int tty, int h, int w, int bars, int bw, int bs, int
         }
     }
 
-    for (n = h - 2; n >= 0; n--) {
+    for (n = h - 1; n >= 0; n--) {
 
         move = rest; // center adjustment
         for (o = 0; o < bars; o++) {
@@ -161,7 +161,10 @@ int draw_terminal_noncurses(int tty, int h, int w, int bars, int bw, int bs, int
             move += bs; // move to next bar
         }
 
-        printf("\n");
+        if (n != 0)
+            printf("\n");
+        else
+            printf("\r");
     }
 
     printf("\033[%dA", h);
