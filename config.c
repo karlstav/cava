@@ -177,7 +177,7 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     }
     if (strcmp(outputMethod, "raw") == 0) { // raw:
         p->om = OUTPUT_RAW;
-        p->bs = 0;
+        p->bar_spacing = 0;
         p->bar_width = 1;
 
         // checking data format
@@ -208,17 +208,18 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     }
     if (p->om == OUTPUT_NOT_SUPORTED) {
 #ifndef NCURSES
-        write_errorf(error,
-                     "output method %s is not supported, supported methods are: 'noncurses' and 'raw'\n",
-                     outputMethod);
+        write_errorf(
+            error,
+            "output method %s is not supported, supported methods are: 'noncurses' and 'raw'\n",
+            outputMethod);
         return false;
 #endif
 
 #ifdef NCURSES
-        write_errorf(
-            error,
-            "output method %s is not supported, supported methods are: 'ncurses', 'noncurses' and 'raw'\n",
-            outputMethod);
+        write_errorf(error,
+                     "output method %s is not supported, supported methods are: 'ncurses', "
+                     "'noncurses' and 'raw'\n",
+                     outputMethod);
         return false;
 #endif
     }
@@ -423,7 +424,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     p->fixedbars = iniparser_getint(ini, "general:bars", 0);
     p->bar_width = iniparser_getint(ini, "general:bar_width", 2);
-    p->bs = iniparser_getint(ini, "general:bar_spacing", 1);
+    p->bar_spacing = iniparser_getint(ini, "general:bar_spacing", 1);
     p->framerate = iniparser_getint(ini, "general:framerate", 60);
     p->sens = iniparser_getint(ini, "general:sensitivity", 100);
     p->autosens = iniparser_getint(ini, "general:autosens", 1);

@@ -104,8 +104,8 @@ void get_terminal_dim_noncurses(int *w, int *h) {
     system("clear"); // clearing in case of resieze
 }
 
-int draw_terminal_noncurses(int tty, int h, int w, int bars, int bar_width, int bs, int rest, int f[200],
-                            int flastd[200]) {
+int draw_terminal_noncurses(int tty, int h, int w, int bars, int bar_width, int bs, int rest,
+                            int f[200], int flastd[200]) {
     int c, move, n, o;
 
     struct winsize dim;

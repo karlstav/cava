@@ -49,12 +49,7 @@ enum input_method {
     INPUT_MAX
 };
 
-enum output_method {
-    OUTPUT_NCURSES,
-    OUTPUT_NONCURSES,
-    OUTPUT_RAW,
-    OUTPUT_NOT_SUPORTED
-};
+enum output_method { OUTPUT_NCURSES, OUTPUT_NONCURSES, OUTPUT_RAW, OUTPUT_NOT_SUPORTED };
 
 struct config_params {
     char *color, *bcolor, *raw_target, *audio_source,
@@ -66,8 +61,8 @@ struct config_params {
     enum input_method im;
     enum output_method om;
     int userEQ_keys, userEQ_enabled, col, bgcol, autobars, stereo, is_bin, ascii_range, bit_format,
-        gradient, gradient_count, fixedbars, framerate, bar_width, bs, autosens, overshoot, waves,
-        FFTbufferSize, fifoSample, fifoSampleBits;
+        gradient, gradient_count, fixedbars, framerate, bar_width, bar_spacing, autosens, overshoot,
+        waves, FFTbufferSize, fifoSample, fifoSampleBits;
 };
 
 struct error_s {
