@@ -30,7 +30,7 @@ int setecho(int fd, int onoff) {
     return 0;
 }
 
-int init_terminal_noncurses(int col, int bgcol, int w, int h, int bw) {
+int init_terminal_noncurses(int col, int bgcol, int w, int h, int bar_width) {
 
     int n, i;
     // clearing barstrings
@@ -42,7 +42,7 @@ int init_terminal_noncurses(int col, int bgcol, int w, int h, int bw) {
     }
 
     // creating barstrings for drawing
-    for (n = 0; n < bw; n++) {
+    for (n = 0; n < bar_width; n++) {
 
         wcscat(barstring[0], L"\u2588");
         wcscat(barstring[1], L"\u2581");
@@ -104,7 +104,7 @@ void get_terminal_dim_noncurses(int *w, int *h) {
     system("clear"); // clearing in case of resieze
 }
 
-int draw_terminal_noncurses(int tty, int h, int w, int bars, int bw, int bs, int rest, int f[200],
+int draw_terminal_noncurses(int tty, int h, int w, int bars, int bar_width, int bs, int rest, int f[200],
                             int flastd[200]) {
     int c, move, n, o;
 
@@ -139,7 +139,7 @@ int draw_terminal_noncurses(int tty, int h, int w, int bars, int bw, int bs, int
                     if (n * 8 < flastd[o])
                         printf("%s", spacestring); // blank
                     else
-                        move += bw;
+                        move += bar_width;
                 } else if (c > 7) {
                     if (n > flastd[o] / 8 - 1) {
                         if (tty)
@@ -147,7 +147,7 @@ int draw_terminal_noncurses(int tty, int h, int w, int bars, int bw, int bs, int
                         else
                             printf("%ls", barstring[0]); // block
                     } else
-                        move += bw;
+                        move += bar_width;
                 } else {
                     if (tty)
                         printf("%d", ttybarstring[c - 1]); // fractioned block tty
@@ -156,7 +156,7 @@ int draw_terminal_noncurses(int tty, int h, int w, int bars, int bw, int bs, int
                 }
 
             } else
-                move += bw; // no change, moving along
+                move += bar_width; // no change, moving along
 
             move += bs; // move to next bar
         }

@@ -58,7 +58,7 @@ int validate_color(char *checkColor, int om, void *err) {
     if (checkColor[0] == '#' && strlen(checkColor) == 7) {
         // If the output mode is not ncurses, tell the user to use a named colour instead of hex
         // colours.
-        if (om != 1 && om != 2) {
+        if (om != OUTPUT_NCURSES) {
             write_errorf(error, "Only 'ncurses' output method supports HTML colors. Please change "
                                 "the colours or the output method.\n");
             return 0;
@@ -161,9 +161,9 @@ bool validate_colors(void *params, void *err) {
 
 bool validate_config(struct config_params *p, struct error_s *error) {
     // validate: output method
-    p->om = 0;
+    p->om = OUTPUT_NOT_SUPORTED;
     if (strcmp(outputMethod, "ncurses") == 0) {
-        p->om = 1;
+        p->om = OUTPUT_NCURSES;
         p->bgcol = -1;
 #ifndef NCURSES
         write_errorf(error, "cava was built without ncurses support, install ncursesw dev files "
@@ -171,22 +171,14 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         return false;
 #endif
     }
-    if (strcmp(outputMethod, "circle") == 0) {
-        p->om = 2;
-#ifndef NCURSES
-        write_errorf(error, "cava was built without ncurses support, install ncursesw dev files "
-                            "and run make clean && ./configure && make again\n");
-        return false;
-#endif
-    }
     if (strcmp(outputMethod, "noncurses") == 0) {
-        p->om = 3;
+        p->om = OUTPUT_NONCURSES;
         p->bgcol = 0;
     }
     if (strcmp(outputMethod, "raw") == 0) { // raw:
-        p->om = 4;
+        p->om = OUTPUT_RAW;
         p->bs = 0;
-        p->bw = 1;
+        p->bar_width = 1;
 
         // checking data format
         p->is_bin = -1;
@@ -214,10 +206,10 @@ bool validate_config(struct config_params *p, struct error_s *error) {
             return false;
         }
     }
-    if (p->om == 0) {
+    if (p->om == OUTPUT_NOT_SUPORTED) {
 #ifndef NCURSES
         write_errorf(error,
-                     "output method %s is not supported, supported methods are: 'noncurses'\n",
+                     "output method %s is not supported, supported methods are: 'noncurses' and 'raw'\n",
                      outputMethod);
         return false;
 #endif
@@ -225,7 +217,7 @@ bool validate_config(struct config_params *p, struct error_s *error) {
 #ifdef NCURSES
         write_errorf(
             error,
-            "output method %s is not supported, supported methods are: 'ncurses' and 'noncurses'\n",
+            "output method %s is not supported, supported methods are: 'ncurses', 'noncurses' and 'raw'\n",
             outputMethod);
         return false;
 #endif
@@ -261,10 +253,10 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         p->autobars = 0;
     if (p->fixedbars > 200)
         p->fixedbars = 200;
-    if (p->bw > 200)
-        p->bw = 200;
-    if (p->bw < 1)
-        p->bw = 1;
+    if (p->bar_width > 200)
+        p->bar_width = 200;
+    if (p->bar_width < 1)
+        p->bar_width = 1;
 
     // validate: framerate
     if (p->framerate < 0) {
@@ -291,9 +283,9 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     }
 
     // validate: cutoff
-    if (p->lowcf == 0)
-        p->lowcf++;
-    if (p->lowcf > p->highcf) {
+    if (p->lower_cut_off == 0)
+        p->lower_cut_off++;
+    if (p->lower_cut_off > p->upper_cut_off) {
         write_errorf(error,
                      "lower cutoff frequency can't be higher than higher cutoff frequency\n");
         return false;
@@ -430,14 +422,14 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     }
 
     p->fixedbars = iniparser_getint(ini, "general:bars", 0);
-    p->bw = iniparser_getint(ini, "general:bar_width", 2);
+    p->bar_width = iniparser_getint(ini, "general:bar_width", 2);
     p->bs = iniparser_getint(ini, "general:bar_spacing", 1);
     p->framerate = iniparser_getint(ini, "general:framerate", 60);
     p->sens = iniparser_getint(ini, "general:sensitivity", 100);
     p->autosens = iniparser_getint(ini, "general:autosens", 1);
     p->overshoot = iniparser_getint(ini, "general:overshoot", 20);
-    p->lowcf = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
-    p->highcf = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
+    p->lower_cut_off = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
+    p->upper_cut_off = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
     p->FFTbufferSize = iniparser_getint(ini, "general:FFTbufferSize", 12);
 
     // config: output
@@ -456,22 +448,22 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->bit_format = iniparser_getint(ini, "output:bit_format", 16);
 
     // read & validate: eq
-    p->smcount = iniparser_getsecnkeys(ini, "eq");
-    if (p->smcount > 0) {
-        p->customEQ = 1;
-        p->smooth = calloc(p->smcount + 1, sizeof(p->smooth));
+    p->userEQ_keys = iniparser_getsecnkeys(ini, "eq");
+    if (p->userEQ_keys > 0) {
+        p->userEQ_enabled = 1;
+        p->userEQ = calloc(p->userEQ_keys + 1, sizeof(p->userEQ));
 #ifndef LEGACYINIPARSER
-        const char *keys[p->smcount];
+        const char *keys[p->userEQ_keys];
         iniparser_getseckeys(ini, "eq", keys);
 #endif
 #ifdef LEGACYINIPARSER
         char **keys = iniparser_getseckeys(ini, "eq");
 #endif
-        for (int sk = 0; sk < p->smcount; sk++) {
-            p->smooth[sk] = iniparser_getdouble(ini, keys[sk], 1);
+        for (int sk = 0; sk < p->userEQ_keys; sk++) {
+            p->userEQ[sk] = iniparser_getdouble(ini, keys[sk], 1);
         }
     } else {
-        p->customEQ = 0;
+        p->userEQ_enabled = 0;
     }
 
     free(p->audio_source);
