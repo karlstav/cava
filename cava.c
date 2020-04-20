@@ -913,6 +913,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     if (g > 0) {
                         if (bars[n] < bars_last[n]) {
                             bars[n] = bars_peak[n] - (g * fall[n] * fall[n]);
+                            if (bars[n] < 0)
+                                bars[n] = 0;
                             fall[n]++;
                         } else {
                             bars_peak[n] = bars[n];
