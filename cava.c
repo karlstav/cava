@@ -274,8 +274,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
     struct audio_data audio;
     memset(&audio, 0, sizeof(audio));
 
-    // int maxvalue = 0;
-
+#ifndef NDEBUG
+    int maxvalue = 0;
+    int minvalue = 0;
+#endif
     // general: console title
     printf("%c]0;%s%c", '\033', PACKAGE, '\007');
 
@@ -626,8 +628,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 integral = p.integral * 1 / sqrt((log10((float)height / 10)));
 
 #ifndef NDEBUG
-            printw("height: %d width: %d bars:%d bar width: %d rest: %d\n", width, lines,
-                   number_of_bars, p.bar_width, rest);
+            debug("height: %d width: %d bars:%d bar width: %d rest: %d\n", height, width,
+                  number_of_bars, p.bar_width, rest);
 #endif
 
             if (p.stereo)
@@ -720,6 +722,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
 
 #ifndef NDEBUG
+                initscr();
+                curs_set(0);
+                timeout(0);
                 if (n != 0) {
                     mvprintw(n, 0, "%d: %f -> %f (%d -> %d) bass: %d, treble:%d \n", n,
                              cut_off_frequency[n - 1], cut_off_frequency[n],
@@ -928,16 +933,27 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         double div = 1 / (diff + 1);
                         // bars[n] = bars[n] - pow(div, 10) * (height + 1);
                         bars_mem[n] = bars_mem[n] * (1 - div / 20);
-
-#ifndef NDEBUG
-                        mvprintw(n, 0, "%d: f:%f->%f (%d->%d), k-value:\
-						%15e, peak:%d \n",
-                                 n, cut_off_frequency[n], cut_off_frequency[n + 1],
-                                 FFTbuffer_lower_cut_off[n], FFTbuffer_upper_cut_off[n], eq[n],
-                                 bars[n]);
-                        // if(bars[n] > maxvalue) maxvalue = bars[n];
-#endif
                     }
+#ifndef NDEBUG
+                    mvprintw(n, 0, "%d: f:%f->%f (%d->%d), eq:\
+						%15e, peak:%d \n",
+                             n, cut_off_frequency[n], cut_off_frequency[n + 1],
+                             FFTbuffer_lower_cut_off[n], FFTbuffer_upper_cut_off[n], eq[n],
+                             bars[n]);
+
+                    if (bars[n] < minvalue) {
+                        minvalue = bars[n];
+                        debug("min value: %d\n", minvalue); // checking maxvalue 10000
+                    }
+                    if (bars[n] > maxvalue) {
+                        maxvalue = bars[n];
+                    }
+                    if (bars[n] < 0) {
+                        debug("negative bar value!! %d\n", bars[n]);
+                        //    exit(EXIT_FAILURE); // Can't happen.
+                    }
+
+#endif
 
                     // zero values causes divided by zero segfault (if not raw)
                     if (output_mode != OUTPUT_RAW && bars[n] < 1)
@@ -955,7 +971,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 if (p.autosens && !silence && senselow)
                     p.sens = p.sens * 1.001;
 
-// debug("%d\n",maxvalue); //checking maxvalue 10000
+#ifndef NDEBUG
+                mvprintw(n + 1, 0, "sensitivity %.10e", p.sens);
+                mvprintw(n + 2, 0, "min value: %d\n", minvalue); // checking maxvalue 10000
+                mvprintw(n + 3, 0, "max value: %d\n", maxvalue); // checking maxvalue 10000
+#endif
 
 // output: draw processed input
 #ifdef NDEBUG
@@ -984,6 +1004,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 if (rc == -1)
                     resizeTerminal = true;
 
+#endif
                 if (p.framerate <= 1) {
                     req.tv_sec = 1 / (float)p.framerate;
                 } else {
@@ -992,7 +1013,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
 
                 nanosleep(&req, NULL);
-#endif
 
                 memcpy(previous_frame, bars, 256 * sizeof(int));
 
