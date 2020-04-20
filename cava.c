@@ -621,7 +621,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             g = p.gravity * ((float)height / 2160) * pow((60 / (float)p.framerate), 2.5);
 
             // calculate integral value, must be reduced with height
-            double integral = p.integral * sqrt(log10(lines / 3 + 1));
+            double integral = p.integral;
+            if (height > 320)
+                integral = p.integral * 1 / sqrt((log10((float)height / 10)));
 
 #ifndef NDEBUG
             printw("height: %d width: %d bars:%d bar width: %d rest: %d\n", width, lines,
