@@ -252,10 +252,10 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     p->autobars = 1;
     if (p->fixedbars > 0)
         p->autobars = 0;
-    if (p->fixedbars > 200)
-        p->fixedbars = 200;
-    if (p->bar_width > 200)
-        p->bar_width = 200;
+    if (p->fixedbars > 256)
+        p->fixedbars = 256;
+    if (p->bar_width > 256)
+        p->bar_width = 256;
     if (p->bar_width < 1)
         p->bar_width = 1;
 
