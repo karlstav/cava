@@ -283,7 +283,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
     configPath[0] = '\0';
 
-    setlocale(LC_ALL, "");
+    setlocale(LC_ALL, "en_US.UTF-8");
 
     // general: handle Ctrl+C
     struct sigaction action;
