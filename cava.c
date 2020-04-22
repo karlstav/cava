@@ -505,13 +505,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             audio.rate = 44100;
             break;
 #endif
-
-#ifdef SHMEM
         case INPUT_SHMEM:
             thr_id = pthread_create(&p_thread, NULL, input_shmem, (void *)&audio);
             // audio.rate = 44100;
             break;
-#endif
 #ifdef PORTAUDIO
         case INPUT_PORTAUDIO:
             thr_id = pthread_create(&p_thread, NULL, input_portaudio, (void *)&audio);

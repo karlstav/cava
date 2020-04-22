@@ -31,12 +31,6 @@
 #define HAS_SNDIO false
 #endif
 
-#ifdef SHMEM
-#define HAS_SHMEM true
-#else
-#define HAS_SHMEM false
-#endif
-
 // These are in order of least-favourable to most-favourable choices, in case
 // multiple are supported and configured.
 enum input_method {
