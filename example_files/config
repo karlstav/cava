@@ -76,7 +76,7 @@
 
 [output]
 
-# Ouput method. Can be 'ncurses', 'noncurses' or 'raw'.
+# Output method. Can be 'ncurses', 'noncurses' or 'raw'.
 # 'noncurses' is for systems that does not suport ncurses.
 # 'raw' is an 8 or 16 bit (configurable via the 'bit_format' option) data
 # stream of the bar heights that can be used to send to other applications.

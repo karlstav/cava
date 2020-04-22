@@ -580,7 +580,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     printf("could not open file %s for writing\n", p.raw_target);
                     exit(1);
                 }
-                printf("open file %s for writing raw ouput\n", p.raw_target);
+                printf("open file %s for writing raw output\n", p.raw_target);
 
                 // width must be hardcoded for raw output.
                 width = 256;
