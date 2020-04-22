@@ -283,8 +283,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
     configPath[0] = '\0';
 
-    setlocale(LC_ALL, "en_US.UTF-8");
-
     // general: handle Ctrl+C
     struct sigaction action;
     memset(&action, 0, sizeof(action));
@@ -343,6 +341,20 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 system("setfont cava.psf  >/dev/null 2>&1");
                 system("setterm -blank 0");
             }
+
+            // We use unicode block characters to draw the bars and
+            // the locale var LANG must be set to use unicode chars.
+            // For some reason this var can't be retrieved with
+            // setlocale(LANG, NULL), so we get it with getenv.
+            // Also we can't set it with setlocale(LANG "") so we
+            // must set LC_ALL instead.
+            // Attempting to set to en_US if not set, if that lang
+            // is not installed and LANG is not set there will be
+            // no output, for mor info see #109 #344
+            if (!getenv("LANG"))
+                setlocale(LC_ALL, "en_US.utf8");
+            else
+                setlocale(LC_ALL, "");
         }
 
         // input: init
