@@ -198,7 +198,11 @@ Michael Nguyen has added CAVA to his PPA, it can be installed with:
     sudo apt-get update
     sudo apt-get install cava
     
+For Ubuntu 18 or newer, you can use Harshal Sheth's PPA:
 
+    sudo add-apt-repository ppa:hsheth2/ppa
+    sudo apt-get update
+    sudo apt-get install cava
 
 All distro specific instalation sources might be out of date.
 
