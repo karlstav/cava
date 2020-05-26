@@ -378,6 +378,8 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 
 ### Controls
 
+NOTE: only works in ncurses output mode.
+
 | Key | Description |
 | --- | ----------- |
 | <kbd>up</kbd> / <kbd>down</kbd>| increase/decrease sensitivity |

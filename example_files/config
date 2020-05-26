@@ -77,7 +77,9 @@
 [output]
 
 # Output method. Can be 'ncurses', 'noncurses' or 'raw'.
-# 'noncurses' is for systems that does not suport ncurses.
+# 'noncurses' uses a custom framebuffer technique and draws only changes
+# from frame to frame. As of version 0.7.0 'noncurses' is default.
+#
 # 'raw' is an 8 or 16 bit (configurable via the 'bit_format' option) data
 # stream of the bar heights that can be used to send to other applications.
 # 'raw' defaults to 200 bars, which can be adjusted in the 'bars' option above.
@@ -112,10 +114,11 @@
 [color]
 
 # Colors can be one of seven predefined: black, blue, cyan, green, magenta, red, white, yellow.
-# Or defined by hex code '#xxxxxx' (hex code must be within ''). User defined colors requires a
-# terminal that can change color definitions such as Gnome-terminal or rxvt.
-; background = black
-; foreground = cyan
+# Or defined by hex code '#xxxxxx' (hex code must be within ''). User defined colors requires
+# ncurses output method and a terminal that can change color definitions such as Gnome-terminal or rxvt.
+# default is to keep current terminal color
+; background = default
+; foreground = default
 
 # Gradient mode, only hex defined colors are supported, background must also be defined in hex
 # or remain commented out. 1 = on, 0 = off. Warning: for certain terminal emulators cava will

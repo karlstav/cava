@@ -8,9 +8,14 @@
 #include <unistd.h>
 #include <wchar.h>
 
-wchar_t barstring[8][100];
-int ttybarstring[8];
-char spacestring[100];
+wchar_t *line_buffer;
+wchar_t *barstring[8];
+wchar_t *wspacestring;
+int buf_length;
+char *ttyline_buffer;
+char ttybarstring[8][100];
+char ttyspacestring[100];
+int ttybuf_length;
 
 int setecho(int fd, int onoff) {
 
@@ -33,13 +38,24 @@ int setecho(int fd, int onoff) {
 int init_terminal_noncurses(int col, int bgcol, int w, int h, int bar_width) {
 
     int n, i;
+
+    ttybuf_length = sizeof(char) * w * h * 10;
+    ttyline_buffer = (char *)malloc(ttybuf_length);
+
+    buf_length = sizeof(wchar_t) * w * h * 10;
+    line_buffer = (wchar_t *)malloc(buf_length);
+    wspacestring = (wchar_t *)malloc(sizeof(wchar_t) * bar_width);
+
     // clearing barstrings
     for (n = 0; n < 8; n++) {
-
-        ttybarstring[n] = 0;
+        barstring[n] = (wchar_t *)malloc(sizeof(wchar_t) * bar_width);
+        ttybarstring[n][0] = '\0';
         barstring[n][0] = '\0';
-        spacestring[0] = '\0';
+        ttyspacestring[0] = '\0';
     }
+    wspacestring[0] = '\0';
+    line_buffer[0] = '\0';
+    ttyline_buffer[0] = '\0';
 
     // creating barstrings for drawing
     for (n = 0; n < bar_width; n++) {
@@ -52,11 +68,17 @@ int init_terminal_noncurses(int col, int bgcol, int w, int h, int bar_width) {
         wcscat(barstring[5], L"\u2585");
         wcscat(barstring[6], L"\u2586");
         wcscat(barstring[7], L"\u2587");
-        strcat(spacestring, " ");
+        wcscat(wspacestring, L" ");
 
-        for (i = 0; i < 8; i++) {
-            ttybarstring[i] += (i + 1) * pow(10, n);
-        }
+        strcat(ttybarstring[0], "8");
+        strcat(ttybarstring[1], "1");
+        strcat(ttybarstring[2], "2");
+        strcat(ttybarstring[3], "3");
+        strcat(ttybarstring[4], "4");
+        strcat(ttybarstring[5], "5");
+        strcat(ttybarstring[6], "6");
+        strcat(ttybarstring[7], "7");
+        strcat(ttyspacestring, " ");
     }
 
     col += 30;
@@ -68,9 +90,10 @@ int init_terminal_noncurses(int col, int bgcol, int w, int h, int bar_width) {
     printf("\033[0m\n");
     system("clear");
 
-    printf("\033[%dm", col); // setting color
+    if (col)
+        printf("\033[%dm", col); // setting color
 
-    printf("\033[1m"); // setting "bright" color mode, looks cooler... I think
+    // printf("\033[1m"); // setting "bright" color mode, looks cooler... I think
 
     if (bgcol != 0) {
 
@@ -106,68 +129,151 @@ void get_terminal_dim_noncurses(int *w, int *h) {
 
 int draw_terminal_noncurses(int tty, int h, int w, int bars, int bar_width, int bs, int rest,
                             int f[200], int flastd[200]) {
-    int c, move, n, o;
+    int current_char, last_char, n, o, same_line, new_line, cx;
 
     struct winsize dim;
 
-    // output: check if terminal has been resized
-    if (!tty) {
+    same_line = 0;
+    new_line = 0;
+    cx = 0;
 
+    if (tty) {
+
+        ttyline_buffer[0] = '\0';
+
+        for (n = h - 1; n >= 0; n--) {
+
+            int same_bar = 0;
+            int center_adjusted = 0;
+
+            for (o = 0; o < bars; o++) {
+
+                current_char = f[o] - n * 8;
+                last_char = flastd[o] - n * 8;
+
+                // same as last frame
+                if ((current_char < 1 && last_char < 1) || (current_char > 7 && last_char > 7) ||
+                    (current_char == last_char)) {
+                    same_bar++;
+                } else {
+                    if (same_line > 0) {
+                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "\033[%dB",
+                                       same_line); // move down
+                        new_line += same_line;
+                        same_line = 0;
+                    }
+
+                    if (same_bar > 0) {
+                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "\033[%dC",
+                                       (bar_width + bs) * same_bar); // move forward
+                        same_bar = 0;
+                    }
+
+                    if (!center_adjusted) {
+                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "\033[%dC", rest);
+                        center_adjusted = 1;
+                    }
+
+                    if (current_char < 1)
+                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, ttyspacestring);
+                    else if (current_char > 7)
+                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, ttybarstring[0]);
+                    else
+                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx,
+                                       ttybarstring[current_char]);
+
+                    cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "\033[%dC", bs);
+                }
+            }
+
+            if (same_bar != bars) {
+                if (n != 0) {
+                    cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "\n");
+                    new_line++;
+                }
+            } else {
+                same_line++;
+            }
+        }
+        if (same_line != h) {
+            printf("%s\r\033[%dA", ttyline_buffer,
+                   new_line); //\r\033[%dA", ttyline_buffer,  h - same_line);
+            fflush(stdout);
+        }
+    } else if (!tty) {
+
+        // output: check if terminal has been resized
         ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
 
         if ((int)dim.ws_row != h || (int)dim.ws_col != w) {
+            free(line_buffer);
+            free(wspacestring);
+            for (int i = 0; i < 8; i++)
+                free(barstring[i]);
             return -1;
         }
-    }
 
-    for (n = h - 1; n >= 0; n--) {
+        line_buffer[0] = '\0';
 
-        move = rest; // center adjustment
-        for (o = 0; o < bars; o++) {
+        for (n = h - 1; n >= 0; n--) {
 
-            // output: draw and move to another one, check whether we're not too far
+            int same_bar = 0;
+            int center_adjusted = 0;
 
-            if (f[o] != flastd[o]) { // change?
+            for (o = 0; o < bars; o++) {
 
-                if (move != 0)
-                    printf("\033[%dC", move);
-                move = 0;
+                current_char = f[o] - n * 8;
+                last_char = flastd[o] - n * 8;
 
-                c = f[o] - n * 8;
-
-                if (c < 1) {
-                    if (n * 8 < flastd[o])
-                        printf("%s", spacestring); // blank
-                    else
-                        move += bar_width;
-                } else if (c > 7) {
-                    if (n > flastd[o] / 8 - 1) {
-                        if (tty)
-                            printf("%d", ttybarstring[7]); //  block tty
-                        else
-                            printf("%ls", barstring[0]); // block
-                    } else
-                        move += bar_width;
+                // same as last frame
+                if ((current_char < 1 && last_char < 1) || (current_char > 7 && last_char > 7) ||
+                    (current_char == last_char)) {
+                    same_bar++;
                 } else {
-                    if (tty)
-                        printf("%d", ttybarstring[c - 1]); // fractioned block tty
+                    if (same_line > 0) {
+                        cx += swprintf(line_buffer + cx, buf_length - cx, L"\033[%dB",
+                                       same_line); // move down
+                        new_line += same_line;
+                        same_line = 0;
+                    }
+
+                    if (same_bar > 0) {
+                        cx += swprintf(line_buffer + cx, buf_length - cx, L"\033[%dC",
+                                       (bar_width + bs) * same_bar); // move forward
+                        same_bar = 0;
+                    }
+
+                    if (!center_adjusted && rest) {
+                        cx += swprintf(line_buffer + cx, buf_length - cx, L"\033[%dC", rest);
+                        center_adjusted = 1;
+                    }
+
+                    if (current_char < 1)
+                        cx += swprintf(line_buffer + cx, buf_length - cx, wspacestring);
+                    else if (current_char > 7)
+                        cx += swprintf(line_buffer + cx, buf_length - cx, barstring[0]);
                     else
-                        printf("%ls", barstring[c]); // fractioned block vt
+                        cx += swprintf(line_buffer + cx, buf_length - cx, barstring[current_char]);
+
+                    cx += swprintf(line_buffer + cx, buf_length - cx, L"\033[%dC", bs);
                 }
+            }
 
-            } else
-                move += bar_width; // no change, moving along
-
-            move += bs; // move to next bar
+            if (same_bar != bars) {
+                if (n != 0) {
+                    cx += swprintf(line_buffer + cx, buf_length - cx, L"\n");
+                    new_line++;
+                }
+            } else {
+                same_line++;
+            }
         }
-
-        if (n != 0)
-            printf("\n");
-        else
-            printf("\r");
+        if (same_line != h) {
+            printf("%ls\r\033[%dA", line_buffer,
+                   new_line); //\r\033[%dA", line_buffer,  h - same_line);
+            fflush(stdout);
+        }
     }
-
-    printf("\033[%dA", h);
     return 0;
 }
 

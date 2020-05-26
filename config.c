@@ -59,8 +59,10 @@ int validate_color(char *checkColor, int om, void *err) {
         // If the output mode is not ncurses, tell the user to use a named colour instead of hex
         // colours.
         if (om != OUTPUT_NCURSES) {
-            write_errorf(error, "Only 'ncurses' output method supports HTML colors. Please change "
-                                "the colours or the output method.\n");
+            write_errorf(
+                error, "Only 'ncurses' output method supports HTML colors. Please change "
+                       "the colours or the output method.\nAs of version 0.7.0 ncurses is no longer"
+                       " the default output method\n");
             return 0;
         }
         // 0 to 9 and a to f
@@ -118,7 +120,7 @@ bool validate_colors(void *params, void *err) {
     }
 
     // In case color is not html format set bgcol and col to predefinedint values
-    p->col = 6;
+    p->col = -1;
     if (strcmp(p->color, "black") == 0)
         p->col = 0;
     if (strcmp(p->color, "red") == 0)
@@ -406,7 +408,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     }
 
 #ifdef NCURSES
-    outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
+    outputMethod = (char *)iniparser_getstring(ini, "output:method", "noncurses");
 #endif
 #ifndef NCURSES
     outputMethod = (char *)iniparser_getstring(ini, "output:method", "noncurses");
