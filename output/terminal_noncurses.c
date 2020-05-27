@@ -110,14 +110,14 @@ int init_terminal_noncurses(int tty, int col, int bgcol, int width, int lines, i
         bgcol += 40;
         printf("\033[%dm", bgcol);
 
-        for (n = (h); n >= 0; n--) {
-            for (i = 0; i < w; i++) {
+        for (int n = (lines); n >= 0; n--) {
+            for (int i = 0; i < width; i++) {
 
                 printf(" "); // setting backround color
             }
             printf("\n");
         }
-        printf("\033[%dA", h); // moving cursor back up
+        printf("\033[%dA", lines); // moving cursor back up
     }
 
     setecho(STDIN_FILENO, 0);
@@ -125,166 +125,144 @@ int init_terminal_noncurses(int tty, int col, int bgcol, int width, int lines, i
     return 0;
 }
 
-void get_terminal_dim_noncurses(int *w, int *h) {
+void get_terminal_dim_noncurses(int *width, int *lines) {
 
     struct winsize dim;
 
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
 
-    *h = (int)dim.ws_row;
-    *w = (int)dim.ws_col;
+    *lines = (int)dim.ws_row;
+    *width = (int)dim.ws_col;
 
     system("clear"); // clearing in case of resieze
 }
 
-int draw_terminal_noncurses(int tty, int h, int w, int bars, int bar_width, int bs, int rest,
-                            int f[200], int flastd[200]) {
-    int current_char, last_char, n, o, same_line, new_line, cx;
+int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, int bar_width,
+                            int bar_spacing, int rest, int bars[200], int previous_frame[200]) {
+
+    int current_cell, prev_cell, same_line, new_line, cx;
 
     struct winsize dim;
 
     same_line = 0;
     new_line = 0;
     cx = 0;
-
-    if (tty) {
-
-        ttyline_buffer[0] = '\0';
-
-        for (n = h - 1; n >= 0; n--) {
-
-            int same_bar = 0;
-            int center_adjusted = 0;
-
-            for (o = 0; o < bars; o++) {
-
-                current_char = f[o] - n * 8;
-                last_char = flastd[o] - n * 8;
-
-                // same as last frame
-                if ((current_char < 1 && last_char < 1) || (current_char > 7 && last_char > 7) ||
-                    (current_char == last_char)) {
-                    same_bar++;
-                } else {
-                    if (same_line > 0) {
-                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "\033[%dB",
-                                       same_line); // move down
-                        new_line += same_line;
-                        same_line = 0;
-                    }
-
-                    if (same_bar > 0) {
-                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "\033[%dC",
-                                       (bar_width + bs) * same_bar); // move forward
-                        same_bar = 0;
-                    }
-
-                    if (!center_adjusted) {
-                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "\033[%dC", rest);
-                        center_adjusted = 1;
-                    }
-
-                    if (current_char < 1)
-                        cx +=
-                            snprintf(ttyline_buffer + cx, ttybuf_length - cx, "%s", ttyspacestring);
-                    else if (current_char > 7)
-                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "%s",
-                                       ttybarstring[0]);
-                    else
-                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "%s",
-                                       ttybarstring[current_char]);
-
-                    cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "\033[%dC", bs);
-                }
-            }
-
-            if (same_bar != bars) {
-                if (n != 0) {
-                    cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "\n");
-                    new_line++;
-                }
-            } else {
-                same_line++;
-            }
-        }
-        if (same_line != h) {
-            printf("%s\r\033[%dA", ttyline_buffer,
-                   new_line); //\r\033[%dA", ttyline_buffer,  h - same_line);
-            fflush(stdout);
-        }
-    } else if (!tty) {
+    if (!tty) {
 
         // output: check if terminal has been resized
         ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
 
-        if ((int)dim.ws_row != h || (int)dim.ws_col != w) {
-            free(line_buffer);
-            free(wspacestring);
+        if ((int)dim.ws_row != lines || (int)dim.ws_col != width) {
+            free(frame_buffer);
+            free(spacestring);
             for (int i = 0; i < 8; i++)
                 free(barstring[i]);
+
             return -1;
         }
+    }
+    if (tty)
+        ttyframe_buffer[0] = '\0';
+    else if (!tty)
+        frame_buffer[0] = '\0';
 
-        line_buffer[0] = '\0';
+    for (int current_line = lines - 1; current_line >= 0; current_line--) {
 
-        for (n = h - 1; n >= 0; n--) {
+        int same_bar = 0;
+        int center_adjusted = 0;
 
-            int same_bar = 0;
-            int center_adjusted = 0;
+        for (int i = 0; i < number_of_bars; i++) {
 
-            for (o = 0; o < bars; o++) {
+            current_cell = bars[i] - current_line * 8;
+            prev_cell = previous_frame[i] - current_line * 8;
 
-                current_char = f[o] - n * 8;
-                last_char = flastd[o] - n * 8;
-
-                // same as last frame
-                if ((current_char < 1 && last_char < 1) || (current_char > 7 && last_char > 7) ||
-                    (current_char == last_char)) {
-                    same_bar++;
-                } else {
+            // same as last frame
+            if ((current_cell < 1 && prev_cell < 1) || (current_cell > 7 && prev_cell > 7) ||
+                (current_cell == prev_cell)) {
+                same_bar++;
+            } else {
+                if (tty) {
                     if (same_line > 0) {
-                        cx += swprintf(line_buffer + cx, buf_length - cx, L"\033[%dB",
+                        cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[%dB",
                                        same_line); // move down
                         new_line += same_line;
                         same_line = 0;
                     }
 
                     if (same_bar > 0) {
-                        cx += swprintf(line_buffer + cx, buf_length - cx, L"\033[%dC",
-                                       (bar_width + bs) * same_bar); // move forward
+                        cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[%dC",
+                                       (bar_width + bar_spacing) * same_bar); // move forward
+                        same_bar = 0;
+                    }
+
+                    if (!center_adjusted) {
+                        cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[%dC", rest);
+                        center_adjusted = 1;
+                    }
+
+                    if (current_cell < 1)
+                        cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "%s",
+                                       ttyspacestring);
+                    else if (current_cell > 7)
+                        cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "%s",
+                                       ttybarstring[0]);
+                    else
+                        cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "%s",
+                                       ttybarstring[current_cell]);
+
+                    cx +=
+                        snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[%dC", bar_spacing);
+                } else if (!tty) {
+                    if (same_line > 0) {
+                        cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dB",
+                                       same_line); // move down
+                        new_line += same_line;
+                        same_line = 0;
+                    }
+
+                    if (same_bar > 0) {
+                        cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dC",
+                                       (bar_width + bar_spacing) * same_bar); // move forward
                         same_bar = 0;
                     }
 
                     if (!center_adjusted && rest) {
-                        cx += swprintf(line_buffer + cx, buf_length - cx, L"\033[%dC", rest);
+                        cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dC", rest);
                         center_adjusted = 1;
                     }
 
-                    if (current_char < 1)
-                        cx += swprintf(line_buffer + cx, buf_length - cx, wspacestring);
-                    else if (current_char > 7)
-                        cx += swprintf(line_buffer + cx, buf_length - cx, barstring[0]);
+                    if (current_cell < 1)
+                        cx += swprintf(frame_buffer + cx, buf_length - cx, spacestring);
+                    else if (current_cell > 7)
+                        cx += swprintf(frame_buffer + cx, buf_length - cx, barstring[0]);
                     else
-                        cx += swprintf(line_buffer + cx, buf_length - cx, barstring[current_char]);
+                        cx += swprintf(frame_buffer + cx, buf_length - cx, barstring[current_cell]);
 
-                    cx += swprintf(line_buffer + cx, buf_length - cx, L"\033[%dC", bs);
+                    cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dC", bar_spacing);
                 }
             }
+        }
 
-            if (same_bar != bars) {
-                if (n != 0) {
-                    cx += swprintf(line_buffer + cx, buf_length - cx, L"\n");
-                    new_line++;
-                }
-            } else {
-                same_line++;
+        if (same_bar != number_of_bars) {
+            if (current_line != 0) {
+                if (tty)
+                    cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\n");
+                else if (!tty)
+                    cx += swprintf(frame_buffer + cx, buf_length - cx, L"\n");
+
+                new_line++;
             }
+        } else {
+            same_line++;
         }
-        if (same_line != h) {
-            printf("%ls\r\033[%dA", line_buffer,
-                   new_line); //\r\033[%dA", line_buffer,  h - same_line);
-            fflush(stdout);
-        }
+    }
+    if (same_line != lines) {
+        if (tty)
+            printf("%s\r\033[%dA", ttyframe_buffer, new_line);
+        else if (!tty)
+            printf("%ls\r\033[%dA", frame_buffer, new_line);
+
+        fflush(stdout);
     }
     return 0;
 }
