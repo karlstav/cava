@@ -175,11 +175,11 @@ int draw_terminal_noncurses(int tty, int h, int w, int bars, int bar_width, int 
                     }
 
                     if (current_char < 1)
-                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, ttyspacestring);
+                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "%s", ttyspacestring);
                     else if (current_char > 7)
-                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, ttybarstring[0]);
+                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "%s", ttybarstring[0]);
                     else
-                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx,
+                        cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "%s",
                                        ttybarstring[current_char]);
 
                     cx += snprintf(ttyline_buffer + cx, ttybuf_length - cx, "\033[%dC", bs);
