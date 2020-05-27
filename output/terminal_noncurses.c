@@ -8,13 +8,13 @@
 #include <unistd.h>
 #include <wchar.h>
 
-wchar_t *line_buffer;
+wchar_t *frame_buffer;
 wchar_t *barstring[8];
-wchar_t *wspacestring;
+wchar_t *spacestring;
 int buf_length;
-char *ttyline_buffer;
-char ttybarstring[8][100];
-char ttyspacestring[100];
+char *ttyframe_buffer;
+char *ttybarstring[8];
+char *ttyspacestring;
 int ttybuf_length;
 
 int setecho(int fd, int onoff) {
@@ -35,50 +35,60 @@ int setecho(int fd, int onoff) {
     return 0;
 }
 
-int init_terminal_noncurses(int col, int bgcol, int w, int h, int bar_width) {
+int init_terminal_noncurses(int tty, int col, int bgcol, int width, int lines, int bar_width) {
 
-    int n, i;
+    if (tty) {
 
-    ttybuf_length = sizeof(char) * w * h * 10;
-    ttyline_buffer = (char *)malloc(ttybuf_length);
+        ttybuf_length = sizeof(char) * width * lines * 10;
+        ttyframe_buffer = (char *)malloc(ttybuf_length);
+        ttyspacestring = (char *)malloc(sizeof(char) * bar_width);
 
-    buf_length = sizeof(wchar_t) * w * h * 10;
-    line_buffer = (wchar_t *)malloc(buf_length);
-    wspacestring = (wchar_t *)malloc(sizeof(wchar_t) * bar_width);
-
-    // clearing barstrings
-    for (n = 0; n < 8; n++) {
-        barstring[n] = (wchar_t *)malloc(sizeof(wchar_t) * bar_width);
-        ttybarstring[n][0] = '\0';
-        barstring[n][0] = '\0';
+        // clearing barstrings
+        for (int n = 0; n < 8; n++) {
+            ttybarstring[n] = (char *)malloc(sizeof(char) * bar_width);
+            ttybarstring[n][0] = '\0';
+        }
         ttyspacestring[0] = '\0';
-    }
-    wspacestring[0] = '\0';
-    line_buffer[0] = '\0';
-    ttyline_buffer[0] = '\0';
+        ttyframe_buffer[0] = '\0';
 
-    // creating barstrings for drawing
-    for (n = 0; n < bar_width; n++) {
+        // creating barstrings for drawing
+        for (int n = 0; n < bar_width; n++) {
+            strcat(ttybarstring[0], "8");
+            strcat(ttybarstring[1], "1");
+            strcat(ttybarstring[2], "2");
+            strcat(ttybarstring[3], "3");
+            strcat(ttybarstring[4], "4");
+            strcat(ttybarstring[5], "5");
+            strcat(ttybarstring[6], "6");
+            strcat(ttybarstring[7], "7");
+            strcat(ttyspacestring, " ");
+        }
+    } else if (!tty) {
 
-        wcscat(barstring[0], L"\u2588");
-        wcscat(barstring[1], L"\u2581");
-        wcscat(barstring[2], L"\u2582");
-        wcscat(barstring[3], L"\u2583");
-        wcscat(barstring[4], L"\u2584");
-        wcscat(barstring[5], L"\u2585");
-        wcscat(barstring[6], L"\u2586");
-        wcscat(barstring[7], L"\u2587");
-        wcscat(wspacestring, L" ");
+        buf_length = sizeof(wchar_t) * width * lines * 10;
+        frame_buffer = (wchar_t *)malloc(buf_length);
+        spacestring = (wchar_t *)malloc(sizeof(wchar_t) * bar_width);
 
-        strcat(ttybarstring[0], "8");
-        strcat(ttybarstring[1], "1");
-        strcat(ttybarstring[2], "2");
-        strcat(ttybarstring[3], "3");
-        strcat(ttybarstring[4], "4");
-        strcat(ttybarstring[5], "5");
-        strcat(ttybarstring[6], "6");
-        strcat(ttybarstring[7], "7");
-        strcat(ttyspacestring, " ");
+        // clearing barstrings
+        for (int n = 0; n < 8; n++) {
+            barstring[n] = (wchar_t *)malloc(sizeof(wchar_t) * bar_width);
+            barstring[n][0] = '\0';
+        }
+        spacestring[0] = '\0';
+        frame_buffer[0] = '\0';
+
+        // creating barstrings for drawing
+        for (int n = 0; n < bar_width; n++) {
+            wcscat(barstring[0], L"\u2588");
+            wcscat(barstring[1], L"\u2581");
+            wcscat(barstring[2], L"\u2582");
+            wcscat(barstring[3], L"\u2583");
+            wcscat(barstring[4], L"\u2584");
+            wcscat(barstring[5], L"\u2585");
+            wcscat(barstring[6], L"\u2586");
+            wcscat(barstring[7], L"\u2587");
+            wcscat(spacestring, L" ");
+        }
     }
 
     col += 30;
@@ -281,6 +291,14 @@ int draw_terminal_noncurses(int tty, int h, int w, int bars, int bar_width, int 
 
 // general: cleanup
 void cleanup_terminal_noncurses(void) {
+    free(frame_buffer);
+    free(ttyframe_buffer);
+    free(spacestring);
+    free(ttyspacestring);
+    for (int i = 0; i < 8; i++) {
+        free(barstring[i]);
+        free(ttybarstring[i]);
+    }
     setecho(STDIN_FILENO, 1);
     printf("\033[0m\n");
     system("setfont  >/dev/null 2>&1");
