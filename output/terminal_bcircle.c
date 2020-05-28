@@ -1,5 +1,6 @@
 #include "output/terminal_bcircle.h"
 
+#define _XOPEN_SOURCE_EXTENDED
 #include <curses.h>
 #include <locale.h>
 #include <math.h>
