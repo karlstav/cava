@@ -17,7 +17,7 @@ cava_CPPFLAGS = -DPACKAGE=\"$(PACKAGE)\" -DVERSION=\"$(VERSION)\" \
 cava_CFLAGS = -std=c99 -Wall -Werror -Wextra -Wno-unused-result -Wno-unknown-warning-option -Wno-maybe-uninitialized
 
 if OSX
-    cava_CFLAGS += -DNORT
+    cava_CFLAGS += -DNORT -D_XOPEN_SOURCE_EXTENDED
 else
     cava_LDFLAGS += -lrt
 endif
