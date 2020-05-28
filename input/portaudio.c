@@ -4,7 +4,7 @@
 #include <portaudio.h>
 #define PORTBUFSIZE 512
 
-#define SAMPLE_SILENCE 32768
+#define SAMPLE_SILENCE -32767
 #define PA_SAMPLE_TYPE paInt16
 typedef short SAMPLE;
 
