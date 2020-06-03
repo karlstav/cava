@@ -39,7 +39,7 @@ if SNDIO
 endif
 
 if NCURSES
-    cava_SOURCES += output/terminal_bcircle.c output/terminal_ncurses.c
+    cava_SOURCES += output/terminal_ncurses.c
 endif
 
 cava_font_dir = @FONT_DIR@
