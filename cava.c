@@ -1,4 +1,3 @@
-#define _XOPEN_SOURCE_EXTENDED
 #include <locale.h>
 
 #ifdef HAVE_ALLOCA_H
