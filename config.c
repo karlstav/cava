@@ -322,7 +322,7 @@ bool load_colors(struct config_params *p, dictionary *ini, void *err) {
         for (int i = 0; i < p->gradient_count; ++i) {
             free(p->gradient_colors[i]);
         }
-        p->gradient_count = iniparser_getint(ini, "color:gradient_count", 2);
+        p->gradient_count = iniparser_getint(ini, "color:gradient_count", 8);
         if (p->gradient_count < 2) {
             write_errorf(error, "\nAtleast two colors must be given as gradient!\n");
             return false;
@@ -331,20 +331,15 @@ bool load_colors(struct config_params *p, dictionary *ini, void *err) {
             write_errorf(error, "\nMaximum 8 colors can be specified as gradient!\n");
             return false;
         }
-        p->gradient_colors = (char **)malloc(sizeof(char *) * p->gradient_count);
-        for (int i = 0; i < p->gradient_count; i++) {
-            char ini_config[32];
-            sprintf(ini_config, "color:gradient_color_%d", (i + 1));
-            p->gradient_colors[i] = strdup(iniparser_getstring(ini, ini_config, NULL));
-            if (p->gradient_colors[i] == NULL) {
-                write_errorf(error, "\nGradient color not specified : gradient_color_%d\n",
-                             (i + 1));
-                return false;
-            }
-        }
-        // p->gradient_color_1 = (char *)iniparser_getstring(ini, "color:gradient_color_1",
-        // "#0099ff"); p->gradient_color_2 = (char *)iniparser_getstring(ini,
-        // "color:gradient_color_2", "#ff3399");
+        p->gradient_colors = (char **)malloc(sizeof(char *) * p->gradient_count * 9);
+        p->gradient_colors[0] = strdup(iniparser_getstring(ini, "color:gradient_color_1", "#59cc33"));
+        p->gradient_colors[1] = strdup(iniparser_getstring(ini, "color:gradient_color_2", "#80cc33"));
+        p->gradient_colors[2] = strdup(iniparser_getstring(ini, "color:gradient_color_3", "#a6cc33"));
+        p->gradient_colors[3] = strdup(iniparser_getstring(ini, "color:gradient_color_4", "#cccc33"));
+        p->gradient_colors[4] = strdup(iniparser_getstring(ini, "color:gradient_color_5", "#cca633"));
+        p->gradient_colors[5] = strdup(iniparser_getstring(ini, "color:gradient_color_6", "#cc8033"));
+        p->gradient_colors[6] = strdup(iniparser_getstring(ini, "color:gradient_color_7", "#cc5933"));
+        p->gradient_colors[7] = strdup(iniparser_getstring(ini, "color:gradient_color_8", "#cc3333"));
     }
     return true;
 }
