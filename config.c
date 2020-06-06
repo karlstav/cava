@@ -332,14 +332,22 @@ bool load_colors(struct config_params *p, dictionary *ini, void *err) {
             return false;
         }
         p->gradient_colors = (char **)malloc(sizeof(char *) * p->gradient_count * 9);
-        p->gradient_colors[0] = strdup(iniparser_getstring(ini, "color:gradient_color_1", "#59cc33"));
-        p->gradient_colors[1] = strdup(iniparser_getstring(ini, "color:gradient_color_2", "#80cc33"));
-        p->gradient_colors[2] = strdup(iniparser_getstring(ini, "color:gradient_color_3", "#a6cc33"));
-        p->gradient_colors[3] = strdup(iniparser_getstring(ini, "color:gradient_color_4", "#cccc33"));
-        p->gradient_colors[4] = strdup(iniparser_getstring(ini, "color:gradient_color_5", "#cca633"));
-        p->gradient_colors[5] = strdup(iniparser_getstring(ini, "color:gradient_color_6", "#cc8033"));
-        p->gradient_colors[6] = strdup(iniparser_getstring(ini, "color:gradient_color_7", "#cc5933"));
-        p->gradient_colors[7] = strdup(iniparser_getstring(ini, "color:gradient_color_8", "#cc3333"));
+        p->gradient_colors[0] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_1", "#59cc33"));
+        p->gradient_colors[1] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_2", "#80cc33"));
+        p->gradient_colors[2] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_3", "#a6cc33"));
+        p->gradient_colors[3] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_4", "#cccc33"));
+        p->gradient_colors[4] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_5", "#cca633"));
+        p->gradient_colors[5] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_6", "#cc8033"));
+        p->gradient_colors[6] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_7", "#cc5933"));
+        p->gradient_colors[7] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_8", "#cc3333"));
     }
     return true;
 }
