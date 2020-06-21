@@ -131,7 +131,7 @@ Then fix macOS not finding libtool and ncursesw:
 
     export LIBTOOL=`which glibtool`
     export LIBTOOLIZE=`which glibtoolize`
-    ln -s `which glibtoolize` libtoolize
+    ln -s `which glibtoolize` /usr/local/bin/libtoolize
     ln -s /usr/lib/libncurses.dylib /usr/local/lib/libncursesw.dylib
 
 Tested on macOS High Sierra.
