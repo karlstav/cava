@@ -115,7 +115,10 @@ int init_terminal_noncurses(int tty, int col, int bgcol, int width, int lines, i
 
                 printf(" "); // setting backround color
             }
-            printf("\n");
+            if (n != 0)
+                printf("\n");
+            else
+                printf("\r");
         }
         printf("\033[%dA", lines); // moving cursor back up
     }
