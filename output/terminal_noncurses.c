@@ -25,9 +25,9 @@ int setecho(int fd, int onoff) {
         return -1;
 
     if (onoff == 0)
-        t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
+        t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL | ICANON);
     else
-        t.c_lflag |= (ECHO | ECHOE | ECHOK | ECHONL);
+        t.c_lflag |= (ECHO | ECHOE | ECHOK | ECHONL | ICANON);
 
     if (tcsetattr(fd, TCSANOW, &t) == -1)
         return -1;

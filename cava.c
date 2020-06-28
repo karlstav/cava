@@ -243,6 +243,7 @@ int main(int argc, char **argv) {
     double eq[256];
     float g;
     struct timespec req = {.tv_sec = 0, .tv_nsec = 0};
+    struct timespec sleep_mode_timer = {.tv_sec = 0, .tv_nsec = 0};
     char configPath[PATH_MAX];
     char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
@@ -746,6 +747,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 number_of_bars = number_of_bars * 2;
 
             bool resizeTerminal = false;
+            fcntl(0, F_SETFL, O_NONBLOCK);
+
+            if (p.framerate <= 1) {
+                req.tv_sec = 1 / (float)p.framerate;
+            } else {
+                req.tv_sec = 0;
+                req.tv_nsec = (1 / (float)p.framerate) * 1e9;
+            }
 
             while (!resizeTerminal) {
 
@@ -754,6 +763,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 if (output_mode == OUTPUT_NCURSES)
                     ch = getch();
 #endif
+                if (output_mode == OUTPUT_NONCURSES)
+                    ch = fgetc(stdin);
 
                 switch (ch) {
                 case 65: // key up
@@ -880,9 +891,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     printw("no sound detected for 5 sec, going to sleep mode\n");
 #endif
                     // wait 0.1 sec, then check sound again.
-                    req.tv_sec = 0;
-                    req.tv_nsec = 100000000;
-                    nanosleep(&req, NULL);
+                    sleep_mode_timer.tv_sec = 0;
+                    sleep_mode_timer.tv_nsec = 100000000;
+                    nanosleep(&sleep_mode_timer, NULL);
                     continue;
                 }
 
@@ -1015,14 +1026,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     resizeTerminal = true;
 
 #endif
-                if (p.framerate <= 1) {
-                    req.tv_sec = 1 / (float)p.framerate;
-                } else {
-                    req.tv_sec = 0;
-                    req.tv_nsec = (1 / (float)p.framerate) * 1000000000;
-                }
-
-                nanosleep(&req, NULL);
 
                 memcpy(previous_frame, bars, 256 * sizeof(int));
 
@@ -1033,6 +1036,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     exit(EXIT_FAILURE);
                 }
 
+                nanosleep(&req, NULL);
             } // resize terminal
 
         } // reloading config
