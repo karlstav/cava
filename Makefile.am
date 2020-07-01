@@ -20,6 +20,8 @@ if OSX
     cava_CFLAGS += -DNORT
 else
     cava_LDFLAGS += -lrt
+    cava_font_dir = @FONT_DIR@
+    cava_font__DATA = cava.psf
 endif
 
 if ALSA
@@ -42,8 +44,6 @@ if NCURSES
     cava_SOURCES += output/terminal_ncurses.c
 endif
 
-cava_font_dir = @FONT_DIR@
-cava_font__DATA = cava.psf
 
 if !SYSTEM_LIBINIPARSER
     cava_LDADD = -liniparser
