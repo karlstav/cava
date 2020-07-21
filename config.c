@@ -52,18 +52,26 @@ void write_errorf(void *err, const char *fmt, ...) {
     va_end(args);
 }
 
-int validate_color(char *checkColor, int om, void *err) {
+int validate_color(char *checkColor, void *params, void *err) {
+    struct config_params *p = (struct config_params *)params;
     struct error_s *error = (struct error_s *)err;
     int validColor = 0;
     if (checkColor[0] == '#' && strlen(checkColor) == 7) {
         // If the output mode is not ncurses, tell the user to use a named colour instead of hex
         // colours.
-        if (om != OUTPUT_NCURSES) {
-            write_errorf(
-                error, "Only 'ncurses' output method supports HTML colors. Please change "
-                       "the colours or the output method.\nAs of version 0.7.0 ncurses is no longer"
-                       " the default output method\n");
+        if (p->om != OUTPUT_NCURSES) {
+#ifdef NCURSES
+            write_errorf(error,
+                         "hex color configured, but ncurses not set. Forcing ncurses mode.\n");
+            p->om = OUTPUT_NCURSES;
+#else
+            write_errorf(error,
+                         "Only 'ncurses' output method supports HTML colors "
+                         "(required by gradient). "
+                         "Cava was built without ncurses support, install ncurses(w) dev files "
+                         "and rebuild.\n");
             return 0;
+#endif
         }
         // 0 to 9 and a to f
         for (int i = 1; checkColor[i]; ++i) {
@@ -94,14 +102,14 @@ bool validate_colors(void *params, void *err) {
     struct error_s *error = (struct error_s *)err;
 
     // validate: color
-    if (!validate_color(p->color, p->om, error)) {
+    if (!validate_color(p->color, p, error)) {
         write_errorf(error, "The value for 'foreground' is invalid. It can be either one of the 7 "
                             "named colors or a HTML color of the form '#xxxxxx'.\n");
         return false;
     }
 
     // validate: background color
-    if (!validate_color(p->bcolor, p->om, error)) {
+    if (!validate_color(p->bcolor, p, error)) {
         write_errorf(error, "The value for 'background' is invalid. It can be either one of the 7 "
                             "named colors or a HTML color of the form '#xxxxxx'.\n");
         return false;
@@ -109,7 +117,7 @@ bool validate_colors(void *params, void *err) {
 
     if (p->gradient) {
         for (int i = 0; i < p->gradient_count; i++) {
-            if (!validate_color(p->gradient_colors[i], p->om, error)) {
+            if (!validate_color(p->gradient_colors[i], p, error)) {
                 write_errorf(
                     error,
                     "Gradient color %d is invalid. It must be HTML color of the form '#xxxxxx'.\n",
@@ -267,6 +275,7 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         return false;
     }
 
+    // validate: colors
     if (!validate_colors(p, error)) {
         return false;
     }
