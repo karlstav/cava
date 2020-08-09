@@ -31,6 +31,7 @@ thanks to [anko](https://github.com/anko) for the gif, here is the [recipe]( htt
     - [Fedora](#fedora)
     - [Arch](#arch)
     - [Ubuntu](#ubuntu)
+    - [Debian (unstable)](#debian-unstable)
 - [Capturing audio](#capturing-audio)
   - [From Pulseaudio monitor source (Easy, default if supported)](#from-pulseaudio-monitor-source-easy-default-if-supported)
   - [From ALSA-loopback device (Tricky)](#from-alsa-loopback-device-tricky)
