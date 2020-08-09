@@ -212,11 +212,9 @@ Capturing audio
 
 ### From Pulseaudio monitor source (Easy, default if supported)
 
-First make sure you have installed pulseaudio dev files and that cava has been built with pulseaudio support (it should be automatically if the dev files are found).
+Just make sure you have installed pulseaudio dev files and that cava has been built with pulseaudio support (it should be automatically if the dev files are found).
 
-If you're lucky all you have to do is to uncomment this line in the config file under input:
-
-    method = pulse
+If you're lucky all you have to do is to run cava.
  
 If nothing happens you might have to use a different source than the default. The default might also be your microphone. Look at the config file for help. 
 
