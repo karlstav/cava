@@ -192,19 +192,21 @@ Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
 
 #### Ubuntu
 
-Michael Nguyen has added CAVA to his PPA, it can be installed with:
+Harshal Sheth has added CAVA to his PPA, it can be installed with:
 
-    sudo add-apt-repository ppa:tehtotalpwnage/ppa
-    sudo apt-get update
-    sudo apt-get install cava
-    
-For Ubuntu 18 or newer, you can use Harshal Sheth's PPA:
-
-    sudo add-apt-repository ppa:hsheth2/ppa
-    sudo apt-get update
-    sudo apt-get install cava
+    add-apt-repository ppa:hsheth2/ppa
+    apt-get update
+    apt-get install cava
 
 All distro specific instalation sources might be out of date.
+
+#### Debian (unstable)
+
+A package has now been introduced into Debian Unstable.
+
+    apt-get install cava
+    
+It should move into Debian testing and stable over time, and will therefore also move into the repositories of Ubuntu and its derivatives. For more information see issue #373.
 
 
 Capturing audio
