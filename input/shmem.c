@@ -55,19 +55,22 @@ void *input_shmem(void *data) {
 
     int16_t buffer[BUFSIZE];
 
-    time_t last_write = time(NULL);
-    write_to_fftw_input_buffers(mmap_area->buffer, BUFSIZE, audio);
+    for (int i = 0; i < BUFSIZE; i++)
+        buffer[i] = 0;
+
+  //  time_t last_write = time(NULL);
+  //  write_to_fftw_input_buffers(buffer, BUFSIZE, audio);
 
     while (!audio->terminate) {
-        if (mmap_area->updated > last_write) {
-            int n = 0;
-            for (int i = VB_OFFSET; i < BUFSIZE + VB_OFFSET; i++) {
-                buffer[n] = mmap_area->buffer[i];
-                n++;
-            }
-            write_to_fftw_input_buffers(buffer, BUFSIZE, audio);
-            last_write = time(NULL);
+        // if (mmap_area->updated > last_write) {
+        int n = 0;
+        for (int i = VB_OFFSET; i < BUFSIZE + VB_OFFSET; i++) {
+            buffer[n] = mmap_area->buffer[i];
+            n++;
         }
+        write_to_fftw_input_buffers(buffer, BUFSIZE, audio);
+        //    last_write = time(NULL);
+        //}
         nanosleep(&req, NULL);
     }
 
