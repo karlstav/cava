@@ -32,6 +32,7 @@ void *input_shmem(void *data) {
     vis_t *mmap_area;
     int fd; /* file descriptor to mmaped area */
     int mmap_count = sizeof(vis_t);
+    struct timespec req = {.tv_sec = 0, .tv_nsec = 0};
 
     printf("input_shmem: source: %s", audio->source);
 
@@ -50,20 +51,24 @@ void *input_shmem(void *data) {
     // printf("bufs: %u / run: %u / rate: %u\n",mmap_area->buf_size, mmap_area->running,
     // mmap_area->rate);
     audio->rate = mmap_area->rate;
+    req.tv_nsec = (1000000 / mmap_area->rate) * BUFSIZE;
+
+    int16_t buffer[BUFSIZE];
+
+    time_t last_write = time(NULL);
+    write_to_fftw_input_buffers(mmap_area->buffer, BUFSIZE, audio);
 
     while (!audio->terminate) {
-        write_to_fftw_input_buffers(mmap_area->buffer, BUFSIZE, audio);
-        /*
-                        for (i = VB_OFFSET; i < BUFSIZE+VB_OFFSET; i += 2) {
-                                if (audio->channels == 1) {
-                                        audio->audio_out_l[n] = (mmap_area->buffer[i] +
-           mmap_area->buffer[i + 1]) / 2; } else if (audio->channels == 2) { audio->audio_out_l[n] =
-           mmap_area->buffer[i]; audio->audio_out_r[n] = mmap_area->buffer[i + 1];
-                                }
-                                n++;
-                                if (n == audio->FFTbufferSize - 1) n = 0;
-                        }
-        */
+        if (mmap_area->updated > last_write) {
+            int n = 0;
+            for (int i = VB_OFFSET; i < BUFSIZE + VB_OFFSET; i++) {
+                buffer[n] = mmap_area->buffer[i];
+                n++;
+            }
+            write_to_fftw_input_buffers(buffer, BUFSIZE, audio);
+            last_write = time(NULL);
+        }
+        nanosleep(&req, NULL);
     }
 
     // cleanup
