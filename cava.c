@@ -507,6 +507,22 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
         case INPUT_SHMEM:
             thr_id = pthread_create(&p_thread, NULL, input_shmem, (void *)&audio);
+
+            n = 0;
+
+            while (audio.rate == 0) {
+                req.tv_sec = 0;
+                req.tv_nsec = 1000000;
+                nanosleep(&req, NULL);
+                n++;
+                if (n > 2000) {
+                    cleanup();
+                    fprintf(stderr, "could not get rate and/or format, problems with audio thread? "
+                                    "quiting...\n");
+                    exit(EXIT_FAILURE);
+                }
+            }
+            debug("got format: %d and rate %d\n", audio.format, audio.rate);
             // audio.rate = 44100;
             break;
 #ifdef PORTAUDIO
