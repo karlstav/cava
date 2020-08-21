@@ -64,7 +64,7 @@
 // int M = 8 * 1024;
 
 // used by sig handler
-// needs to know output mode in orer to clean up terminal
+// needs to know output mode in order to clean up terminal
 int output_mode;
 // whether we should reload the config or not
 int should_reload = 0;
@@ -162,7 +162,7 @@ int *separate_freq_bands(int FFTbassbufferSize, fftw_complex out_bass[FFTbassbuf
                 y[i] = hypot(out_treble[i][0], out_treble[i][1]);
             }
 
-            peak[n] += y[i]; // adding upp band
+            peak[n] += y[i]; // adding up band
         }
 
         peak[n] = peak[n] /
@@ -350,7 +350,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             // must set LC_ALL instead.
             // Attempting to set to en_US if not set, if that lang
             // is not installed and LANG is not set there will be
-            // no output, for mor info see #109 #344
+            // no output, for more info see #109 #344
             if (!getenv("LANG"))
                 setlocale(LC_ALL, "en_US.utf8");
             else
@@ -537,13 +537,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         if (p.upper_cut_off > audio.rate / 2) {
             cleanup();
-            fprintf(stderr, "higher cuttoff frequency can't be higher then sample rate / 2");
+            fprintf(stderr, "higher cuttoff frequency can't be higher than sample rate / 2");
             exit(EXIT_FAILURE);
         }
 
         bool reloadConf = false;
 
-        while (!reloadConf) { // jumbing back to this loop means that you resized the screen
+        while (!reloadConf) { // jumping back to this loop means that you resized the screen
             for (n = 0; n < 256; n++) {
                 bars_last[n] = 0;
                 previous_frame[n] = 0;
@@ -619,7 +619,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     p.autobars = 1;
             }
 
-            // getting orignial numbers of barss incase of resize
+            // getting original numbers of bars incase of resize
             if (p.autobars == 1) {
                 number_of_bars = (width + p.bar_spacing) / (p.bar_width + p.bar_spacing);
                 // if (p.bar_spacing != 0) number_of_bars = (width - number_of_bars * p.bar_spacing
@@ -659,7 +659,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
             if (p.stereo)
                 number_of_bars =
-                    number_of_bars / 2; // in stereo onle half number of number_of_bars per channel
+                    number_of_bars / 2; // in stereo only half number of number_of_bars per channel
 
             if (p.userEQ_enabled && (number_of_bars > 0)) {
                 userEQ_keys_to_bars_ratio =
@@ -682,8 +682,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     ((float)n + 1) / ((float)number_of_bars + 1) * frequency_constant;
                 cut_off_frequency[n] = p.upper_cut_off * pow(10, bar_distribution_coefficient);
                 relative_cut_off[n] = cut_off_frequency[n] / (audio.rate / 2);
-                // remember nyquist!, pr my calculations this should be rate/2
-                // and  nyquist freq in M/2 but testing shows it is not...
+                // remember nyquist!, per my calculations this should be rate/2
+                // and nyquist freq in M/2 but testing shows it is not...
                 // or maybe the nq freq is in M/4
 
                 eq[n] = pow(cut_off_frequency[n], 1);
@@ -996,7 +996,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     if (output_mode != OUTPUT_RAW && bars[n] < 1)
                         bars[n] = 1;
 
-                    // autmatic sens adjustment
+                    // automatic sense adjustment
                     if (p.autosens) {
                         if (bars[n] > height && senselow) {
                             p.sens = p.sens * 0.98;
@@ -1057,7 +1057,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         } // reloading config
         req.tv_sec = 0;
-        req.tv_nsec = 100; // waiting some time to make shure audio is ready
+        req.tv_nsec = 100; // waiting some time to make sure audio is ready
         nanosleep(&req, NULL);
 
         //**telling audio thread to terminate**//

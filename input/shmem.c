@@ -7,14 +7,13 @@
 
 typedef unsigned int u32_t;
 typedef short s16_t;
-
-// #define BUFSIZE 1024
-#define BUFSIZE 2048
-
 int rc;
 
+// See issue #375
+// Hard-coded in squeezelite's output_vis.c, but
+// this should be the same as mmap_area->buf_size
+// if you were to dynamically allocate.
 #define VIS_BUF_SIZE 16384
-#define VB_OFFSET 8192 + 4096
 
 typedef struct {
     pthread_rwlock_t rwlock;
@@ -32,7 +31,12 @@ void *input_shmem(void *data) {
     vis_t *mmap_area;
     int fd; /* file descriptor to mmaped area */
     int mmap_count = sizeof(vis_t);
+    int buf_frames;
     struct timespec req = {.tv_sec = 0, .tv_nsec = 0};
+
+    s16_t silence_buffer[VIS_BUF_SIZE];
+    for (int i = 0; i < VIS_BUF_SIZE; i++)
+        silence_buffer[i] = 0;
 
     printf("input_shmem: source: %s", audio->source);
 
@@ -48,16 +52,25 @@ void *input_shmem(void *data) {
             exit(EXIT_FAILURE);
         }
     }
-    // printf("bufs: %u / run: %u / rate: %u\n",mmap_area->buf_size, mmap_area->running,
-    // mmap_area->rate);
-    audio->rate = mmap_area->rate;
-    req.tv_nsec = (1000000 / mmap_area->rate) * BUFSIZE;
 
     while (!audio->terminate) {
-        if (mmap_area->running)
-            write_to_fftw_input_buffers(&mmap_area->buffer[VB_OFFSET], BUFSIZE, audio);
-
-        nanosleep(&req, NULL);
+        // audio rate may change between songs (e.g. 44.1kHz to 96kHz)
+        audio->rate = mmap_area->rate;
+        buf_frames = mmap_area->buf_size / 2;
+        // reread after the whole buffer has changed
+        req.tv_nsec = (1000000 / mmap_area->rate) * buf_frames;
+        if (mmap_area->running) {
+            // Frames are written by squeezelite to the buffer array starting from
+            // buffer[buf_index + 1], looping around the whole array.
+            // Thus, the starting position only affects the phase spectrum of the
+            // fft, and not the power spectrum, so we can just read in the
+            // whole buffer.
+            write_to_fftw_input_buffers(mmap_area->buffer, buf_frames, audio);
+            nanosleep(&req, NULL);
+        } else {
+            write_to_fftw_input_buffers(silence_buffer, buf_frames, audio);
+            nanosleep(&req, NULL);
+        }
     }
 
     // cleanup
