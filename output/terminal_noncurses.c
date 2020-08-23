@@ -164,20 +164,14 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
     same_line = 0;
     new_line = 0;
     cx = 0;
-    if (!tty) {
 
+    if (!tty) {
         // output: check if terminal has been resized
         ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
-
-        if ((int)dim.ws_row != lines || (int)dim.ws_col != width) {
-            free(frame_buffer);
-            free(spacestring);
-            for (int i = 0; i < 8; i++)
-                free(barstring[i]);
-
+        if ((int)dim.ws_row != lines || (int)dim.ws_col != width)
             return -1;
-        }
     }
+
     if (tty)
         ttyframe_buffer[0] = '\0';
     else if (!tty)
