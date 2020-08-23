@@ -35,7 +35,21 @@ int setecho(int fd, int onoff) {
     return 0;
 }
 
+// general: cleanup
+void free_terminal_noncurses(void) {
+    free(frame_buffer);
+    free(ttyframe_buffer);
+    free(spacestring);
+    free(ttyspacestring);
+    for (int i = 0; i < 8; i++) {
+        free(barstring[i]);
+        free(ttybarstring[i]);
+    }
+}
+
 int init_terminal_noncurses(int tty, int col, int bgcol, int width, int lines, int bar_width) {
+
+    free_terminal_noncurses();
 
     if (tty) {
 
@@ -270,16 +284,7 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
     return 0;
 }
 
-// general: cleanup
 void cleanup_terminal_noncurses(void) {
-    free(frame_buffer);
-    free(ttyframe_buffer);
-    free(spacestring);
-    free(ttyspacestring);
-    for (int i = 0; i < 8; i++) {
-        free(barstring[i]);
-        free(ttybarstring[i]);
-    }
     setecho(STDIN_FILENO, 1);
     printf("\033[0m\n");
     system("setfont  >/dev/null 2>&1");
