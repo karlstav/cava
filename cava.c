@@ -565,7 +565,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             case OUTPUT_NONCURSES:
                 get_terminal_dim_noncurses(&width, &lines);
                 init_terminal_noncurses(inAtty, p.col, p.bgcol, width, lines, p.bar_width);
-                height = (lines - 1) * 8;
+                height = lines * 8;
                 break;
 
             case OUTPUT_RAW:

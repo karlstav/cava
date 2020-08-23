@@ -124,7 +124,7 @@ int init_terminal_noncurses(int tty, int col, int bgcol, int width, int lines, i
         bgcol += 40;
         printf("\033[%dm", bgcol);
 
-        for (int n = (lines); n >= 0; n--) {
+        for (int n = lines; n >= 0; n--) {
             for (int i = 0; i < width; i++) {
 
                 printf(" "); // setting backround color
