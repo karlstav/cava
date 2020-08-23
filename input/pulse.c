@@ -14,6 +14,7 @@ void cb(__attribute__((unused)) pa_context *pulseaudio_context, const pa_server_
 
     // getting default sink name
     struct audio_data *audio = (struct audio_data *)userdata;
+    free(audio->source);
     audio->source = malloc(sizeof(char) * 1024);
 
     strcpy(audio->source, i->default_sink_name);
