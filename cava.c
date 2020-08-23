@@ -70,6 +70,8 @@ int output_mode;
 int should_reload = 0;
 // whether we should only reload colors or not
 int reload_colors = 0;
+// whether we should quit
+int should_quit = 0;
 
 // these variables are used only in main, but making them global
 // will allow us to not free them on exit without ASan complaining
@@ -820,10 +822,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     break;
 
                 case 'q':
-                    if (sourceIsAuto)
-                        free(audio.source);
-                    cleanup();
-                    return EXIT_SUCCESS;
+                    should_reload = 1;
+                    should_quit = 1;
                 }
 
                 if (should_reload) {
@@ -1091,6 +1091,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         fftw_destroy_plan(p_treble_r);
 
         cleanup();
+
+        if (should_quit)
+            return EXIT_SUCCESS;
 
         // fclose(fp);
     }
