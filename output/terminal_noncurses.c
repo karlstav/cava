@@ -41,11 +41,11 @@ int init_terminal_noncurses(int tty, int col, int bgcol, int width, int lines, i
 
         ttybuf_length = sizeof(char) * width * lines * 10;
         ttyframe_buffer = (char *)malloc(ttybuf_length);
-        ttyspacestring = (char *)malloc(sizeof(char) * bar_width);
+        ttyspacestring = (char *)malloc(sizeof(char) * (bar_width + 1));
 
         // clearing barstrings
         for (int n = 0; n < 8; n++) {
-            ttybarstring[n] = (char *)malloc(sizeof(char) * bar_width);
+            ttybarstring[n] = (char *)malloc(sizeof(char) * (bar_width + 1));
             ttybarstring[n][0] = '\0';
         }
         ttyspacestring[0] = '\0';
@@ -67,11 +67,11 @@ int init_terminal_noncurses(int tty, int col, int bgcol, int width, int lines, i
 
         buf_length = sizeof(wchar_t) * width * lines * 10;
         frame_buffer = (wchar_t *)malloc(buf_length);
-        spacestring = (wchar_t *)malloc(sizeof(wchar_t) * bar_width);
+        spacestring = (wchar_t *)malloc(sizeof(wchar_t) * (bar_width + 1));
 
         // clearing barstrings
         for (int n = 0; n < 8; n++) {
-            barstring[n] = (wchar_t *)malloc(sizeof(wchar_t) * bar_width);
+            barstring[n] = (wchar_t *)malloc(sizeof(wchar_t) * (bar_width + 1));
             barstring[n][0] = '\0';
         }
         spacestring[0] = '\0';
