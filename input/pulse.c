@@ -122,7 +122,6 @@ void *input_pulse(void *data) {
                 audio->source, pa_strerror(error));
 
         audio->terminate = 1;
-        pthread_exit(NULL);
     }
 
     while (!audio->terminate) {
@@ -130,7 +129,6 @@ void *input_pulse(void *data) {
             sprintf(audio->error_message, __FILE__ ": pa_simple_read() failed: %s\n",
                     pa_strerror(error));
             audio->terminate = 1;
-            pthread_exit(NULL);
         }
 
         // sorting out channels
@@ -139,5 +137,6 @@ void *input_pulse(void *data) {
     }
 
     pa_simple_free(s);
+    pthread_exit(NULL);
     return 0;
 }
