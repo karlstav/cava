@@ -420,7 +420,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     }
 
 #ifdef NCURSES
-    outputMethod = (char *)iniparser_getstring(ini, "output:method", "noncurses");
+    outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
 #endif
 #ifndef NCURSES
     outputMethod = (char *)iniparser_getstring(ini, "output:method", "noncurses");
