@@ -686,7 +686,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 // or maybe the nq freq is in M/4
 
                 eq[n] = pow(cut_off_frequency[n], 1);
-                eq[n] *= (float)height / pow(2, 28);
+
+                // the numbers that come out of the FFT are verry high
+                // the EQ is used to "normalize" them by dividing with this verry huge number
+                eq[n] *= (float)height / pow(2, 29);
+
                 if (p.userEQ_enabled)
                     eq[n] *= p.userEQ[(int)floor(((double)n) * userEQ_keys_to_bars_ratio)];
 
