@@ -868,8 +868,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 else
                     sleep = 0;
 
-                // process: if input was present for the last 5 seconds apply FFT to it
-                if (sleep < p.framerate * 5) {
+                // process: if input was present for the last 30 seconds apply FFT to it
+                if (sleep < p.framerate * 30) {
 
                     // process: execute FFT and sort frequency bands
                     if (p.stereo) {
@@ -905,7 +905,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                 } else { //**if in sleep mode wait and continue**//
 #ifndef NDEBUG
-                    printw("no sound detected for 5 sec, going to sleep mode\n");
+                    printw("no sound detected for 30 sec, going to sleep mode\n");
 #endif
                     // wait 0.1 sec, then check sound again.
                     sleep_mode_timer.tv_sec = 0;
