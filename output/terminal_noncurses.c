@@ -221,8 +221,9 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
                         cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "%s",
                                        ttybarstring[current_cell]);
 
-                    cx +=
-                        snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[%dC", bar_spacing);
+                    if (bar_spacing)
+                        cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[%dC",
+                                       bar_spacing);
                 } else if (!tty) {
                     if (same_line > 0) {
                         cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dB",
@@ -249,7 +250,9 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
                     else
                         cx += swprintf(frame_buffer + cx, buf_length - cx, barstring[current_cell]);
 
-                    cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dC", bar_spacing);
+                    if (bar_spacing)
+                        cx +=
+                            swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dC", bar_spacing);
                 }
             }
         }
