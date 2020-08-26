@@ -766,7 +766,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 number_of_bars = number_of_bars * 2;
 
             bool resizeTerminal = false;
-            fcntl(0, F_SETFL, O_NONBLOCK);
+            // fcntl(0, F_SETFL, O_NONBLOCK);
 
             if (p.framerate <= 1) {
                 req.tv_sec = 1 / (float)p.framerate;
@@ -782,8 +782,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 if (output_mode == OUTPUT_NCURSES)
                     ch = getch();
 #endif
+                /*
                 if (output_mode == OUTPUT_NONCURSES)
                     ch = fgetc(stdin);
+                */
 
                 switch (ch) {
                 case 65: // key up
