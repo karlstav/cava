@@ -7,7 +7,7 @@ void *input_sndio(void *data) {
     struct audio_data *audio = (struct audio_data *)data;
     struct sio_par par;
     struct sio_hdl *hdl;
-    int16_t buf[256];
+    int16_t buf[audio->FFTtreblebufferSize / 2];
     unsigned int channels;
 
     sio_initpar(&par);
@@ -34,7 +34,7 @@ void *input_sndio(void *data) {
         exit(EXIT_FAILURE);
     }
 
-    uint16_t frames = (sizeof(buf) / sizeof(buf[0])) / channels;
+    uint16_t frames = (sizeof(buf) / sizeof(buf[0])) / 2;
     while (audio->terminate != 1) {
         if (sio_read(hdl, buf, sizeof(buf)) == 0) {
             fprintf(stderr, __FILE__ ": sio_read() failed: %s\n", strerror(errno));

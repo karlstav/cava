@@ -394,15 +394,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         // BASS
         // audio.FFTbassbufferSize =  audio.rate / 20; // audio.FFTbassbufferSize;
 
-        audio.in_bass_r = fftw_alloc_real(2 * (audio.FFTbassbufferSize / 2 + 1));
-        audio.in_bass_l = fftw_alloc_real(2 * (audio.FFTbassbufferSize / 2 + 1));
-        memset(audio.in_bass_r, 0, 2 * (audio.FFTbassbufferSize / 2 + 1) * sizeof(double));
-        memset(audio.in_bass_l, 0, 2 * (audio.FFTbassbufferSize / 2 + 1) * sizeof(double));
+        audio.in_bass_r = fftw_alloc_real(audio.FFTbassbufferSize);
+        audio.in_bass_l = fftw_alloc_real(audio.FFTbassbufferSize);
+        audio.in_bass_r_raw = fftw_alloc_real(audio.FFTbassbufferSize);
+        audio.in_bass_l_raw = fftw_alloc_real(audio.FFTbassbufferSize);
 
-        out_bass_l = fftw_alloc_complex(2 * (audio.FFTbassbufferSize / 2 + 1));
-        out_bass_r = fftw_alloc_complex(2 * (audio.FFTbassbufferSize / 2 + 1));
-        memset(out_bass_l, 0, 2 * (audio.FFTbassbufferSize / 2 + 1) * sizeof(fftw_complex));
-        memset(out_bass_r, 0, 2 * (audio.FFTbassbufferSize / 2 + 1) * sizeof(fftw_complex));
+        out_bass_l = fftw_alloc_complex(audio.FFTbassbufferSize / 2 + 1);
+        out_bass_r = fftw_alloc_complex(audio.FFTbassbufferSize / 2 + 1);
+        memset(out_bass_l, 0, (audio.FFTbassbufferSize / 2 + 1) * sizeof(fftw_complex));
+        memset(out_bass_r, 0, (audio.FFTbassbufferSize / 2 + 1) * sizeof(fftw_complex));
 
         p_bass_l = fftw_plan_dft_r2c_1d(audio.FFTbassbufferSize, audio.in_bass_l, out_bass_l,
                                         FFTW_MEASURE);
@@ -411,15 +411,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         // MID
         // audio.FFTmidbufferSize =  audio.rate / bass_cut_off; // audio.FFTbassbufferSize;
-        audio.in_mid_r = fftw_alloc_real(2 * (audio.FFTmidbufferSize / 2 + 1));
-        audio.in_mid_l = fftw_alloc_real(2 * (audio.FFTmidbufferSize / 2 + 1));
-        memset(audio.in_mid_r, 0, 2 * (audio.FFTmidbufferSize / 2 + 1) * sizeof(double));
-        memset(audio.in_mid_l, 0, 2 * (audio.FFTmidbufferSize / 2 + 1) * sizeof(double));
+        audio.in_mid_r = fftw_alloc_real(audio.FFTmidbufferSize);
+        audio.in_mid_l = fftw_alloc_real(audio.FFTmidbufferSize);
+        audio.in_mid_r_raw = fftw_alloc_real(audio.FFTmidbufferSize);
+        audio.in_mid_l_raw = fftw_alloc_real(audio.FFTmidbufferSize);
 
-        out_mid_l = fftw_alloc_complex(2 * (audio.FFTmidbufferSize / 2 + 1));
-        out_mid_r = fftw_alloc_complex(2 * (audio.FFTmidbufferSize / 2 + 1));
-        memset(out_mid_l, 0, 2 * (audio.FFTmidbufferSize / 2 + 1) * sizeof(fftw_complex));
-        memset(out_mid_r, 0, 2 * (audio.FFTmidbufferSize / 2 + 1) * sizeof(fftw_complex));
+        out_mid_l = fftw_alloc_complex(audio.FFTmidbufferSize / 2 + 1);
+        out_mid_r = fftw_alloc_complex(audio.FFTmidbufferSize / 2 + 1);
+        memset(out_mid_l, 0, (audio.FFTmidbufferSize / 2 + 1) * sizeof(fftw_complex));
+        memset(out_mid_r, 0, (audio.FFTmidbufferSize / 2 + 1) * sizeof(fftw_complex));
 
         p_mid_l =
             fftw_plan_dft_r2c_1d(audio.FFTmidbufferSize, audio.in_mid_l, out_mid_l, FFTW_MEASURE);
@@ -428,15 +428,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         // TRIEBLE
         // audio.FFTtreblebufferSize =  audio.rate / treble_cut_off; // audio.FFTbassbufferSize;
-        audio.in_treble_r = fftw_alloc_real(2 * (audio.FFTtreblebufferSize / 2 + 1));
-        audio.in_treble_l = fftw_alloc_real(2 * (audio.FFTtreblebufferSize / 2 + 1));
-        memset(audio.in_treble_r, 0, 2 * (audio.FFTtreblebufferSize / 2 + 1) * sizeof(double));
-        memset(audio.in_treble_l, 0, 2 * (audio.FFTtreblebufferSize / 2 + 1) * sizeof(double));
+        audio.in_treble_r = fftw_alloc_real(audio.FFTtreblebufferSize);
+        audio.in_treble_l = fftw_alloc_real(audio.FFTtreblebufferSize);
+        audio.in_treble_r_raw = fftw_alloc_real(audio.FFTtreblebufferSize);
+        audio.in_treble_l_raw = fftw_alloc_real(audio.FFTtreblebufferSize);
 
-        out_treble_l = fftw_alloc_complex(2 * (audio.FFTtreblebufferSize / 2 + 1));
-        out_treble_r = fftw_alloc_complex(2 * (audio.FFTtreblebufferSize / 2 + 1));
-        memset(out_treble_l, 0, 2 * (audio.FFTtreblebufferSize / 2 + 1) * sizeof(fftw_complex));
-        memset(out_treble_r, 0, 2 * (audio.FFTtreblebufferSize / 2 + 1) * sizeof(fftw_complex));
+        out_treble_l = fftw_alloc_complex(audio.FFTtreblebufferSize / 2 + 1);
+        out_treble_r = fftw_alloc_complex(audio.FFTtreblebufferSize / 2 + 1);
+        memset(out_treble_l, 0, (audio.FFTtreblebufferSize / 2 + 1) * sizeof(fftw_complex));
+        memset(out_treble_r, 0, (audio.FFTtreblebufferSize / 2 + 1) * sizeof(fftw_complex));
 
         p_treble_l = fftw_plan_dft_r2c_1d(audio.FFTtreblebufferSize, audio.in_treble_l,
                                           out_treble_l, FFTW_MEASURE);
@@ -623,7 +623,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             default:
                 exit(EXIT_FAILURE); // Can't happen.
             }
-
 
             // handle for user setting too many bars
             if (p.fixedbars) {

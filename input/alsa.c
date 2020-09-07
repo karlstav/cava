@@ -97,7 +97,6 @@ const int size) {
         }
 }
 */
-#define FRAMES_NUMBER 256
 
 void *input_alsa(void *data) {
     int err;
@@ -105,7 +104,7 @@ void *input_alsa(void *data) {
     snd_pcm_t *handle;
     snd_pcm_uframes_t buffer_size;
     snd_pcm_uframes_t period_size;
-    snd_pcm_uframes_t frames = FRAMES_NUMBER;
+    snd_pcm_uframes_t frames = audio->FFTtreblebufferSize;
 
     initialize_audio_parameters(&handle, audio, &frames);
     snd_pcm_get_params(handle, &buffer_size, &period_size);

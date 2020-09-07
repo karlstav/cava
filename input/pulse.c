@@ -5,7 +5,7 @@
 #include <pulse/pulseaudio.h>
 #include <pulse/simple.h>
 
-#define BUFFERSIZE 4096
+#define BUFFERSIZE 1024
 
 pa_mainloop *m_pulseaudio_mainloop;
 
@@ -100,7 +100,8 @@ void getPulseDefaultSink(void *data) {
 void *input_pulse(void *data) {
 
     struct audio_data *audio = (struct audio_data *)data;
-    int16_t buf[BUFFERSIZE / 2];
+    uint16_t frames = audio->FFTtreblebufferSize;
+    int16_t buf[frames * 2];
 
     /* The sample type to use */
     static const pa_sample_spec ss = {.format = PA_SAMPLE_S16LE, .rate = 44100, .channels = 2};
@@ -109,8 +110,6 @@ void *input_pulse(void *data) {
 
     static const pa_buffer_attr pb = {.maxlength = (uint32_t)-1, // BUFSIZE * 2,
                                       .fragsize = BUFFERSIZE};
-
-    uint16_t frames = BUFFERSIZE / 4;
 
     pa_simple *s = NULL;
     int error;
