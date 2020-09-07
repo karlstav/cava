@@ -20,6 +20,10 @@ struct colors {
 
 #define MAX_COLOR_REDEFINITION 256
 
+const wchar_t *bar_heights[] = {L"\u2581", L"\u2582", L"\u2583", L"\u2584",
+                                L"\u2585", L"\u2586", L"\u2587", L"\u2588"};
+int num_bar_heights = (sizeof(bar_heights) / sizeof(bar_heights[0]));
+
 // static struct colors the_color_redefinitions[MAX_COLOR_REDEFINITION];
 
 static void parse_color(char *color_string, struct colors *color) {
@@ -188,24 +192,25 @@ void get_terminal_dim_ncurses(int *width, int *height) {
 #define TERMINAL_RESIZED -1
 
 int draw_terminal_ncurses(int is_tty, int terminal_height, int terminal_width, int bars_count,
-                          int bar_width, int bar_spacing, int rest, const int f[200],
-                          int flastd[200], int gradient) {
+                          int bar_width, int bar_spacing, int rest, const int bars[256],
+                          int previous_frame[200], int gradient, int x_axis_info) {
     const int height = terminal_height - 1;
-    const wchar_t *bar_heights[] = {L"\u2581", L"\u2582", L"\u2583", L"\u2584",
-                                    L"\u2585", L"\u2586", L"\u2587", L"\u2588"};
-    int num_bar_heights = (sizeof(bar_heights) / sizeof(bar_heights[0]));
 
     // output: check if terminal has been resized
     if (!is_tty) {
+        if (x_axis_info)
+            terminal_height++;
         if (LINES != terminal_height || COLS != terminal_width) {
             return TERMINAL_RESIZED;
+            if (x_axis_info)
+                terminal_height--;
         }
     }
 
     // Compute how much of the screen we possibly need to update ahead-of-time.
     int max_update_y = 0;
     for (int bar = 0; bar < bars_count; bar++) {
-        max_update_y = max(max_update_y, max(f[bar], flastd[bar]));
+        max_update_y = max(max_update_y, max(bars[bar], previous_frame[bar]));
     }
 
     max_update_y = (max_update_y + num_bar_heights) / num_bar_heights;
@@ -216,20 +221,20 @@ int draw_terminal_ncurses(int is_tty, int terminal_height, int terminal_width, i
         }
 
         for (int bar = 0; bar < bars_count; bar++) {
-            if (f[bar] == flastd[bar]) {
+            if (bars[bar] == previous_frame[bar]) {
                 continue;
             }
 
             int cur_col = bar * bar_width + bar * bar_spacing + rest;
-            int f_cell = (f[bar] - 1) / num_bar_heights;
-            int f_last_cell = (flastd[bar] - 1) / num_bar_heights;
+            int f_cell = (bars[bar] - 1) / num_bar_heights;
+            int f_last_cell = (previous_frame[bar] - 1) / num_bar_heights;
 
             if (f_cell >= y) {
                 int bar_step;
 
                 if (f_cell == y) {
                     // The "cap" of the bar occurs at this [y].
-                    bar_step = (f[bar] - 1) % num_bar_heights;
+                    bar_step = (bars[bar] - 1) % num_bar_heights;
                 } else if (f_last_cell <= y) {
                     // The bar is full at this [y].
                     bar_step = num_bar_heights - 1;
@@ -240,7 +245,7 @@ int draw_terminal_ncurses(int is_tty, int terminal_height, int terminal_width, i
 
                 for (int col = cur_col, i = 0; i < bar_width; i++, col++) {
                     if (is_tty) {
-                        mvaddch(height - y, col, '1' + bar_step);
+                        mvaddch(height - y, col, 0x41 + bar_step);
                     } else {
                         mvaddwstr(height - y, col, bar_heights[bar_step]);
                     }

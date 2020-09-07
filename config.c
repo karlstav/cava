@@ -22,7 +22,7 @@ enum input_method default_methods[] = {
     INPUT_PULSE,
 };
 
-char *outputMethod, *channels;
+char *outputMethod, *channels, *xaxisScale;
 
 const char *input_method_names[] = {
     "fifo", "portaudio", "alsa", "pulse", "sndio", "shmem",
@@ -234,6 +234,17 @@ bool validate_config(struct config_params *p, struct error_s *error) {
 #endif
     }
 
+    p->xaxis = NONE;
+    if (strcmp(xaxisScale, "none") == 0) {
+        p->xaxis = NONE;
+    }
+    if (strcmp(xaxisScale, "frequency") == 0) {
+        p->xaxis = FREQUENCY;
+    }
+    if (strcmp(xaxisScale, "note") == 0) {
+        p->xaxis = NOTE;
+    }
+
     // validate: output channels
     p->stereo = -1;
     if (strcmp(channels, "mono") == 0) {
@@ -426,6 +437,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     outputMethod = (char *)iniparser_getstring(ini, "output:method", "noncurses");
 #endif
 
+    xaxisScale = (char *)iniparser_getstring(ini, "output:xaxis", "none");
     p->monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 0);
     p->waves = iniparser_getint(ini, "smoothing:waves", 0);
     p->integral = iniparser_getdouble(ini, "smoothing:integral", 77);

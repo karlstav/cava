@@ -67,14 +67,14 @@ int init_terminal_noncurses(int tty, int col, int bgcol, int width, int lines, i
 
         // creating barstrings for drawing
         for (int n = 0; n < bar_width; n++) {
-            strcat(ttybarstring[0], "8");
-            strcat(ttybarstring[1], "1");
-            strcat(ttybarstring[2], "2");
-            strcat(ttybarstring[3], "3");
-            strcat(ttybarstring[4], "4");
-            strcat(ttybarstring[5], "5");
-            strcat(ttybarstring[6], "6");
-            strcat(ttybarstring[7], "7");
+            strcat(ttybarstring[0], "H");
+            strcat(ttybarstring[1], "A");
+            strcat(ttybarstring[2], "B");
+            strcat(ttybarstring[3], "C");
+            strcat(ttybarstring[4], "D");
+            strcat(ttybarstring[5], "E");
+            strcat(ttybarstring[6], "F");
+            strcat(ttybarstring[7], "G");
             strcat(ttyspacestring, " ");
         }
     } else if (!tty) {
@@ -155,7 +155,8 @@ void get_terminal_dim_noncurses(int *width, int *lines) {
 }
 
 int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, int bar_width,
-                            int bar_spacing, int rest, int bars[200], int previous_frame[200]) {
+                            int bar_spacing, int rest, int bars[256], int previous_frame[256],
+                            int x_axis_info) {
 
     int current_cell, prev_cell, same_line, new_line, cx;
 
@@ -168,8 +169,12 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
     if (!tty) {
         // output: check if terminal has been resized
         ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
-        if ((int)dim.ws_row != lines || (int)dim.ws_col != width)
+        if (x_axis_info)
+            lines++;
+        if ((int)dim.ws_row != (lines) || (int)dim.ws_col != width)
             return -1;
+        if (x_axis_info)
+            lines--;
     }
 
     if (tty)
@@ -206,7 +211,7 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
                         same_bar = 0;
                     }
 
-                    if (!center_adjusted) {
+                    if (!center_adjusted && rest) {
                         cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[%dC", rest);
                         center_adjusted = 1;
                     }
