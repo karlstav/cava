@@ -8,7 +8,6 @@ void *input_sndio(void *data) {
     struct sio_par par;
     struct sio_hdl *hdl;
     int16_t buf[audio->FFTtreblebufferSize / 2];
-    unsigned int channels;
 
     sio_initpar(&par);
     par.sig = 1;
