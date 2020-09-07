@@ -41,7 +41,9 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
     }
 
     if (inputBuffer == NULL) {
-        write_to_fftw_input_buffers(silence_buffer, framesToCalc, audio);
+        pthread_mutex_lock(&lock);
+        write_to_fftw_input_buffers(framesToCalc, silence_buffer, audio);
+        pthread_mutex_unlock(&lock);
         /*
                         for(i=0; i<framesToCalc; i++) {
                                 if(audio->channels == 1) audio->audio_out_l[n] = SAMPLE_SILENCE;
@@ -53,7 +55,7 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
                         }
         */
     } else {
-        write_to_fftw_input_buffers(rptr, framesToCalc, audio);
+        write_to_fftw_input_buffers(framesToCalc, rptr, audio);
         /*
                         for(i=0; i<framesToCalc; i++) {
                                 if(audio->channels == 1) {

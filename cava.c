@@ -63,6 +63,7 @@
 // struct termios oldtio, newtio;
 // int M = 8 * 1024;
 
+pthread_mutex_t lock;
 // used by sig handler
 // needs to know output mode in order to clean up terminal
 int output_mode;
@@ -875,12 +876,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                     // process: execute FFT and sort frequency bands
                     if (p.stereo) {
+                        pthread_mutex_lock(&lock);
                         fftw_execute(p_bass_l);
                         fftw_execute(p_bass_r);
                         fftw_execute(p_mid_l);
                         fftw_execute(p_mid_r);
                         fftw_execute(p_treble_l);
                         fftw_execute(p_treble_r);
+                        pthread_mutex_unlock(&lock);
 
                         bars_left = separate_freq_bands(
                             audio.FFTbassbufferSize, out_bass_l, audio.FFTmidbufferSize, out_mid_l,
@@ -895,9 +898,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                             FFTbuffer_upper_cut_off, eq, RIGHT_CHANNEL, p.sens, p.ignore);
 
                     } else {
+                        pthread_mutex_lock(&lock);
                         fftw_execute(p_bass_l);
                         fftw_execute(p_mid_l);
                         fftw_execute(p_treble_l);
+                        pthread_mutex_unlock(&lock);
+
                         bars_mono = separate_freq_bands(
                             audio.FFTbassbufferSize, out_bass_l, audio.FFTmidbufferSize, out_mid_l,
                             audio.FFTtreblebufferSize, out_treble_l, bass_cut_off_bar,

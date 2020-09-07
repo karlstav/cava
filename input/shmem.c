@@ -65,10 +65,12 @@ void *input_shmem(void *data) {
             // Thus, the starting position only affects the phase spectrum of the
             // fft, and not the power spectrum, so we can just read in the
             // whole buffer.
-            write_to_fftw_input_buffers(mmap_area->buffer, buf_frames, audio);
+            pthread_mutex_lock(&lock);
+            write_to_fftw_input_buffers(buf_frames, mmap_area->buffer, audio);
+            pthread_mutex_unlock(&lock);
             nanosleep(&req, NULL);
         } else {
-            write_to_fftw_input_buffers(silence_buffer, buf_frames, audio);
+            write_to_fftw_input_buffers(buf_frames, silence_buffer, audio);
             nanosleep(&req, NULL);
         }
     }

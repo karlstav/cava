@@ -131,9 +131,9 @@ void *input_pulse(void *data) {
             audio->terminate = 1;
         }
 
-        // sorting out channels
-
-        write_to_fftw_input_buffers(buf, frames, data);
+        pthread_mutex_lock(&lock);
+        write_to_fftw_input_buffers(frames, buf, data);
+        pthread_mutex_unlock(&lock);
     }
 
     pa_simple_free(s);

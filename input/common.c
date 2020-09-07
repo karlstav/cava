@@ -11,7 +11,7 @@ void reset_output_buffers(struct audio_data *data) {
     memset(data->in_treble_l, 0, sizeof(double) * 2 * (data->FFTtreblebufferSize / 2 + 1));
 }
 
-int write_to_fftw_input_buffers(int16_t buf[], int16_t frames, void *data) {
+int write_to_fftw_input_buffers(int16_t frames, int16_t buf[frames * 2], void *data) {
     struct audio_data *audio = (struct audio_data *)data;
 
     for (uint16_t i = 0; i < frames * 2; i += 2) {

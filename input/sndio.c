@@ -41,19 +41,9 @@ void *input_sndio(void *data) {
             exit(EXIT_FAILURE);
         }
 
-        write_to_fftw_input_buffers(buf, frames, audio);
-        /*
-                        for (i = 0; i < sizeof(buf)/sizeof(buf[0]); i += 2) {
-                                if (par.rchan == 1) {
-                                        // sndiod has already taken care of averaging the samples
-                                        audio->audio_out_l[n] = buf[i];
-                                } else if (par.rchan == 2) {
-                                        audio->audio_out_l[n] = buf[i];
-                                        audio->audio_out_r[n] = buf[i + 1];
-                                }
-                                n = (n + 1) % audio->FFTbufferSize;
-                        }
-        */
+        pthread_mutex_lock(&lock);
+        write_to_fftw_input_buffers(frames, buf, audio);
+        pthread_mutex_unlock(&lock);
     }
 
     sio_stop(hdl);
