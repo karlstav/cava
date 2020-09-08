@@ -19,6 +19,8 @@ void reset_output_buffers(struct audio_data *data) {
 }
 
 int write_to_fftw_input_buffers(int16_t frames, int16_t buf[frames * 2], void *data) {
+    if (frames == 0)
+        return 0;
     struct audio_data *audio = (struct audio_data *)data;
 
     for (uint16_t n = audio->FFTbassbufferSize; n > frames; n = n - frames) {

@@ -14,8 +14,12 @@ typedef struct {
     SAMPLE *recordedSamples;
 } paTestData;
 
+
+#define AUDIO_BUFFER_SIZE 1024
+int16_t audio_buffer[AUDIO_BUFFER_SIZE];
+
 static struct audio_data *audio;
-// static int n = 0;
+static int n = 0;
 
 static int recordCallback(const void *inputBuffer, void *outputBuffer,
                           unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo *timeInfo,
@@ -26,7 +30,6 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
     // long i;
     int finished;
     unsigned long framesLeft = data->maxFrameIndex - data->frameIndex;
-    int16_t silence_buffer[PORTBUFSIZE] = {SAMPLE_SILENCE};
     (void)outputBuffer; // Prevent unused variable warnings.
     (void)timeInfo;
     (void)statusFlags;
@@ -40,36 +43,28 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
         finished = paContinue;
     }
 
-    if (inputBuffer == NULL) {
-        pthread_mutex_lock(&lock);
-        write_to_fftw_input_buffers(framesToCalc, silence_buffer, audio);
-        pthread_mutex_unlock(&lock);
-        /*
-                        for(i=0; i<framesToCalc; i++) {
-                                if(audio->channels == 1) audio->audio_out_l[n] = SAMPLE_SILENCE;
-                                if(audio->channels == 2) {
-                                        audio->audio_out_l[n] = SAMPLE_SILENCE;
-                                        audio->audio_out_r[n] = SAMPLE_SILENCE;
-                                }
-                                if(n == PORTBUFSIZE-1) n = 0;
-                        }
-        */
-    } else {
-        write_to_fftw_input_buffers(framesToCalc, rptr, audio);
-        /*
-                        for(i=0; i<framesToCalc; i++) {
-                                if(audio->channels == 1) {
-                                        audio->audio_out_l[n] = (rptr[0] + rptr[1]) / 2;
-                                        rptr += 2;
-                                }
-                                if(audio->channels == 2) {
-                                        audio->audio_out_l[n] = *rptr++;
-                                        audio->audio_out_r[n] = *rptr++;
-                                }
-                                n++;
-                                if(n == PORTBUFSIZE-1) n = 0;
-                        }
-        */
+	if (inputBuffer == NULL) {
+		for(int i = 0; i < framesToCalc; i++) {
+			audio_buffer[n] = SAMPLE_SILENCE;
+			n++;
+			if(n == AUDIO_BUFFER_SIZE - 1){
+				n = 0;
+				pthread_mutex_lock(&lock);
+				write_to_fftw_input_buffers(AUDIO_BUFFER_SIZE / 2, audio_buffer, audio);
+				pthread_mutex_unlock(&lock);
+			} 
+		}
+	} else {
+		for(int i = 0; i < framesToCalc; i++) {
+			audio_buffer[n] = *rptr++;
+			n++;
+			if (n == AUDIO_BUFFER_SIZE - 1) {
+				n = 0;
+				pthread_mutex_lock(&lock);
+				write_to_fftw_input_buffers(AUDIO_BUFFER_SIZE / 2, audio_buffer, audio);
+				pthread_mutex_unlock(&lock);
+			} 
+		}
     }
 
     data->frameIndex += framesToCalc;
