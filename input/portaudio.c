@@ -14,7 +14,6 @@ typedef struct {
     SAMPLE *recordedSamples;
 } paTestData;
 
-
 #define AUDIO_BUFFER_SIZE 1024
 int16_t audio_buffer[AUDIO_BUFFER_SIZE];
 
@@ -43,28 +42,28 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
         finished = paContinue;
     }
 
-	if (inputBuffer == NULL) {
-		for(int i = 0; i < framesToCalc; i++) {
-			audio_buffer[n] = SAMPLE_SILENCE;
-			n++;
-			if(n == AUDIO_BUFFER_SIZE - 1){
-				n = 0;
-				pthread_mutex_lock(&lock);
-				write_to_fftw_input_buffers(AUDIO_BUFFER_SIZE / 2, audio_buffer, audio);
-				pthread_mutex_unlock(&lock);
-			} 
-		}
-	} else {
-		for(int i = 0; i < framesToCalc; i++) {
-			audio_buffer[n] = *rptr++;
-			n++;
-			if (n == AUDIO_BUFFER_SIZE - 1) {
-				n = 0;
-				pthread_mutex_lock(&lock);
-				write_to_fftw_input_buffers(AUDIO_BUFFER_SIZE / 2, audio_buffer, audio);
-				pthread_mutex_unlock(&lock);
-			} 
-		}
+    if (inputBuffer == NULL) {
+        for (int i = 0; i < framesToCalc; i++) {
+            audio_buffer[n] = SAMPLE_SILENCE;
+            n++;
+            if (n == AUDIO_BUFFER_SIZE - 1) {
+                n = 0;
+                pthread_mutex_lock(&lock);
+                write_to_fftw_input_buffers(AUDIO_BUFFER_SIZE / 2, audio_buffer, audio);
+                pthread_mutex_unlock(&lock);
+            }
+        }
+    } else {
+        for (int i = 0; i < framesToCalc; i++) {
+            audio_buffer[n] = *rptr++;
+            n++;
+            if (n == AUDIO_BUFFER_SIZE - 1) {
+                n = 0;
+                pthread_mutex_lock(&lock);
+                write_to_fftw_input_buffers(AUDIO_BUFFER_SIZE / 2, audio_buffer, audio);
+                pthread_mutex_unlock(&lock);
+            }
+        }
     }
 
     data->frameIndex += framesToCalc;
