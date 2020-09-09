@@ -141,8 +141,8 @@ void *input_portaudio(void *audiodata) {
     inputParameters.hostApiSpecificStreamInfo = NULL;
 
     // set it to work
-    err = Pa_OpenStream(&stream, &inputParameters, NULL, audio->rate, audio->FFTtreblebufferSize, paClipOff,
-                        recordCallback, &data);
+    err = Pa_OpenStream(&stream, &inputParameters, NULL, audio->rate, audio->FFTtreblebufferSize,
+                        paClipOff, recordCallback, &data);
     if (err != paNoError) {
         fprintf(stderr, "Error: failure in opening stream (%x)\n", err);
         exit(EXIT_FAILURE);
