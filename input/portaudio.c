@@ -13,11 +13,8 @@ typedef struct {
     SAMPLE *recordedSamples;
 } paTestData;
 
-#define AUDIO_BUFFER_SIZE 1024
-int16_t audio_buffer[AUDIO_BUFFER_SIZE];
-
 static struct audio_data *audio;
-static int n = 0;
+int16_t silence_buffer[8092] = {SAMPLE_SILENCE};
 
 static int recordCallback(const void *inputBuffer, void *outputBuffer,
                           unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo *timeInfo,
@@ -25,7 +22,6 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
     paTestData *data = (paTestData *)userData;
     SAMPLE *rptr = (SAMPLE *)inputBuffer;
     long framesToCalc;
-    // long i;
     int finished;
     unsigned long framesLeft = data->maxFrameIndex - data->frameIndex;
     (void)outputBuffer; // Prevent unused variable warnings.
@@ -42,27 +38,13 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
     }
 
     if (inputBuffer == NULL) {
-        for (int i = 0; i < framesToCalc * 2; i++) {
-            audio_buffer[n] = SAMPLE_SILENCE;
-            n++;
-            if (n == AUDIO_BUFFER_SIZE - 1) {
-                n = 0;
-                pthread_mutex_lock(&lock);
-                write_to_fftw_input_buffers(AUDIO_BUFFER_SIZE / 2, audio_buffer, audio);
-                pthread_mutex_unlock(&lock);
-            }
-        }
+        pthread_mutex_lock(&lock);
+        write_to_fftw_input_buffers(framesToCalc, silence_buffer, audio);
+        pthread_mutex_unlock(&lock);
     } else {
-        for (int i = 0; i < framesToCalc * 2; i++) {
-            audio_buffer[n] = *rptr++;
-            n++;
-            if (n == AUDIO_BUFFER_SIZE - 1) {
-                n = 0;
-                pthread_mutex_lock(&lock);
-                write_to_fftw_input_buffers(AUDIO_BUFFER_SIZE / 2, audio_buffer, audio);
-                pthread_mutex_unlock(&lock);
-            }
-        }
+        pthread_mutex_lock(&lock);
+        write_to_fftw_input_buffers(framesToCalc, rptr, audio);
+        pthread_mutex_unlock(&lock);
     }
 
     data->frameIndex += framesToCalc;
@@ -70,6 +52,10 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
         data->frameIndex = 0;
         finished = paContinue;
     }
+
+    if (audio->terminate == 1)
+        finished = paComplete;
+
     return finished;
 }
 
@@ -140,7 +126,7 @@ void *input_portaudio(void *audiodata) {
     inputParameters.device = deviceNum;
 
     // set parameters
-    data.maxFrameIndex = audio->FFTtreblebufferSize * 1024; //just read for a while, we are going to read until aborted so I dont really se the point of this setting.
+    data.maxFrameIndex = audio->FFTtreblebufferSize * 1024;
     data.recordedSamples = (SAMPLE *)malloc(2 * data.maxFrameIndex * sizeof(SAMPLE));
     if (data.recordedSamples == NULL) {
         fprintf(stderr, "Error: failure in memory allocation!\n");
@@ -174,7 +160,6 @@ void *input_portaudio(void *audiodata) {
 
         //  record
         while ((err = Pa_IsStreamActive(stream)) == 1) {
-            Pa_Sleep(5);
             if (audio->terminate == 1)
                 break;
         }
