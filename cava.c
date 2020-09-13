@@ -981,7 +981,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     sleep = 0;
 
                 // process: if input was present for the last 30 seconds apply FFT to it
-                if (sleep < p.framerate * 30) {
+                if (!p.sleep_timer || sleep < p.framerate * p.sleep_timer) {
 
                     // process: execute FFT and sort frequency bands
                     if (p.stereo) {
@@ -1024,9 +1024,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #ifndef NDEBUG
                     printw("no sound detected for 30 sec, going to sleep mode\n");
 #endif
-                    // wait 0.1 sec, then check sound again.
-                    sleep_mode_timer.tv_sec = 0;
-                    sleep_mode_timer.tv_nsec = 100000000;
+                    // wait 1 sec, then check sound again.
+                    sleep_mode_timer.tv_sec = 1;
                     nanosleep(&sleep_mode_timer, NULL);
                     continue;
                 }
@@ -1130,6 +1129,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 mvprintw(n + 1, 0, "sensitivity %.10e", p.sens);
                 mvprintw(n + 2, 0, "min value: %d\n", minvalue); // checking maxvalue 10000
                 mvprintw(n + 3, 0, "max value: %d\n", maxvalue); // checking maxvalue 10000
+                (void)rc;
+                (void)x_axis_info;
 #endif
 
 // output: draw processed input

@@ -317,14 +317,6 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     // setting sens
     p->sens = p->sens / 100;
 
-    // validate FFT buffer
-    if (p->FFTbufferSize >= 8 && p->FFTbufferSize <= 16) {
-        p->FFTbufferSize = pow(2, p->FFTbufferSize);
-    } else {
-        write_errorf(error, "FFT buffer is set in the exponent of 2 and must be between 8 - 16\n");
-        return false;
-    }
-
     return true;
 }
 
@@ -457,7 +449,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->overshoot = iniparser_getint(ini, "general:overshoot", 20);
     p->lower_cut_off = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
     p->upper_cut_off = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
-    p->FFTbufferSize = iniparser_getint(ini, "general:FFTbufferSize", 12);
+    p->sleep_timer = iniparser_getint(ini, "general:sleep_timer", 0);
 
     // config: output
     free(channels);
