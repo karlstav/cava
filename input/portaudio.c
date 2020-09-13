@@ -37,15 +37,14 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
         finished = paContinue;
     }
 
-    if (inputBuffer == NULL) {
-        pthread_mutex_lock(&lock);
+    pthread_mutex_lock(&lock);
+
+    if (inputBuffer == NULL)
         write_to_fftw_input_buffers(framesToCalc, silence_buffer, audio);
-        pthread_mutex_unlock(&lock);
-    } else {
-        pthread_mutex_lock(&lock);
+    else
         write_to_fftw_input_buffers(framesToCalc, rptr, audio);
-        pthread_mutex_unlock(&lock);
-    }
+
+    pthread_mutex_unlock(&lock);
 
     data->frameIndex += framesToCalc;
     if (finished == paComplete) {
