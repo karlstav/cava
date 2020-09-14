@@ -5,8 +5,6 @@
 #include <pulse/pulseaudio.h>
 #include <pulse/simple.h>
 
-#define BUFFERSIZE 1024
-
 pa_mainloop *m_pulseaudio_mainloop;
 
 void cb(__attribute__((unused)) pa_context *pulseaudio_context, const pa_server_info *i,
@@ -101,15 +99,19 @@ void *input_pulse(void *data) {
 
     struct audio_data *audio = (struct audio_data *)data;
     uint16_t frames = audio->FFTtreblebufferSize;
-    int16_t buf[frames * 2];
+    int channels = 2;
+    int16_t buf[frames * channels];
 
     /* The sample type to use */
     static const pa_sample_spec ss = {.format = PA_SAMPLE_S16LE, .rate = 44100, .channels = 2};
 
     audio->format = 16;
 
-    static const pa_buffer_attr pb = {.maxlength = (uint32_t)-1, // BUFSIZE * 2,
-                                      .fragsize = BUFFERSIZE};
+    const int frag_size = frames * channels * audio->format / 8 *
+                          2; // we double this because of cpu performance issues with pulseaudio
+
+    pa_buffer_attr pb = {.maxlength = (uint32_t)-1, // BUFSIZE * 2,
+                         .fragsize = frag_size};
 
     pa_simple *s = NULL;
     int error;
