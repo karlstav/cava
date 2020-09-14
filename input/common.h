@@ -18,6 +18,9 @@ struct audio_data {
     int bass_index;
     int mid_index;
     int treble_index;
+    double *bass_multiplier;
+    double *mid_multiplier;
+    double *treble_multiplier;
     double *in_bass_r_raw, *in_bass_l_raw;
     double *in_mid_r_raw, *in_mid_l_raw;
     double *in_treble_r_raw, *in_treble_l_raw;

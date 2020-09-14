@@ -26,19 +26,22 @@ int write_to_fftw_input_buffers(int16_t frames, int16_t buf[frames * 2], void *d
     for (uint16_t n = audio->FFTbassbufferSize; n > frames; n = n - frames) {
         for (uint16_t i = 1; i <= frames; i++) {
             audio->in_bass_l_raw[n - i] = audio->in_bass_l_raw[n - i - frames];
-            audio->in_bass_r_raw[n - i] = audio->in_bass_r_raw[n - i - frames];
+            if (audio->channels == 2)
+                audio->in_bass_r_raw[n - i] = audio->in_bass_r_raw[n - i - frames];
         }
     }
     for (uint16_t n = audio->FFTmidbufferSize; n > frames; n = n - frames) {
         for (uint16_t i = 1; i <= frames; i++) {
             audio->in_mid_l_raw[n - i] = audio->in_mid_l_raw[n - i - frames];
-            audio->in_mid_r_raw[n - i] = audio->in_mid_r_raw[n - i - frames];
+            if (audio->channels == 2)
+                audio->in_mid_r_raw[n - i] = audio->in_mid_r_raw[n - i - frames];
         }
     }
     for (uint16_t n = audio->FFTtreblebufferSize; n > frames; n = n - frames) {
         for (uint16_t i = 1; i <= frames; i++) {
             audio->in_treble_l_raw[n - i] = audio->in_treble_l_raw[n - i - frames];
-            audio->in_treble_r_raw[n - i] = audio->in_treble_r_raw[n - i - frames];
+            if (audio->channels == 2)
+                audio->in_treble_r_raw[n - i] = audio->in_treble_r_raw[n - i - frames];
         }
     }
     uint16_t n = frames - 1;
@@ -67,22 +70,22 @@ int write_to_fftw_input_buffers(int16_t frames, int16_t buf[frames * 2], void *d
         audio->in_treble_l_raw[n] = audio->in_bass_l_raw[n];
         n--;
     }
+
     // Hann Window
     for (int i = 0; i < audio->FFTbassbufferSize; i++) {
-        double multiplier = 0.5 * (1 - cos(2 * M_PI * i / (audio->FFTbassbufferSize - 1)));
-        audio->in_bass_l[i] = multiplier * audio->in_bass_l_raw[i];
-        audio->in_bass_r[i] = multiplier * audio->in_bass_r_raw[i];
+        audio->in_bass_l[i] = audio->bass_multiplier[i] * audio->in_bass_l_raw[i];
+        if (audio->channels == 2)
+            audio->in_bass_r[i] = audio->bass_multiplier[i] * audio->in_bass_r_raw[i];
     }
     for (int i = 0; i < audio->FFTmidbufferSize; i++) {
-        double multiplier = 0.5 * (1 - cos(2 * M_PI * i / (audio->FFTmidbufferSize - 1)));
-        audio->in_mid_l[i] = multiplier * audio->in_mid_l_raw[i];
-        audio->in_mid_r[i] = multiplier * audio->in_mid_r_raw[i];
+        audio->in_mid_l[i] = audio->mid_multiplier[i] * audio->in_mid_l_raw[i];
+        if (audio->channels == 2)
+            audio->in_mid_r[i] = audio->mid_multiplier[i] * audio->in_mid_r_raw[i];
     }
     for (int i = 0; i < audio->FFTtreblebufferSize; i++) {
-        double multiplier = 0.5 * (1 - cos(2 * M_PI * i / (audio->FFTtreblebufferSize - 1)));
-        audio->in_treble_l[i] = multiplier * audio->in_treble_l_raw[i];
-        audio->in_treble_r[i] = multiplier * audio->in_treble_r_raw[i];
+        audio->in_treble_l[i] = audio->treble_multiplier[i] * audio->in_treble_l_raw[i];
+        if (audio->channels == 2)
+            audio->in_treble_r[i] = audio->treble_multiplier[i] * audio->in_treble_r_raw[i];
     }
-
     return 0;
 }

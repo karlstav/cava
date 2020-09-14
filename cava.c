@@ -390,7 +390,21 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         audio.bass_index = 0;
         audio.mid_index = 0;
         audio.treble_index = 0;
+        audio.bass_multiplier = (double *)malloc(audio.FFTbassbufferSize * sizeof(double));
+        audio.mid_multiplier = (double *)malloc(audio.FFTmidbufferSize * sizeof(double));
+        audio.treble_multiplier = (double *)malloc(audio.FFTtreblebufferSize * sizeof(double));
 
+        for (int i = 0; i < audio.FFTbassbufferSize; i++) {
+            audio.bass_multiplier[i] =
+                0.5 * (1 - cos(2 * M_PI * i / (audio.FFTbassbufferSize - 1)));
+        }
+        for (int i = 0; i < audio.FFTmidbufferSize; i++) {
+            audio.mid_multiplier[i] = 0.5 * (1 - cos(2 * M_PI * i / (audio.FFTmidbufferSize - 1)));
+        }
+        for (int i = 0; i < audio.FFTtreblebufferSize; i++) {
+            audio.treble_multiplier[i] =
+                0.5 * (1 - cos(2 * M_PI * i / (audio.FFTtreblebufferSize - 1)));
+        }
         // BASS
         // audio.FFTbassbufferSize =  audio.rate / 20; // audio.FFTbassbufferSize;
 
