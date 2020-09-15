@@ -159,6 +159,7 @@ void *input_portaudio(void *audiodata) {
 
         //  record
         while ((err = Pa_IsStreamActive(stream)) == 1) {
+            Pa_Sleep(1000);
             if (audio->terminate == 1)
                 break;
         }
