@@ -205,7 +205,7 @@ A package has now been introduced into Debian Unstable.
 
     apt-get install cava
     
-It should move into Debian testing and stable over time, and will therefore also move into the repositories of Ubuntu and its derivatives. For more information see issue #373.
+It should move into Debian testing and stable over time, and will therefore also move into the repositories of Ubuntu and its derivatives. For more information see issue [#373](https://github.com/karlstav/cava/issues/373).
 
 
 Capturing audio
