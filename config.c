@@ -470,7 +470,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->userEQ_keys = iniparser_getsecnkeys(ini, "eq");
     if (p->userEQ_keys > 0) {
         p->userEQ_enabled = 1;
-        p->userEQ = calloc(p->userEQ_keys + 1, sizeof(p->userEQ));
+        p->userEQ = (double *)calloc(p->userEQ_keys + 1, sizeof(double));
 #ifndef LEGACYINIPARSER
         const char *keys[p->userEQ_keys];
         iniparser_getseckeys(ini, "eq", keys);
