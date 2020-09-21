@@ -326,6 +326,8 @@ exit with ctrl+z then run 'bg' to keep it running after you log out.
 
 You can also use Cava's output for other programs by using raw output mode, which will write bar data to `STDOUT` that can be piped into other processes. More information on this option is documented in [the example config file](/example_files/config).
 
+A useful starting point example script written in python that consumes raw data can be found [here](https://github.com/karlstav/cava/issues/123#issuecomment-307891020).
+
 Font notes
 ----------
 
