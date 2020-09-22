@@ -245,7 +245,7 @@ int main(int argc, char **argv) {
     int previous_frame[256];
     int sleep = 0;
     int n, height, lines, width, c, rest, inAtty, fp, fptest, rc;
-    bool silence;
+    bool silence = false;
     // int cont = 1;
     int fall[256];
     // float temp;
@@ -253,7 +253,7 @@ int main(int argc, char **argv) {
     double eq[256];
     float g;
     struct timespec req = {.tv_sec = 0, .tv_nsec = 0};
-    struct timespec sleep_mode_timer = {.tv_sec = 0, .tv_nsec = 0};
+    struct timespec sleep_mode_timer = {.tv_sec = 1, .tv_nsec = 0};
     char configPath[PATH_MAX];
     char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
@@ -971,68 +971,66 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
 
                 // process: check if input is present
-                silence = true;
+                if (p.sleep_timer) {
+                    silence = true;
 
-                for (n = 0; n < audio.FFTbassbufferSize; n++) {
-                    if (audio.in_bass_l[n] || audio.in_bass_r[n]) {
-                        silence = false;
-                        break;
+                    for (n = 0; n < audio.FFTbassbufferSize; n++) {
+                        if (audio.in_bass_l[n] || audio.in_bass_r[n]) {
+                            silence = false;
+                            break;
+                        }
+                    }
+
+                    if (silence && sleep <= p.framerate * p.sleep_timer)
+                        sleep++;
+                    else if (!silence)
+                        sleep = 0;
+
+                    if (sleep > p.framerate * p.sleep_timer) {
+#ifndef NDEBUG
+                        printw("no sound detected for 30 sec, going to sleep mode\n");
+#endif
+                        // wait 1 sec, then check sound again.
+                        nanosleep(&sleep_mode_timer, NULL);
+                        continue;
                     }
                 }
 
-                if (silence)
-                    sleep++;
-                else
-                    sleep = 0;
+                // process: execute FFT and sort frequency bands
+                if (p.stereo) {
+                    pthread_mutex_lock(&lock);
+                    fftw_execute(p_bass_l);
+                    fftw_execute(p_bass_r);
+                    fftw_execute(p_mid_l);
+                    fftw_execute(p_mid_r);
+                    fftw_execute(p_treble_l);
+                    fftw_execute(p_treble_r);
+                    pthread_mutex_unlock(&lock);
 
-                // process: if input was present for the last 30 seconds apply FFT to it
-                if (!p.sleep_timer || sleep < p.framerate * p.sleep_timer) {
+                    bars_left = separate_freq_bands(
+                        audio.FFTbassbufferSize, out_bass_l, audio.FFTmidbufferSize, out_mid_l,
+                        audio.FFTtreblebufferSize, out_treble_l, bass_cut_off_bar,
+                        treble_cut_off_bar, number_of_bars / 2, FFTbuffer_lower_cut_off,
+                        FFTbuffer_upper_cut_off, eq, LEFT_CHANNEL, p.sens, p.ignore);
 
-                    // process: execute FFT and sort frequency bands
-                    if (p.stereo) {
-                        pthread_mutex_lock(&lock);
-                        fftw_execute(p_bass_l);
-                        fftw_execute(p_bass_r);
-                        fftw_execute(p_mid_l);
-                        fftw_execute(p_mid_r);
-                        fftw_execute(p_treble_l);
-                        fftw_execute(p_treble_r);
-                        pthread_mutex_unlock(&lock);
+                    bars_right = separate_freq_bands(
+                        audio.FFTbassbufferSize, out_bass_r, audio.FFTmidbufferSize, out_mid_r,
+                        audio.FFTtreblebufferSize, out_treble_r, bass_cut_off_bar,
+                        treble_cut_off_bar, number_of_bars / 2, FFTbuffer_lower_cut_off,
+                        FFTbuffer_upper_cut_off, eq, RIGHT_CHANNEL, p.sens, p.ignore);
 
-                        bars_left = separate_freq_bands(
-                            audio.FFTbassbufferSize, out_bass_l, audio.FFTmidbufferSize, out_mid_l,
-                            audio.FFTtreblebufferSize, out_treble_l, bass_cut_off_bar,
-                            treble_cut_off_bar, number_of_bars / 2, FFTbuffer_lower_cut_off,
-                            FFTbuffer_upper_cut_off, eq, LEFT_CHANNEL, p.sens, p.ignore);
+                } else {
+                    pthread_mutex_lock(&lock);
+                    fftw_execute(p_bass_l);
+                    fftw_execute(p_mid_l);
+                    fftw_execute(p_treble_l);
+                    pthread_mutex_unlock(&lock);
 
-                        bars_right = separate_freq_bands(
-                            audio.FFTbassbufferSize, out_bass_r, audio.FFTmidbufferSize, out_mid_r,
-                            audio.FFTtreblebufferSize, out_treble_r, bass_cut_off_bar,
-                            treble_cut_off_bar, number_of_bars / 2, FFTbuffer_lower_cut_off,
-                            FFTbuffer_upper_cut_off, eq, RIGHT_CHANNEL, p.sens, p.ignore);
-
-                    } else {
-                        pthread_mutex_lock(&lock);
-                        fftw_execute(p_bass_l);
-                        fftw_execute(p_mid_l);
-                        fftw_execute(p_treble_l);
-                        pthread_mutex_unlock(&lock);
-
-                        bars_mono = separate_freq_bands(
-                            audio.FFTbassbufferSize, out_bass_l, audio.FFTmidbufferSize, out_mid_l,
-                            audio.FFTtreblebufferSize, out_treble_l, bass_cut_off_bar,
-                            treble_cut_off_bar, number_of_bars, FFTbuffer_lower_cut_off,
-                            FFTbuffer_upper_cut_off, eq, LEFT_CHANNEL, p.sens, p.ignore);
-                    }
-
-                } else { //**if in sleep mode wait and continue**//
-#ifndef NDEBUG
-                    printw("no sound detected for 30 sec, going to sleep mode\n");
-#endif
-                    // wait 1 sec, then check sound again.
-                    sleep_mode_timer.tv_sec = 1;
-                    nanosleep(&sleep_mode_timer, NULL);
-                    continue;
+                    bars_mono = separate_freq_bands(
+                        audio.FFTbassbufferSize, out_bass_l, audio.FFTmidbufferSize, out_mid_l,
+                        audio.FFTtreblebufferSize, out_treble_l, bass_cut_off_bar,
+                        treble_cut_off_bar, number_of_bars, FFTbuffer_lower_cut_off,
+                        FFTbuffer_upper_cut_off, eq, LEFT_CHANNEL, p.sens, p.ignore);
                 }
 
                 // process [filter]
