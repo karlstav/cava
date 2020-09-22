@@ -368,7 +368,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         // input: init
         int bass_cut_off = 150;
-        int treble_cut_off = 1500;
+        int treble_cut_off = 2500;
 
         audio.source = malloc(1 + strlen(p.audio_source));
         strcpy(audio.source, p.audio_source);
@@ -376,8 +376,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         audio.format = -1;
         audio.rate = 0;
         audio.FFTbassbufferSize = 4096;
-        audio.FFTmidbufferSize = 1024;
-        audio.FFTtreblebufferSize = 512;
+        audio.FFTmidbufferSize = 2048;
+        audio.FFTtreblebufferSize = 1024;
         audio.terminate = 0;
         if (p.stereo)
             audio.channels = 2;
