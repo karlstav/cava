@@ -62,12 +62,6 @@
 #define GCC_UNUSED /* nothing */
 #endif
 
-#define LEFT_CHANNEL 1
-#define RIGHT_CHANNEL 2
-
-// struct termios oldtio, newtio;
-// int M = 8 * 1024;
-
 pthread_mutex_t lock;
 // used by sig handler
 // needs to know output mode in order to clean up terminal
@@ -140,57 +134,6 @@ static bool directory_exists(const char *path) {
 
 #endif
 
-int *separate_freq_bands(int FFTbassbufferSize, fftw_complex out_bass[FFTbassbufferSize / 2 + 1],
-                         int FFTmidbufferSize, fftw_complex out_mid[FFTmidbufferSize / 2 + 1],
-                         int FFTtreblebufferSize,
-                         fftw_complex out_treble[FFTtreblebufferSize / 2 + 1], int bass_cut_off_bar,
-                         int treble_cut_off_bar, int number_of_bars,
-                         int FFTbuffer_lower_cut_off[256], int FFTbuffer_upper_cut_off[256],
-                         double eq[256], int channel, double sens, double ignore) {
-    int n, i;
-    double peak[257];
-    static int bars_left[256];
-    static int bars_right[256];
-    double y[FFTbassbufferSize / 2 + 1];
-    double temp;
-
-    // process: separate frequency bands
-    for (n = 0; n < number_of_bars; n++) {
-
-        peak[n] = 0;
-        i = 0;
-
-        // process: get peaks
-        for (i = FFTbuffer_lower_cut_off[n]; i <= FFTbuffer_upper_cut_off[n]; i++) {
-            if (n <= bass_cut_off_bar) {
-                y[i] = hypot(out_bass[i][0], out_bass[i][1]);
-            } else if (n > bass_cut_off_bar && n <= treble_cut_off_bar) {
-                y[i] = hypot(out_mid[i][0], out_mid[i][1]);
-            } else if (n > treble_cut_off_bar) {
-                y[i] = hypot(out_treble[i][0], out_treble[i][1]);
-            }
-
-            peak[n] += y[i]; // adding up band
-        }
-
-        peak[n] = peak[n] /
-                  (FFTbuffer_upper_cut_off[n] - FFTbuffer_lower_cut_off[n] + 1); // getting average
-        temp = peak[n] * sens * eq[n]; // multiplying with k and sens
-        // printf("%d peak o: %f * sens: %f * k: %f = f: %f\n", o, peak[o], sens, eq[o], temp);
-        if (temp <= ignore)
-            temp = 0;
-        if (channel == LEFT_CHANNEL)
-            bars_left[n] = temp;
-        else
-            bars_right[n] = temp;
-    }
-
-    if (channel == LEFT_CHANNEL)
-        return bars_left;
-    else
-        return bars_right;
-}
-
 int *monstercat_filter(int *bars, int number_of_bars, int waves, double monstercat) {
 
     int z;
@@ -239,7 +182,8 @@ int main(int argc, char **argv) {
     float relative_cut_off[256];
     double center_frequencies[256];
     int bars[256], FFTbuffer_lower_cut_off[256], FFTbuffer_upper_cut_off[256];
-    int *bars_left, *bars_right, *bars_mono;
+    int *bars_left, *bars_right;
+    double *temp_l, *temp_r;
     int bars_mem[256];
     int bars_last[256];
     int previous_frame[256];
@@ -398,6 +342,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         audio.bass_multiplier = (double *)malloc(audio.FFTbassbufferSize * sizeof(double));
         audio.mid_multiplier = (double *)malloc(audio.FFTmidbufferSize * sizeof(double));
         audio.treble_multiplier = (double *)malloc(audio.FFTtreblebufferSize * sizeof(double));
+
+        temp_l = (double *)malloc((audio.FFTbassbufferSize / 2 + 1) * sizeof(double));
+        temp_r = (double *)malloc((audio.FFTbassbufferSize / 2 + 1) * sizeof(double));
+
+        bars_left = (int *)malloc(256 * sizeof(int));
+        bars_right = (int *)malloc(256 * sizeof(int));
 
         for (int i = 0; i < audio.FFTbassbufferSize; i++) {
             audio.bass_multiplier[i] =
@@ -997,42 +947,71 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
 
                 // process: execute FFT and sort frequency bands
+                pthread_mutex_lock(&lock);
+                fftw_execute(p_bass_l);
+                fftw_execute(p_mid_l);
+                fftw_execute(p_treble_l);
                 if (p.stereo) {
-                    pthread_mutex_lock(&lock);
-                    fftw_execute(p_bass_l);
                     fftw_execute(p_bass_r);
-                    fftw_execute(p_mid_l);
                     fftw_execute(p_mid_r);
-                    fftw_execute(p_treble_l);
                     fftw_execute(p_treble_r);
-                    pthread_mutex_unlock(&lock);
-
-                    bars_left = separate_freq_bands(
-                        audio.FFTbassbufferSize, out_bass_l, audio.FFTmidbufferSize, out_mid_l,
-                        audio.FFTtreblebufferSize, out_treble_l, bass_cut_off_bar,
-                        treble_cut_off_bar, number_of_bars / 2, FFTbuffer_lower_cut_off,
-                        FFTbuffer_upper_cut_off, eq, LEFT_CHANNEL, p.sens, p.ignore);
-
-                    bars_right = separate_freq_bands(
-                        audio.FFTbassbufferSize, out_bass_r, audio.FFTmidbufferSize, out_mid_r,
-                        audio.FFTtreblebufferSize, out_treble_r, bass_cut_off_bar,
-                        treble_cut_off_bar, number_of_bars / 2, FFTbuffer_lower_cut_off,
-                        FFTbuffer_upper_cut_off, eq, RIGHT_CHANNEL, p.sens, p.ignore);
-
-                } else {
-                    pthread_mutex_lock(&lock);
-                    fftw_execute(p_bass_l);
-                    fftw_execute(p_mid_l);
-                    fftw_execute(p_treble_l);
-                    pthread_mutex_unlock(&lock);
-
-                    bars_mono = separate_freq_bands(
-                        audio.FFTbassbufferSize, out_bass_l, audio.FFTmidbufferSize, out_mid_l,
-                        audio.FFTtreblebufferSize, out_treble_l, bass_cut_off_bar,
-                        treble_cut_off_bar, number_of_bars, FFTbuffer_lower_cut_off,
-                        FFTbuffer_upper_cut_off, eq, LEFT_CHANNEL, p.sens, p.ignore);
+                    number_of_bars /= 2;
                 }
+                pthread_mutex_unlock(&lock);
 
+                // process: separate frequency bands
+                for (n = 0; n < number_of_bars; n++) {
+
+                    temp_l[n] = 0;
+                    if (p.stereo)
+                        temp_r[n] = 0;
+
+                    // process: add upp FFT values within bands
+                    for (int i = FFTbuffer_lower_cut_off[n]; i <= FFTbuffer_upper_cut_off[n]; i++) {
+                        if (n <= bass_cut_off_bar) {
+
+                            temp_l[n] += hypot(out_bass_l[i][0], out_bass_l[i][1]);
+
+                            if (p.stereo)
+                                temp_r[n] += hypot(out_bass_r[i][0], out_bass_r[i][1]);
+
+                        } else if (n > bass_cut_off_bar && n <= treble_cut_off_bar) {
+
+                            temp_l[n] += hypot(out_mid_l[i][0], out_mid_l[i][1]);
+
+                            if (p.stereo)
+                                temp_r[n] += hypot(out_mid_r[i][0], out_mid_r[i][1]);
+
+                        } else if (n > treble_cut_off_bar) {
+
+                            temp_l[n] += hypot(out_treble_l[i][0], out_treble_l[i][1]);
+
+                            if (p.stereo)
+                                temp_r[n] += hypot(out_treble_r[i][0], out_treble_r[i][1]);
+                        }
+                    }
+
+                    // getting average multiply with sens and eq
+                    temp_l[n] /= FFTbuffer_upper_cut_off[n] - FFTbuffer_lower_cut_off[n] + 1;
+                    temp_l[n] *= p.sens * eq[n];
+
+                    if (temp_l[n] <= p.ignore)
+                        temp_l[n] = 0;
+
+                    bars_left[n] = temp_l[n];
+
+                    if (p.stereo) {
+                        temp_r[n] /= FFTbuffer_upper_cut_off[n] - FFTbuffer_lower_cut_off[n] + 1;
+                        temp_r[n] *= p.sens * eq[n];
+
+                        if (temp_r[n] <= p.ignore)
+                            temp_r[n] = 0;
+
+                        bars_right[n] = temp_r[n];
+                    }
+                }
+                if (p.stereo)
+                    number_of_bars *= 2;
                 // process [filter]
 
                 if (p.monstercat) {
@@ -1042,8 +1021,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         bars_right = monstercat_filter(bars_right, number_of_bars / 2, p.waves,
                                                        p.monstercat);
                     } else {
-                        bars_mono =
-                            monstercat_filter(bars_mono, number_of_bars, p.waves, p.monstercat);
+                        bars_left =
+                            monstercat_filter(bars_left, number_of_bars, p.waves, p.monstercat);
                     }
                 }
 
@@ -1061,7 +1040,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         }
 
                     } else {
-                        bars[n] = bars_mono[n];
+                        bars[n] = bars_left[n];
                     }
 
                     // process [smoothing]: falloff
