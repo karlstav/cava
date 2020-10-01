@@ -217,7 +217,7 @@ Just make sure you have installed pulseaudio dev files and that cava has been bu
 
 If you're lucky all you have to do is to run cava.
  
-If nothing happens you might have to use a different source than the default. The default might also be your microphone. Look at the config file for help. 
+If nothing happens you might have to use a different source than the default. The default might also be your microphone. Look at the [config](#configuration) file for help. 
 
 
 ### From ALSA-loopback device (Tricky)
@@ -226,7 +226,7 @@ Set
 
     method = alsa
 
-in the config file.
+in the [config](#configuration) file.
 
 ALSA can be difficult because there is no native way to grab audio from an output. If you want to capture audio straight fom the output (not just mic or line-in), you must create an ALSA loopback interface, then output the audio simultaneously to both the loopback and your normal interface.
 
@@ -261,7 +261,7 @@ Add these lines in mpd:
         format                  "44100:16:2"
     }
 
-Uncomment and change input method to `fifo` in the config file.
+Uncomment and change input method to `fifo` in the [config](#configuration) file.
 
 The path of the fifo can be specified with the `source` parameter.
 
@@ -290,7 +290,7 @@ $ AUDIODEVICE=snd/0.monitor cava
 
 ### squeezelite
 [squeezelite](https://en.wikipedia.org/wiki/Squeezelite) is one of several software clients available for the Logitech Media Server. Squeezelite can export its audio data as shared memory, which is what this input module uses.
-Just adapt your config:
+Just adapt your [config](#configuration):
 ```
 method = shmem
 source = /squeezelite-AA:BB:CC:DD:EE:FF
@@ -299,9 +299,9 @@ where `AA:BB:CC:DD:EE:FF` is squeezelite's MAC address (check the LMS Web GUI (S
 Note: squeezelite must be started with the `-v` flag to enable visualizer support.
 
 ### macOS
-Install [Soundflower](https://github.com/mattingalls/Soundflower) to create a loopback interface. Use Audio MIDI Setup to configure a virtual interface that outputs audio to both your speakers and the loopbacl interface, following [this](https://github.com/RogueAmoeba/Soundflower-Original/issues/44#issuecomment-151586106) recipe.
+Install [Soundflower](https://github.com/mattingalls/Soundflower) to create a loopback interface. Use Audio MIDI Setup to configure a virtual interface that outputs audio to both your speakers and the loopback interface, following [this](https://github.com/RogueAmoeba/Soundflower-Original/issues/44#issuecomment-151586106) recipe.
 
-Then edit your config to use this interface with portaudio:
+Then edit your [config](#configuration) to use this interface with portaudio:
 
 ```
 method = portaudio
