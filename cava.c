@@ -187,7 +187,7 @@ int main(int argc, char **argv) {
     int bars_mem[256];
     int bars_last[256];
     int previous_frame[256];
-    int sleep = 0;
+    int sleep_counter = 0;
     int n, height, lines, width, c, rest, inAtty, fp, fptest, rc;
     bool silence = false;
     // int cont = 1;
@@ -921,26 +921,25 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
 
                 // process: check if input is present
-                if (p.sleep_timer) {
-                    silence = true;
+                silence = true;
 
-                    for (n = 0; n < audio.FFTbassbufferSize; n++) {
-                        if (audio.in_bass_l[n] || audio.in_bass_r[n]) {
-                            silence = false;
-                            break;
-                        }
+                for (n = 0; n < audio.FFTbassbufferSize; n++) {
+                    if (audio.in_bass_l[n] || audio.in_bass_r[n]) {
+                        silence = false;
+                        break;
                     }
+                }
 
-                    if (silence && sleep <= p.framerate * p.sleep_timer)
-                        sleep++;
+                if (p.sleep_timer) {
+                    if (silence && sleep_counter <= p.framerate * p.sleep_timer)
+                        sleep_counter++;
                     else if (!silence)
-                        sleep = 0;
+                        sleep_counter = 0;
 
-                    if (sleep > p.framerate * p.sleep_timer) {
+                    if (sleep_counter > p.framerate * p.sleep_timer) {
 #ifndef NDEBUG
                         printw("no sound detected for 30 sec, going to sleep mode\n");
 #endif
-                        // wait 1 sec, then check sound again.
                         nanosleep(&sleep_mode_timer, NULL);
                         continue;
                     }
@@ -1096,7 +1095,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         bars[n] = 1;
 
                     // automatic sense adjustment
-                    if (p.autosens) {
+                    if (p.autosens && !silence) {
                         if (bars[n] > height && senselow) {
                             p.sens = p.sens * 0.98;
                             senselow = false;
