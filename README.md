@@ -299,7 +299,21 @@ where `AA:BB:CC:DD:EE:FF` is squeezelite's MAC address (check the LMS Web GUI (S
 Note: squeezelite must be started with the `-v` flag to enable visualizer support.
 
 ### macOS
-Install [Soundflower](https://github.com/mattingalls/Soundflower) to create a loopback interface. Use Audio MIDI Setup to configure a virtual interface that outputs audio to both your speakers and the loopback interface, following [this](https://github.com/RogueAmoeba/Soundflower-Original/issues/44#issuecomment-151586106) recipe.
+
+Note: cava looks no good in the default macOS terminal. For a better look install [kitty](https://sw.kovidgoyal.net/kitty/index.html). Be where that you might run into #109, that can be fixed like [this](https://stackoverflow.com/questions/7165108/in-os-x-lion-lang-is-not-set-to-utf-8-how-to-fix-it).
+
+**Background Music**
+
+Install [Background Music](https://github.com/kyleneideck/BackgroundMusic) which provides a loopback interface automatically. Once installed and running just edit your [config](#configuration) to use this interface with portaudio:
+
+```
+method = portaudio
+source = "Background Music"
+```
+
+**Sound Flower**
+
+[Soundflower](https://github.com/mattingalls/Soundflower) also works to create a loopback interface. Use Audio MIDI Setup to configure a virtual interface that outputs audio to both your speakers and the loopback interface, following [this](https://github.com/RogueAmoeba/Soundflower-Original/issues/44#issuecomment-151586106) recipe. By creating a multi-output device you lose the ability to control the volume on your keyboard. Because of this, we recommend the Background Music app which still gives you keyboard controls.
 
 Then edit your [config](#configuration) to use this interface with portaudio:
 
@@ -307,8 +321,6 @@ Then edit your [config](#configuration) to use this interface with portaudio:
 method = portaudio
 source = "Soundflower (2ch)"
 ```
-
-Note: cava looks no good in the default macOS terminal. For a better look install [kitty](https://sw.kovidgoyal.net/kitty/index.html). Be where that you might run into #109, that can be fixed like [this](https://stackoverflow.com/questions/7165108/in-os-x-lion-lang-is-not-set-to-utf-8-how-to-fix-it).
 
 
 Running via ssh
