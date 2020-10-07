@@ -300,7 +300,7 @@ Note: squeezelite must be started with the `-v` flag to enable visualizer suppor
 
 ### macOS
 
-Note: cava looks no good in the default macOS terminal. For a better look install [kitty](https://sw.kovidgoyal.net/kitty/index.html). Be where that you might run into #109, that can be fixed like [this](https://stackoverflow.com/questions/7165108/in-os-x-lion-lang-is-not-set-to-utf-8-how-to-fix-it).
+Note: Cava doesn't render correctly within the default macOS terminal. In order to achieve an optimal display, install [Kitty](https://sw.kovidgoyal.net/kitty/index.html). Beware that you may run in to the issue presented in #109; however, it can be resolved with [this](https://stackoverflow.com/questions/7165108/in-os-x-lion-lang-is-not-set-to-utf-8-how-to-fix-it).
 
 **Background Music**
 
