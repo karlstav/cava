@@ -270,10 +270,11 @@ fi
 dnl ############################
 dnl Set font directory
 dnl ############################
-DEFAULT_FONT_DIR="/usr/share/consolefonts"
+DEFAULT_FONT_DIR="${datarootdir}/consolefonts"
 AC_ARG_VAR(FONT_DIR, [Directory where the font will be installed.])
 if test -z "$FONT_DIR" ; then
   FONT_DIR="$DEFAULT_FONT_DIR"
+  AC_MSG_NOTICE([Warning: Installing cava psf font in $DEFAULT_FONT_DIR, if bars are letters in tty check if font is installed in correct location])
 fi
 
 AC_CANONICAL_HOST
