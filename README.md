@@ -91,13 +91,13 @@ All the requirements can be installed easily in all major distros:
 
 Debian Buster or higher/Ubuntu 18.04 or higher :
 
-    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake libiniparser-dev
+    apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake libiniparser-dev
     export CPPFLAGS=-I/usr/include/iniparser
 
 
 older Debian/Ubuntu:
 
-    apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake
+    apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake
 
 
 ArchLinux:
@@ -192,15 +192,15 @@ Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
 
 ##### Ubuntu 20.10 or more recent / Debian (unstable)
 
-    apt-get install cava
+    apt install cava
     
 ##### Older Ubuntu
 
 Harshal Sheth has added CAVA to his PPA, it can be installed with:
 
     add-apt-repository ppa:hsheth2/ppa
-    apt-get update
-    apt-get install cava
+    apt update
+    apt install cava
     
 
 All distro specific instalation sources might be out of date.
