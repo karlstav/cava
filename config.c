@@ -392,17 +392,24 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         // config: adding default filename file
         strcat(configPath, configFile);
 
+        // open file or create file if it does not exist
         fp = fopen(configPath, "ab+");
         if (fp) {
             fclose(fp);
         } else {
-            write_errorf(error, "Unable to access config '%s', exiting...\n", configPath);
-            return false;
+            // try to open file read only
+            fp = fopen(configPath, "rb");
+            if (fp) {
+                fclose(fp);
+            } else {
+                write_errorf(error, "Unable to open or create file '%s', exiting...\n", configPath);
+                return false;
+            }
         }
 
     } else { // opening specified file
 
-        fp = fopen(configPath, "rb+");
+        fp = fopen(configPath, "rb");
         if (fp) {
             fclose(fp);
         } else {
