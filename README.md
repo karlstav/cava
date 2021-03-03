@@ -30,12 +30,13 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
     - [Arch](#arch)
     - [Ubuntu/Debian](#ubuntudebian)
 - [Capturing audio](#capturing-audio)
-  - [From Pulseaudio monitor source (Easy, default if supported)](#from-pulseaudio-monitor-source-easy-default-if-supported)
-  - [From ALSA-loopback device (Tricky)](#from-alsa-loopback-device-tricky)
-  - [From mpd's fifo output](#from-mpds-fifo-output)
+  - [Pulseaudio monitor source (Easy, default if supported)](#pulseaudio-monitor-source-easy-default-if-supported)
+  - [ALSA-loopback device (Tricky)](#alsa-loopback-device-tricky)
+  - [mpd's fifo output](#mpds-fifo-output)
   - [sndio](#sndio)
   - [squeezelite](#squeezelite)
   - [macOS](#macos)
+  - [Windows - winscap - WSL](#Windows-winscap-WSL)
 - [Running via ssh](#running-via-ssh)
   - [Raw Output](#raw-output)
 - [Font notes](#font-notes)
@@ -209,7 +210,7 @@ All distro specific instalation sources might be out of date.
 Capturing audio
 ---------------
 
-### From Pulseaudio monitor source (Easy, default if supported)
+### Pulseaudio monitor source (Easy, default if supported)
 
 Just make sure you have installed pulseaudio dev files and that cava has been built with pulseaudio support (it should be automatically if the dev files are found).
 
@@ -218,7 +219,7 @@ If you're lucky all you have to do is to run cava.
 If nothing happens you might have to use a different source than the default. The default might also be your microphone. Look at the [config](#configuration) file for help. 
 
 
-### From ALSA-loopback device (Tricky)
+### ALSA-loopback device (Tricky)
 
 Set
 
@@ -248,7 +249,7 @@ If you are having problems with the alsa method on Rasberry PI, try enabling `mm
 dtoverlay=i2s-mmap
 ```
 
-### From mpd's fifo output
+### mpd's fifo output
 
 Add these lines in mpd:
 
@@ -319,6 +320,10 @@ Then edit your [config](#configuration) to use this interface with portaudio:
 method = portaudio
 source = "Soundflower (2ch)"
 ```
+
+### Windows - winscap - WSL
+
+@quantum5 has written a handy tool called [winscap](https://github.com/quantum5/winscap) to capture audio from Windows and output it to stdout. Just follow the instructions in the readme on how to set it up with cava.
 
 
 Running via ssh
