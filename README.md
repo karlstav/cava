@@ -138,7 +138,7 @@ Tested on macOS High Sierra.
 For M1 Mac I was able to build all prerequisites from source. It might work with homebrew rosetta emulation, but what's the fun in that.
 
 * build and install automake, autoconf and libtool following the instructions [here](https://superuser.com/questions/383580/how-to-install-autoconf-automake-and-related-tools-on-mac-os-x-from-source).
-* build and install fftw from the gz archive (here)[http://www.fftw.org/download.html]
+* build and install fftw from the gz archive [here](http://www.fftw.org/download.html)
 * download ncurses source and configure with these options:
 ```
 ./configure --prefix=/usr/local \
