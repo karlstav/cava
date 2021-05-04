@@ -54,8 +54,8 @@ struct config_params {
     double monstercat, integral, gravity, ignore, sens;
     unsigned int lower_cut_off, upper_cut_off;
     double *userEQ;
-    enum input_method im;
-    enum output_method om;
+    enum input_method input;
+    enum output_method output;
     enum xaxis_scale xaxis;
     int userEQ_keys, userEQ_enabled, col, bgcol, autobars, stereo, is_bin, ascii_range, bit_format,
         gradient, gradient_count, fixedbars, framerate, bar_width, bar_spacing, autosens, overshoot,

@@ -59,11 +59,11 @@ int validate_color(char *checkColor, void *params, void *err) {
     if (checkColor[0] == '#' && strlen(checkColor) == 7) {
         // If the output mode is not ncurses, tell the user to use a named colour instead of hex
         // colours.
-        if (p->om != OUTPUT_NCURSES) {
+        if (p->output != OUTPUT_NCURSES) {
 #ifdef NCURSES
             write_errorf(error,
                          "hex color configured, but ncurses not set. Forcing ncurses mode.\n");
-            p->om = OUTPUT_NCURSES;
+            p->output = OUTPUT_NCURSES;
 #else
             write_errorf(error,
                          "Only 'ncurses' output method supports HTML colors "
@@ -171,9 +171,9 @@ bool validate_colors(void *params, void *err) {
 
 bool validate_config(struct config_params *p, struct error_s *error) {
     // validate: output method
-    p->om = OUTPUT_NOT_SUPORTED;
+    p->output = OUTPUT_NOT_SUPORTED;
     if (strcmp(outputMethod, "ncurses") == 0) {
-        p->om = OUTPUT_NCURSES;
+        p->output = OUTPUT_NCURSES;
         p->bgcol = -1;
 #ifndef NCURSES
         write_errorf(error, "cava was built without ncurses support, install ncursesw dev files "
@@ -182,11 +182,11 @@ bool validate_config(struct config_params *p, struct error_s *error) {
 #endif
     }
     if (strcmp(outputMethod, "noncurses") == 0) {
-        p->om = OUTPUT_NONCURSES;
+        p->output = OUTPUT_NONCURSES;
         p->bgcol = 0;
     }
     if (strcmp(outputMethod, "raw") == 0) { // raw:
-        p->om = OUTPUT_RAW;
+        p->output = OUTPUT_RAW;
         p->bar_spacing = 0;
         p->bar_width = 1;
 
@@ -216,7 +216,7 @@ bool validate_config(struct config_params *p, struct error_s *error) {
             return false;
         }
     }
-    if (p->om == OUTPUT_NOT_SUPORTED) {
+    if (p->output == OUTPUT_NOT_SUPORTED) {
 #ifndef NCURSES
         write_errorf(
             error,
@@ -503,8 +503,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         }
     }
 
-    p->im = input_method_by_name(input_method_name);
-    switch (p->im) {
+    p->input = input_method_by_name(input_method_name);
+    switch (p->input) {
 #ifdef ALSA
     case INPUT_ALSA:
         p->audio_source = strdup(iniparser_getstring(ini, "input:source", "hw:Loopback,1"));
@@ -549,7 +549,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     }
     default:
         write_errorf(error, "cava was built without '%s' input support\n",
-                     input_method_names[p->im]);
+                     input_method_names[p->input]);
         return false;
     }
 

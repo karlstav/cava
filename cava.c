@@ -174,31 +174,22 @@ int *monstercat_filter(int *bars, int number_of_bars, int waves, double monsterc
 // general: entry point
 int main(int argc, char **argv) {
 
-    // general: define variables
-    pthread_t p_thread;
-    int thr_id GCC_UNUSED;
-    float cut_off_frequency[256];
-    float upper_cut_off_frequency[256];
-    float relative_cut_off[256];
-    double center_frequencies[256];
-    int bars[256], FFTbuffer_lower_cut_off[256], FFTbuffer_upper_cut_off[256];
-    int *bars_left, *bars_right;
-    double *temp_l, *temp_r;
-    int bars_mem[256];
-    int bars_last[256];
-    int previous_frame[256];
-    int sleep_counter = 0;
-    int n, height, lines, width, c, rest, inAtty, fp, fptest, rc;
-    bool silence = false;
-    // int cont = 1;
-    int fall[256];
-    // float temp;
-    float bars_peak[256];
-    double eq[256];
-    float g;
-    struct timespec req = {.tv_sec = 0, .tv_nsec = 0};
-    struct timespec sleep_mode_timer = {.tv_sec = 1, .tv_nsec = 0};
+    // general: console title
+    printf("%c]0;%s%c", '\033', PACKAGE, '\007');
+
+    // general: handle command-line arguments
     char configPath[PATH_MAX];
+    configPath[0] = '\0';
+
+    // general: handle Ctrl+C
+    struct sigaction action;
+    memset(&action, 0, sizeof(action));
+    action.sa_handler = &sig_handler;
+    sigaction(SIGINT, &action, NULL);
+    sigaction(SIGTERM, &action, NULL);
+    sigaction(SIGUSR1, &action, NULL);
+    sigaction(SIGUSR2, &action, NULL);
+
     char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
 Visualize audio input in terminal. \n\
@@ -220,32 +211,7 @@ Keys:\n\
 \n\
 as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n";
 
-    char ch = '\0';
-    int number_of_bars = 25;
-    double userEQ_keys_to_bars_ratio;
-
-    struct audio_data audio;
-    memset(&audio, 0, sizeof(audio));
-
-#ifndef NDEBUG
-    int maxvalue = 0;
-    int minvalue = 0;
-#endif
-    // general: console title
-    printf("%c]0;%s%c", '\033', PACKAGE, '\007');
-
-    configPath[0] = '\0';
-
-    // general: handle Ctrl+C
-    struct sigaction action;
-    memset(&action, 0, sizeof(action));
-    action.sa_handler = &sig_handler;
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-    sigaction(SIGUSR1, &action, NULL);
-    sigaction(SIGUSR2, &action, NULL);
-
-    // general: handle command-line arguments
+    int c;
     while ((c = getopt(argc, argv, "p:vh")) != -1) {
         switch (c) {
         case 'p': // argument: fifo path
@@ -263,8 +229,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         default: // argument: no arguments; exit
             abort();
         }
-
-        n = 0;
     }
 
     // general: main loop
@@ -279,7 +243,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             exit(EXIT_FAILURE);
         }
 
-        output_mode = p.om;
+        int inAtty;
+
+        output_mode = p.output;
 
         if (output_mode != OUTPUT_RAW) {
             // Check if we're running in a tty
@@ -320,8 +286,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         }
 
         // input: init
+        int *bars_left, *bars_right;
+        double *temp_l, *temp_r;
+
         int bass_cut_off = 150;
         int treble_cut_off = 2500;
+
+        struct audio_data audio;
+        memset(&audio, 0, sizeof(audio));
 
         audio.source = malloc(1 + strlen(p.audio_source));
         strcpy(audio.source, p.audio_source);
@@ -427,7 +399,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         reset_output_buffers(&audio);
 
         debug("starting audio thread\n");
-        switch (p.im) {
+
+        pthread_t p_thread;
+        int timeout_counter = 0;
+
+        struct timespec timeout_timer = {.tv_sec = 0, .tv_nsec = 1000000};
+        int thr_id GCC_UNUSED;
+
+        switch (p.input) {
 #ifdef ALSA
         case INPUT_ALSA:
             // input_alsa: wait for the input to be ready
@@ -446,14 +425,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             thr_id = pthread_create(&p_thread, NULL, input_alsa,
                                     (void *)&audio); // starting alsamusic listener
 
-            n = 0;
+            timeout_counter = 0;
 
             while (audio.format == -1 || audio.rate == 0) {
-                req.tv_sec = 0;
-                req.tv_nsec = 1000000;
-                nanosleep(&req, NULL);
-                n++;
-                if (n > 2000) {
+                nanosleep(&timeout_timer, NULL);
+                timeout_counter++;
+                if (timeout_counter > 2000) {
                     cleanup();
                     fprintf(stderr, "could not get rate and/or format, problems with audio thread? "
                                     "quiting...\n");
@@ -488,14 +465,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         case INPUT_SHMEM:
             thr_id = pthread_create(&p_thread, NULL, input_shmem, (void *)&audio);
 
-            n = 0;
-
+            timeout_counter = 0;
             while (audio.rate == 0) {
-                req.tv_sec = 0;
-                req.tv_nsec = 1000000;
-                nanosleep(&req, NULL);
-                n++;
-                if (n > 2000) {
+                nanosleep(&timeout_timer, NULL);
+                timeout_counter++;
+                if (timeout_counter > 2000) {
                     cleanup();
                     fprintf(stderr, "could not get rate and/or format, problems with audio thread? "
                                     "quiting...\n");
@@ -521,10 +495,18 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             exit(EXIT_FAILURE);
         }
 
-        bool reloadConf = false;
+        int bars[256];
+        int bars_mem[256];
+        int bars_last[256];
+        int previous_frame[256];
+        int fall[256];
+        float bars_peak[256];
 
+        int height, lines, width, remainder, fp;
+
+        bool reloadConf = false;
         while (!reloadConf) { // jumping back to this loop means that you resized the screen
-            for (n = 0; n < 256; n++) {
+            for (int n = 0; n < 256; n++) {
                 bars_last[n] = 0;
                 previous_frame[n] = 0;
                 fall[n] = 0;
@@ -561,6 +543,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
             case OUTPUT_RAW:
                 if (strcmp(p.raw_target, "/dev/stdout") != 0) {
+                    int fptest;
                     // checking if file exists
                     if (access(p.raw_target, F_OK) != -1) {
                         // testopening in case it's a fifo
@@ -580,7 +563,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         fptest = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644);
                     }
                 }
-
                 fp = open(p.raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
                 if (fp == -1) {
                     printf("could not open file %s for writing\n", p.raw_target);
@@ -609,13 +591,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     p.autobars = 1;
             }
 
-            // getting original numbers of bars incase of resize
-            if (p.autobars == 1) {
+            // getting numbers of bars
+            int number_of_bars = p.fixedbars;
+
+            if (p.autobars == 1)
                 number_of_bars = (width + p.bar_spacing) / (p.bar_width + p.bar_spacing);
-                // if (p.bar_spacing != 0) number_of_bars = (width - number_of_bars * p.bar_spacing
-                // + p.bar_spacing) / bar_width;
-            } else
-                number_of_bars = p.fixedbars;
 
             if (number_of_bars < 1)
                 number_of_bars = 1; // must have at least 1 bars
@@ -628,14 +608,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             }
 
             // checks if there is stil extra room, will use this to center
-            rest = (width - number_of_bars * p.bar_width - number_of_bars * p.bar_spacing +
-                    p.bar_spacing) /
-                   2;
-            if (rest < 0)
-                rest = 0;
+            remainder = (width - number_of_bars * p.bar_width - number_of_bars * p.bar_spacing +
+                         p.bar_spacing) /
+                        2;
+            if (remainder < 0)
+                remainder = 0;
 
             // process [smoothing]: calculate gravity
-            g = p.gravity * ((float)height / 2160) * pow((60 / (float)p.framerate), 2.5);
+            float g = p.gravity * ((float)height / 2160) * pow((60 / (float)p.framerate), 2.5);
 
             // calculate integral value, must be reduced with height
             double integral = p.integral;
@@ -643,13 +623,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 integral = p.integral * 1 / sqrt((log10((float)height / 10)));
 
 #ifndef NDEBUG
-            debug("height: %d width: %d bars:%d bar width: %d rest: %d\n", height, width,
-                  number_of_bars, p.bar_width, rest);
+            debug("height: %d width: %d bars:%d bar width: %d remainder: %d\n", height, width,
+                  number_of_bars, p.bar_width, remainder);
 #endif
 
+            // process: calculate cutoff frequencies and eq
             if (p.stereo)
                 number_of_bars =
                     number_of_bars / 2; // in stereo only half number of number_of_bars per channel
+                                        // for cutoff frequencies and eq calculation
+
+            double userEQ_keys_to_bars_ratio;
 
             if (p.userEQ_enabled && (number_of_bars > 0)) {
                 userEQ_keys_to_bars_ratio =
@@ -660,14 +644,21 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             double frequency_constant = log10((float)p.lower_cut_off / (float)p.upper_cut_off) /
                                         (1 / ((float)number_of_bars + 1) - 1);
 
-            // process: calculate cutoff frequencies and eq
+            float cut_off_frequency[256];
+            float upper_cut_off_frequency[256];
+            float relative_cut_off[256];
+            double center_frequencies[256];
+            int FFTbuffer_lower_cut_off[256];
+            int FFTbuffer_upper_cut_off[256];
+            double eq[256];
+
             int bass_cut_off_bar = -1;
             int treble_cut_off_bar = -1;
             bool first_bar = true;
             int first_treble_bar = 0;
             int bar_buffer[number_of_bars + 1];
 
-            for (n = 0; n < number_of_bars + 1; n++) {
+            for (int n = 0; n < number_of_bars + 1; n++) {
                 double bar_distribution_coefficient = frequency_constant * (-1);
                 bar_distribution_coefficient +=
                     ((float)n + 1) / ((float)number_of_bars + 1) * frequency_constant;
@@ -789,6 +780,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             if (p.stereo)
                 number_of_bars = number_of_bars * 2;
 
+            // process: calculate x axis values
             int x_axis_info = 0;
 
             if (p.xaxis != NONE) {
@@ -796,10 +788,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 double center_frequency;
                 if (output_mode == OUTPUT_NONCURSES) {
                     printf("\r\033[%dB", lines + 1);
-                    if (rest)
-                        printf("\033[%dC", rest);
+                    if (remainder)
+                        printf("\033[%dC", remainder);
                 }
-                for (n = 0; n < number_of_bars; n++) {
+                for (int n = 0; n < number_of_bars; n++) {
                     if (p.stereo) {
                         if (n < number_of_bars / 2)
                             center_frequency = center_frequencies[number_of_bars / 2 - 1 - n];
@@ -815,13 +807,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     if (output_mode == OUTPUT_NCURSES) {
 #ifdef NCURSES
                         if (center_frequency < 1000)
-                            mvprintw(lines, n * (p.bar_width + p.bar_spacing) + rest, "%-4d",
+                            mvprintw(lines, n * (p.bar_width + p.bar_spacing) + remainder, "%-4d",
                                      freq_floor);
                         else if (center_frequency > 1000 && center_frequency < 10000)
-                            mvprintw(lines, n * (p.bar_width + p.bar_spacing) + rest, "%.2f",
+                            mvprintw(lines, n * (p.bar_width + p.bar_spacing) + remainder, "%.2f",
                                      freq_kilohz);
                         else
-                            mvprintw(lines, n * (p.bar_width + p.bar_spacing) + rest, "%.1f",
+                            mvprintw(lines, n * (p.bar_width + p.bar_spacing) + remainder, "%.1f",
                                      freq_kilohz);
 #endif
                     } else if (output_mode == OUTPUT_NONCURSES) {
@@ -840,14 +832,25 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             }
 
             bool resizeTerminal = false;
-            // fcntl(0, F_SETFL, O_NONBLOCK);
 
+            struct timespec framerate_timer = {.tv_sec = 0, .tv_nsec = 0};
             if (p.framerate <= 1) {
-                req.tv_sec = 1 / (float)p.framerate;
+                framerate_timer.tv_sec = 1 / (float)p.framerate;
             } else {
-                req.tv_sec = 0;
-                req.tv_nsec = (1 / (float)p.framerate) * 1e9;
+                framerate_timer.tv_sec = 0;
+                framerate_timer.tv_nsec = (1 / (float)p.framerate) * 1e9;
             }
+
+            int sleep_counter = 0;
+            bool silence = false;
+            char ch = '\0';
+
+#ifndef NDEBUG
+            int maxvalue = 0;
+            int minvalue = 0;
+#endif
+
+            struct timespec sleep_mode_timer = {.tv_sec = 1, .tv_nsec = 0};
 
             while (!resizeTerminal) {
 
@@ -857,6 +860,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     ch = getch();
 #endif
                 /*
+                // disabled key controls in non-curses mode, caused garbage on screen
                 if (output_mode == OUTPUT_NONCURSES)
                     ch = fgetc(stdin);
                 */
@@ -922,8 +926,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     reload_colors = 0;
                 }
 
-                // if (cont == 0) break;
-
 #ifndef NDEBUG
                 // clear();
                 refresh();
@@ -932,7 +934,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 // process: check if input is present
                 silence = true;
 
-                for (n = 0; n < audio.FFTbassbufferSize; n++) {
+                for (int n = 0; n < audio.FFTbassbufferSize; n++) {
                     if (audio.in_bass_l[n] || audio.in_bass_r[n]) {
                         silence = false;
                         break;
@@ -968,7 +970,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 pthread_mutex_unlock(&lock);
 
                 // process: separate frequency bands
-                for (n = 0; n < number_of_bars; n++) {
+                for (int n = 0; n < number_of_bars; n++) {
 
                     temp_l[n] = 0;
                     if (p.stereo)
@@ -1038,7 +1040,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                 bool senselow = true;
 
-                for (n = 0; n < number_of_bars; n++) {
+                for (int n = 0; n < number_of_bars; n++) {
                     // mirroring stereo channels
                     if (p.stereo) {
                         if (n < number_of_bars / 2) {
@@ -1116,26 +1118,28 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     p.sens = p.sens * 1.001;
 
 #ifndef NDEBUG
-                mvprintw(n + 1, 0, "sensitivity %.10e", p.sens);
-                mvprintw(n + 2, 0, "min value: %d\n", minvalue); // checking maxvalue 10000
-                mvprintw(n + 3, 0, "max value: %d\n", maxvalue); // checking maxvalue 10000
-                (void)rc;
+                mvprintw(number_of_bars + 1, 0, "sensitivity %.10e", p.sens);
+                mvprintw(number_of_bars + 2, 0, "min value: %d\n",
+                         minvalue); // checking maxvalue 10000
+                mvprintw(number_of_bars + 3, 0, "max value: %d\n",
+                         maxvalue); // checking maxvalue 10000
                 (void)x_axis_info;
 #endif
 
 // output: draw processed input
 #ifdef NDEBUG
+                int rc;
                 switch (output_mode) {
                 case OUTPUT_NCURSES:
 #ifdef NCURSES
                     rc = draw_terminal_ncurses(inAtty, lines, width, number_of_bars, p.bar_width,
-                                               p.bar_spacing, rest, bars, previous_frame,
+                                               p.bar_spacing, remainder, bars, previous_frame,
                                                p.gradient, x_axis_info);
                     break;
 #endif
                 case OUTPUT_NONCURSES:
                     rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars, p.bar_width,
-                                                 p.bar_spacing, rest, bars, previous_frame,
+                                                 p.bar_spacing, remainder, bars, previous_frame,
                                                  x_axis_info);
                     break;
                 case OUTPUT_RAW:
@@ -1162,13 +1166,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     exit(EXIT_FAILURE);
                 }
 
-                nanosleep(&req, NULL);
+                nanosleep(&framerate_timer, NULL);
             } // resize terminal
 
         } // reloading config
-        req.tv_sec = 0;
-        req.tv_nsec = 100; // waiting some time to make sure audio is ready
-        nanosleep(&req, NULL);
 
         //**telling audio thread to terminate**//
         audio.terminate = 1;
