@@ -243,6 +243,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             exit(EXIT_FAILURE);
         }
 
+        bool first = true;
         int inAtty;
 
         output_mode = p.output;
@@ -1110,12 +1111,16 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         if (bars[n] > height && senselow) {
                             p.sens = p.sens * 0.98;
                             senselow = false;
+                            first = false;
                         }
                     }
                 }
 
-                if (p.autosens && !silence && senselow)
+                if (p.autosens && !silence && senselow) {
                     p.sens = p.sens * 1.001;
+                    if (first)
+                        p.sens = p.sens * 1.1;
+                }
 
 #ifndef NDEBUG
                 mvprintw(number_of_bars + 1, 0, "sensitivity %.10e", p.sens);
