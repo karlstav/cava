@@ -15,7 +15,7 @@
 ; autosens = 1
 ; overshoot = 20
 
-# Manual sensitivity in %. Autosens must be turned off for this to take effect.
+# Manual sensitivity in %. If autosens is enabled, this will only be the initial value.
 # 200 means double height. Accepts only non-negative values.
 ; sensitivity = 100
 
