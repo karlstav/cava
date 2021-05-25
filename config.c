@@ -197,15 +197,19 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         p->output = OUTPUT_NONCURSES;
         p->bgcol = 0;
     }
+    if (strcmp(outputMethod, "noritake") == 0) {
+        p->output = OUTPUT_NORITAKE;
+        p->raw_format = FORMAT_NTK3000; // only format supported now
+    }
     if (strcmp(outputMethod, "raw") == 0) { // raw:
         p->output = OUTPUT_RAW;
         p->bar_spacing = 0;
         p->bar_width = 1;
 
         // checking data format
-        p->is_bin = -1;
+        p->raw_format = -1;
         if (strcmp(p->data_format, "binary") == 0) {
-            p->is_bin = 1;
+            p->raw_format = FORMAT_BINARY;
             // checking bit format:
             if (p->bit_format != 8 && p->bit_format != 16) {
                 write_errorf(
@@ -215,7 +219,7 @@ bool validate_config(struct config_params *p, struct error_s *error) {
                 return false;
             }
         } else if (strcmp(p->data_format, "ascii") == 0) {
-            p->is_bin = 0;
+            p->raw_format = FORMAT_ASCII;
             if (p->ascii_range < 1) {
                 write_errorf(error, "ascii max value must be a positive integer\n");
                 return false;
@@ -458,6 +462,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->fixedbars = iniparser_getint(ini, "general:bars", 0);
     p->bar_width = iniparser_getint(ini, "general:bar_width", 2);
     p->bar_spacing = iniparser_getint(ini, "general:bar_spacing", 1);
+    p->bar_height = iniparser_getint(ini, "general:bar_height", 32);
     p->framerate = iniparser_getint(ini, "general:framerate", 60);
     p->sens = iniparser_getint(ini, "general:sensitivity", 100);
     p->autosens = iniparser_getint(ini, "general:autosens", 1);
