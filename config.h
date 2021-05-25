@@ -48,8 +48,11 @@ enum output_method {
     OUTPUT_NONCURSES,
     OUTPUT_RAW,
     OUTPUT_SDL,
+    OUTPUT_NORITAKE,
     OUTPUT_NOT_SUPORTED
 };
+
+enum data_format { FORMAT_ASCII = 0, FORMAT_BINARY = 1, FORMAT_NTK3000 = 2 };
 
 enum xaxis_scale { NONE, FREQUENCY, NOTE };
 
@@ -63,10 +66,10 @@ struct config_params {
     enum input_method input;
     enum output_method output;
     enum xaxis_scale xaxis;
-    int userEQ_keys, userEQ_enabled, col, bgcol, autobars, stereo, is_bin, ascii_range, bit_format,
-        gradient, gradient_count, fixedbars, framerate, bar_width, bar_spacing, autosens, overshoot,
-        waves, fifoSample, fifoSampleBits, sleep_timer, sdl_width, sdl_height, sdl_x, sdl_y,
-        draw_and_quit, zero_test, non_zero_test, reverse;
+    int userEQ_keys, userEQ_enabled, col, bgcol, autobars, stereo, raw_format, ascii_range,
+        bit_format, gradient, gradient_count, fixedbars, framerate, bar_width, bar_spacing,
+        bar_height, autosens, overshoot, waves, fifoSample, fifoSampleBits, sleep_timer, sdl_width,
+        sdl_height, sdl_x, sdl_y, draw_and_quit, zero_test, non_zero_test, reverse;
 };
 
 struct error_s {

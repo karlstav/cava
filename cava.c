@@ -49,6 +49,7 @@
 #include "output/sdl_cava.h"
 #endif
 
+#include "output/noritake.h"
 #include "output/raw.h"
 #include "output/terminal_noncurses.h"
 
@@ -260,7 +261,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         output_mode = p.output;
 
-        if (output_mode != OUTPUT_RAW) {
+        if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE) {
             // Check if we're running in a tty
             inAtty = 0;
             if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0), "/dev/console") == 0)
@@ -571,6 +572,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 break;
 
             case OUTPUT_RAW:
+            case OUTPUT_NORITAKE:
                 if (strcmp(p.raw_target, "/dev/stdout") != 0) {
                     int fptest;
                     // checking if file exists
@@ -606,7 +608,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 // width must be hardcoded for raw output.
                 width = MAX_BARS;
 
-                if (strcmp(p.data_format, "binary") == 0) {
+                if (strcmp(p.data_format, "ascii") != 0) {
+                    // "binary" or "noritake"
                     height = pow(2, p.bit_format) - 1;
                 } else {
                     height = p.ascii_range;
@@ -1155,7 +1158,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
 
                     // zero values causes divided by zero segfault (if not raw)
-                    if (output_mode != OUTPUT_RAW && bars[n] < 1)
+                    if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE && bars[n] < 1)
                         bars[n] = 1;
 
                     // automatic sense adjustment
@@ -1206,10 +1209,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                                                  x_axis_info);
                     break;
                 case OUTPUT_RAW:
-                    rc = print_raw_out(number_of_bars, fp, p.is_bin, p.bit_format, p.ascii_range,
-                                       p.bar_delim, p.frame_delim, bars);
+                    rc = print_raw_out(number_of_bars, fp, p.raw_format, p.bit_format,
+                                       p.ascii_range, p.bar_delim, p.frame_delim, bars);
                     break;
-
+                case OUTPUT_NORITAKE:
+                    rc = print_ntk_out(number_of_bars, fp, p.raw_format, p.bit_format, p.bar_width,
+                                       p.bar_spacing, p.bar_height, bars);
+                    break;
                 default:
                     exit(EXIT_FAILURE); // Can't happen.
                 }
@@ -1242,7 +1248,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     total_frames++;
                     if (total_frames >= p.draw_and_quit) {
                         for (int n = 0; n < number_of_bars; n++) {
-                            if (output_mode != OUTPUT_RAW && bars[n] == 1) {
+                            if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE &&
+                                bars[n] == 1) {
                                 bars[n] = 0;
                             }
                             total_bar_height += bars[n];

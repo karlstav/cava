@@ -4,7 +4,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = cava
 cava_SOURCES = cava.c config.c input/common.c input/fifo.c input/shmem.c \
-               output/terminal_noncurses.c output/raw.c
+               output/terminal_noncurses.c output/raw.c output/noritake.c
 cava_CPPFLAGS = -DPACKAGE=\"$(PACKAGE)\" -DVERSION=\"$(VERSION)\" \
            -D_POSIX_SOURCE -D _POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE_EXTENDED \
 	   -DFONTDIR=\"@FONT_DIR@\"

@@ -24,6 +24,8 @@
 ; bars = 0
 ; bar_width = 2
 ; bar_spacing = 1
+# bar_height is only used for output in "noritake" format
+; bar_height = 32
 
 # For SDL width and space between bars is in pixels, defaults are:
 ; bar_width = 20
@@ -77,13 +79,16 @@
 
 [output]
 
-# Output method. Can be 'ncurses', 'noncurses', 'raw' or 'sdl'.
+# Output method. Can be 'ncurses', 'noncurses', 'raw', 'noritake' or 'sdl'.
 # 'noncurses' uses a custom framebuffer technique and prints only changes
 # from frame to frame in the terminal. 'ncurses' is default if supported.
 #
 # 'raw' is an 8 or 16 bit (configurable via the 'bit_format' option) data
 # stream of the bar heights that can be used to send to other applications.
 # 'raw' defaults to 200 bars, which can be adjusted in the 'bars' option above.
+#
+# 'noritake' outputs a bitmap in the format expected by a Noritake VFD display
+#  in graphic mode. It only support the 3000 series graphical VFDs for now.
 #
 # 'sdl' uses the Simple DirectMedia Layer to render in a graphical context.
 ; method = ncurses
