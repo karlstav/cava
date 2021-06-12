@@ -547,7 +547,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     int fptest;
                     // checking if file exists
                     if (access(p.raw_target, F_OK) != -1) {
-                        // testopening in case it's a fifo
+                        // file exists, testopening in case it's a fifo
                         fptest = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644);
 
                         if (fptest == -1) {
@@ -562,8 +562,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         }
                         // fifo needs to be open for reading in order to write to it
                         fptest = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644);
-                        fp = open(p.raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
                     }
+                    fp = open(p.raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
                 } else {
                     fp = fileno(stdout);
                     fprintf(stderr, "Opening stdout\n");
