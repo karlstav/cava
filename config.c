@@ -59,16 +59,16 @@ int validate_color(char *checkColor, void *params, void *err) {
     if (checkColor[0] == '#' && strlen(checkColor) == 7) {
         // If the output mode is not ncurses, tell the user to use a named colour instead of hex
         // colours.
-        if (p->output != OUTPUT_NCURSES) {
-#ifdef NCURSES
+        if (p->output != OUTPUT_NCURSES && p->output != OUTPUT_SDL) {
+#if defined(NCURSES)  || defined(SDL)
             write_errorf(error,
                          "hex color configured, but ncurses not set. Forcing ncurses mode.\n");
             p->output = OUTPUT_NCURSES;
 #else
             write_errorf(error,
-                         "Only 'ncurses' output method supports HTML colors "
+                         "Only 'ncurses' and sdl output method supports HTML colors "
                          "(required by gradient). "
-                         "Cava was built without ncurses support, install ncurses(w) dev files "
+                         "Cava was built without sdl or ncurses support, install ncurses(w) or sdl dev files "
                          "and rebuild.\n");
             return 0;
 #endif
@@ -87,6 +87,11 @@ int validate_color(char *checkColor, void *params, void *err) {
             }
         }
     } else {
+        if (p->output == OUTPUT_SDL) { 
+            write_errorf(error,
+                    "SDL only supports setting color in html format\n");
+            return 0;
+        }
         if ((strcmp(checkColor, "black") == 0) || (strcmp(checkColor, "red") == 0) ||
             (strcmp(checkColor, "green") == 0) || (strcmp(checkColor, "yellow") == 0) ||
             (strcmp(checkColor, "blue") == 0) || (strcmp(checkColor, "magenta") == 0) ||
@@ -177,6 +182,14 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         p->bgcol = -1;
 #ifndef NCURSES
         write_errorf(error, "cava was built without ncurses support, install ncursesw dev files "
+                            "and run make clean && ./configure && make again\n");
+        return false;
+#endif
+    }
+    if (strcmp(outputMethod, "sdl") == 0) {
+        p->output = OUTPUT_SDL;
+#ifndef SDL
+        write_errorf(error, "cava was built without sdl support, install sdl dev files "
                             "and run make clean && ./configure && make again\n");
         return false;
 #endif
@@ -446,6 +459,13 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     if (!load_colors(p, ini, error)) {
         return false;
     }
+#ifdef SDL
+    if (strcmp(outputMethod, "sdl") == 0) {
+        p->color = strdup(iniparser_getstring(ini, "color:foreground", "#00ffff"));
+        p->bcolor = strdup(iniparser_getstring(ini, "color:background", "#000000"));
+    }
+#endif
+
 
     p->fixedbars = iniparser_getint(ini, "general:bars", 0);
     p->bar_width = iniparser_getint(ini, "general:bar_width", 2);
@@ -472,6 +492,14 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->frame_delim = (char)iniparser_getint(ini, "output:frame_delimiter", 10);
     p->ascii_range = iniparser_getint(ini, "output:ascii_max_range", 1000);
     p->bit_format = iniparser_getint(ini, "output:bit_format", 16);
+#ifdef SDL
+    p->sdl_width = iniparser_getint(ini, "output:sdl_width", 640);
+    p->sdl_height = iniparser_getint(ini, "output:sdl_height", 480);
+    p->sdl_x = iniparser_getint(ini, "output:sdl_x", -1);
+    p->sdl_y = iniparser_getint(ini, "output:sdl_y", -1);
+    p->bar_width = iniparser_getint(ini, "general:bar_width", 20);
+    p->bar_spacing = iniparser_getint(ini, "general:bar_spacing", 5);
+#endif
 
     // read & validate: eq
     p->userEQ_keys = iniparser_getsecnkeys(ini, "eq");

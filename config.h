@@ -43,7 +43,7 @@ enum input_method {
     INPUT_MAX
 };
 
-enum output_method { OUTPUT_NCURSES, OUTPUT_NONCURSES, OUTPUT_RAW, OUTPUT_NOT_SUPORTED };
+enum output_method { OUTPUT_NCURSES, OUTPUT_NONCURSES, OUTPUT_RAW, OUTPUT_SDL, OUTPUT_NOT_SUPORTED };
 
 enum xaxis_scale { NONE, FREQUENCY, NOTE };
 
@@ -59,7 +59,7 @@ struct config_params {
     enum xaxis_scale xaxis;
     int userEQ_keys, userEQ_enabled, col, bgcol, autobars, stereo, is_bin, ascii_range, bit_format,
         gradient, gradient_count, fixedbars, framerate, bar_width, bar_spacing, autosens, overshoot,
-        waves, fifoSample, fifoSampleBits, sleep_timer;
+        waves, fifoSample, fifoSampleBits, sleep_timer, sdl_width, sdl_height, sdl_x, sdl_y;
 };
 
 struct error_s {

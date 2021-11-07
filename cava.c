@@ -41,6 +41,10 @@
 #include <curses.h>
 #endif
 
+#ifdef SDL
+#include "output/sdl_cava.h"
+#endif
+
 #include "output/raw.h"
 #include "output/terminal_noncurses.h"
 
@@ -94,6 +98,12 @@ void cleanup(void) {
 #endif
     } else if (output_mode == OUTPUT_NONCURSES) {
         cleanup_terminal_noncurses();
+    } else if (output_mode == OUTPUT_SDL) {
+#ifdef SDL
+        cleanup_sdl();
+#else
+        ;
+#endif
     }
 }
 
@@ -505,6 +515,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         int height, lines, width, remainder, fp;
 
+#ifdef SDL
+        // output: start sdl mode
+        if (output_mode == OUTPUT_SDL) {
+            init_sdl_window(p.sdl_width, p.sdl_height, p.sdl_x, p.sdl_y);
+            height = p.sdl_height;
+            width = p.sdl_width;
+        }
+#endif
+
         bool reloadConf = false;
         while (!reloadConf) { // jumping back to this loop means that you resized the screen
             for (int n = 0; n < 256; n++) {
@@ -530,6 +549,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     lines--;
                 // we have 8 times as much height due to using 1/8 block characters
                 height = lines * 8;
+                break;
+#endif
+#ifdef SDL
+            // output: get sdl window size
+            case OUTPUT_SDL:
+                init_sdl_surface(&width, &height, p.color, p.bcolor);
                 break;
 #endif
             case OUTPUT_NONCURSES:
@@ -845,6 +870,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 framerate_timer.tv_nsec = (1 / (float)p.framerate) * 1e9;
             }
 
+            int frame_time_msec = (1 /  (float)p.framerate) * 1000;
             int sleep_counter = 0;
             bool silence = false;
             char ch = '\0';
@@ -1145,6 +1171,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                                                p.gradient, x_axis_info);
                     break;
 #endif
+#ifdef SDL
+                case OUTPUT_SDL:
+                    rc = draw_sdl(number_of_bars, p.bar_width, p.bar_spacing, height, bars,
+                          previous_frame, frame_time_msec);
+                    break;
+#endif
                 case OUTPUT_NONCURSES:
                     rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars, p.bar_width,
                                                  p.bar_spacing, remainder, bars, previous_frame,
@@ -1163,6 +1195,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 if (rc == -1)
                     resizeTerminal = true;
 
+                if (rc == -2) {
+                    resizeTerminal = true;
+                    reloadConf = true;
+                    should_quit = true;
+                }
+
 #endif
 
                 memcpy(previous_frame, bars, 256 * sizeof(int));
@@ -1174,7 +1212,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     exit(EXIT_FAILURE);
                 }
 
-                nanosleep(&framerate_timer, NULL);
+                if (output_mode != OUTPUT_SDL)
+                    nanosleep(&framerate_timer, NULL);
             } // resize terminal
 
         } // reloading config
