@@ -45,6 +45,10 @@ if NCURSES
     cava_SOURCES += output/terminal_ncurses.c
 endif
 
+if SDL
+    cava_SOURCES += output/sdl_cava.c
+endif
+
 
 if !SYSTEM_LIBINIPARSER
     cava_LDADD = -liniparser
