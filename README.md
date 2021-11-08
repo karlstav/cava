@@ -5,7 +5,7 @@ C.A.V.A. [![Build Status](https://github.com/karlstav/cava/workflows/build/badge
 
 also supports audio input from Pulseaudio, fifo (mpd), sndio, squeezelite and portaudio.
 
-Now also works on macOS!
+Now with SDL support!
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
@@ -81,6 +81,9 @@ Recomended components:
 * Portaudio, or
 * Sndio
 
+Optional components:
+* SDL2 dev files
+
 Only FFTW and the other build tools are actually required for CAVA to compile, but this will only give you the ability to read from fifo files. To more easly grab audio from your system pulseaudio, alsa, sndio or portaudio dev files are recommended (depending on what audio system you are using). Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio. 
 
 
@@ -92,7 +95,7 @@ All the requirements can be installed easily in all major distros:
 
 Debian Buster or higher/Ubuntu 18.04 or higher :
 
-    apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake libiniparser-dev
+    apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake libiniparser-dev libsdl2-2.0-0 libsdl2-dev
     export CPPFLAGS=-I/usr/include/iniparser
 
 
