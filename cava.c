@@ -862,15 +862,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
             bool resizeTerminal = false;
 
+            int frame_time_msec = (1 / (float)p.framerate) * 1000;
             struct timespec framerate_timer = {.tv_sec = 0, .tv_nsec = 0};
             if (p.framerate <= 1) {
-                framerate_timer.tv_sec = 1 / (float)p.framerate;
+                framerate_timer.tv_sec = frame_time_msec * 1000;
             } else {
                 framerate_timer.tv_sec = 0;
-                framerate_timer.tv_nsec = (1 / (float)p.framerate) * 1e9;
+                framerate_timer.tv_nsec = frame_time_msec * 1e6;
             }
 
-            int frame_time_msec = (1 /  (float)p.framerate) * 1000;
             int sleep_counter = 0;
             bool silence = false;
             char ch = '\0';
@@ -971,18 +971,20 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     }
                 }
 
-                if (p.sleep_timer) {
-                    if (silence && sleep_counter <= p.framerate * p.sleep_timer)
-                        sleep_counter++;
-                    else if (!silence)
-                        sleep_counter = 0;
+                if (output_mode != OUTPUT_SDL) {
+                    if (p.sleep_timer) {
+                        if (silence && sleep_counter <= p.framerate * p.sleep_timer)
+                            sleep_counter++;
+                        else if (!silence)
+                            sleep_counter = 0;
 
-                    if (sleep_counter > p.framerate * p.sleep_timer) {
+                        if (sleep_counter > p.framerate * p.sleep_timer) {
 #ifndef NDEBUG
-                        printw("no sound detected for 30 sec, going to sleep mode\n");
+                            printw("no sound detected for 30 sec, going to sleep mode\n");
 #endif
-                        nanosleep(&sleep_mode_timer, NULL);
-                        continue;
+                            nanosleep(&sleep_mode_timer, NULL);
+                            continue;
+                        }
                     }
                 }
 
