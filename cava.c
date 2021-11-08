@@ -1176,7 +1176,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #ifdef SDL
                 case OUTPUT_SDL:
                     rc = draw_sdl(number_of_bars, p.bar_width, p.bar_spacing, height, bars,
-                          previous_frame, frame_time_msec);
+                                  previous_frame, frame_time_msec);
                     break;
 #endif
                 case OUTPUT_NONCURSES:

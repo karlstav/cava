@@ -43,7 +43,13 @@ enum input_method {
     INPUT_MAX
 };
 
-enum output_method { OUTPUT_NCURSES, OUTPUT_NONCURSES, OUTPUT_RAW, OUTPUT_SDL, OUTPUT_NOT_SUPORTED };
+enum output_method {
+    OUTPUT_NCURSES,
+    OUTPUT_NONCURSES,
+    OUTPUT_RAW,
+    OUTPUT_SDL,
+    OUTPUT_NOT_SUPORTED
+};
 
 enum xaxis_scale { NONE, FREQUENCY, NOTE };
 
