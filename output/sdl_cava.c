@@ -67,8 +67,8 @@ void init_sdl_surface(int *w, int *h, char *const fg_color_string, char *const b
     SDL_RenderPresent(gRenderer);
 }
 
-int draw_sdl(int bars_count, int bar_width, int bar_spacing, int height, const int bars[256],
-             int previous_frame[256], int frame_time) {
+int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int height,
+             const int bars[256], int previous_frame[256], int frame_time) {
 
     bool update = false;
     int rc = 0;
@@ -79,7 +79,7 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int height, const i
 
             // clear bar from previous frame if lower
             if (bars[bar] < previous_frame[bar]) {
-                fillRect.x = bar * (bar_width + bar_spacing);
+                fillRect.x = bar * (bar_width + bar_spacing) + remainder;
                 fillRect.y = height - previous_frame[bar];
                 fillRect.w = bar_width;
                 fillRect.h = previous_frame[bar];
@@ -88,7 +88,7 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int height, const i
             }
 
             // draw new bar
-            fillRect.x = bar * (bar_width + bar_spacing);
+            fillRect.x = bar * (bar_width + bar_spacing) + remainder;
             fillRect.y = height - bars[bar];
             fillRect.w = bar_width;
             fillRect.h = bars[bar];
