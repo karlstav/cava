@@ -68,7 +68,7 @@ void init_sdl_surface(int *w, int *h, char *const fg_color_string, char *const b
 }
 
 int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int height,
-             const int bars[256], int previous_frame[256], int frame_time) {
+             const int bars[], int previous_frame[], int frame_time) {
 
     bool update = false;
     int rc = 0;

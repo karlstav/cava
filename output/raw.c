@@ -7,7 +7,7 @@ int16_t buf_16;
 int8_t buf_8;
 
 int print_raw_out(int bars_count, int fd, int is_binary, int bit_format, int ascii_range,
-                  char bar_delim, char frame_delim, int const f[200]) {
+                  char bar_delim, char frame_delim, int const f[]) {
     if (is_binary) {
         for (int i = 0; i < bars_count; i++) {
             int f_limited = f[i];

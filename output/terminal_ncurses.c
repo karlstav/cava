@@ -192,8 +192,8 @@ void get_terminal_dim_ncurses(int *width, int *height) {
 #define TERMINAL_RESIZED -1
 
 int draw_terminal_ncurses(int is_tty, int terminal_height, int terminal_width, int bars_count,
-                          int bar_width, int bar_spacing, int rest, const int bars[256],
-                          int previous_frame[256], int gradient, int x_axis_info) {
+                          int bar_width, int bar_spacing, int rest, const int bars[],
+                          int previous_frame[], int gradient, int x_axis_info) {
     const int height = terminal_height - 1;
 
     // output: check if terminal has been resized

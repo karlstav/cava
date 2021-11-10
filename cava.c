@@ -13,6 +13,8 @@
 #define M_PI 3.1415926535897932385
 #endif
 
+#define MAX_BARS 1024
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -31,6 +33,8 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+
+#include "config.h"
 
 #include "debug.h"
 #include "util.h"
@@ -55,8 +59,6 @@
 #include "input/pulse.h"
 #include "input/shmem.h"
 #include "input/sndio.h"
-
-#include "config.h"
 
 #ifdef __GNUC__
 // curses.h or other sources may already define
@@ -311,9 +313,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         audio.format = -1;
         audio.rate = 0;
-        audio.FFTbassbufferSize = 4096;
-        audio.FFTmidbufferSize = 2048;
-        audio.FFTtreblebufferSize = 1024;
+        audio.FFTbassbufferSize = MAX_BARS * 4;
+        audio.FFTmidbufferSize = MAX_BARS * 2;
+        audio.FFTtreblebufferSize = MAX_BARS;
         audio.terminate = 0;
         if (p.stereo)
             audio.channels = 2;
@@ -338,8 +340,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         temp_l = (double *)malloc((audio.FFTbassbufferSize / 2 + 1) * sizeof(double));
         temp_r = (double *)malloc((audio.FFTbassbufferSize / 2 + 1) * sizeof(double));
 
-        bars_left = (int *)malloc(256 * sizeof(int));
-        bars_right = (int *)malloc(256 * sizeof(int));
+        bars_left = (int *)malloc(MAX_BARS * sizeof(int));
+        bars_right = (int *)malloc(MAX_BARS * sizeof(int));
 
         for (int i = 0; i < audio.FFTbassbufferSize; i++) {
             audio.bass_multiplier[i] =
@@ -506,12 +508,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             exit(EXIT_FAILURE);
         }
 
-        int bars[256];
-        int bars_mem[256];
-        int bars_last[256];
-        int previous_frame[256];
-        int fall[256];
-        float bars_peak[256];
+        int bars[MAX_BARS];
+        int bars_mem[MAX_BARS];
+        int bars_last[MAX_BARS];
+        int previous_frame[MAX_BARS];
+        int fall[MAX_BARS];
+        float bars_peak[MAX_BARS];
 
         int height, lines, width, remainder, fp;
 
@@ -526,7 +528,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         bool reloadConf = false;
         while (!reloadConf) { // jumping back to this loop means that you resized the screen
-            for (int n = 0; n < 256; n++) {
+            for (int n = 0; n < MAX_BARS; n++) {
                 bars_last[n] = 0;
                 previous_frame[n] = 0;
                 fall[n] = 0;
@@ -600,7 +602,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 fprintf(stderr, "open file %s for writing raw output\n", p.raw_target);
 
                 // width must be hardcoded for raw output.
-                width = 256;
+                width = MAX_BARS;
 
                 if (strcmp(p.data_format, "binary") == 0) {
                     height = pow(2, p.bit_format) - 1;
@@ -628,8 +630,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
             if (number_of_bars < 1)
                 number_of_bars = 1; // must have at least 1 bars
-            if (number_of_bars > 256)
-                number_of_bars = 256; // cant have more than 256 bars
+            if (number_of_bars > MAX_BARS)
+                number_of_bars = MAX_BARS; // cant have more than MAX_BARS bars
 
             if (p.stereo) { // stereo must have even numbers of bars
                 if (number_of_bars % 2 != 0)
@@ -673,13 +675,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             double frequency_constant = log10((float)p.lower_cut_off / (float)p.upper_cut_off) /
                                         (1 / ((float)number_of_bars + 1) - 1);
 
-            float cut_off_frequency[256];
-            float upper_cut_off_frequency[256];
-            float relative_cut_off[256];
-            double center_frequencies[256];
-            int FFTbuffer_lower_cut_off[256];
-            int FFTbuffer_upper_cut_off[256];
-            double eq[256];
+            float cut_off_frequency[MAX_BARS];
+            float upper_cut_off_frequency[MAX_BARS];
+            float relative_cut_off[MAX_BARS];
+            double center_frequencies[MAX_BARS];
+            int FFTbuffer_lower_cut_off[MAX_BARS];
+            int FFTbuffer_upper_cut_off[MAX_BARS];
+            double eq[MAX_BARS];
 
             int bass_cut_off_bar = -1;
             int treble_cut_off_bar = -1;
@@ -1205,7 +1207,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 #endif
 
-                memcpy(previous_frame, bars, 256 * sizeof(int));
+                memcpy(previous_frame, bars, MAX_BARS * sizeof(int));
 
                 // checking if audio thread has exited unexpectedly
                 if (audio.terminate == 1) {

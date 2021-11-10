@@ -35,7 +35,7 @@ void get_terminal_dim_bcircle(int *w, int *h) {
     clear(); // clearing in case of resieze
 }
 
-int draw_terminal_bcircle(int tty, int h, int w, int f[200]) {
+int draw_terminal_bcircle(int tty, int h, int w, int f[]) {
 
     const wchar_t *bars[] = {L"\u2581", L"\u2582", L"\u2583", L"\u2584",
                              L"\u2585", L"\u2586", L"\u2587", L"\u2588"};

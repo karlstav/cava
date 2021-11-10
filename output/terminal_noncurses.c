@@ -155,7 +155,7 @@ void get_terminal_dim_noncurses(int *width, int *lines) {
 }
 
 int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, int bar_width,
-                            int bar_spacing, int rest, int bars[256], int previous_frame[256],
+                            int bar_spacing, int rest, int bars[], int previous_frame[],
                             int x_axis_info) {
 
     int current_cell, prev_cell, same_line, new_line, cx;
