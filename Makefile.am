@@ -16,10 +16,12 @@ cava_CPPFLAGS = -DPACKAGE=\"$(PACKAGE)\" -DVERSION=\"$(VERSION)\" \
 	   -DFONTDIR=\"@FONT_DIR@\"
 cava_CFLAGS = -std=c99 -Wall -Werror -Wextra -Wno-unused-result -Wno-unknown-warning-option -Wno-maybe-uninitialized -Wno-vla-parameter
 
+cava_LDADD = 
+
 if OSX
     cava_CFLAGS += -DNORT
 else
-    cava_LDADD = -lrt
+    cava_LDADD += -lrt
     cava_font_dir = @FONT_DIR@
     cava_font__DATA = cava.psf
 endif
@@ -50,7 +52,7 @@ endif
 
 
 if !SYSTEM_LIBINIPARSER
-    cava_LDADD = -liniparser
+    cava_LDADD += -liniparser
     cava_SOURCES += iniparser/libiniparser.la
     cava_LDADD += -Liniparser/.libs
     cava_CPPFLAGS += -Iiniparser/src
