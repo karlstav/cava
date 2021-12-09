@@ -316,6 +316,10 @@ case "${host_os}" in
         AC_MSG_NOTICE([OSX detected])
         build_mac=yes
         ;;
+    freebsd*)
+        AC_MSG_NOTICE([FreeBSD detected])
+        build_linux=yes
+        ;;
     *)
         AC_MSG_ERROR(["OS $host_os is not supported"])
         ;;
