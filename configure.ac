@@ -113,7 +113,7 @@ AS_IF([test "x$enable_input_pulse" != "xno"], [
   fi
 
   if [[ $have_pulse = "no" ]] ; then
-    AC_MSG_NOTICE([WARNING: No pusleaudio dev files found building without pulseaudio support])
+    AC_MSG_NOTICE([WARNING: No pulseaudio dev files found building without pulseaudio support])
   fi],
   [have_pulse=no]
 )
