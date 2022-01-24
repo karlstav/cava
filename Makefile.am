@@ -1,12 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-if !SYSTEM_LIBINIPARSER
-    SUBDIRS = iniparser
-endif
-
 ACLOCAL_AMFLAGS = -I m4
-
-M_CPPFLAGS = -DSYSTEM_LIBINIPARSER=@SYSTEM_LIBINIPARSER@
 
 bin_PROGRAMS = cava
 cava_SOURCES = cava.c config.c input/common.c input/fifo.c input/shmem.c \
@@ -48,13 +42,4 @@ endif
 if SDL
     cava_SOURCES += output/sdl_cava.c
 endif
-
-
-if !SYSTEM_LIBINIPARSER
-    cava_LDADD += -liniparser
-    cava_SOURCES += iniparser/libiniparser.la
-    cava_LDADD += -Liniparser/.libs
-    cava_CPPFLAGS += -Iiniparser/src
-endif
-
 

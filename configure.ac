@@ -254,41 +254,24 @@ AM_CONDITIONAL([NCURSES], [test "x$have_ncurses" = "xyes"])
 
 
 dnl ######################
-dnl checking for system iniparser
+dnl checking for iniparser
 dnl ######################
 
-AC_ARG_ENABLE([system_iniparser],
-  AS_HELP_STRING([--disable-system-iniparser],
-    [do not use system iniparser library (use bundled iniparser library)])
-)
-
-AS_IF([test "x$enable_system_iniparser" != "xno"], [
-  AC_SEARCH_LIBS([iniparser_load], [iniparser], [
-    AC_CHECK_HEADERS([iniparser.h], [have_system_iniparser=yes])
-    ])
-  ],
-  [have_system_iniparser=no]
-)
-
-AM_CONDITIONAL([SYSTEM_LIBINIPARSER], [test "x$have_system_iniparser" = "xyes"])
-
-if test "x$have_system_iniparser" = "xyes"; then
-  AC_SUBST(SYSTEM_LIBINIPARSER, 1)
-  AC_MSG_NOTICE([Using installed iniparser])
-  LIBS="$LIBS -liniparser"
-  AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <iniparser.h>]],
-    [[dictionary* ini;
-    const char *keys[3];
-    iniparser_getseckeys(ini, "eq", keys);]])],
-    [AC_MSG_RESULT(iniparser > 3.2 test OK)],
-    [AC_MSG_RESULT(iniparser > 3.2 test failed falling back to legacy iniparser mode)
-    CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"])
-else
-  AC_SUBST(SYSTEM_LIBINIPARSER, 0)
-  AC_CONFIG_FILES(iniparser/Makefile)
-  AC_MSG_NOTICE([Building iniparser])
-fi
-
+AC_CHECK_LIB(iniparser,iniparser_load, have_iniparser=yes, have_iniparser=no)
+    if [[ $have_iniparser = "yes" ]] ; then
+    LIBS="$LIBS -liniparser"
+      CPPFLAGS="$CPPFLAGS -I/usr/include/iniparser"
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <iniparser.h>]],
+      [[dictionary* ini;
+      const char *keys[3];
+      iniparser_getseckeys(ini, "eq", keys);]])],
+      [AC_MSG_RESULT(iniparser > 3.2 test OK)],
+      [AC_MSG_RESULT(iniparser > 3.2 test failed falling back to legacy iniparser mode)
+      CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"])
+    fi
+    if [[ $have_iniparser = "no" ]] ; then
+      AC_MSG_ERROR([iniparser library is required!])
+    fi
 
 dnl ############################
 dnl Set font directory

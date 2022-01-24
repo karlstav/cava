@@ -96,7 +96,6 @@ All the requirements can be installed easily in all major distros:
 Debian Buster or higher/Ubuntu 18.04 or higher :
 
     apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake libiniparser-dev libsdl2-2.0-0 libsdl2-dev
-    export CPPFLAGS=-I/usr/include/iniparser
 
 
 older Debian/Ubuntu:

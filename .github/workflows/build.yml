@@ -17,7 +17,7 @@ jobs:
     - name: Generate configure
       run: ./autogen.sh
     - name: Run ./configure
-      run: CPPFLAGS=-I/usr/include/iniparser ./configure
+      run: ./configure
     - name: Run make
       run: make
   build-macos:
