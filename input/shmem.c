@@ -34,10 +34,10 @@ void *input_shmem(void *data) {
     int buf_frames;
     int fftw_frames = audio->FFTtreblebufferSize;
     struct timespec req = {.tv_sec = 0, .tv_nsec = 0};
-    int16_t buf[fftw_frames];
+    int16_t buf[fftw_frames * 2];
 
-    s16_t silence_buffer[fftw_frames];
-    for (int i = 0; i < fftw_frames; i++)
+    s16_t silence_buffer[fftw_frames * 2];
+    for (int i = 0; i < fftw_frames * 2; i++)
         silence_buffer[i] = 0;
 
     printf("input_shmem: source: %s", audio->source);
@@ -68,8 +68,8 @@ void *input_shmem(void *data) {
             // fft, and not the power spectrum, so we can just read in the
             // whole buffer.
             pthread_mutex_lock(&lock);
-            for (int i = 0; i < buf_frames / fftw_frames; i += fftw_frames) {
-                for (int n = 0; n < fftw_frames; n++) {
+            for (int i = 0; i < buf_frames / (fftw_frames * 2); i += fftw_frames * 2) {
+                for (int n = 0; n < fftw_frames * 2; n++) {
                     buf[n] = mmap_area->buffer[n + i];
                 }
                 write_to_fftw_input_buffers(fftw_frames, buf, audio);
