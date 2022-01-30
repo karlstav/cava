@@ -646,12 +646,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 remainder = 0;
 
             // process [smoothing]: calculate gravity
-            float g = p.gravity * ((float)height / 2160) * pow((60 / (float)p.framerate), 2.5);
+            float g = p.gravity * log10((float)height) * 0.05 * pow((60 / (float)p.framerate), 2.5);
+
+            if (output_mode == OUTPUT_SDL) {
+                g *= 1.5; // we can assume sdl to have higher resolution so a bit more g is
+                          // nescescary.
+            }
 
             // calculate integral value, must be reduced with height
             double integral = p.integral;
-            if (height > 320)
-                integral = p.integral * 1 / sqrt((log10((float)height / 10)));
 
 #ifndef NDEBUG
             debug("height: %d width: %d bars:%d bar width: %d remainder: %d\n", height, width,
