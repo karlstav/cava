@@ -3,7 +3,7 @@
 if [ -d .git ]; then
   git describe --always --tags --dirty > version # get version from git
 else
-  echo 0.7.4 > version # hard coded versions
+  echo 0.7.5 > version # hard coded versions
 fi
 
 libtoolize
