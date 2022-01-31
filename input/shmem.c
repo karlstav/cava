@@ -40,17 +40,18 @@ void *input_shmem(void *data) {
     for (int i = 0; i < fftw_frames * 2; i++)
         silence_buffer[i] = 0;
 
-    printf("input_shmem: source: %s", audio->source);
+    // printf("input_shmem: source: %s", audio->source);
 
     fd = shm_open(audio->source, O_RDWR, 0666);
 
     if (fd < 0) {
-        printf("Could not open source '%s': %s\n", audio->source, strerror(errno));
+        fprintf(stderr, "Could not open source '%s': %s\n", audio->source, strerror(errno));
         exit(EXIT_FAILURE);
     } else {
         mmap_area = mmap(NULL, sizeof(vis_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
         if ((intptr_t)mmap_area == -1) {
-            printf("mmap failed - check if squeezelite is running with visualization enabled\n");
+            fprintf(stderr,
+                    "mmap failed - check if squeezelite is running with visualization enabled\n");
             exit(EXIT_FAILURE);
         }
     }
@@ -85,14 +86,15 @@ void *input_shmem(void *data) {
     // cleanup
     if (fd > 0) {
         if (close(fd) != 0) {
-            printf("Could not close file descriptor %d: %s", fd, strerror(errno));
+            fprintf(stderr, "Could not close file descriptor %d: %s", fd, strerror(errno));
         }
     } else {
-        printf("Wrong file descriptor %d", fd);
+        fprintf(stderr, "Wrong file descriptor %d", fd);
     }
 
     if (munmap(mmap_area, mmap_count) != 0) {
-        printf("Could not munmap() area %p+%d. %s", mmap_area, mmap_count, strerror(errno));
+        fprintf(stderr, "Could not munmap() area %p+%d. %s", mmap_area, mmap_count,
+                strerror(errno));
     }
     return 0;
 }

@@ -30,7 +30,7 @@ jobs:
       run: ./cava -p example_files/test_configs/fifo_zero_test > /dev/null
     - name: run shmem test
       continue-on-error: true
-      run: ./cava -p example_files/test_configs/shmem_zero_test
+      run: ./cava -p example_files/test_configs/shmem_zero_test > /dev/null
     - name: run sndio test
       continue-on-error: true
       run: ./cava -p example_files/test_configs/sndio_zero_test > /dev/null
