@@ -1,0 +1,42 @@
+name: build-and-test
+on: [push, pull_request]
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake libiniparser-dev portaudio19-dev libsndio-dev libsdl2-2.0-0 libsdl2-dev squeezelite
+    - name: Generate configure
+      run: ./autogen.sh
+    - name: Run ./configure
+      run: ./configure
+    - name: Run make
+      run: make
+    - name: Prepare tests
+      run: |
+        squeezelite -v -m 51:fb:32:f8:e6:9f -z
+        sudo modprobe snd-aloop
+        arecord -D hw:Loopback,1 -c 2 -r 44100 > /tmp/fifo &
+    - name: Run all tests
+      run: ./run_all_tests.sh
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        brew install fftw ncurses libtool automake portaudio iniparser sdl2
+        ln -s /usr/local/bin/glibtoolize /usr/local/bin/libtoolize
+    - name: Generate configure
+      run: ./autogen.sh
+    - name: Run ./configure
+      run: LDFLAGS="-L/usr/local/opt/ncurses/lib" CPPFLAGS="-I/usr/local/opt/ncurses/include" ./configure
+    - name: Run make
+      run: make
+    - name: run non zero test
+      run: ./cava -p example_files/test_configs/non_zero_test
+    - name: run portaudio test
+      run: ./cava -p example_files/test_configs/portaudio_zero_test

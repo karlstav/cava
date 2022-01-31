@@ -415,6 +415,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         pthread_t p_thread;
         int timeout_counter = 0;
+        int total_bar_height = 0;
 
         struct timespec timeout_timer = {.tv_sec = 0, .tv_nsec = 1000000};
         int thr_id GCC_UNUSED;
@@ -593,13 +594,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     fp = open(p.raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
                 } else {
                     fp = fileno(stdout);
-                    fprintf(stderr, "Opening stdout\n");
                 }
                 if (fp == -1) {
                     fprintf(stderr, "could not open file %s for writing\n", p.raw_target);
                     exit(1);
                 }
-                fprintf(stderr, "open file %s for writing raw output\n", p.raw_target);
+#ifndef NDEBUG
+                debug("open file %s for writing raw output\n", p.raw_target);
+#endif
 
                 // width must be hardcoded for raw output.
                 width = MAX_BARS;
@@ -886,6 +888,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
 
             struct timespec sleep_mode_timer = {.tv_sec = 1, .tv_nsec = 0};
+
+            int total_frames = 0;
 
             while (!resizeTerminal) {
 
@@ -1221,6 +1225,22 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                 if (output_mode != OUTPUT_SDL)
                     nanosleep(&framerate_timer, NULL);
+
+                if (p.draw_and_quit > 0) {
+                    total_frames++;
+                    if (total_frames >= p.draw_and_quit) {
+                        for (int n = 0; n < number_of_bars; n++) {
+                            if (output_mode != OUTPUT_RAW && bars[n] == 1) {
+                                bars[n] = 0;
+                            }
+                            total_bar_height += bars[n];
+                        }
+                        resizeTerminal = true;
+                        reloadConf = true;
+                        should_quit = true;
+                        break;
+                    }
+                }
             } // resize terminal
 
         } // reloading config
@@ -1257,9 +1277,19 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         cleanup();
 
-        if (should_quit)
-            return EXIT_SUCCESS;
-
+        if (should_quit) {
+            if (p.zero_test && total_bar_height > 0) {
+                fprintf(stderr, "Test mode: expected total bar height to be zero, but was: %d\n",
+                        total_bar_height);
+                return EXIT_FAILURE;
+            } else if (p.non_zero_test && total_bar_height == 0) {
+                fprintf(stderr,
+                        "Test mode: expected total bar height to be non-zero, but was zero\n");
+                return EXIT_FAILURE;
+            } else {
+                return EXIT_SUCCESS;
+            }
+        }
         // fclose(fp);
     }
 }

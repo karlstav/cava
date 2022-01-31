@@ -1,0 +1,15 @@
+## test config file for CAVA, testing if any sndio input.
+
+[general]
+
+draw_and_quit = 60
+zero_test = 0
+non_zero_test = 0
+
+[input]
+method = sndio
+
+
+[output]
+method = raw
+data_format = ascii

@@ -1,0 +1,17 @@
+## test config file for CAVA, testing if zero alsa input gives zero bar height output
+
+# make sure to enable snd-aloop first with: sudo modprobe snd-aloop
+
+[general]
+
+draw_and_quit = 60
+zero_test = 1
+non_zero_test = 0
+
+[input]
+method = alsa
+source = hw:Loopback,1
+
+[output]
+method = raw
+data_format = ascii

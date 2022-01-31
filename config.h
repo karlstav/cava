@@ -65,7 +65,8 @@ struct config_params {
     enum xaxis_scale xaxis;
     int userEQ_keys, userEQ_enabled, col, bgcol, autobars, stereo, is_bin, ascii_range, bit_format,
         gradient, gradient_count, fixedbars, framerate, bar_width, bar_spacing, autosens, overshoot,
-        waves, fifoSample, fifoSampleBits, sleep_timer, sdl_width, sdl_height, sdl_x, sdl_y;
+        waves, fifoSample, fifoSampleBits, sleep_timer, sdl_width, sdl_height, sdl_x, sdl_y,
+        draw_and_quit, zero_test, non_zero_test;
 };
 
 struct error_s {

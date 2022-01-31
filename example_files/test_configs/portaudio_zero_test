@@ -1,0 +1,15 @@
+## test config file for CAVA, testing portaudio input.
+
+[general]
+
+draw_and_quit = 60
+zero_test = 0
+non_zero_test = 0
+
+[input]
+method = portaudio
+
+
+[output]
+method = raw
+data_format = ascii

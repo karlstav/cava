@@ -1,0 +1,17 @@
+## test config file for CAVA, testing if zero shmem input gives zero bar height output
+
+# run squeezelite first with -v -m 51:fb:32:f8:e6:9f -z
+
+[general]
+
+draw_and_quit = 60
+zero_test = 1
+non_zero_test = 0
+
+[input]
+method = shmem
+source = /squeezelite-51:fb:32:f8:e6:9f
+
+[output]
+method = raw
+data_format = ascii

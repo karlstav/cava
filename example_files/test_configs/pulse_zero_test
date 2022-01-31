@@ -1,0 +1,16 @@
+## test config file for CAVA, testing if zero pulseaudio input gives zero bar height output
+
+[general]
+
+draw_and_quit = 60
+zero_test = 1
+non_zero_test = 0
+
+[input]
+method = pulse
+source = auto
+
+[output]
+method = raw
+data_format = ascii
+

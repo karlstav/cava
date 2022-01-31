@@ -466,6 +466,15 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->upper_cut_off = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
     p->sleep_timer = iniparser_getint(ini, "general:sleep_timer", 0);
 
+    // hidden test features
+
+    // draw this many frames and quit, used for testing
+    p->draw_and_quit = iniparser_getint(ini, "general:draw_and_quit", 0);
+    // expect combined values of bar height in last frame to be 0
+    p->zero_test = iniparser_getint(ini, "general:zero_test", 0);
+    // or not 0
+    p->non_zero_test = iniparser_getint(ini, "general:non_zero_test", 0);
+
     // config: output
     free(channels);
     free(p->mono_option);
