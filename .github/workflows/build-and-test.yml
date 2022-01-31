@@ -8,7 +8,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake libiniparser-dev portaudio19-dev libsndio-dev libsdl2-2.0-0 libsdl2-dev squeezelite linux-modules-extra-azure
+        sudo apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake libiniparser-dev portaudio19-dev libsndio-dev libsdl2-2.0-0 libsdl2-dev squeezelite pulseaudio
     - name: Generate configure
       run: ./autogen.sh
     - name: Run ./configure
@@ -18,10 +18,18 @@ jobs:
     - name: Prepare tests
       run: |
         squeezelite -v -m 51:fb:32:f8:e6:9f -z
-        sudo modprobe snd-aloop
-        arecord -D hw:Loopback,1 -c 2 -r 44100 > /tmp/fifo &
-    - name: Run all tests
-      run: ./run_all_tests.sh
+        pulseaudio -D
+    - name: run non zero test
+      run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
+    - name: run pulseaudio test
+      run: ./cava -p example_files/test_configs/pulse_zero_test > /dev/null
+    - name: run fifo test
+      run: ./cava -p example_files/test_configs/fifo_zero_test > /dev/null
+    - name: run shmem test
+      run: ./cava -p example_files/test_configs/shmem_zero_test > /dev/null
+    - name: run sndio test
+      run: ./cava -p example_files/test_configs/sndio_zero_test > /dev/null
+
   build-macos:
     runs-on: macos-latest
     steps:
@@ -37,6 +45,6 @@ jobs:
     - name: Run make
       run: make
     - name: run non zero test
-      run: ./cava -p example_files/test_configs/non_zero_test
+      run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
     - name: run portaudio test
-      run: ./cava -p example_files/test_configs/portaudio_zero_test
+      run: ./cava -p example_files/test_configs/portaudio_zero_test > /dev/null
