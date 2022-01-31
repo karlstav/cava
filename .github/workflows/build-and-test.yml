@@ -20,14 +20,19 @@ jobs:
         squeezelite -v -m 51:fb:32:f8:e6:9f -z
         pulseaudio -D
     - name: run non zero test
+      continue-on-error: true
       run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
     - name: run pulseaudio test
+      continue-on-error: true
       run: ./cava -p example_files/test_configs/pulse_zero_test > /dev/null
     - name: run fifo test
+      continue-on-error: true
       run: ./cava -p example_files/test_configs/fifo_zero_test > /dev/null
     - name: run shmem test
-      run: ./cava -p example_files/test_configs/shmem_zero_test > /dev/null
+      continue-on-error: true
+      run: ./cava -p example_files/test_configs/shmem_zero_test
     - name: run sndio test
+      continue-on-error: true
       run: ./cava -p example_files/test_configs/sndio_zero_test > /dev/null
 
   build-macos:
@@ -45,6 +50,8 @@ jobs:
     - name: Run make
       run: make
     - name: run non zero test
+      continue-on-error: true
       run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
     - name: run portaudio test
+      continue-on-error: true
       run: ./cava -p example_files/test_configs/portaudio_zero_test > /dev/null
