@@ -21,6 +21,12 @@ void *input_fifo(void *data) {
 
     int fd = open_fifo(audio->source);
 
+    int test_mode = 0;
+
+    if (strcmp(audio->source, "/dev/zero") == 0) {
+        test_mode = 1;
+    }
+
     while (!audio->terminate) {
         int time_since_last_input = 0;
         unsigned int offset = 0;
@@ -69,6 +75,10 @@ void *input_fifo(void *data) {
         pthread_mutex_lock(&lock);
         write_to_fftw_input_buffers(SAMPLES_PER_BUFFER / 2, (int16_t *)samples, audio);
         pthread_mutex_unlock(&lock);
+        if (test_mode) {
+            nanosleep(&(struct timespec){.tv_sec = 0, .tv_nsec = 1000000},
+                      NULL); // sleep 1 ms to prevent deadlock reading from /dev/zero
+        }
     }
 
     close(fd);

@@ -8,7 +8,7 @@ non_zero_test = 0
 
 [input]
 method = fifo
-source = /tmp/fifo
+source = /dev/zero
 
 [output]
 method = raw
