@@ -17,8 +17,8 @@ jobs:
       run: make
     - name: Prepare tests
       run: |
-        squeezelite -v -m 51:fb:32:f8:e6:9f -z
         pulseaudio -D
+        squeezelite -o pulse -v -m 51:fb:32:f8:e6:9f -z
     - name: run non zero test
       run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
     - name: run pulseaudio test
@@ -27,8 +27,6 @@ jobs:
       run: ./cava -p example_files/test_configs/fifo_zero_test > /dev/null
     - name: run shmem test
       run: ./cava -p example_files/test_configs/shmem_zero_test > /dev/null
-    - name: run sndio test
-      run: ./cava -p example_files/test_configs/sndio_zero_test > /dev/null
 
   build-macos:
     runs-on: macos-latest
