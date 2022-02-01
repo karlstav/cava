@@ -48,7 +48,7 @@ void pulseaudio_context_state_callback(pa_context *pulseaudio_context, void *use
         pa_operation_unref(pa_context_get_server_info(pulseaudio_context, cb, userdata));
         break;
     case PA_CONTEXT_FAILED:
-        printf("failed to connect to pulseaudio server\n");
+        fprintf(stderr, "failed to connect to pulseaudio server\n");
         exit(EXIT_FAILURE);
         break;
     case PA_CONTEXT_TERMINATED:
@@ -84,10 +84,11 @@ void getPulseDefaultSink(void *data) {
 
     // starting with one nonblokng iteration in case pulseaudio is not able to run
     if (!(ret = pa_mainloop_iterate(m_pulseaudio_mainloop, 0, &ret))) {
-        printf("Could not open pulseaudio mainloop to "
-               "find default device name: %d\n"
-               "check if pulseaudio is running\n",
-               ret);
+        fprintf(stderr,
+                "Could not open pulseaudio mainloop to "
+                "find default device name: %d\n"
+                "check if pulseaudio is running\n",
+                ret);
 
         exit(EXIT_FAILURE);
     }
@@ -123,6 +124,8 @@ void *input_pulse(void *data) {
                 audio->source, pa_strerror(error));
 
         audio->terminate = 1;
+        pthread_exit(NULL);
+        return 0;
     }
 
     while (!audio->terminate) {
