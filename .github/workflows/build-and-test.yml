@@ -19,6 +19,7 @@ jobs:
       run: |
         pulseaudio -D
         squeezelite -o pulse -v -m 51:fb:32:f8:e6:9f -z
+        sudo modprobe snd-dummy
         arecord -l
     - name: run non zero test
       run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
