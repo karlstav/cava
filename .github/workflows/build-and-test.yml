@@ -17,7 +17,7 @@ jobs:
       run: make
     - name: Prepare tests
       run: |
-        squeezelite -v -m 51:fb:32:f8:e6:9f -z
+        squeezelite -v -m 51:fb:32:f8:e6:9f
         pulseaudio -D
     - name: run non zero test
       run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
