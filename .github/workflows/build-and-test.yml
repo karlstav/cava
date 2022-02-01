@@ -18,7 +18,7 @@ jobs:
     - name: Prepare tests
       run: |
         pulseaudio -D
-        squeezelite-pulseaudio -o pulse -v -m 51:fb:32:f8:e6:9f -z
+        squeezelite -o pulse -v -m 51:fb:32:f8:e6:9f -z
     - name: run non zero test
       run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
     - name: run pulseaudio test
