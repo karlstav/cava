@@ -80,9 +80,9 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
             // clear bar from previous frame if lower
             if (bars[bar] < previous_frame[bar]) {
                 fillRect.x = bar * (bar_width + bar_spacing) + remainder;
-                fillRect.y = height - previous_frame[bar];
+                fillRect.y = 0;
                 fillRect.w = bar_width;
-                fillRect.h = previous_frame[bar];
+                fillRect.h = height;
                 SDL_SetRenderDrawColor(gRenderer, bg_color.R, bg_color.G, bg_color.B, 0xFF);
                 SDL_RenderFillRect(gRenderer, &fillRect);
             }
