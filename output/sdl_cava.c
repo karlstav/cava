@@ -53,18 +53,13 @@ void init_sdl_window(int width, int height, int x, int y) {
 
 void init_sdl_surface(int *w, int *h, char *const fg_color_string, char *const bg_color_string) {
     SDL_GetWindowSize(gWindow, w, h);
-    int width = *w;
-    int height = *h;
 
     parse_color(bg_color_string, &bg_color);
-    SDL_Rect fillBack = {0, 0, width, height};
     SDL_SetRenderDrawColor(gRenderer, bg_color.R, bg_color.G, bg_color.B, 0xFF);
-    SDL_RenderFillRect(gRenderer, &fillBack);
+    SDL_RenderClear(gRenderer);
 
     parse_color(fg_color_string, &fg_color);
     SDL_SetRenderDrawColor(gRenderer, fg_color.R, fg_color.G, fg_color.B, 0xFF);
-
-    SDL_RenderPresent(gRenderer);
 }
 
 int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int height,
@@ -73,21 +68,18 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
     bool update = false;
     int rc = 0;
     SDL_Rect fillRect;
+
     for (int bar = 0; bar < bars_count; bar++) {
         if (bars[bar] != previous_frame[bar]) {
             update = true;
+            break;
+        }
+    }
 
-            // clear bar from previous frame if lower
-            if (bars[bar] < previous_frame[bar]) {
-                fillRect.x = bar * (bar_width + bar_spacing) + remainder;
-                fillRect.y = 0;
-                fillRect.w = bar_width;
-                fillRect.h = height;
-                SDL_SetRenderDrawColor(gRenderer, bg_color.R, bg_color.G, bg_color.B, 0xFF);
-                SDL_RenderFillRect(gRenderer, &fillRect);
-            }
-
-            // draw new bar
+    if (update) {
+        SDL_SetRenderDrawColor(gRenderer, bg_color.R, bg_color.G, bg_color.B, 0xFF);
+        SDL_RenderClear(gRenderer);
+        for (int bar = 0; bar < bars_count; bar++) {
             fillRect.x = bar * (bar_width + bar_spacing) + remainder;
             fillRect.y = height - bars[bar];
             fillRect.w = bar_width;
@@ -95,9 +87,6 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
             SDL_SetRenderDrawColor(gRenderer, fg_color.R, fg_color.G, fg_color.B, 0xFF);
             SDL_RenderFillRect(gRenderer, &fillRect);
         }
-    }
-
-    if (update) {
         SDL_RenderPresent(gRenderer);
     }
 
