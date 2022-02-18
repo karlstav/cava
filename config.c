@@ -483,6 +483,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     channels = strdup(iniparser_getstring(ini, "output:channels", "stereo"));
     p->mono_option = strdup(iniparser_getstring(ini, "output:mono_option", "average"));
+    p->reverse = iniparser_getint(ini, "output:reverse", 0);
     p->raw_target = strdup(iniparser_getstring(ini, "output:raw_target", "/dev/stdout"));
     p->data_format = strdup(iniparser_getstring(ini, "output:data_format", "binary"));
     p->bar_delim = (char)iniparser_getint(ini, "output:bar_delimiter", 59);

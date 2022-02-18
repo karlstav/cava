@@ -1085,13 +1085,25 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     // mirroring stereo channels
                     if (p.stereo) {
                         if (n < number_of_bars / 2) {
-                            bars[n] = bars_left[number_of_bars / 2 - n - 1];
+                            if (p.reverse) {
+                                bars[n] = bars_left[n];
+                            } else {
+                                bars[n] = bars_left[number_of_bars / 2 - n - 1];
+                            }
                         } else {
-                            bars[n] = bars_right[n - number_of_bars / 2];
+                            if (p.reverse) {
+                                bars[n] = bars_right[number_of_bars - n - 1];
+                            } else {
+                                bars[n] = bars_right[n - number_of_bars / 2];
+                            }
                         }
 
                     } else {
-                        bars[n] = bars_left[n];
+                        if (p.reverse) {
+                            bars[n] = bars_left[number_of_bars - 1 - n];
+                        } else {
+                            bars[n] = bars_left[n];
+                        }
                     }
 
                     // process [smoothing]: falloff
