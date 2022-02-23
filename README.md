@@ -89,8 +89,6 @@ Only FFTW and the other build tools are actually required for CAVA to compile, b
 
 For better a better visual experience ncurses is also recomended.
 
-Iniparser is also required, but if it is not already installed, a bundled version will be used.
-
 All the requirements can be installed easily in all major distros:
 
 Debian Buster or higher/Ubuntu 18.04 or higher :
