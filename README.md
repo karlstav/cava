@@ -29,6 +29,7 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
     - [Fedora](#fedora)
     - [Arch](#arch)
     - [Ubuntu/Debian](#ubuntudebian)
+    - [macOS](#macos)
 - [Capturing audio](#capturing-audio)
   - [Pulseaudio monitor source (Easy, default if supported)](#pulseaudio-monitor-source-easy-default-if-supported)
   - [ALSA-loopback device (Tricky)](#alsa-loopback-device-tricky)
@@ -133,24 +134,7 @@ Then fix macOS not finding libtool and ncursesw:
     ln -s `which glibtoolize` /usr/local/bin/libtoolize
     ln -s /usr/lib/libncurses.dylib /usr/local/lib/libncursesw.dylib
 
-Tested on macOS High Sierra.
-
-For M1 Mac I was able to build all prerequisites from source. It might work with homebrew rosetta emulation, but what's the fun in that.
-
-* build and install automake, autoconf and libtool following the instructions [here](https://superuser.com/questions/383580/how-to-install-autoconf-automake-and-related-tools-on-mac-os-x-from-source).
-* build and install fftw from the gz archive [here](http://www.fftw.org/download.html)
-* download ncurses source and configure with these options:
-```
-./configure --prefix=/usr/local \
-  --without-cxx --without-cxx-binding --without-ada --without-progs --with-curses-h \
-  --with-shared --without-debug  \
-  --enable-widec --enable-const --enable-ext-colors --enable-sigwinch --enable-wgetch-events \
-```
-* just clone portaudio repo, build and install.
-* install [Backround Music](https://github.com/kyleneideck/BackgroundMusic) following option 1 in "Installing from Source Code". (requires xcode)
-* then build cava normally and follow the instructions in "capturing audio"
-
-
+Tested on macOS Big Sur
 
 
 #### Building
@@ -179,7 +163,11 @@ Or you can change `PREFIX`, for example:
     make uninstall
 
 
-### Some distro specific pre-made binaries/recipes    
+### Some distro specific pre-made binaries/recipes
+
+All distro specific instalation sources might be out of date. Please check version before reporting any issues here.
+
+
 #### openSUSE
 
 Tumbleweed users have cava in their repo. They can just use:
@@ -219,8 +207,12 @@ Harshal Sheth has added CAVA to his PPA, it can be installed with:
     apt update
     apt install cava
     
+#### macOS
 
-All distro specific instalation sources might be out of date.
+cava is in homebrew.
+
+    brew install cava
+
 
 
 Capturing audio
