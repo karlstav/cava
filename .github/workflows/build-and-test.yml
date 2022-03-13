@@ -1,6 +1,11 @@
 name: build-and-test
 on: [push, pull_request]
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: DoozyX/clang-format-lint-action@v0.5
   build-linux:
     runs-on: ubuntu-latest
     steps:
