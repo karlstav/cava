@@ -11,9 +11,4 @@ aclocal
 autoconf
 automake --add-missing
 
-CONFIGDIR=$XDG_CONFIG_HOME/cava
-
-if [ -z "$XDG_CONFIG_HOME" ]; then CONFIGDIR=$HOME/.config/cava; fi
-
-mkdir -p "$CONFIGDIR"
-[ -f "$CONFIGDIR"/config ] || cp example_files/config "$CONFIGDIR"/config
+xxd -i example_files/config config_file.h # make a hex dump of default config file to be generated in home dir on first launch

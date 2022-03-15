@@ -1,4 +1,5 @@
 #include "config.h"
+#include "config_file.h"
 #include "util.h"
 
 #include <ctype.h>
@@ -407,6 +408,11 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         // open file or create file if it does not exist
         fp = fopen(configPath, "ab+");
         if (fp) {
+            fseek(fp, 0, SEEK_END);
+            if (ftell(fp) == 0) {
+                printf("config file is empty, creating default config file\n");
+                fwrite(example_files_config, example_files_config_len, sizeof(unsigned char), fp);
+            }
             fclose(fp);
         } else {
             // try to open file read only
