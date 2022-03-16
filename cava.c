@@ -1213,8 +1213,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                                        p.ascii_range, p.bar_delim, p.frame_delim, bars);
                     break;
                 case OUTPUT_NORITAKE:
-                    rc = print_ntk_out(number_of_bars, fp, p.raw_format, p.bit_format, p.bar_width,
-                                       p.bar_spacing, p.bar_height, bars);
+                    rc = print_ntk_out(number_of_bars, fp, p.bit_format, p.bar_width, p.bar_spacing,
+                                       p.bar_height, bars);
                     break;
                 default:
                     exit(EXIT_FAILURE); // Can't happen.
