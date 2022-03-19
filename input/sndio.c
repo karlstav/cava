@@ -7,7 +7,7 @@ void *input_sndio(void *data) {
     struct audio_data *audio = (struct audio_data *)data;
     struct sio_par par;
     struct sio_hdl *hdl;
-    int16_t buf[audio->FFTtreblebufferSize * 2];
+    int16_t buf[audio->input_buffer_size];
 
     sio_initpar(&par);
     par.sig = 1;

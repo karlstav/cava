@@ -104,7 +104,7 @@ void *input_alsa(void *data) {
     snd_pcm_t *handle;
     snd_pcm_uframes_t buffer_size;
     snd_pcm_uframes_t period_size;
-    snd_pcm_uframes_t frames = audio->FFTtreblebufferSize;
+    snd_pcm_uframes_t frames = audio->input_buffer_size / 2;
 
     initialize_audio_parameters(&handle, audio, &frames);
     snd_pcm_get_params(handle, &buffer_size, &period_size);

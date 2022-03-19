@@ -38,15 +38,26 @@ int fftw_input_buffer_size;
 
 int *fftw_input_buffer;
 
-float *cava_plan(int number_of_bars, unsigned int rate) {
+int cava_number_of_bars;
+int input_channels;
+int cava_input_buffer;
+
+float *cava_plan(int number_of_bars, unsigned int rate, int channels) {
 
     int bass_cut_off = 150;
     int treble_cut_off = 2500;
+
+    number_of_bars /= channels;
+
+    input_channels = channels;
+    cava_number_of_bars = number_of_bars;
+
 
     FFTbassbufferSize = MAX_BARS * 4;
     FFTmidbufferSize = MAX_BARS * 2;
     FFTtreblebufferSize = MAX_BARS;
 
+    cava_input_buffer = MAX_BARS * channels;
     fftw_input_buffer_size = FFTbassbufferSize * 2;
 
     fftw_input_buffer = (int *)malloc(fftw_input_buffer_size * sizeof(int));
@@ -138,7 +149,9 @@ float *cava_plan(int number_of_bars, unsigned int rate) {
 
     float relative_cut_off[MAX_BARS];
 
-    bool first_bar = true;
+    bass_cut_off_bar = -1;
+    treble_cut_off_bar = -1;
+    int first_bar = 1;
     int first_treble_bar = 0;
     int bar_buffer[number_of_bars + 1];
 
@@ -175,7 +188,7 @@ float *cava_plan(int number_of_bars, unsigned int rate) {
             bass_cut_off_bar++;
             treble_cut_off_bar++;
             if (bass_cut_off_bar > 0)
-                first_bar = false;
+                first_bar = -1;
 
             eq[n] *= log2(FFTbassbufferSize);
         } else if (cut_off_frequency[n] > bass_cut_off && cut_off_frequency[n] < treble_cut_off) {
@@ -184,10 +197,10 @@ float *cava_plan(int number_of_bars, unsigned int rate) {
             FFTbuffer_lower_cut_off[n] = relative_cut_off[n] * (FFTmidbufferSize / 2);
             treble_cut_off_bar++;
             if ((treble_cut_off_bar - bass_cut_off_bar) == 1) {
-                first_bar = true;
+                first_bar = 1;
                 FFTbuffer_upper_cut_off[n - 1] = relative_cut_off[n] * (FFTbassbufferSize / 2);
             } else {
-                first_bar = false;
+                first_bar = -1;
             }
 
             eq[n] *= log2(FFTmidbufferSize);
@@ -197,10 +210,10 @@ float *cava_plan(int number_of_bars, unsigned int rate) {
             FFTbuffer_lower_cut_off[n] = relative_cut_off[n] * (FFTtreblebufferSize / 2);
             first_treble_bar++;
             if (first_treble_bar == 1) {
-                first_bar = true;
+                first_bar = 1;
                 FFTbuffer_upper_cut_off[n - 1] = relative_cut_off[n] * (FFTmidbufferSize / 2);
             } else {
-                first_bar = false;
+                first_bar = -1;
             }
 
             eq[n] *= log2(FFTtreblebufferSize);
@@ -239,28 +252,21 @@ float *cava_plan(int number_of_bars, unsigned int rate) {
     return cut_off_frequency;
 }
 
-void cava_execute(int32_t *cava_in, double *cava_out, int number_of_bars, int stereo) {
-
-    int samples = MAX_BARS;
-
-    if (stereo) {
-        number_of_bars /= 2;
-        samples *= 2;
-    }
+void cava_execute(int32_t *cava_in, double *cava_out) {
 
     // shifting input buffer
-    for (uint16_t n = fftw_input_buffer_size - 1; n >= samples; n--) {
-        fftw_input_buffer[n] = fftw_input_buffer[n - samples];
+    for (uint16_t n = fftw_input_buffer_size - 1; n >= cava_input_buffer; n--) {
+        fftw_input_buffer[n] = fftw_input_buffer[n - cava_input_buffer];
     }
 
     // fill the input buffer
-    for (uint16_t i = 0; i < samples; i++) {
-        fftw_input_buffer[i] = cava_in[i];
+    for (uint16_t i = 0; i < cava_input_buffer; i++) {
+        fftw_input_buffer[cava_input_buffer - i - 1] = cava_in[i];
     }
 
     // fill the bass, mid and treble buffers
     for (uint16_t n = 0; n < FFTbassbufferSize; n++) {
-        if (stereo) {
+        if (input_channels == 2) {
             in_bass_l_raw[n] = fftw_input_buffer[n * 2];
             in_bass_r_raw[n] = fftw_input_buffer[n * 2 + 1];
         } else {
@@ -268,7 +274,7 @@ void cava_execute(int32_t *cava_in, double *cava_out, int number_of_bars, int st
         }
     }
     for (uint16_t n = 0; n < FFTmidbufferSize; n++) {
-        if (stereo) {
+        if (input_channels == 2) {
             in_mid_l_raw[n] = fftw_input_buffer[n * 2];
             in_mid_r_raw[n] = fftw_input_buffer[n * 2 + 1];
         } else {
@@ -276,7 +282,7 @@ void cava_execute(int32_t *cava_in, double *cava_out, int number_of_bars, int st
         }
     }
     for (uint16_t n = 0; n < FFTtreblebufferSize; n++) {
-        if (stereo) {
+        if (input_channels == 2) {
             in_treble_l_raw[n] = fftw_input_buffer[n * 2];
             in_treble_r_raw[n] = fftw_input_buffer[n * 2 + 1];
         } else {
@@ -308,7 +314,7 @@ void cava_execute(int32_t *cava_in, double *cava_out, int number_of_bars, int st
     fftw_execute(p_treble_r);
 
     // process: separate frequency bands
-    for (int n = 0; n < number_of_bars; n++) {
+    for (int n = 0; n < cava_number_of_bars; n++) {
 
         double temp_l = 0;
         double temp_r = 0;
@@ -340,9 +346,9 @@ void cava_execute(int32_t *cava_in, double *cava_out, int number_of_bars, int st
         temp_r /= FFTbuffer_upper_cut_off[n] - FFTbuffer_lower_cut_off[n] + 1;
         temp_r *= eq[n];
 
-        cava_out[n] = (int)temp_l;
+        cava_out[n] = temp_r;
 
-        cava_out[n + number_of_bars] = (int)temp_r;
+        cava_out[n + cava_number_of_bars] = temp_l;
     }
 }
 

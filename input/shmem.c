@@ -34,7 +34,7 @@ void *input_shmem(void *data) {
     int fd; /* file descriptor to mmaped area */
     int mmap_count = sizeof(vis_t);
     int buf_frames;
-    int fftw_frames = audio->FFTtreblebufferSize;
+    int fftw_frames = audio->input_buffer_size / 2;
     struct timespec req = {.tv_sec = 0, .tv_nsec = 0};
     int16_t buf[fftw_frames * 2];
 

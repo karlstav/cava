@@ -13,7 +13,7 @@ int open_fifo(const char *path) {
 // input: FIFO
 void *input_fifo(void *data) {
     struct audio_data *audio = (struct audio_data *)data;
-    int SAMPLES_PER_BUFFER = audio->FFTtreblebufferSize * 2;
+    int SAMPLES_PER_BUFFER = audio->input_buffer_size;
     int bytes_per_sample = audio->format / 8;
     __attribute__((aligned(sizeof(uint16_t)))) uint8_t buf[SAMPLES_PER_BUFFER * bytes_per_sample];
     uint16_t *samples =

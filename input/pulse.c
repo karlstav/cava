@@ -99,7 +99,7 @@ void getPulseDefaultSink(void *data) {
 void *input_pulse(void *data) {
 
     struct audio_data *audio = (struct audio_data *)data;
-    uint16_t frames = audio->FFTtreblebufferSize;
+    uint16_t frames = audio->input_buffer_size / 2;
     int channels = 2;
     int16_t buf[frames * channels];
 

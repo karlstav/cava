@@ -14,20 +14,17 @@
 struct audio_data {
     int32_t *cava_in;
 
-    int FFTbassbufferSize;
-    int FFTmidbufferSize;
-    int FFTtreblebufferSize;
     int input_buffer_size;
 
     int format;
     unsigned int rate;
-    char *source; // alsa device, fifo path or pulse source
-    int im;       // input mode alsa, fifo or pulse
     unsigned int channels;
-    bool left, right, average;
+    char *source; // alsa device, fifo path or pulse source
+    int im;       // input mode alsa, fifo, pulse, portaudio, shmem or sndio
     int terminate; // shared variable used to terminate audio thread
     char error_message[1024];
     int samples_counter;
+    pthread_mutex_t lock;
 };
 
 void reset_output_buffers(struct audio_data *data);

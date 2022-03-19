@@ -301,11 +301,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         struct audio_data audio;
         memset(&audio, 0, sizeof(audio));
 
-        audio.FFTbassbufferSize = MAX_BARS * 4;
-        audio.FFTmidbufferSize = MAX_BARS * 2;
-        audio.FFTtreblebufferSize = MAX_BARS;
-
-        audio.input_buffer_size = audio.FFTtreblebufferSize * 2;
+        audio.input_buffer_size = MAX_BARS * 2;
 
         audio.cava_in = (int32_t *)malloc(audio.input_buffer_size * sizeof(int32_t));
 
@@ -315,21 +311,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         audio.format = -1;
         audio.rate = 0;
         audio.samples_counter = 0;
+        audio.channels = 2;
 
         audio.terminate = 0;
-        if (p.stereo)
-            audio.channels = 2;
-        if (!p.stereo)
-            audio.channels = 1;
-        audio.average = false;
-        audio.left = false;
-        audio.right = false;
-        if (strcmp(p.mono_option, "average") == 0)
-            audio.average = true;
-        if (strcmp(p.mono_option, "left") == 0)
-            audio.left = true;
-        if (strcmp(p.mono_option, "right") == 0)
-            audio.right = true;
 
         debug("starting audio thread\n");
 
@@ -592,13 +576,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             float *cut_off_frequency;
             cut_off_frequency = (float *)malloc(MAX_BARS * sizeof(float));
 
-            if (p.stereo) {
-                // in stereo only half number of number_of_bars per channel
-                // for cutoff frequencies and eq calculation
-                cut_off_frequency = cava_plan(number_of_bars / 2, audio.rate);
-            } else {
-                cut_off_frequency = cava_plan(number_of_bars, audio.rate);
-            }
+            cut_off_frequency = cava_plan(number_of_bars, audio.rate, audio.channels);
 
             double center_frequencies[MAX_BARS];
 
@@ -767,7 +745,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 // process: check if input is present
                 silence = true;
 
-                for (int n = 0; n < MAX_BARS * 4 * 2; n++) {
+                for (int n = 0; n < audio.input_buffer_size; n++) {
                     if (audio.cava_in[n]) {
                         silence = false;
                         break;
@@ -794,11 +772,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 // process: execute cava
                 pthread_mutex_lock(&audio.lock);
                 if (audio.samples_counter > 0) {
-                    cava_execute(audio.cava_in, cava_out, number_of_bars, p.stereo);
+                    cava_execute(audio.cava_in, cava_out);
                     audio.samples_counter = 0;
                 }
                 pthread_mutex_unlock(&audio.lock);
 
+                // process: sensitivty adjustment
                 for (int n = 0; n < number_of_bars / 2; n++) {
 
                     bars_left[n] = cava_out[n] * p.sens;

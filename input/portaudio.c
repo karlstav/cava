@@ -123,7 +123,7 @@ void *input_portaudio(void *audiodata) {
     inputParameters.device = deviceNum;
 
     // set parameters
-    data.maxFrameIndex = audio->FFTtreblebufferSize * 1024;
+    data.maxFrameIndex = audio->input_buffer_size * 1024 / 2;
     data.recordedSamples = (SAMPLE *)malloc(2 * data.maxFrameIndex * sizeof(SAMPLE));
     if (data.recordedSamples == NULL) {
         fprintf(stderr, "Error: failure in memory allocation!\n");
@@ -138,7 +138,7 @@ void *input_portaudio(void *audiodata) {
     inputParameters.hostApiSpecificStreamInfo = NULL;
 
     // set it to work
-    err = Pa_OpenStream(&stream, &inputParameters, NULL, audio->rate, audio->FFTtreblebufferSize,
+    err = Pa_OpenStream(&stream, &inputParameters, NULL, audio->rate, audio->input_buffer_size / 2,
                         paClipOff, recordCallback, &data);
     if (err != paNoError) {
         fprintf(stderr, "Error: failure in opening stream (%x)\n", err);
