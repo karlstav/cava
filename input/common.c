@@ -32,8 +32,6 @@ void reset_output_buffers(struct audio_data *data) {
     pthread_mutex_unlock(&audio->lock);
     for (uint16_t n = 0; n < MAX_BARS * 4 * 2; n++) {
         audio->cava_in[n] = 0;
-
     }
     pthread_mutex_unlock(&audio->lock);
-
 }

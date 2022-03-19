@@ -52,7 +52,6 @@ float *cava_plan(int number_of_bars, unsigned int rate, int channels) {
     input_channels = channels;
     cava_number_of_bars = number_of_bars;
 
-
     FFTbassbufferSize = MAX_BARS * 4;
     FFTmidbufferSize = MAX_BARS * 2;
     FFTtreblebufferSize = MAX_BARS;
