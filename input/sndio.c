@@ -40,9 +40,7 @@ void *input_sndio(void *data) {
             exit(EXIT_FAILURE);
         }
 
-        pthread_mutex_lock(&lock);
         write_to_cava_input_buffers(frames * 2, buf, audio);
-        pthread_mutex_unlock(&lock);
     }
 
     sio_stop(hdl);

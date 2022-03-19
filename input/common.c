@@ -10,6 +10,7 @@ int write_to_cava_input_buffers(int16_t size, int16_t buf[size], void *data) {
 
     // shifting input buffer, will only happen when reading less than input_buffer_size bytes
     //(not suposed to happen)
+    pthread_mutex_lock(&audio->lock);
     for (uint16_t n = audio->input_buffer_size - 1; n >= size; n--) {
         audio->cava_in[n] = audio->cava_in[n - size];
     }
@@ -22,12 +23,17 @@ int write_to_cava_input_buffers(int16_t size, int16_t buf[size], void *data) {
     }
 
     audio->samples_counter += size;
+    pthread_mutex_unlock(&audio->lock);
     return 0;
 }
 
 void reset_output_buffers(struct audio_data *data) {
     struct audio_data *audio = (struct audio_data *)data;
+    pthread_mutex_unlock(&audio->lock);
     for (uint16_t n = 0; n < MAX_BARS * 4 * 2; n++) {
         audio->cava_in[n] = 0;
+
     }
+    pthread_mutex_unlock(&audio->lock);
+
 }

@@ -2,18 +2,10 @@
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
 #endif
-#include <assert.h>
-#include <errno.h>
-#include <fcntl.h>
 #include <fftw3.h>
-#include <inttypes.h>
 #include <math.h>
-#include <pthread.h>
-#include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 int FFTbassbufferSize;
 int FFTmidbufferSize;

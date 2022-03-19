@@ -15,17 +15,13 @@
 
 #define MAX_BARS 1024
 
-#include <stdbool.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>
 
 #include <ctype.h>
 #include <dirent.h>
-#include <fftw3.h>
 #include <getopt.h>
-#include <pthread.h>
 #include <signal.h>
 #include <string.h>
 #include <sys/ioctl.h>
@@ -71,7 +67,6 @@
 #define GCC_UNUSED /* nothing */
 #endif
 
-pthread_mutex_t lock;
 // used by sig handler
 // needs to know output mode in order to clean up terminal
 int output_mode;
@@ -797,15 +792,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
 
                 // process: execute cava
-                pthread_mutex_lock(&lock);
+                pthread_mutex_lock(&audio.lock);
                 if (audio.samples_counter > 0) {
                     cava_execute(audio.cava_in, cava_out, number_of_bars, p.stereo);
                     audio.samples_counter = 0;
                 }
-                pthread_mutex_unlock(&lock);
-                //                 fprintf(stderr,", %d\n",cava_out[1]);
-
-                // process:
+                pthread_mutex_unlock(&audio.lock);
 
                 for (int n = 0; n < number_of_bars / 2; n++) {
 

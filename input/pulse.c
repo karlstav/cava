@@ -135,9 +135,7 @@ void *input_pulse(void *data) {
             audio->terminate = 1;
         }
 
-        pthread_mutex_lock(&lock);
         write_to_cava_input_buffers(frames * channels, buf, data);
-        pthread_mutex_unlock(&lock);
     }
 
     pa_simple_free(s);

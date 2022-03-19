@@ -5,6 +5,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <stdbool.h>
+
 typedef unsigned int u32_t;
 typedef short s16_t;
 int rc;
@@ -68,14 +70,12 @@ void *input_shmem(void *data) {
             // Thus, the starting position only affects the phase spectrum of the
             // fft, and not the power spectrum, so we can just read in the
             // whole buffer.
-            pthread_mutex_lock(&lock);
             for (int i = 0; i < buf_frames / (fftw_frames * 2); i += fftw_frames * 2) {
                 for (int n = 0; n < fftw_frames * 2; n++) {
                     buf[n] = mmap_area->buffer[n + i];
                 }
                 write_to_cava_input_buffers(fftw_frames * 2, buf, audio);
             }
-            pthread_mutex_unlock(&lock);
             nanosleep(&req, NULL);
         } else {
             write_to_cava_input_buffers(fftw_frames * 2, silence_buffer, audio);

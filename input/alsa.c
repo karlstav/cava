@@ -155,9 +155,7 @@ void *input_alsa(void *data) {
             debug("short read, read %d %d frames\n", err, (int)frames);
         }
 
-        pthread_mutex_lock(&lock);
         write_to_cava_input_buffers(frames * CHANNELS_COUNT, buf, data);
-        pthread_mutex_unlock(&lock);
     }
 
     free(buffer);
