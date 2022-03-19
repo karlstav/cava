@@ -40,9 +40,9 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
     pthread_mutex_lock(&lock);
 
     if (inputBuffer == NULL)
-        write_to_fftw_input_buffers(framesToCalc, silence_buffer, audio);
+        write_to_fftw_input_buffers(framesToCalc * 2, silence_buffer, audio);
     else
-        write_to_fftw_input_buffers(framesToCalc, rptr, audio);
+        write_to_fftw_input_buffers(framesToCalc * 2, rptr, audio);
 
     pthread_mutex_unlock(&lock);
 

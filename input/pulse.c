@@ -136,7 +136,7 @@ void *input_pulse(void *data) {
         }
 
         pthread_mutex_lock(&lock);
-        write_to_fftw_input_buffers(frames, buf, data);
+        write_to_cava_input_buffers(frames * channels, buf, data);
         pthread_mutex_unlock(&lock);
     }
 

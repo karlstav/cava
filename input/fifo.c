@@ -73,7 +73,7 @@ void *input_fifo(void *data) {
         // We worked with unsigned ints up until now to save on sign extension, but the FFT wants
         // signed ints.
         pthread_mutex_lock(&lock);
-        write_to_fftw_input_buffers(SAMPLES_PER_BUFFER / 2, (int16_t *)samples, audio);
+        write_to_cava_input_buffers(SAMPLES_PER_BUFFER, (int16_t *)samples, audio);
         pthread_mutex_unlock(&lock);
         if (test_mode) {
             nanosleep(&(struct timespec){.tv_sec = 0, .tv_nsec = 1000000},

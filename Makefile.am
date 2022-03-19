@@ -3,10 +3,10 @@ AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = cava
-cava_SOURCES = cava.c config.c input/common.c input/fifo.c input/shmem.c \
+cava_SOURCES = cava.c cavalib.c config.c input/common.c input/fifo.c input/shmem.c \
                output/terminal_noncurses.c output/raw.c output/noritake.c
 cava_CPPFLAGS = -DPACKAGE=\"$(PACKAGE)\" -DVERSION=\"$(VERSION)\" \
-           -D_POSIX_SOURCE -D _POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE_EXTENDED \
+           -D_POSIX_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE_EXTENDED \
 	   -DFONTDIR=\"@FONT_DIR@\"
 cava_CFLAGS = -std=c99 -Wall -Werror -Wextra -Wno-unused-result -Wno-unknown-warning-option -Wno-maybe-uninitialized -Wno-vla-parameter
 

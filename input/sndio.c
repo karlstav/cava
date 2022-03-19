@@ -41,7 +41,7 @@ void *input_sndio(void *data) {
         }
 
         pthread_mutex_lock(&lock);
-        write_to_fftw_input_buffers(frames, buf, audio);
+        write_to_cava_input_buffers(frames * 2, buf, audio);
         pthread_mutex_unlock(&lock);
     }
 
