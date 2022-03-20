@@ -573,10 +573,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                   number_of_bars, p.bar_width, remainder);
 #endif
 
-            float *cut_off_frequency;
-            cut_off_frequency = (float *)malloc(MAX_BARS * sizeof(float));
-
-            cut_off_frequency = cava_plan(number_of_bars, audio.rate, audio.channels);
+            struct cava_plan *plan = cava_init(number_of_bars, audio.rate, audio.channels);
 
             double center_frequencies[MAX_BARS];
 
@@ -595,11 +592,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     float upper_cut_off_frequency = 10000;
 
                     if (n < number_of_bars - 1) {
-                        upper_cut_off_frequency = cut_off_frequency[n + 1];
+                        upper_cut_off_frequency = plan->cut_off_frequency[n + 1];
                     }
 
                     center_frequencies[n] =
-                        pow((cut_off_frequency[n] * upper_cut_off_frequency), 0.5);
+                        pow((plan->cut_off_frequency[n] * upper_cut_off_frequency), 0.5);
                     if (p.stereo) {
                         if (n < number_of_bars / 2)
                             center_frequency = center_frequencies[number_of_bars / 2 - 1 - n];
@@ -772,7 +769,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 // process: execute cava
                 pthread_mutex_lock(&audio.lock);
                 if (audio.samples_counter > 0) {
-                    cava_execute(audio.cava_in, cava_out);
+                    cava_execute(audio.cava_in, cava_out, plan);
                     audio.samples_counter = 0;
                 }
                 pthread_mutex_unlock(&audio.lock);
@@ -857,9 +854,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #ifndef NDEBUG
                     mvprintw(n, 0, "%d: f:%f->%f (%d->%d), eq:\
 						%15e, peak:%d \n",
-                             n, cut_off_frequency[n], cut_off_frequency[n + 1],
-                             FFTbuffer_lower_cut_off[n], FFTbuffer_upper_cut_off[n], eq[n],
-                             bars[n]);
+                             n, plan->cut_off_frequency[n], plan->cut_off_frequency[n + 1],
+                             plan->FFTbuffer_lower_cut_off[n], plan->FFTbuffer_upper_cut_off[n],
+                             plan->eq[n], bars[n]);
 
                     if (bars[n] < minvalue) {
                         minvalue = bars[n];
@@ -979,7 +976,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     }
                 }
             } // resize terminal
-            cava_destroy();
+            cava_destroy(plan);
+            free(plan);
         } // reloading config
 
         //**telling audio thread to terminate**//

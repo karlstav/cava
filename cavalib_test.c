@@ -1,4 +1,4 @@
-// cavalib standalone test app, compile with:
+// cavalib standalone test app, build cava first and compile with:
 // gcc -c -g cavalib_test.c
 // gcc -o cavalib_test cavalib_test.o cava-cavalib.o -lm -lfftw3
 
@@ -10,17 +10,15 @@
 #define PI 3.141592654
 
 void main() {
-    float *cut_off_frequency;
-    cut_off_frequency = (float *)malloc(MAX_BARS * sizeof(float));
 
     printf("welcome to cavalib standalone test app\n");
     printf("planning cava 20 bars (left+right) 44100 rate 2 cahnnels\n");
-    cut_off_frequency = cava_plan(20, 44100, 2);
+    struct cava_plan *plan = cava_init(20, 44100, 2);
 
     printf("got lower cut off frequencies:\n");
 
     for (int i = 0; i < 10; i++) {
-        printf("%.0f \t", cut_off_frequency[i]);
+        printf("%.0f \t", plan->cut_off_frequency[i]);
     }
     printf("\n\n");
 
@@ -45,7 +43,7 @@ void main() {
     printf("running cava execute 4 times to make sure all buffers are used\n\n");
 
     for (int i = 0; i < 4; i++) {
-        cava_execute(cava_in, cava_out);
+        cava_execute(cava_in, cava_out, plan);
     }
 
     printf("output right,  max value should be at 200Hz:\n");
@@ -59,5 +57,5 @@ void main() {
         printf("%.0f \t", cava_out[i]);
     }
     printf("\n");
-    cava_destroy();
+    cava_destroy(plan);
 }
