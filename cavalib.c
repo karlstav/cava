@@ -7,32 +7,42 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels) {
+struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels, int height,
+                            int framerate) {
 
     int bass_cut_off = 150;
     int treble_cut_off = 2500;
 
     struct cava_plan *p;
     memset(&p, 0, sizeof(p));
-    p = malloc(sizeof(int) * 10 + sizeof(fftw_plan) * 6 + sizeof(fftw_complex *) * 6 +
-               sizeof(double *) * 16 + sizeof(float *) * 1 + sizeof(int *) * 3);
+    p = malloc(sizeof(int) * 11 + sizeof(double) * 2 + sizeof(fftw_plan) * 6 +
+               sizeof(fftw_complex *) * 6 + sizeof(double *) * 17 + sizeof(float *) * 1 +
+               sizeof(int *) * 6);
 
     p->number_of_bars = number_of_bars / channels;
     p->channels = channels;
     p->rate = rate;
+    p->height = height;
+
+    p->g = log10((float)p->height) * 0.05 * pow((60 / (float)framerate), 2.5);
+    p->sens = 1;
 
     p->FFTbassbufferSize = MAX_BARS * 4;
     p->FFTmidbufferSize = MAX_BARS * 2;
     p->FFTtreblebufferSize = MAX_BARS;
 
-    p->input_buffer_size = MAX_BARS * p->channels;
-    p->fftw_input_buffer_size = p->FFTbassbufferSize * 2;
+    // p->input_buffer_size = MAX_BARS * p->channels;
+    p->input_buffer_size = p->FFTbassbufferSize * 2;
 
-    p->fftw_input_buffer = (int *)malloc(p->fftw_input_buffer_size * sizeof(int));
+    p->input_buffer = (int *)malloc(p->input_buffer_size * sizeof(int));
     p->FFTbuffer_lower_cut_off = (int *)malloc(MAX_BARS * sizeof(int));
     p->FFTbuffer_upper_cut_off = (int *)malloc(MAX_BARS * sizeof(int));
     p->eq = (double *)malloc(MAX_BARS * sizeof(double));
     p->cut_off_frequency = (float *)malloc(MAX_BARS * sizeof(float));
+    p->cava_fall = (int *)malloc(MAX_BARS * sizeof(int));
+    p->cava_mem = (int *)malloc(MAX_BARS * sizeof(int));
+    p->cava_peak = (double *)malloc(MAX_BARS * sizeof(double));
+    p->prev_cava_out = (int *)malloc(MAX_BARS * sizeof(int));
 
     // Hann Window calculate multipliers
     p->bass_multiplier = (double *)malloc(p->FFTbassbufferSize * sizeof(double));
@@ -110,7 +120,11 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels)
     memset(p->in_treble_r_raw, 0, sizeof(double) * p->FFTtreblebufferSize);
     memset(p->in_treble_l_raw, 0, sizeof(double) * p->FFTtreblebufferSize);
 
-    memset(p->fftw_input_buffer, 0, sizeof(int) * p->fftw_input_buffer_size);
+    memset(p->input_buffer, 0, sizeof(int) * p->input_buffer_size);
+    memset(p->cava_fall, 0, sizeof(int) * MAX_BARS);
+    memset(p->cava_mem, 0, sizeof(int) * MAX_BARS);
+    memset(p->cava_peak, 0, sizeof(double) * MAX_BARS);
+    memset(p->prev_cava_out, 0, sizeof(int) * MAX_BARS);
 
     // process: calculate cutoff frequencies and eq
     int lower_cut_off = 50;
@@ -228,41 +242,51 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels)
     return p;
 }
 
-void cava_execute(int32_t *cava_in, double *cava_out, struct cava_plan *p) {
+void cava_execute(int32_t *cava_in, int new_samples, int *cava_out, struct cava_plan *p) {
 
-    // shifting input buffer
-    for (uint16_t n = p->fftw_input_buffer_size - 1; n >= p->input_buffer_size; n--) {
-        p->fftw_input_buffer[n] = p->fftw_input_buffer[n - p->input_buffer_size];
+    if (new_samples > p->input_buffer_size) {
+        new_samples = p->input_buffer_size;
     }
 
-    // fill the input buffer
-    for (uint16_t i = 0; i < p->input_buffer_size; i++) {
-        p->fftw_input_buffer[p->input_buffer_size - i - 1] = cava_in[i];
+    int silence = 1;
+    if (new_samples > 0) {
+        // shifting input buffer
+        for (uint16_t n = p->input_buffer_size - 1; n >= new_samples; n--) {
+            p->input_buffer[n] = p->input_buffer[n - new_samples];
+        }
+
+        // fill the input buffer
+        for (uint16_t n = 0; n < new_samples; n++) {
+            p->input_buffer[new_samples - n - 1] = cava_in[n];
+            if (cava_in[n]) {
+                silence = 0;
+            }
+        }
     }
 
     // fill the bass, mid and treble buffers
     for (uint16_t n = 0; n < p->FFTbassbufferSize; n++) {
         if (p->channels == 2) {
-            p->in_bass_l_raw[n] = p->fftw_input_buffer[n * 2];
-            p->in_bass_r_raw[n] = p->fftw_input_buffer[n * 2 + 1];
+            p->in_bass_l_raw[n] = p->input_buffer[n * 2];
+            p->in_bass_r_raw[n] = p->input_buffer[n * 2 + 1];
         } else {
-            p->in_bass_l_raw[n] = p->fftw_input_buffer[n];
+            p->in_bass_l_raw[n] = p->input_buffer[n];
         }
     }
     for (uint16_t n = 0; n < p->FFTmidbufferSize; n++) {
         if (p->channels == 2) {
-            p->in_mid_l_raw[n] = p->fftw_input_buffer[n * 2];
-            p->in_mid_r_raw[n] = p->fftw_input_buffer[n * 2 + 1];
+            p->in_mid_l_raw[n] = p->input_buffer[n * 2];
+            p->in_mid_r_raw[n] = p->input_buffer[n * 2 + 1];
         } else {
-            p->in_mid_l_raw[n] = p->fftw_input_buffer[n];
+            p->in_mid_l_raw[n] = p->input_buffer[n];
         }
     }
     for (uint16_t n = 0; n < p->FFTtreblebufferSize; n++) {
         if (p->channels == 2) {
-            p->in_treble_l_raw[n] = p->fftw_input_buffer[n * 2];
-            p->in_treble_r_raw[n] = p->fftw_input_buffer[n * 2 + 1];
+            p->in_treble_l_raw[n] = p->input_buffer[n * 2];
+            p->in_treble_r_raw[n] = p->input_buffer[n * 2 + 1];
         } else {
-            p->in_treble_l_raw[n] = p->fftw_input_buffer[n];
+            p->in_treble_l_raw[n] = p->input_buffer[n];
         }
     }
 
@@ -317,14 +341,56 @@ void cava_execute(int32_t *cava_in, double *cava_out, struct cava_plan *p) {
 
         // getting average multiply with eq
         temp_l /= p->FFTbuffer_upper_cut_off[n] - p->FFTbuffer_lower_cut_off[n] + 1;
-        temp_l *= p->eq[n];
+        temp_l *= p->eq[n] * p->sens;
 
         temp_r /= p->FFTbuffer_upper_cut_off[n] - p->FFTbuffer_lower_cut_off[n] + 1;
-        temp_r *= p->eq[n];
+        temp_r *= p->eq[n] * p->sens;
 
         cava_out[n] = temp_r;
 
         cava_out[n + p->number_of_bars] = temp_l;
+    }
+    // process [smoothing]
+    int overshoot = 0;
+    for (int n = 0; n < p->number_of_bars * p->channels; n++) {
+
+        // process [smoothing]: falloff
+        if (cava_out[n] < p->prev_cava_out[n]) {
+            cava_out[n] = p->cava_peak[n] - (p->g * p->cava_fall[n] * p->cava_fall[n]);
+            if (cava_out[n] < 0)
+                cava_out[n] = 0;
+            p->cava_fall[n]++;
+        } else {
+            p->cava_peak[n] = cava_out[n];
+            p->cava_fall[n] = 0;
+        }
+        p->prev_cava_out[n] = cava_out[n];
+
+        // process [smoothing]: integral
+        cava_out[n] = p->cava_mem[n] * 0.77 + cava_out[n];
+        p->cava_mem[n] = cava_out[n];
+        int diff = p->height - cava_out[n];
+        if (diff < 0)
+            diff = 0;
+        double div = 1 / (diff + 1);
+        p->cava_mem[n] = p->cava_mem[n] * (1 - div / 20);
+
+        // check if we overshoot target height
+        if (cava_out[n] > p->height) {
+            overshoot = 1;
+        }
+    }
+
+    // calculating automatic sense adjustment
+    if (overshoot) {
+        p->sens = p->sens * 0.98;
+        p->sens_init = 0;
+    } else {
+        if (!silence) {
+            p->sens = p->sens * 1.001;
+            if (p->sens_init)
+                p->sens = p->sens * 1.1;
+        }
     }
 }
 
@@ -357,7 +423,7 @@ void cava_destroy(struct cava_plan *p) {
     fftw_destroy_plan(p->p_treble_l);
     fftw_destroy_plan(p->p_treble_r);
 
-    free(p->fftw_input_buffer);
+    free(p->input_buffer);
     free(p->bass_multiplier);
     free(p->mid_multiplier);
     free(p->treble_multiplier);
@@ -365,4 +431,8 @@ void cava_destroy(struct cava_plan *p) {
     free(p->cut_off_frequency);
     free(p->FFTbuffer_lower_cut_off);
     free(p->FFTbuffer_upper_cut_off);
+    free(p->cava_fall);
+    free(p->cava_mem);
+    free(p->cava_peak);
+    free(p->prev_cava_out);
 }

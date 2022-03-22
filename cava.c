@@ -246,7 +246,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             exit(EXIT_FAILURE);
         }
 
-        bool first = true;
         int inAtty;
 
         output_mode = p.output;
@@ -292,18 +291,20 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         // input: init
 
         int *bars_left, *bars_right;
-        double *cava_out;
+        int *cava_out;
 
         bars_left = (int *)malloc(MAX_BARS * sizeof(int));
         bars_right = (int *)malloc(MAX_BARS * sizeof(int));
-        cava_out = (double *)malloc(MAX_BARS * 2 * sizeof(double));
+        cava_out = (int *)malloc(MAX_BARS * 2 * sizeof(int));
 
         struct audio_data audio;
         memset(&audio, 0, sizeof(audio));
 
         audio.input_buffer_size = MAX_BARS * 2;
+        // audio.cava_input_buffer_size = MAX_BARS * 4 * 2;
 
-        audio.cava_in = (int32_t *)malloc(audio.input_buffer_size * sizeof(int32_t));
+        audio.cava_in = (int32_t *)malloc(audio.input_buffer_size * 4 * sizeof(int32_t));
+        memset(audio.cava_in, 0, sizeof(int) * audio.input_buffer_size * 4);
 
         audio.source = malloc(1 + strlen(p.audio_source));
         strcpy(audio.source, p.audio_source);
@@ -414,11 +415,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         }
 
         int bars[MAX_BARS];
-        int bars_mem[MAX_BARS];
-        int bars_last[MAX_BARS];
         int previous_frame[MAX_BARS];
-        int fall[MAX_BARS];
-        float bars_peak[MAX_BARS];
 
         int height, lines, width, remainder, fp;
 
@@ -434,16 +431,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         bool reloadConf = false;
         while (!reloadConf) { // jumping back to this loop means that you resized the screen
             for (int n = 0; n < MAX_BARS; n++) {
-                bars_last[n] = 0;
                 previous_frame[n] = 0;
-                fall[n] = 0;
-                bars_peak[n] = 0;
-                bars_mem[n] = 0;
                 bars[n] = 0;
                 cava_out[n] = 0;
                 cava_out[n + MAX_BARS] = 0;
-                audio.cava_in[n] = 0;
-                audio.cava_in[n + MAX_BARS] = 0;
             }
 
             // frequencies on x axis require a bar width of four or more
@@ -557,23 +548,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             if (remainder < 0)
                 remainder = 0;
 
-            // process [smoothing]: calculate gravity
-            float g = p.gravity * log10((float)height) * 0.05 * pow((60 / (float)p.framerate), 2.5);
-
-            if (output_mode == OUTPUT_SDL) {
-                g *= 1.5; // we can assume sdl to have higher resolution so a bit more g is
-                          // nescescary.
-            }
-
-            // calculate integral value, must be reduced with height
-            double integral = p.integral;
-
 #ifndef NDEBUG
             debug("height: %d width: %d bars:%d bar width: %d remainder: %d\n", height, width,
                   number_of_bars, p.bar_width, remainder);
 #endif
 
-            struct cava_plan *plan = cava_init(number_of_bars, audio.rate, audio.channels);
+            struct cava_plan *plan =
+                cava_init(number_of_bars, audio.rate, audio.channels, height, p.framerate);
 
             double center_frequencies[MAX_BARS];
 
@@ -742,7 +723,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 // process: check if input is present
                 silence = true;
 
-                for (int n = 0; n < audio.input_buffer_size; n++) {
+                for (int n = 0; n < audio.input_buffer_size * 4; n++) {
                     if (audio.cava_in[n]) {
                         silence = false;
                         break;
@@ -768,21 +749,20 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                 // process: execute cava
                 pthread_mutex_lock(&audio.lock);
+                cava_execute(audio.cava_in, audio.samples_counter, cava_out, plan);
                 if (audio.samples_counter > 0) {
-                    cava_execute(audio.cava_in, cava_out, plan);
                     audio.samples_counter = 0;
                 }
                 pthread_mutex_unlock(&audio.lock);
 
-                // process: sensitivty adjustment
                 for (int n = 0; n < number_of_bars / 2; n++) {
 
-                    bars_left[n] = cava_out[n] * p.sens;
+                    bars_left[n] = cava_out[n];
 
-                    bars_right[n] = cava_out[n + number_of_bars / 2] * p.sens;
+                    bars_right[n] = cava_out[n + number_of_bars / 2];
                 }
-                // process [filter]
 
+                // process [filter]
                 if (p.monstercat) {
                     if (p.stereo) {
                         bars_left =
@@ -796,9 +776,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
 
                 // processing signal
-
-                bool senselow = true;
-
                 for (int n = 0; n < number_of_bars; n++) {
                     // mirroring stereo channels
                     if (p.stereo) {
@@ -824,33 +801,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         }
                     }
 
-                    // process [smoothing]: falloff
-                    if (g > 0) {
-                        if (bars[n] < bars_last[n]) {
-                            bars[n] = bars_peak[n] - (g * fall[n] * fall[n]);
-                            if (bars[n] < 0)
-                                bars[n] = 0;
-                            fall[n]++;
-                        } else {
-                            bars_peak[n] = bars[n];
-                            fall[n] = 0;
-                        }
-
-                        bars_last[n] = bars[n];
-                    }
-
-                    // process [smoothing]: integral
-                    if (p.integral > 0) {
-                        bars[n] = bars_mem[n] * integral + bars[n];
-                        bars_mem[n] = bars[n];
-
-                        int diff = height - bars[n];
-                        if (diff < 0)
-                            diff = 0;
-                        double div = 1 / (diff + 1);
-                        // bars[n] = bars[n] - pow(div, 10) * (height + 1);
-                        bars_mem[n] = bars_mem[n] * (1 - div / 20);
-                    }
 #ifndef NDEBUG
                     mvprintw(n, 0, "%d: f:%f->%f (%d->%d), eq:\
 						%15e, peak:%d \n",
@@ -875,21 +825,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     // zero values causes divided by zero segfault (if not raw)
                     if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE && bars[n] < 1)
                         bars[n] = 1;
-
-                    // automatic sense adjustment
-                    if (p.autosens && !silence) {
-                        if (bars[n] > height && senselow) {
-                            p.sens = p.sens * 0.98;
-                            senselow = false;
-                            first = false;
-                        }
-                    }
-                }
-
-                if (p.autosens && !silence && senselow) {
-                    p.sens = p.sens * 1.001;
-                    if (first)
-                        p.sens = p.sens * 1.1;
                 }
 
 #ifndef NDEBUG

@@ -15,6 +15,7 @@ struct audio_data {
     int32_t *cava_in;
 
     int input_buffer_size;
+    //int cava_input_buffer_size;
 
     int format;
     unsigned int rate;
