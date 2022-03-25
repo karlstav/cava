@@ -9,7 +9,7 @@ int write_to_cava_input_buffers(int16_t size, int16_t buf[size], void *data) {
     struct audio_data *audio = (struct audio_data *)data;
 
     pthread_mutex_lock(&audio->lock);
-    if (audio->samples_counter + size > audio->input_buffer_size * 4 * 2) {
+    if (audio->samples_counter + size > audio->input_buffer_size * 4 ) {
         audio->samples_counter = 0;
     }
     for (uint16_t i = 0; i < size; i++) {
