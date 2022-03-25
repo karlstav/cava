@@ -758,7 +758,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
                 pthread_mutex_unlock(&audio.lock);
 
-                for (uint n = 0; n < number_of_bars * audio.channels / output_channels; n++) {
+                for (uint32_t n = 0; n < number_of_bars * audio.channels / output_channels; n++) {
                     bars_right[n] = cava_out[n];
                     if (audio.channels == 2)
                         bars_left[n] = cava_out[n + number_of_bars / output_channels];
