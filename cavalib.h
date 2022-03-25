@@ -15,7 +15,6 @@ struct cava_plan {
     int rate;
     int bass_cut_off_bar;
     int treble_cut_off_bar;
-    // int input_buffer_size;
     int height;
     int sens_init;
     // 11 int
@@ -44,9 +43,8 @@ struct cava_plan {
     double *in_bass_r, *in_bass_l;
     double *in_mid_r, *in_mid_l;
     double *in_treble_r, *in_treble_l;
-    double *cava_peak;
     double *prev_cava_out, *cava_mem;
-    double *input_buffer;
+    double *input_buffer, *cava_peak;
 
     double *eq;
     // 20 double *

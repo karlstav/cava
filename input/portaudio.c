@@ -37,12 +37,10 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
         finished = paContinue;
     }
 
-
     if (inputBuffer == NULL)
         write_to_cava_input_buffers(framesToCalc * 2, silence_buffer, audio);
     else
         write_to_cava_input_buffers(framesToCalc * 2, rptr, audio);
-
 
     data->frameIndex += framesToCalc;
     if (finished == paComplete) {

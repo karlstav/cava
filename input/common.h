@@ -15,13 +15,12 @@ struct audio_data {
     double *cava_in;
 
     int input_buffer_size;
-    //int cava_input_buffer_size;
 
     int format;
     unsigned int rate;
     unsigned int channels;
-    char *source; // alsa device, fifo path or pulse source
-    int im;       // input mode alsa, fifo, pulse, portaudio, shmem or sndio
+    char *source;  // alsa device, fifo path or pulse source
+    int im;        // input mode alsa, fifo, pulse, portaudio, shmem or sndio
     int terminate; // shared variable used to terminate audio thread
     char error_message[1024];
     int samples_counter;
