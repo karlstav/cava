@@ -19,8 +19,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                sizeof(fftw_complex *) * 6 + sizeof(double *) * 17 + sizeof(float *) * 1 +
                sizeof(int *) * 6);
 
-    p->number_of_bars = number_of_bars / channels;
-    p->channels = channels;
+    p->number_of_bars = number_of_bars;
+    p->audio_channels = channels;
     p->rate = rate;
     p->height = height;
 
@@ -57,68 +57,69 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     for (int i = 0; i < p->FFTtreblebufferSize; i++) {
         p->treble_multiplier[i] = 0.5 * (1 - cos(2 * M_PI * i / (p->FFTtreblebufferSize - 1)));
     }
+
     // BASS
-    // audio.FFTbassbufferSize =  audio.rate / 20; // audio.FFTbassbufferSize;
-
-    p->in_bass_r = fftw_alloc_real(p->FFTbassbufferSize);
     p->in_bass_l = fftw_alloc_real(p->FFTbassbufferSize);
-    p->in_bass_r_raw = fftw_alloc_real(p->FFTbassbufferSize);
     p->in_bass_l_raw = fftw_alloc_real(p->FFTbassbufferSize);
-
     p->out_bass_l = fftw_alloc_complex(p->FFTbassbufferSize / 2 + 1);
-    p->out_bass_r = fftw_alloc_complex(p->FFTbassbufferSize / 2 + 1);
-    memset(p->out_bass_l, 0, (p->FFTbassbufferSize / 2 + 1) * sizeof(fftw_complex));
-    memset(p->out_bass_r, 0, (p->FFTbassbufferSize / 2 + 1) * sizeof(fftw_complex));
-
     p->p_bass_l =
         fftw_plan_dft_r2c_1d(p->FFTbassbufferSize, p->in_bass_l, p->out_bass_l, FFTW_MEASURE);
-    p->p_bass_r =
-        fftw_plan_dft_r2c_1d(p->FFTbassbufferSize, p->in_bass_r, p->out_bass_r, FFTW_MEASURE);
 
     // MID
-    // FFTmidbufferSize =  rate / bass_cut_off; // FFTbassbufferSize;
-    p->in_mid_r = fftw_alloc_real(p->FFTmidbufferSize);
     p->in_mid_l = fftw_alloc_real(p->FFTmidbufferSize);
-    p->in_mid_r_raw = fftw_alloc_real(p->FFTmidbufferSize);
     p->in_mid_l_raw = fftw_alloc_real(p->FFTmidbufferSize);
-
     p->out_mid_l = fftw_alloc_complex(p->FFTmidbufferSize / 2 + 1);
-    p->out_mid_r = fftw_alloc_complex(p->FFTmidbufferSize / 2 + 1);
-    memset(p->out_mid_l, 0, (p->FFTmidbufferSize / 2 + 1) * sizeof(fftw_complex));
-    memset(p->out_mid_r, 0, (p->FFTmidbufferSize / 2 + 1) * sizeof(fftw_complex));
-
     p->p_mid_l = fftw_plan_dft_r2c_1d(p->FFTmidbufferSize, p->in_mid_l, p->out_mid_l, FFTW_MEASURE);
-    p->p_mid_r = fftw_plan_dft_r2c_1d(p->FFTmidbufferSize, p->in_mid_r, p->out_mid_r, FFTW_MEASURE);
 
-    // TRIEBLE
-    // FFTtreblebufferSize =  rate / treble_cut_off; // FFTbassbufferSize;
-    p->in_treble_r = fftw_alloc_real(p->FFTtreblebufferSize);
+    // TREBLE
     p->in_treble_l = fftw_alloc_real(p->FFTtreblebufferSize);
-    p->in_treble_r_raw = fftw_alloc_real(p->FFTtreblebufferSize);
     p->in_treble_l_raw = fftw_alloc_real(p->FFTtreblebufferSize);
-
     p->out_treble_l = fftw_alloc_complex(p->FFTtreblebufferSize / 2 + 1);
-    p->out_treble_r = fftw_alloc_complex(p->FFTtreblebufferSize / 2 + 1);
-    memset(p->out_treble_l, 0, (p->FFTtreblebufferSize / 2 + 1) * sizeof(fftw_complex));
-    memset(p->out_treble_r, 0, (p->FFTtreblebufferSize / 2 + 1) * sizeof(fftw_complex));
-
     p->p_treble_l =
         fftw_plan_dft_r2c_1d(p->FFTtreblebufferSize, p->in_treble_l, p->out_treble_l, FFTW_MEASURE);
-    p->p_treble_r =
-        fftw_plan_dft_r2c_1d(p->FFTtreblebufferSize, p->in_treble_r, p->out_treble_r, FFTW_MEASURE);
 
-    memset(p->in_bass_r, 0, sizeof(double) * p->FFTbassbufferSize);
     memset(p->in_bass_l, 0, sizeof(double) * p->FFTbassbufferSize);
-    memset(p->in_mid_r, 0, sizeof(double) * p->FFTmidbufferSize);
     memset(p->in_mid_l, 0, sizeof(double) * p->FFTmidbufferSize);
-    memset(p->in_treble_r, 0, sizeof(double) * p->FFTtreblebufferSize);
     memset(p->in_treble_l, 0, sizeof(double) * p->FFTtreblebufferSize);
-    memset(p->in_bass_r_raw, 0, sizeof(double) * p->FFTbassbufferSize);
     memset(p->in_bass_l_raw, 0, sizeof(double) * p->FFTbassbufferSize);
-    memset(p->in_mid_r_raw, 0, sizeof(double) * p->FFTmidbufferSize);
     memset(p->in_mid_l_raw, 0, sizeof(double) * p->FFTmidbufferSize);
-    memset(p->in_treble_r_raw, 0, sizeof(double) * p->FFTtreblebufferSize);
     memset(p->in_treble_l_raw, 0, sizeof(double) * p->FFTtreblebufferSize);
+    memset(p->out_bass_l, 0, (p->FFTbassbufferSize / 2 + 1) * sizeof(fftw_complex));
+    memset(p->out_mid_l, 0, (p->FFTmidbufferSize / 2 + 1) * sizeof(fftw_complex));
+    memset(p->out_treble_l, 0, (p->FFTtreblebufferSize / 2 + 1) * sizeof(fftw_complex));
+    if (p->audio_channels == 2) {
+        // BASS
+        p->in_bass_r = fftw_alloc_real(p->FFTbassbufferSize);
+        p->in_bass_r_raw = fftw_alloc_real(p->FFTbassbufferSize);
+        p->out_bass_r = fftw_alloc_complex(p->FFTbassbufferSize / 2 + 1);
+        p->p_bass_r =
+            fftw_plan_dft_r2c_1d(p->FFTbassbufferSize, p->in_bass_r, p->out_bass_r, FFTW_MEASURE);
+
+        // MID
+        p->in_mid_r = fftw_alloc_real(p->FFTmidbufferSize);
+        p->in_mid_r_raw = fftw_alloc_real(p->FFTmidbufferSize);
+        p->out_mid_r = fftw_alloc_complex(p->FFTmidbufferSize / 2 + 1);
+        p->p_mid_r =
+            fftw_plan_dft_r2c_1d(p->FFTmidbufferSize, p->in_mid_r, p->out_mid_r, FFTW_MEASURE);
+
+        // TREBLE
+        p->in_treble_r = fftw_alloc_real(p->FFTtreblebufferSize);
+        p->in_treble_r_raw = fftw_alloc_real(p->FFTtreblebufferSize);
+        p->out_treble_r = fftw_alloc_complex(p->FFTtreblebufferSize / 2 + 1);
+
+        p->p_treble_r = fftw_plan_dft_r2c_1d(p->FFTtreblebufferSize, p->in_treble_r,
+                                             p->out_treble_r, FFTW_MEASURE);
+
+        memset(p->in_bass_r, 0, sizeof(double) * p->FFTbassbufferSize);
+        memset(p->in_mid_r, 0, sizeof(double) * p->FFTmidbufferSize);
+        memset(p->in_treble_r, 0, sizeof(double) * p->FFTtreblebufferSize);
+        memset(p->in_bass_r_raw, 0, sizeof(double) * p->FFTbassbufferSize);
+        memset(p->in_mid_r_raw, 0, sizeof(double) * p->FFTmidbufferSize);
+        memset(p->in_treble_r_raw, 0, sizeof(double) * p->FFTtreblebufferSize);
+        memset(p->out_bass_r, 0, (p->FFTbassbufferSize / 2 + 1) * sizeof(fftw_complex));
+        memset(p->out_mid_r, 0, (p->FFTmidbufferSize / 2 + 1) * sizeof(fftw_complex));
+        memset(p->out_treble_r, 0, (p->FFTtreblebufferSize / 2 + 1) * sizeof(fftw_complex));
+    }
 
     memset(p->input_buffer, 0, sizeof(int) * p->input_buffer_size);
     memset(p->cava_fall, 0, sizeof(int) * MAX_BARS);
@@ -244,6 +245,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
 void cava_execute(int32_t *cava_in, int new_samples, int *cava_out, struct cava_plan *p) {
 
+    // do not overflow
     if (new_samples > p->input_buffer_size) {
         new_samples = p->input_buffer_size;
     }
@@ -266,7 +268,7 @@ void cava_execute(int32_t *cava_in, int new_samples, int *cava_out, struct cava_
 
     // fill the bass, mid and treble buffers
     for (uint16_t n = 0; n < p->FFTbassbufferSize; n++) {
-        if (p->channels == 2) {
+        if (p->audio_channels == 2) {
             p->in_bass_l_raw[n] = p->input_buffer[n * 2];
             p->in_bass_r_raw[n] = p->input_buffer[n * 2 + 1];
         } else {
@@ -274,7 +276,7 @@ void cava_execute(int32_t *cava_in, int new_samples, int *cava_out, struct cava_
         }
     }
     for (uint16_t n = 0; n < p->FFTmidbufferSize; n++) {
-        if (p->channels == 2) {
+        if (p->audio_channels == 2) {
             p->in_mid_l_raw[n] = p->input_buffer[n * 2];
             p->in_mid_r_raw[n] = p->input_buffer[n * 2 + 1];
         } else {
@@ -282,7 +284,7 @@ void cava_execute(int32_t *cava_in, int new_samples, int *cava_out, struct cava_
         }
     }
     for (uint16_t n = 0; n < p->FFTtreblebufferSize; n++) {
-        if (p->channels == 2) {
+        if (p->audio_channels == 2) {
             p->in_treble_l_raw[n] = p->input_buffer[n * 2];
             p->in_treble_r_raw[n] = p->input_buffer[n * 2 + 1];
         } else {
@@ -293,15 +295,18 @@ void cava_execute(int32_t *cava_in, int new_samples, int *cava_out, struct cava_
     // Hann Window
     for (int i = 0; i < p->FFTbassbufferSize; i++) {
         p->in_bass_l[i] = p->bass_multiplier[i] * p->in_bass_l_raw[i];
-        p->in_bass_r[i] = p->bass_multiplier[i] * p->in_bass_r_raw[i];
+        if (p->audio_channels == 2)
+            p->in_bass_r[i] = p->bass_multiplier[i] * p->in_bass_r_raw[i];
     }
     for (int i = 0; i < p->FFTmidbufferSize; i++) {
         p->in_mid_l[i] = p->mid_multiplier[i] * p->in_mid_l_raw[i];
-        p->in_mid_r[i] = p->mid_multiplier[i] * p->in_mid_r_raw[i];
+        if (p->audio_channels == 2)
+            p->in_mid_r[i] = p->mid_multiplier[i] * p->in_mid_r_raw[i];
     }
     for (int i = 0; i < p->FFTtreblebufferSize; i++) {
         p->in_treble_l[i] = p->treble_multiplier[i] * p->in_treble_l_raw[i];
-        p->in_treble_r[i] = p->treble_multiplier[i] * p->in_treble_r_raw[i];
+        if (p->audio_channels == 2)
+            p->in_treble_r[i] = p->treble_multiplier[i] * p->in_treble_r_raw[i];
     }
 
     // process: execute FFT and sort frequency bands
@@ -309,9 +314,11 @@ void cava_execute(int32_t *cava_in, int new_samples, int *cava_out, struct cava_
     fftw_execute(p->p_bass_l);
     fftw_execute(p->p_mid_l);
     fftw_execute(p->p_treble_l);
-    fftw_execute(p->p_bass_r);
-    fftw_execute(p->p_mid_r);
-    fftw_execute(p->p_treble_r);
+    if (p->audio_channels == 2) {
+        fftw_execute(p->p_bass_r);
+        fftw_execute(p->p_mid_r);
+        fftw_execute(p->p_treble_r);
+    }
 
     // process: separate frequency bands
     for (int n = 0; n < p->number_of_bars; n++) {
@@ -323,36 +330,38 @@ void cava_execute(int32_t *cava_in, int new_samples, int *cava_out, struct cava_
         for (int i = p->FFTbuffer_lower_cut_off[n]; i <= p->FFTbuffer_upper_cut_off[n]; i++) {
 
             if (n <= p->bass_cut_off_bar) {
-
                 temp_l += hypot(p->out_bass_l[i][0], p->out_bass_l[i][1]);
-                temp_r += hypot(p->out_bass_r[i][0], p->out_bass_r[i][1]);
+                if (p->audio_channels == 2)
+                    temp_r += hypot(p->out_bass_r[i][0], p->out_bass_r[i][1]);
 
             } else if (n > p->bass_cut_off_bar && n <= p->treble_cut_off_bar) {
 
                 temp_l += hypot(p->out_mid_l[i][0], p->out_mid_l[i][1]);
-                temp_r += hypot(p->out_mid_r[i][0], p->out_mid_r[i][1]);
+                if (p->audio_channels == 2)
+                    temp_r += hypot(p->out_mid_r[i][0], p->out_mid_r[i][1]);
 
             } else if (n > p->treble_cut_off_bar) {
 
                 temp_l += hypot(p->out_treble_l[i][0], p->out_treble_l[i][1]);
-                temp_r += hypot(p->out_treble_r[i][0], p->out_treble_r[i][1]);
+                if (p->audio_channels == 2)
+                    temp_r += hypot(p->out_treble_r[i][0], p->out_treble_r[i][1]);
             }
         }
 
         // getting average multiply with eq
         temp_l /= p->FFTbuffer_upper_cut_off[n] - p->FFTbuffer_lower_cut_off[n] + 1;
         temp_l *= p->eq[n] * p->sens;
+        cava_out[n] = temp_l;
 
-        temp_r /= p->FFTbuffer_upper_cut_off[n] - p->FFTbuffer_lower_cut_off[n] + 1;
-        temp_r *= p->eq[n] * p->sens;
-
-        cava_out[n] = temp_r;
-
-        cava_out[n + p->number_of_bars] = temp_l;
+        if (p->audio_channels == 2) {
+            temp_r /= p->FFTbuffer_upper_cut_off[n] - p->FFTbuffer_lower_cut_off[n] + 1;
+            temp_r *= p->eq[n] * p->sens;
+            cava_out[n + p->number_of_bars] = temp_r;
+        }
     }
     // process [smoothing]
     int overshoot = 0;
-    for (int n = 0; n < p->number_of_bars * p->channels; n++) {
+    for (int n = 0; n < p->number_of_bars * p->audio_channels; n++) {
 
         // process [smoothing]: falloff
         if (cava_out[n] < p->prev_cava_out[n]) {
@@ -396,32 +405,37 @@ void cava_execute(int32_t *cava_in, int new_samples, int *cava_out, struct cava_
 
 void cava_destroy(struct cava_plan *p) {
 
-    fftw_free(p->in_bass_r);
     fftw_free(p->in_bass_l);
-    fftw_free(p->in_bass_r_raw);
     fftw_free(p->in_bass_l_raw);
-    fftw_free(p->out_bass_r);
     fftw_free(p->out_bass_l);
     fftw_destroy_plan(p->p_bass_l);
-    fftw_destroy_plan(p->p_bass_r);
 
-    fftw_free(p->in_mid_r);
     fftw_free(p->in_mid_l);
-    fftw_free(p->in_mid_r_raw);
     fftw_free(p->in_mid_l_raw);
-    fftw_free(p->out_mid_r);
     fftw_free(p->out_mid_l);
     fftw_destroy_plan(p->p_mid_l);
-    fftw_destroy_plan(p->p_mid_r);
 
-    fftw_free(p->in_treble_r);
     fftw_free(p->in_treble_l);
     fftw_free(p->in_treble_r_raw);
     fftw_free(p->in_treble_l_raw);
-    fftw_free(p->out_treble_r);
     fftw_free(p->out_treble_l);
     fftw_destroy_plan(p->p_treble_l);
-    fftw_destroy_plan(p->p_treble_r);
+
+    if (p->audio_channels == 2) {
+        fftw_free(p->in_bass_r);
+        fftw_free(p->in_bass_r_raw);
+        fftw_free(p->out_bass_r);
+        fftw_destroy_plan(p->p_bass_r);
+
+        fftw_free(p->in_mid_r);
+        fftw_free(p->in_mid_r_raw);
+        fftw_free(p->out_mid_r);
+        fftw_destroy_plan(p->p_mid_r);
+
+        fftw_free(p->in_treble_r);
+        fftw_free(p->out_treble_r);
+        fftw_destroy_plan(p->p_treble_r);
+    }
 
     free(p->input_buffer);
     free(p->bass_multiplier);

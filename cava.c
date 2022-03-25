@@ -290,21 +290,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         // input: init
 
-        int *bars_left, *bars_right;
-        int *cava_out;
-
-        bars_left = (int *)malloc(MAX_BARS * sizeof(int));
-        bars_right = (int *)malloc(MAX_BARS * sizeof(int));
-        cava_out = (int *)malloc(MAX_BARS * 2 * sizeof(int));
-
         struct audio_data audio;
         memset(&audio, 0, sizeof(audio));
 
-        audio.input_buffer_size = MAX_BARS * 2;
         // audio.cava_input_buffer_size = MAX_BARS * 4 * 2;
-
-        audio.cava_in = (int32_t *)malloc(audio.input_buffer_size * 4 * sizeof(int32_t));
-        memset(audio.cava_in, 0, sizeof(int) * audio.input_buffer_size * 4);
 
         audio.source = malloc(1 + strlen(p.audio_source));
         strcpy(audio.source, p.audio_source);
@@ -314,7 +303,19 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         audio.samples_counter = 0;
         audio.channels = 2;
 
+        audio.input_buffer_size = MAX_BARS * audio.channels;
+
+        audio.cava_in = (int32_t *)malloc(audio.input_buffer_size * 4 * sizeof(int32_t));
+        memset(audio.cava_in, 0, sizeof(int) * audio.input_buffer_size * 4);
+
         audio.terminate = 0;
+
+        int *bars_left, *bars_right;
+        int *cava_out;
+
+        bars_left = (int *)malloc(MAX_BARS * sizeof(int));
+        bars_right = (int *)malloc(MAX_BARS * sizeof(int));
+        cava_out = (int *)malloc(MAX_BARS * audio.channels * sizeof(int));
 
         debug("starting audio thread\n");
 
@@ -536,7 +537,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             if (number_of_bars > MAX_BARS)
                 number_of_bars = MAX_BARS; // cant have more than MAX_BARS bars
 
+            int output_channels = 1;
             if (p.stereo) { // stereo must have even numbers of bars
+                output_channels = 2;
                 if (number_of_bars % 2 != 0)
                     number_of_bars--;
             }
@@ -553,8 +556,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                   number_of_bars, p.bar_width, remainder);
 #endif
 
-            struct cava_plan *plan =
-                cava_init(number_of_bars, audio.rate, audio.channels, height, p.framerate);
+            struct cava_plan *plan = cava_init(number_of_bars / output_channels, audio.rate,
+                                               audio.channels, height, p.framerate);
 
             double center_frequencies[MAX_BARS];
 
@@ -755,11 +758,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
                 pthread_mutex_unlock(&audio.lock);
 
-                for (int n = 0; n < number_of_bars / 2; n++) {
-
-                    bars_left[n] = cava_out[n];
-
-                    bars_right[n] = cava_out[n + number_of_bars / 2];
+                for (uint n = 0; n < number_of_bars * audio.channels / output_channels; n++) {
+                    bars_right[n] = cava_out[n];
+                    if (audio.channels == 2)
+                        bars_left[n] = cava_out[n + number_of_bars / output_channels];
                 }
 
                 // process [filter]
@@ -774,33 +776,57 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                             monstercat_filter(bars_left, number_of_bars, p.waves, p.monstercat);
                     }
                 }
-
-                // processing signal
-                for (int n = 0; n < number_of_bars; n++) {
-                    // mirroring stereo channels
+                if (audio.channels == 2) {
                     if (p.stereo) {
-                        if (n < number_of_bars / 2) {
-                            if (p.reverse) {
-                                bars[n] = bars_left[n];
+                        // mirroring stereo channels
+                        for (int n = 0; n < number_of_bars; n++) {
+                            if (n < number_of_bars / 2) {
+                                if (p.reverse) {
+                                    bars[n] = bars_left[n];
+                                } else {
+                                    bars[n] = bars_left[number_of_bars / 2 - n - 1];
+                                }
                             } else {
-                                bars[n] = bars_left[number_of_bars / 2 - n - 1];
-                            }
-                        } else {
-                            if (p.reverse) {
-                                bars[n] = bars_right[number_of_bars - n - 1];
-                            } else {
-                                bars[n] = bars_right[n - number_of_bars / 2];
+                                if (p.reverse) {
+                                    bars[n] = bars_right[number_of_bars - n - 1];
+                                } else {
+                                    bars[n] = bars_right[n - number_of_bars / 2];
+                                }
                             }
                         }
-
                     } else {
-                        if (p.reverse) {
-                            bars[n] = bars_left[number_of_bars - 1 - n];
-                        } else {
-                            bars[n] = bars_left[n];
+                        // stereo mono output
+                        for (int n = 0; n < number_of_bars; n++) {
+                            if (p.reverse) {
+                                if (p.mono_opt == AVERAGE) {
+                                    bars[number_of_bars - n - 1] =
+                                        (bars_left[n] + bars_right[n]) / 2;
+                                } else if (p.mono_opt == LEFT) {
+                                    bars[number_of_bars - n - 1] = bars_left[n];
+                                } else if (p.mono_opt == RIGHT) {
+                                    bars[number_of_bars - n - 1] = bars_right[n];
+                                }
+                            } else {
+                                if (p.mono_opt == AVERAGE) {
+                                    bars[n] = (bars_left[n] + bars_right[n]) / 2;
+                                } else if (p.mono_opt == LEFT) {
+                                    bars[n] = bars_left[n];
+                                } else if (p.mono_opt == RIGHT) {
+                                    bars[n] = bars_right[n];
+                                }
+                            }
                         }
                     }
-
+                } else {
+                    // only one input channel
+                    for (int n = 0; n < number_of_bars; n++) {
+                        bars[n] = bars_left[n];
+                    }
+                }
+                for (int n = 0; n < number_of_bars; n++) {
+                    // zero values causes divided by zero segfault (if not raw)
+                    if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE && bars[n] < 1)
+                        bars[n] = 1;
 #ifndef NDEBUG
                     mvprintw(n, 0, "%d: f:%f->%f (%d->%d), eq:\
 						%15e, peak:%d \n",
@@ -821,10 +847,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     }
 
 #endif
-
-                    // zero values causes divided by zero segfault (if not raw)
-                    if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE && bars[n] < 1)
-                        bars[n] = 1;
                 }
 
 #ifndef NDEBUG

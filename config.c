@@ -23,7 +23,7 @@ enum input_method default_methods[] = {
     INPUT_PULSE,
 };
 
-char *outputMethod, *channels, *xaxisScale;
+char *outputMethod, *channels, *xaxisScale, *monoOption;
 
 const char *input_method_names[] = {
     "fifo", "portaudio", "alsa", "pulse", "sndio", "shmem",
@@ -266,13 +266,17 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     p->stereo = -1;
     if (strcmp(channels, "mono") == 0) {
         p->stereo = 0;
-        if (strcmp(p->mono_option, "average") != 0 && strcmp(p->mono_option, "left") != 0 &&
-            strcmp(p->mono_option, "right") != 0) {
-
+        if (strcmp(monoOption, "average") == 0) {
+            p->mono_opt = AVERAGE;
+        } else if (strcmp(monoOption, "left") == 0) {
+            p->mono_opt = LEFT;
+        } else if (strcmp(monoOption, "right") == 0) {
+            p->mono_opt = RIGHT;
+        } else {
             write_errorf(error,
                          "mono option %s is not supported, supported options are: 'average', "
                          "'left' or 'right'\n",
-                         p->mono_option);
+                         monoOption);
             return false;
         }
     }
@@ -488,12 +492,12 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     // config: output
     free(channels);
-    free(p->mono_option);
+    free(monoOption);
     free(p->raw_target);
     free(p->data_format);
 
     channels = strdup(iniparser_getstring(ini, "output:channels", "stereo"));
-    p->mono_option = strdup(iniparser_getstring(ini, "output:mono_option", "average"));
+    monoOption = strdup(iniparser_getstring(ini, "output:mono_option", "average"));
     p->reverse = iniparser_getint(ini, "output:reverse", 0);
     p->raw_target = strdup(iniparser_getstring(ini, "output:raw_target", "/dev/stdout"));
     p->data_format = strdup(iniparser_getstring(ini, "output:data_format", "binary"));

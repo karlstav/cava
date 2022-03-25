@@ -10,7 +10,7 @@ struct cava_plan {
     int FFTmidbufferSize;
     int FFTtreblebufferSize;
     int number_of_bars;
-    int channels;
+    int audio_channels;
     int input_buffer_size;
     int rate;
     int bass_cut_off_bar;
@@ -58,7 +58,7 @@ struct cava_plan {
     int *prev_cava_out, *cava_mem;
     // 6 int *
 };
-
+// number_of_bars = number_of_bars per channel
 // cava_in size must be  4096 * number of channels and cava_out will be 1024 * number of channels
 // cava_execute assumes cava_in samples to be interleaved if more than one channel
 // new_samples is the number of new samples since last execution of cava_execute
