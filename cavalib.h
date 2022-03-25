@@ -45,18 +45,18 @@ struct cava_plan {
     double *in_mid_r, *in_mid_l;
     double *in_treble_r, *in_treble_l;
     double *cava_peak;
+    double *prev_cava_out, *cava_mem;
+    double *input_buffer;
 
     double *eq;
-    // 17 double *
+    // 20 double *
 
     float *cut_off_frequency;
     // 1 float *
     int *FFTbuffer_lower_cut_off;
     int *FFTbuffer_upper_cut_off;
-    int *input_buffer;
     int *cava_fall;
-    int *prev_cava_out, *cava_mem;
-    // 6 int *
+    // 3 int *
 };
 // number_of_bars = number_of_bars per channel
 // cava_in size must be  4096 * number of channels and cava_out will be 1024 * number of channels
@@ -66,5 +66,5 @@ struct cava_plan {
 // ramples rate) and use a cava_in as a ring buffer
 extern struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                                    int max_height, int framerate);
-extern void cava_execute(int32_t *cava_in, int new_samples, int *cava_out, struct cava_plan *p);
+extern void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cava_plan *p);
 extern void cava_destroy(struct cava_plan *p);

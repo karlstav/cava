@@ -305,17 +305,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         audio.input_buffer_size = MAX_BARS * audio.channels;
 
-        audio.cava_in = (int32_t *)malloc(audio.input_buffer_size * 4 * sizeof(int32_t));
+        audio.cava_in = (double *)malloc(audio.input_buffer_size * 4 * sizeof(double));
         memset(audio.cava_in, 0, sizeof(int) * audio.input_buffer_size * 4);
 
         audio.terminate = 0;
 
         int *bars_left, *bars_right;
-        int *cava_out;
+        double *cava_out;
 
         bars_left = (int *)malloc(MAX_BARS * sizeof(int));
         bars_right = (int *)malloc(MAX_BARS * sizeof(int));
-        cava_out = (int *)malloc(MAX_BARS * audio.channels * sizeof(int));
+        cava_out = (double *)malloc(MAX_BARS * audio.channels * sizeof(double));
 
         debug("starting audio thread\n");
 

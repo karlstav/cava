@@ -12,7 +12,7 @@
 #define MAX_BARS 1024
 
 struct audio_data {
-    int32_t *cava_in;
+    double *cava_in;
 
     int input_buffer_size;
     //int cava_input_buffer_size;

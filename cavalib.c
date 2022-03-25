@@ -16,8 +16,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     struct cava_plan *p;
     memset(&p, 0, sizeof(p));
     p = malloc(sizeof(int) * 11 + sizeof(double) * 2 + sizeof(fftw_plan) * 6 +
-               sizeof(fftw_complex *) * 6 + sizeof(double *) * 17 + sizeof(float *) * 1 +
-               sizeof(int *) * 6);
+               sizeof(fftw_complex *) * 6 + sizeof(double *) * 20 + sizeof(float *) * 1 +
+               sizeof(int *) * 3);
 
     p->number_of_bars = number_of_bars;
     p->audio_channels = channels;
@@ -32,17 +32,17 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     p->FFTtreblebufferSize = MAX_BARS;
 
     // p->input_buffer_size = MAX_BARS * p->channels;
-    p->input_buffer_size = p->FFTbassbufferSize * 2;
+    p->input_buffer_size = p->FFTbassbufferSize * channels;
 
-    p->input_buffer = (int *)malloc(p->input_buffer_size * sizeof(int));
+    p->input_buffer = (double *)malloc(p->input_buffer_size * sizeof(double));
     p->FFTbuffer_lower_cut_off = (int *)malloc(MAX_BARS * sizeof(int));
     p->FFTbuffer_upper_cut_off = (int *)malloc(MAX_BARS * sizeof(int));
     p->eq = (double *)malloc(MAX_BARS * sizeof(double));
     p->cut_off_frequency = (float *)malloc(MAX_BARS * sizeof(float));
     p->cava_fall = (int *)malloc(MAX_BARS * sizeof(int));
-    p->cava_mem = (int *)malloc(MAX_BARS * sizeof(int));
+    p->cava_mem = (double *)malloc(MAX_BARS * sizeof(double));
     p->cava_peak = (double *)malloc(MAX_BARS * sizeof(double));
-    p->prev_cava_out = (int *)malloc(MAX_BARS * sizeof(int));
+    p->prev_cava_out = (double *)malloc(MAX_BARS * sizeof(double));
 
     // Hann Window calculate multipliers
     p->bass_multiplier = (double *)malloc(p->FFTbassbufferSize * sizeof(double));
@@ -243,7 +243,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     return p;
 }
 
-void cava_execute(int32_t *cava_in, int new_samples, int *cava_out, struct cava_plan *p) {
+void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cava_plan *p) {
 
     // do not overflow
     if (new_samples > p->input_buffer_size) {
