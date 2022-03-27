@@ -303,19 +303,20 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         audio.samples_counter = 0;
         audio.channels = 2;
 
-        audio.input_buffer_size = MAX_BARS * audio.channels;
+        audio.input_buffer_size = BUFFER_SIZE * audio.channels;
+        audio.cava_buffer_size = audio.input_buffer_size * 4;
 
-        audio.cava_in = (double *)malloc(audio.input_buffer_size * 4 * sizeof(double));
-        memset(audio.cava_in, 0, sizeof(int) * audio.input_buffer_size * 4);
+        audio.cava_in = (double *)malloc(audio.cava_buffer_size * sizeof(double));
+        memset(audio.cava_in, 0, sizeof(int) * audio.cava_buffer_size);
 
         audio.terminate = 0;
 
         int *bars_left, *bars_right;
         double *cava_out;
 
-        bars_left = (int *)malloc(MAX_BARS * sizeof(int));
-        bars_right = (int *)malloc(MAX_BARS * sizeof(int));
-        cava_out = (double *)malloc(MAX_BARS * audio.channels * sizeof(double));
+        bars_left = (int *)malloc(BUFFER_SIZE * sizeof(int));
+        bars_right = (int *)malloc(BUFFER_SIZE * sizeof(int));
+        cava_out = (double *)malloc(BUFFER_SIZE * audio.channels * sizeof(double));
 
         debug("starting audio thread\n");
 
@@ -415,8 +416,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             exit(EXIT_FAILURE);
         }
 
-        int bars[MAX_BARS];
-        int previous_frame[MAX_BARS];
+        int bars[BUFFER_SIZE];
+        int previous_frame[BUFFER_SIZE];
 
         int height, lines, width, remainder, fp;
 
@@ -431,11 +432,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         bool reloadConf = false;
         while (!reloadConf) { // jumping back to this loop means that you resized the screen
-            for (int n = 0; n < MAX_BARS; n++) {
+            for (int n = 0; n < BUFFER_SIZE; n++) {
                 previous_frame[n] = 0;
                 bars[n] = 0;
                 cava_out[n] = 0;
-                cava_out[n + MAX_BARS] = 0;
+                cava_out[n + BUFFER_SIZE] = 0;
             }
 
             // frequencies on x axis require a bar width of four or more
@@ -505,7 +506,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
 
                 // width must be hardcoded for raw output.
-                width = MAX_BARS;
+                width = BUFFER_SIZE;
 
                 if (strcmp(p.data_format, "ascii") != 0) {
                     // "binary" or "noritake"
@@ -534,8 +535,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
             if (number_of_bars < 1)
                 number_of_bars = 1; // must have at least 1 bars
-            if (number_of_bars > MAX_BARS)
-                number_of_bars = MAX_BARS; // cant have more than MAX_BARS bars
+            if (number_of_bars > BUFFER_SIZE)
+                number_of_bars = BUFFER_SIZE; // cant have more than MAX_BARS bars
 
             int output_channels = 1;
             if (p.stereo) { // stereo must have even numbers of bars
@@ -559,7 +560,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             struct cava_plan *plan = cava_init(number_of_bars / output_channels, audio.rate,
                                                audio.channels, height, p.framerate);
 
-            double center_frequencies[MAX_BARS];
+            double center_frequencies[BUFFER_SIZE];
 
             // process: calculate x axis values
             int x_axis_info = 0;
@@ -904,7 +905,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 #endif
 
-                memcpy(previous_frame, bars, MAX_BARS * sizeof(int));
+                memcpy(previous_frame, bars, BUFFER_SIZE * sizeof(int));
 
                 // checking if audio thread has exited unexpectedly
                 if (audio.terminate == 1) {

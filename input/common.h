@@ -9,12 +9,17 @@
 #include <string.h>
 #include <unistd.h>
 
-#define MAX_BARS 1024
+// number of bytes to read from audio source x number of channels
+// determins the size of all other buffers
+// matches the BUFFER_SIZE in core.h
+
+#define BUFFER_SIZE 1024
 
 struct audio_data {
     double *cava_in;
 
     int input_buffer_size;
+    int cava_buffer_size;
 
     int format;
     unsigned int rate;

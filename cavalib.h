@@ -1,7 +1,9 @@
 #pragma once
 #include <stdint.h>
 
-#define MAX_BARS 1024
+// the size of the smallest input buffer (treble). this will determin the size of all other buffers.
+// matches the BUFFER_SIZE in input/common.h
+#define BUFFER_SIZE 1024
 
 #include <fftw3.h>
 
@@ -56,12 +58,14 @@ struct cava_plan {
     int *cava_fall;
     // 3 int *
 };
-// number_of_bars = number_of_bars per channel
 // cava_in size must be  4096 * number of channels and cava_out will be 1024 * number of channels
+// number_of_bars is number of wanted bars per channel
 // cava_execute assumes cava_in samples to be interleaved if more than one channel
-// new_samples is the number of new samples since last execution of cava_execute
+// cava_in does not need to be filled up per execution
+// new_samples is the number of samples in cava_in
 // it is recomended to execute about every 20ms (or per 1024 * number of channels samples at 44100
-// ramples rate) and use a cava_in as a ring buffer
+// ramples rate) but depending on how data is read you might have a bit more data per execution some
+// times framerate is your expected execution rate of cava_execute per second
 extern struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                                    int max_height, int framerate);
 extern void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cava_plan *p);
