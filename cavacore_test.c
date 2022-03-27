@@ -20,9 +20,10 @@ void main() {
     int height = 100;
     int framerate = 60;
     int rate = 44100;
+    int blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 77, 20, 0, 0};
+    int blueprint_200MHz[10] = {0, 0, 97, 4, 0, 0, 0, 0, 0, 0};
 
     struct cava_plan *plan = cava_init(bars_per_channel, rate, channels, height, framerate);
-
     printf("got lower cut off frequencies:\n");
 
     for (int i = 0; i < 10; i++) {
@@ -35,33 +36,52 @@ void main() {
     double *cava_out;
     double *cava_in;
 
-    cava_out = (double *)malloc(BUFFER_SIZE * 2 * sizeof(double));
+    cava_out = (double *)malloc(CAVA_TREBLE_BUFFER_SIZE * channels * sizeof(double));
 
-    cava_in = (double *)malloc(BUFFER_SIZE * 2 * 4 * sizeof(double));
+    cava_in = (double *)malloc(CAVA_TOTAL_BUFFER_SIZE * channels * sizeof(double));
 
-    for (int i = 0; i < BUFFER_SIZE * 2; i++) {
+    for (int i = 0; i < CAVA_TREBLE_BUFFER_SIZE * channels; i++) {
         cava_out[i] = 0;
     }
-    for (int n = 0; n < BUFFER_SIZE * 4; n++) {
+    for (int n = 0; n < CAVA_TOTAL_BUFFER_SIZE; n++) {
         cava_in[n * 2] = sin(2 * PI * 200 / 44100 * n) * 10000;
         cava_in[n * 2 + 1] = sin(2 * PI * 2000 / 44100 * n) * 10000;
     }
 
     printf("running cava execute 300 times (simulating 5 seconds run time)\n\n");
     for (int k = 0; k < 300; k++) {
-        cava_execute(cava_in, BUFFER_SIZE * 4 * 2, cava_out, plan);
+        cava_execute(cava_in, CAVA_TOTAL_BUFFER_SIZE * channels, cava_out, plan);
     }
 
+    int bp_ok = 1;
     printf("\noutput left, max value should be at 2000Hz:\n");
-    for (int i = 0; i < 10; i++) {
-        printf("%.0f \t", cava_out[i]);
+    for (int i = 0; i < bars_per_channel; i++) {
+        printf("%d \t", (int)cava_out[i]);
+
+        // checking if result matches blueprint
+        if ((int)cava_out[i] != blueprint_2000MHz[i])
+            bp_ok = 0;
     }
     printf("MHz\n");
 
     printf("output right,  max value should be at 200Hz:\n");
-    for (int i = 10; i < 20; i++) {
-        printf("%.0f \t", cava_out[i]);
+    for (int i = 0; i < bars_per_channel; i++) {
+        printf("%d \t", (int)cava_out[i + bars_per_channel]);
+
+        // checking if result matches blueprint
+        if ((int)cava_out[i + bars_per_channel] != blueprint_200MHz[i])
+            bp_ok = 0;
     }
-    printf("MHz\n");
+    printf("MHz\n\n");
     cava_destroy(plan);
+    free(plan);
+    free(cava_in);
+    free(cava_out);
+    if (bp_ok == 1) {
+        printf("matching blueprint\n");
+        exit(0);
+    } else {
+        printf("not matching blueprints\n");
+        exit(1);
+    }
 }
