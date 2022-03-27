@@ -47,6 +47,7 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
 - [Usage](#usage)
   - [Controls](#controls)
 - [Configuration](#configuration)
+- [Using cava in other applications](#using-cava-in-other-applications)
 - [Contribution](#contribution)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -452,6 +453,13 @@ $ pkill -USR2 cava
     5=0.5
 
 ![3_139](https://cloud.githubusercontent.com/assets/6376571/8670181/9db0ef50-29e8-11e5-81bc-3e2bb9892da0.png)
+
+
+Using cava in other applications
+--------------------------------
+
+The core processing engine in cava has been split into a separate library `cavacore`. Look in CAVACORE.md for usage.
+
 
 Contribution
 ------
