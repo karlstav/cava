@@ -29,18 +29,17 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
     p->input_buffer_size = p->FFTbassbufferSize * channels;
 
-    // because of Nyquist samplings theorem and how fftw works
-    int max_bars = CAVA_TREBLE_BUFFER_SIZE / channels;
-
     p->input_buffer = (double *)malloc(p->input_buffer_size * sizeof(double));
-    p->FFTbuffer_lower_cut_off = (int *)malloc(max_bars * sizeof(int));
-    p->FFTbuffer_upper_cut_off = (int *)malloc(max_bars * sizeof(int));
-    p->eq = (double *)malloc(max_bars * sizeof(double));
-    p->cut_off_frequency = (float *)malloc(max_bars * sizeof(float));
-    p->cava_fall = (int *)malloc(max_bars * sizeof(int));
-    p->cava_mem = (double *)malloc(max_bars * sizeof(double));
-    p->cava_peak = (double *)malloc(max_bars * sizeof(double));
-    p->prev_cava_out = (double *)malloc(max_bars * sizeof(double));
+
+    p->FFTbuffer_lower_cut_off = (int *)malloc((number_of_bars + 1) * sizeof(int));
+    p->FFTbuffer_upper_cut_off = (int *)malloc((number_of_bars + 1) * sizeof(int));
+    p->eq = (double *)malloc((number_of_bars + 1) * sizeof(double));
+    p->cut_off_frequency = (float *)malloc((number_of_bars + 1) * sizeof(float));
+
+    p->cava_fall = (int *)malloc(number_of_bars * channels * sizeof(int));
+    p->cava_mem = (double *)malloc(number_of_bars * channels * sizeof(double));
+    p->cava_peak = (double *)malloc(number_of_bars * channels * sizeof(double));
+    p->prev_cava_out = (double *)malloc(number_of_bars * channels * sizeof(double));
 
     // Hann Window calculate multipliers
     p->bass_multiplier = (double *)malloc(p->FFTbassbufferSize * sizeof(double));
@@ -119,11 +118,12 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         memset(p->out_treble_r, 0, (p->FFTtreblebufferSize / 2 + 1) * sizeof(fftw_complex));
     }
 
-    memset(p->input_buffer, 0, sizeof(int) * p->input_buffer_size);
-    memset(p->cava_fall, 0, sizeof(int) * max_bars);
-    memset(p->cava_mem, 0, sizeof(int) * max_bars);
-    memset(p->cava_peak, 0, sizeof(double) * max_bars);
-    memset(p->prev_cava_out, 0, sizeof(int) * max_bars);
+    memset(p->input_buffer, 0, sizeof(double) * p->input_buffer_size);
+
+    memset(p->cava_fall, 0, sizeof(int) * number_of_bars * channels);
+    memset(p->cava_mem, 0, sizeof(double) * number_of_bars * channels);
+    memset(p->cava_peak, 0, sizeof(double) * number_of_bars * channels);
+    memset(p->prev_cava_out, 0, sizeof(double) * number_of_bars * channels);
 
     // process: calculate cutoff frequencies and eq
     int lower_cut_off = 50;
