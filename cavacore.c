@@ -15,7 +15,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
     struct cava_plan *p;
     memset(&p, 0, sizeof(p));
-    p = malloc(sizeof(int) * 11 + sizeof(double) * 3 + sizeof(fftw_plan) * 6 +
+    p = malloc(sizeof(int) * 11 + sizeof(double) * 2 + sizeof(fftw_plan) * 6 +
                sizeof(fftw_complex *) * 6 + sizeof(double *) * 20 + sizeof(float *) * 1 +
                sizeof(int *) * 3);
 
@@ -418,7 +418,6 @@ void cava_destroy(struct cava_plan *p) {
     fftw_destroy_plan(p->p_mid_l);
 
     fftw_free(p->in_treble_l);
-    fftw_free(p->in_treble_r_raw);
     fftw_free(p->in_treble_l_raw);
     fftw_free(p->out_treble_l);
     fftw_destroy_plan(p->p_treble_l);
@@ -436,6 +435,7 @@ void cava_destroy(struct cava_plan *p) {
 
         fftw_free(p->in_treble_r);
         fftw_free(p->out_treble_r);
+        fftw_free(p->in_treble_r_raw);
         fftw_destroy_plan(p->p_treble_r);
     }
 
