@@ -13,8 +13,6 @@
 #define M_PI 3.1415926535897932385
 #endif
 
-#define MAX_BARS 1024
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>
@@ -30,7 +28,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "cavalib.h"
+#include "cavacore.h"
 
 #include "config.h"
 
@@ -293,8 +291,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         struct audio_data audio;
         memset(&audio, 0, sizeof(audio));
 
-        // audio.cava_input_buffer_size = MAX_BARS * 4 * 2;
-
         audio.source = malloc(1 + strlen(p.audio_source));
         strcpy(audio.source, p.audio_source);
 
@@ -536,7 +532,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             if (number_of_bars < 1)
                 number_of_bars = 1; // must have at least 1 bars
             if (number_of_bars > BUFFER_SIZE)
-                number_of_bars = BUFFER_SIZE; // cant have more than MAX_BARS bars
+                number_of_bars = BUFFER_SIZE; // cant have more than BUFFER_SIZE bars
 
             int output_channels = 1;
             if (p.stereo) { // stereo must have even numbers of bars
