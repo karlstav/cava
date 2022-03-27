@@ -22,7 +22,7 @@ int write_to_cava_input_buffers(int16_t size, int16_t buf[size], void *data) {
 
 void reset_output_buffers(struct audio_data *data) {
     struct audio_data *audio = (struct audio_data *)data;
-    pthread_mutex_unlock(&audio->lock);
+    pthread_mutex_lock(&audio->lock);
     for (uint16_t n = 0; n < audio->input_buffer_size * 4 * 2; n++) {
         audio->cava_in[n] = 0;
     }

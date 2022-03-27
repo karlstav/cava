@@ -12,6 +12,7 @@ void cb(__attribute__((unused)) pa_context *pulseaudio_context, const pa_server_
 
     // getting default sink name
     struct audio_data *audio = (struct audio_data *)userdata;
+    pthread_mutex_lock(&audio->lock);
     free(audio->source);
     audio->source = malloc(sizeof(char) * 1024);
 
@@ -19,6 +20,7 @@ void cb(__attribute__((unused)) pa_context *pulseaudio_context, const pa_server_
 
     // appending .monitor suufix
     audio->source = strcat(audio->source, ".monitor");
+    pthread_mutex_unlock(&audio->lock);
 
     // quiting mainloop
     pa_context_disconnect(pulseaudio_context);
