@@ -21,6 +21,7 @@ struct cava_plan {
     int treble_cut_off_bar;
     int height;
     int sens_init;
+    int autosens;
 
     double sens;
     double g;
@@ -53,15 +54,20 @@ struct cava_plan {
     int *FFTbuffer_upper_cut_off;
     int *cava_fall;
 };
-// cava_in size must be  4096 * number of channels and cava_out will be 1024 * number of channels
+
 // number_of_bars is number of wanted bars per channel
-// cava_execute assumes cava_in samples to be interleaved if more than one channel
+extern struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
+                                   double range, int framerate, int autosens);
+
+// cava_in size must be  4096 * number of channels and cava_out will be 1024 * number of channels
 // cava_in does not need to be filled up per execution
-// new_samples is the number of samples in cava_in
 // it is recomended to execute about every 20ms (or per 1024 * number of channels samples at 44100
 // ramples rate) but depending on how data is read you might have a bit more data per execution some
 // times framerate is your expected execution rate of cava_execute per second
-extern struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
-                                   int max_height, int framerate);
+// new_samples is the number of samples in cava_in
+// plan is the struct returned from cava_init
+// cava_execute assumes cava_in samples to be interleaved if more than one channel
 extern void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cava_plan *p);
+
+// destroys the plan, frees up memory
 extern void cava_destroy(struct cava_plan *p);

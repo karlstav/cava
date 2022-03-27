@@ -48,8 +48,9 @@ extern void cava_destroy(struct cava_plan *p);
 `int number_of_bars` the desired number of output values per channel.
 `unsigned int rate` the samples rate of the input signal
 `int channels` number of interleaved channels in the input signal (2 for stereo signal, 1 for mono)
-`int max_height` the desired max value (range) of the output signal
+`double range` the target max value of the output signal for the auto sensitivity
 `int framerate` the approximate number of times per second cava_execute will be ran. (used for smoothing calculations)
+`int auto_sensitivity` 1 = on, 0 = off.
 
 returns `struct cava_plan` which contains the cut off frquencies among other things and is used when calling `cava_execute`.
 

@@ -7,21 +7,51 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels, int height,
-                            int framerate) {
+struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels, double range,
+                            int framerate, int autosens) {
 
-    int bass_cut_off = 150;
-    int treble_cut_off = 2500;
+    // sanity checks:
+    if (channels < 1 || channels > 2) {
+        fprintf(stderr,
+                "cava_init called with illegal number of channels: %d, number of channels "
+                "supported are "
+                "1 and 2",
+                channels);
+        exit(1);
+    }
+    if (number_of_bars < 1 || number_of_bars > CAVA_TREBLE_BUFFER_SIZE / channels) {
+        fprintf(stderr,
+                "cava_init called with illegal number of bars: %d, number of channels must be "
+                "between %d and %d",
+                number_of_bars, 1, CAVA_TREBLE_BUFFER_SIZE / channels);
+        exit(1);
+    }
+    if (rate < 1 || rate > 384000) {
+        fprintf(stderr, "cava_init called with illegal sample rate: %d", rate);
+        exit(1);
+    }
+    if (range < 1) {
+        fprintf(stderr, "cava_init called with illegal range %f, must be positive value above 0",
+                range);
+        exit(1);
+    }
+    if (framerate < 1) {
+        fprintf(stderr,
+                "cava_init called with illegal framerate %d, must be positive value above 0",
+                framerate);
+        exit(1);
+    }
 
     struct cava_plan *p = malloc(sizeof(struct cava_plan));
-
     p->number_of_bars = number_of_bars;
     p->audio_channels = channels;
     p->rate = rate;
-    p->height = height;
+    p->height = range;
+    p->autosens = 1;
+    p->sens = 1;
+    p->autosens = autosens;
 
     p->g = log10((float)p->height) * 0.05 * pow((60 / (float)framerate), 2.5);
-    p->sens = 1;
 
     p->FFTbassbufferSize = CAVA_TREBLE_BUFFER_SIZE * 4;
     p->FFTmidbufferSize = CAVA_TREBLE_BUFFER_SIZE * 2;
@@ -127,6 +157,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
     // process: calculate cutoff frequencies and eq
     int lower_cut_off = 50;
+    int bass_cut_off = 150;
+    int treble_cut_off = 2500;
     int upper_cut_off = 10000;
 
     // calculate frequency constant (used to distribute bars across the frequency band)
@@ -389,14 +421,16 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     }
 
     // calculating automatic sense adjustment
-    if (overshoot) {
-        p->sens = p->sens * 0.98;
-        p->sens_init = 0;
-    } else {
-        if (!silence) {
-            p->sens = p->sens * 1.001;
-            if (p->sens_init)
-                p->sens = p->sens * 1.1;
+    if (p->autosens) {
+        if (overshoot) {
+            p->sens = p->sens * 0.98;
+            p->sens_init = 0;
+        } else {
+            if (!silence) {
+                p->sens = p->sens * 1.001;
+                if (p->sens_init)
+                    p->sens = p->sens * 1.1;
+            }
         }
     }
 }

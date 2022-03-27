@@ -23,7 +23,7 @@ void main() {
     int blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 77, 20, 0, 0};
     int blueprint_200MHz[10] = {0, 0, 97, 4, 0, 0, 0, 0, 0, 0};
 
-    struct cava_plan *plan = cava_init(bars_per_channel, rate, channels, height, framerate);
+    struct cava_plan *plan = cava_init(bars_per_channel, rate, channels, height, framerate, 1);
     printf("got lower cut off frequencies:\n");
 
     for (int i = 0; i < 10; i++) {
