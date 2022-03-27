@@ -21,21 +21,17 @@ struct cava_plan {
     int treble_cut_off_bar;
     int height;
     int sens_init;
-    // 11 int
 
     double sens;
     double g;
-    // 2 dobule
 
     fftw_plan p_bass_l, p_bass_r;
     fftw_plan p_mid_l, p_mid_r;
     fftw_plan p_treble_l, p_treble_r;
-    // 6 fftw_plan
 
     fftw_complex *out_bass_l, *out_bass_r;
     fftw_complex *out_mid_l, *out_mid_r;
     fftw_complex *out_treble_l, *out_treble_r;
-    // 6 fftw_complex *
 
     double *bass_multiplier;
     double *mid_multiplier;
@@ -51,14 +47,11 @@ struct cava_plan {
     double *input_buffer, *cava_peak;
 
     double *eq;
-    // 20 double *
 
     float *cut_off_frequency;
-    // 1 float *
     int *FFTbuffer_lower_cut_off;
     int *FFTbuffer_upper_cut_off;
     int *cava_fall;
-    // 3 int *
 };
 // cava_in size must be  4096 * number of channels and cava_out will be 1024 * number of channels
 // number_of_bars is number of wanted bars per channel

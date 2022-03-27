@@ -13,11 +13,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     int bass_cut_off = 150;
     int treble_cut_off = 2500;
 
-    struct cava_plan *p;
-    memset(&p, 0, sizeof(p));
-    p = malloc(sizeof(int) * 11 + sizeof(double) * 2 + sizeof(fftw_plan) * 6 +
-               sizeof(fftw_complex *) * 6 + sizeof(double *) * 20 + sizeof(float *) * 1 +
-               sizeof(int *) * 3);
+    struct cava_plan *p = malloc(sizeof(struct cava_plan));
 
     p->number_of_bars = number_of_bars;
     p->audio_channels = channels;
