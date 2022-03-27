@@ -11,7 +11,7 @@
 
 // number of bytes to read from audio source x number of channels
 // determins the size of all other buffers
-// matches the BUFFER_SIZE in core.h
+// matches the CAVA_TREBLE_BUFFER_SIZE in core.h
 
 #define BUFFER_SIZE 1024
 
