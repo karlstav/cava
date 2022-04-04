@@ -12,16 +12,18 @@
 void main() {
 
     printf("welcome to cavalib standalone test app\n");
-    printf("planning cava 20 bars (left+right) 44100 rate 2 cahnnels, 100 target height, 60 "
-           "framerate \n");
 
     int bars_per_channel = 10;
     int channels = 2;
+    int buffer_size = 512 * channels; // number of samples per cava execute
     int height = 100;
-    int framerate = 60;
     int rate = 44100;
+    int framerate = rate / buffer_size;
     int blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 77, 20, 0, 0};
-    int blueprint_200MHz[10] = {0, 0, 97, 4, 0, 0, 0, 0, 0, 0};
+    int blueprint_200MHz[10] = {0, 0, 98, 4, 0, 0, 0, 0, 0, 0};
+
+    printf("planning cava 20 bars (left+right) 44100 rate 2 cahnnels, 100 target height, 86 "
+           "framerate \n");
 
     struct cava_plan *plan = cava_init(bars_per_channel, rate, channels, height, framerate, 1);
     printf("got lower cut off frequencies:\n");
@@ -38,21 +40,20 @@ void main() {
 
     cava_out = (double *)malloc(bars_per_channel * channels * sizeof(double));
 
-    cava_in = (double *)malloc(CAVA_TREBLE_BUFFER_SIZE * channels * sizeof(double));
+    cava_in = (double *)malloc(buffer_size * sizeof(double));
 
     for (int i = 0; i < bars_per_channel * channels; i++) {
         cava_out[i] = 0;
     }
 
-    printf("running cava execute 300 times (simulating 5 seconds run time)\n\n");
+    printf("running cava execute 300 times (simulating about 3.5 seconds run time)\n\n");
     for (int k = 0; k < 300; k++) {
-        // filling up 1024*2 samples at a time, making sure the sinus wave is unbroken
-        for (int n = 0; n < CAVA_TREBLE_BUFFER_SIZE; n++) {
-            cava_in[n * 2] = sin(2 * PI * 200 / rate * (n + (k * CAVA_TREBLE_BUFFER_SIZE))) * 10000;
-            cava_in[n * 2 + 1] =
-                sin(2 * PI * 2000 / rate * (n + (k * CAVA_TREBLE_BUFFER_SIZE))) * 10000;
+        // filling up 512*2 samples at a time, making sure the sinus wave is unbroken
+        for (int n = 0; n < buffer_size / 2; n++) {
+            cava_in[n * 2] = sin(2 * PI * 200 / rate * (n + (k * buffer_size / 2))) * 10000;
+            cava_in[n * 2 + 1] = sin(2 * PI * 2000 / rate * (n + (k * buffer_size / 2))) * 10000;
         }
-        cava_execute(cava_in, CAVA_TREBLE_BUFFER_SIZE * channels, cava_out, plan);
+        cava_execute(cava_in, buffer_size, cava_out, plan);
     }
 
     int bp_ok = 1;
