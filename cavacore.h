@@ -59,13 +59,19 @@ struct cava_plan {
 extern struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                                    double range, int framerate, int autosens);
 
-// cava_in size must be  4096 * number of channels and cava_out will be 1024 * number of channels
-// cava_in does not need to be filled up per execution
-// it is recomended to execute about every 20ms (or per 1024 * number of channels samples at 44100
-// ramples rate) but depending on how data is read you might have a bit more data per execution some
-// times framerate is your expected execution rate of cava_execute per second
+// cava_in size can be up to  4096 * number of channels, but it is recomended to only fill up some
+// new samples per execution as this determines your framerate.
+// 512 samples at 44100 sample rate mono, gives about 86 output frames per second.
 // new_samples is the number of samples in cava_in
+// if you have async reading of data this number can vary from execution to execution
+
+// cava_out size must be number of bars * number of channels, left + right
+
+// the framerate input is your expected execution rate of cava_execute per second and is only used
+// for smoothing
+
 // plan is the struct returned from cava_init
+
 // cava_execute assumes cava_in samples to be interleaved if more than one channel
 extern void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cava_plan *p);
 
