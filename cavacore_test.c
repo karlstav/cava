@@ -36,21 +36,23 @@ void main() {
     double *cava_out;
     double *cava_in;
 
-    cava_out = (double *)malloc(CAVA_TREBLE_BUFFER_SIZE * channels * sizeof(double));
+    cava_out = (double *)malloc(bars_per_channel * channels * sizeof(double));
 
-    cava_in = (double *)malloc(CAVA_TOTAL_BUFFER_SIZE * channels * sizeof(double));
+    cava_in = (double *)malloc(CAVA_TREBLE_BUFFER_SIZE * channels * sizeof(double));
 
-    for (int i = 0; i < CAVA_TREBLE_BUFFER_SIZE * channels; i++) {
+    for (int i = 0; i < bars_per_channel * channels; i++) {
         cava_out[i] = 0;
-    }
-    for (int n = 0; n < CAVA_TOTAL_BUFFER_SIZE; n++) {
-        cava_in[n * 2] = sin(2 * PI * 200 / 44100 * n) * 10000;
-        cava_in[n * 2 + 1] = sin(2 * PI * 2000 / 44100 * n) * 10000;
     }
 
     printf("running cava execute 300 times (simulating 5 seconds run time)\n\n");
     for (int k = 0; k < 300; k++) {
-        cava_execute(cava_in, CAVA_TOTAL_BUFFER_SIZE * channels, cava_out, plan);
+        // filling up 1024*2 samples at a time, making sure the sinus wave is unbroken
+        for (int n = 0; n < CAVA_TREBLE_BUFFER_SIZE; n++) {
+            cava_in[n * 2] = sin(2 * PI * 200 / rate * (n + (k * CAVA_TREBLE_BUFFER_SIZE))) * 10000;
+            cava_in[n * 2 + 1] =
+                sin(2 * PI * 2000 / rate * (n + (k * CAVA_TREBLE_BUFFER_SIZE))) * 10000;
+        }
+        cava_execute(cava_in, CAVA_TREBLE_BUFFER_SIZE * channels, cava_out, plan);
     }
 
     int bp_ok = 1;
