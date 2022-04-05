@@ -553,8 +553,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                   number_of_bars, p.bar_width, remainder);
 #endif
 
-            struct cava_plan *plan = cava_init(number_of_bars / output_channels, audio.rate,
-                                               audio.channels, (double)height, p.autosens);
+            struct cava_plan *plan =
+                cava_init(number_of_bars / output_channels, audio.rate, audio.channels, p.autosens);
 
             double center_frequencies[BUFFER_SIZE];
 
@@ -754,6 +754,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     audio.samples_counter = 0;
                 }
                 pthread_mutex_unlock(&audio.lock);
+
+                for (uint32_t n = 0; n < number_of_bars * audio.channels; n++) {
+                    if (p.autosens)
+                        cava_out[n] *= height;
+                    else
+                        cava_out[n] *= p.sens;
+                }
 
                 for (uint32_t n = 0; n < number_of_bars * audio.channels / output_channels; n++) {
                     bars_right[n] = cava_out[n];

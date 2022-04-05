@@ -16,15 +16,14 @@ void main() {
     int bars_per_channel = 10;
     int channels = 2;
     int buffer_size = 512 * channels; // number of samples per cava execute
-    int height = 100;
     int rate = 44100;
-    int blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 77, 20, 0, 0};
-    int blueprint_200MHz[10] = {0, 0, 96, 4, 0, 0, 0, 0, 0, 0};
+    int blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 78, 20, 0, 0};
+    int blueprint_200MHz[10] = {0, 0, 98, 4, 0, 0, 0, 0, 0, 0};
 
     printf("planning cava 20 bars (left+right) 44100 rate 2 cahnnels, 100 target height, 86 "
            "framerate \n");
 
-    struct cava_plan *plan = cava_init(bars_per_channel, rate, channels, height, 1);
+    struct cava_plan *plan = cava_init(bars_per_channel, rate, channels, 1);
     printf("got lower cut off frequencies:\n");
 
     for (int i = 0; i < 10; i++) {
@@ -58,20 +57,20 @@ void main() {
     int bp_ok = 1;
     printf("\noutput left, max value should be at 2000Hz:\n");
     for (int i = 0; i < bars_per_channel; i++) {
-        printf("%d \t", (int)cava_out[i]);
+        printf("%d \t", (int)(cava_out[i] * 100));
 
         // checking if result matches blueprint
-        if ((int)cava_out[i] != blueprint_2000MHz[i])
+        if ((int)(cava_out[i] * 100) != blueprint_2000MHz[i])
             bp_ok = 0;
     }
     printf("MHz\n");
 
     printf("output right,  max value should be at 200Hz:\n");
     for (int i = 0; i < bars_per_channel; i++) {
-        printf("%d \t", (int)cava_out[i + bars_per_channel]);
+        printf("%d \t", (int)(cava_out[i + bars_per_channel] * 100));
 
         // checking if result matches blueprint
-        if ((int)cava_out[i + bars_per_channel] != blueprint_200MHz[i])
+        if ((int)(cava_out[i + bars_per_channel] * 100) != blueprint_200MHz[i])
             bp_ok = 0;
     }
     printf("MHz\n\n");

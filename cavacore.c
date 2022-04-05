@@ -7,8 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels, double range,
-                            int autosens) {
+struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels, int autosens) {
 
     // sanity checks:
     if (channels < 1 || channels > 2) {
@@ -30,22 +29,17 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         fprintf(stderr, "cava_init called with illegal sample rate: %d", rate);
         exit(1);
     }
-    if (range < 1) {
-        fprintf(stderr, "cava_init called with illegal range %f, must be positive value above 0",
-                range);
-        exit(1);
-    }
 
     struct cava_plan *p = malloc(sizeof(struct cava_plan));
     p->number_of_bars = number_of_bars;
     p->audio_channels = channels;
     p->rate = rate;
-    p->height = range;
     p->autosens = 1;
     p->sens = 1;
     p->autosens = autosens;
     p->framerate = 75;
     p->frame_skip = 1;
+    p->average_max = 0;
 
     p->g = log10((float)p->height) * 0.05;
 
@@ -381,24 +375,39 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
 
         // getting average multiply with eq
         temp_l /= p->FFTbuffer_upper_cut_off[n] - p->FFTbuffer_lower_cut_off[n] + 1;
-        temp_l *= p->eq[n] * p->sens;
+        temp_l *= p->eq[n];
         cava_out[n] = temp_l;
 
         if (p->audio_channels == 2) {
             temp_r /= p->FFTbuffer_upper_cut_off[n] - p->FFTbuffer_lower_cut_off[n] + 1;
-            temp_r *= p->eq[n] * p->sens;
+            temp_r *= p->eq[n];
             cava_out[n + p->number_of_bars] = temp_r;
+        }
+    }
+
+    // applying sens or getting max value
+    for (int n = 0; n < p->number_of_bars * p->audio_channels; n++) {
+        if (p->autosens) {
+            cava_out[n] *= p->sens;
+        } else {
+            if (cava_out[n] > p->average_max) {
+                p->average_max -= p->average_max / 64;
+                p->average_max += cava_out[n] / 64;
+            }
         }
     }
     // process [smoothing]
     int overshoot = 0;
-    double gravity_mod = pow((60 / p->framerate), 2.5);
+    double gravity_mod = pow((60 / p->framerate), 2.5) * 2.5;
+
     for (int n = 0; n < p->number_of_bars * p->audio_channels; n++) {
 
         // process [smoothing]: falloff
         if (cava_out[n] < p->prev_cava_out[n]) {
             cava_out[n] =
-                p->cava_peak[n] - (p->g * gravity_mod * p->cava_fall[n] * p->cava_fall[n]);
+                p->cava_peak[n] * (1000 - (p->cava_fall[n] * p->cava_fall[n] * gravity_mod)) / 1000;
+
+            //    p->cava_peak[n] / (gravity_mod * log10(p->cava_fall[n]));
             if (cava_out[n] < 0)
                 cava_out[n] = 0;
             p->cava_fall[n]++;
@@ -411,15 +420,18 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
         // process [smoothing]: integral
         cava_out[n] = p->cava_mem[n] * 0.77 + cava_out[n];
         p->cava_mem[n] = cava_out[n];
-        int diff = p->height - cava_out[n];
-        if (diff < 0)
-            diff = 0;
-        double div = 1 / (diff + 1);
-        p->cava_mem[n] = p->cava_mem[n] * (1 - div / 20);
+        if (p->autosens) {
+            double diff = 1000 - cava_out[n];
+            if (diff < 0)
+                diff = 0;
+            double div = 1 / (diff + 1);
+            p->cava_mem[n] = p->cava_mem[n] * (1 - div / 20);
 
-        // check if we overshoot target height
-        if (cava_out[n] > p->height) {
-            overshoot = 1;
+            // check if we overshoot target height
+            if (cava_out[n] > 1000) {
+                overshoot = 1;
+            }
+            cava_out[n] /= 1000;
         }
     }
 
