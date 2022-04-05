@@ -18,12 +18,12 @@ void main() {
     int buffer_size = 512 * channels; // number of samples per cava execute
     int rate = 44100;
     int blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 78, 20, 0, 0};
-    int blueprint_200MHz[10] = {0, 0, 98, 4, 0, 0, 0, 0, 0, 0};
+    int blueprint_200MHz[10] = {0, 0, 99, 4, 0, 0, 0, 0, 0, 0};
 
     printf("planning cava 20 bars (left+right) 44100 rate 2 cahnnels, 100 target height, 86 "
            "framerate \n");
 
-    struct cava_plan *plan = cava_init(bars_per_channel, rate, channels, 1);
+    struct cava_plan *plan = cava_init(bars_per_channel, rate, channels, 1, 50, 10000);
     printf("got lower cut off frequencies:\n");
 
     for (int i = 0; i < 10; i++) {

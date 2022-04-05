@@ -7,26 +7,40 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels, int autosens) {
+struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels, int autosens,
+                            int low_cut_off, int high_cut_off) {
 
     // sanity checks:
     if (channels < 1 || channels > 2) {
         fprintf(stderr,
                 "cava_init called with illegal number of channels: %d, number of channels "
                 "supported are "
-                "1 and 2",
+                "1 and 2\n",
                 channels);
         exit(1);
     }
     if (number_of_bars < 1 || number_of_bars > CAVA_TREBLE_BUFFER_SIZE / channels) {
         fprintf(stderr,
                 "cava_init called with illegal number of bars: %d, number of channels must be "
-                "between %d and %d",
+                "between %d and %d\n",
                 number_of_bars, 1, CAVA_TREBLE_BUFFER_SIZE / channels);
         exit(1);
     }
     if (rate < 1 || rate > 384000) {
-        fprintf(stderr, "cava_init called with illegal sample rate: %d", rate);
+        fprintf(stderr, "cava_init called with illegal sample rate: %d\n", rate);
+        exit(1);
+    }
+    if (low_cut_off < 0 || high_cut_off < 0) {
+        fprintf(stderr, "low_cut_off must be a positive value\n");
+        exit(1);
+    }
+    if (low_cut_off >= high_cut_off) {
+        fprintf(stderr, "high_cut_off must be a higher than low_cut_off\n");
+        exit(1);
+    }
+    if ((unsigned int)high_cut_off > rate / 2) {
+        fprintf(stderr,
+                "high_cut_off can't be higher than sample rate / 2. (Nyquist Sampling Theorem)\n");
         exit(1);
     }
 
@@ -146,10 +160,10 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     memset(p->prev_cava_out, 0, sizeof(double) * number_of_bars * channels);
 
     // process: calculate cutoff frequencies and eq
-    int lower_cut_off = 50;
+    int lower_cut_off = low_cut_off;
+    int upper_cut_off = high_cut_off;
     int bass_cut_off = 150;
     int treble_cut_off = 2500;
-    int upper_cut_off = 10000;
 
     // calculate frequency constant (used to distribute bars across the frequency band)
     double frequency_constant = log10((float)lower_cut_off / (float)upper_cut_off) /
