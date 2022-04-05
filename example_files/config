@@ -160,6 +160,7 @@
 
 # Percentage value for integral smoothing. Takes values from 0 - 100.
 # Higher values means smoother, but less precise. 0 to disable.
+# DEPRECATED as of 0.8.0, use noise_reduction instead
 ; integral = 77
 
 # Disables or enables the so-called "Monstercat smoothing" with or without "waves". Set to 0 to disable.
@@ -168,11 +169,18 @@
 
 # Set gravity percentage for "drop off". Higher values means bars will drop faster.
 # Accepts only non-negative values. 50 means half gravity, 200 means double. Set to 0 to disable "drop off".
+# DEPRECATED as of 0.8.0, use noise_reduction instead
 ; gravity = 100
 
 
 # In bar height, bars that would have been lower that this will not be drawn.
+# DEPRECATED as of 0.8.0
 ; ignore = 0
+
+# Noise reduction, float 0 - 1. default 0.77
+# the raw visualization is very noisy, this factor adjusts the integral and gravity filters to keep the signal smooth
+# 1 will be very slow and smooth, 0 will be fast but noisy.
+; noise_reduction = 0.77
 
 
 [eq]

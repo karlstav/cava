@@ -61,7 +61,7 @@ struct config_params {
     char *color, *bcolor, *raw_target, *audio_source,
         /**gradient_color_1, *gradient_color_2,*/ **gradient_colors, *data_format;
     char bar_delim, frame_delim;
-    double monstercat, integral, gravity, ignore, sens;
+    double monstercat, integral, gravity, ignore, sens, noise_reduction;
     unsigned int lower_cut_off, upper_cut_off;
     double *userEQ;
     enum input_method input;

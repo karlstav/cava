@@ -8,7 +8,7 @@
 #include <string.h>
 
 struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels, int autosens,
-                            int low_cut_off, int high_cut_off) {
+                            double noise_reduction, int low_cut_off, int high_cut_off) {
 
     // sanity checks:
     if (channels < 1 || channels > 2) {
@@ -54,6 +54,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     p->framerate = 75;
     p->frame_skip = 1;
     p->average_max = 0;
+    p->noise_reduction = noise_reduction;
 
     p->g = log10((float)p->height) * 0.05;
 
@@ -412,12 +413,15 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     }
     // process [smoothing]
     int overshoot = 0;
-    double gravity_mod = pow((60 / p->framerate), 2.5) * 2;
+    double gravity_mod = pow((60 / p->framerate), 2.5) * 1.54 / p->noise_reduction;
+
+    if (gravity_mod < 1)
+        gravity_mod = 1;
 
     for (int n = 0; n < p->number_of_bars * p->audio_channels; n++) {
 
         // process [smoothing]: falloff
-        if (cava_out[n] < p->prev_cava_out[n]) {
+        if (cava_out[n] < p->prev_cava_out[n] && p->noise_reduction > 0.1) {
             cava_out[n] =
                 p->cava_peak[n] * (1000 - (p->cava_fall[n] * p->cava_fall[n] * gravity_mod)) / 1000;
 
@@ -432,7 +436,7 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
         p->prev_cava_out[n] = cava_out[n];
 
         // process [smoothing]: integral
-        cava_out[n] = p->cava_mem[n] * 0.77 + cava_out[n];
+        cava_out[n] = p->cava_mem[n] * p->noise_reduction + cava_out[n];
         p->cava_mem[n] = cava_out[n];
         if (p->autosens) {
             double diff = 1000 - cava_out[n];

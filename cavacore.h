@@ -28,6 +28,7 @@ struct cava_plan {
     double g;
     double framerate;
     double average_max;
+    double noise_reduction;
 
     fftw_plan p_bass_l, p_bass_r;
     fftw_plan p_mid_l, p_mid_r;
@@ -58,6 +59,8 @@ struct cava_plan {
     int *cava_fall;
 };
 
+// cava_init initialize cava, takes the following parameters:
+
 // number_of_bars is number of wanted bars per channel
 
 // rate is sample rate of input signal
@@ -70,15 +73,23 @@ struct cava_plan {
 // off will pass the raw values from cava directly to the output
 // the max values will depend on the input
 
+// noise_reduction 0 - 1, recomended 0.77
+// the raw visualization is very noisy, this factor adjusts the integral
+// and gravity filters inside cavacore to keep the signal smooth
+// 1 will be very slow and smooth, 0 will be fast but noisy.
+
 // low_cut_off, high_cut_off cut off frequencies for visualization in Hz
 
 // returns a cava_plan to be used by cava_execute
 extern struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
-                                   int autosens, int low_cut_off, int high_cut_off);
+                                   int autosens, double noise_reduction, int low_cut_off,
+                                   int high_cut_off);
+
+// cava_execute executes cava
 
 // cava_in size can be up to  4096 * number of channels, but it is recomended to only fill up some
 // new samples per execution as this determines your framerate.
-// 512 samples at 44100 sample rate mono, gives about 86 output frames per second.
+// 512 samples at 44100 sample rate mono, gives about 86 frames per second.
 
 // new_samples is the number of samples in cava_in
 // if you have async reading of data this number can vary from execution to execution
