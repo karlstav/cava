@@ -398,7 +398,7 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     }
     // process [smoothing]
     int overshoot = 0;
-    double gravity_mod = pow((60 / p->framerate), 2.5) * 2.5;
+    double gravity_mod = pow((60 / p->framerate), 2.5) * 2;
 
     for (int n = 0; n < p->number_of_bars * p->audio_channels; n++) {
 
