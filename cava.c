@@ -553,9 +553,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                   number_of_bars, p.bar_width, remainder);
 #endif
 
-            struct cava_plan *plan =
-                cava_init(number_of_bars / output_channels, audio.rate, audio.channels,
-                          (double)height, p.framerate, p.autosens);
+            struct cava_plan *plan = cava_init(number_of_bars / output_channels, audio.rate,
+                                               audio.channels, (double)height, p.autosens);
 
             double center_frequencies[BUFFER_SIZE];
 

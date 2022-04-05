@@ -22,9 +22,11 @@ struct cava_plan {
     int height;
     int sens_init;
     int autosens;
+    int frame_skip;
 
     double sens;
     double g;
+    double framerate;
 
     fftw_plan p_bass_l, p_bass_r;
     fftw_plan p_mid_l, p_mid_r;
@@ -57,7 +59,7 @@ struct cava_plan {
 
 // number_of_bars is number of wanted bars per channel
 extern struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
-                                   double range, int framerate, int autosens);
+                                   double range, int autosens);
 
 // cava_in size can be up to  4096 * number of channels, but it is recomended to only fill up some
 // new samples per execution as this determines your framerate.
@@ -66,9 +68,6 @@ extern struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int ch
 // if you have async reading of data this number can vary from execution to execution
 
 // cava_out size must be number of bars * number of channels, left + right
-
-// the framerate input is your expected execution rate of cava_execute per second and is only used
-// for smoothing
 
 // plan is the struct returned from cava_init
 
