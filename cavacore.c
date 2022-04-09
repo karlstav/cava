@@ -250,8 +250,10 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
             p->treble_cut_off_bar++;
             if ((p->treble_cut_off_bar - p->bass_cut_off_bar) == 1) {
                 first_bar = 1;
-                p->FFTbuffer_upper_cut_off[n - 1] =
-                    relative_cut_off[n] * (p->FFTbassbufferSize / 2);
+                if (n > 0) {
+                    p->FFTbuffer_upper_cut_off[n - 1] =
+                        relative_cut_off[n] * (p->FFTbassbufferSize / 2);
+                }
             } else {
                 first_bar = 0;
             }
@@ -264,7 +266,10 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
             first_treble_bar++;
             if (first_treble_bar == 1) {
                 first_bar = 1;
-                p->FFTbuffer_upper_cut_off[n - 1] = relative_cut_off[n] * (p->FFTmidbufferSize / 2);
+                if (n > 0) {
+                    p->FFTbuffer_upper_cut_off[n - 1] =
+                        relative_cut_off[n] * (p->FFTmidbufferSize / 2);
+                }
             } else {
                 first_bar = 0;
             }
