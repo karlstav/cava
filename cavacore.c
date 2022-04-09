@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define CAVA_TREBLE_BUFFER_SIZE 1024
+
 struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels, int autosens,
                             double noise_reduction, int low_cut_off, int high_cut_off) {
 
@@ -19,15 +21,40 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                 channels);
         exit(1);
     }
-    if (number_of_bars < 1 || number_of_bars > CAVA_TREBLE_BUFFER_SIZE / channels) {
-        fprintf(stderr,
-                "cava_init called with illegal number of bars: %d, number of channels must be "
-                "between %d and %d\n",
-                number_of_bars, 1, CAVA_TREBLE_BUFFER_SIZE / channels);
-        exit(1);
-    }
     if (rate < 1 || rate > 384000) {
         fprintf(stderr, "cava_init called with illegal sample rate: %d\n", rate);
+        exit(1);
+    }
+
+    int treble_buffer_size = 128;
+
+    if (rate > 8125)
+        treble_buffer_size = 256;
+    else if (rate > 16250)
+        treble_buffer_size = 512;
+    else if (rate > 32500)
+        treble_buffer_size = 1024;
+    else if (rate > 75000)
+        treble_buffer_size = 2048;
+    else if (rate > 150000)
+        treble_buffer_size = 4096;
+    else if (rate > 300000)
+        treble_buffer_size = 8096;
+
+    if (number_of_bars < 1) {
+        fprintf(stderr,
+                "cava_init called with illegal number of bars: %d, number of channels must be "
+                "positive integer\n",
+                number_of_bars);
+        exit(1);
+    }
+
+    if (number_of_bars > treble_buffer_size) {
+        fprintf(stderr,
+                "cava_init called with illegal number of bars: %d, for %d sample rate number of "
+                "bars can't be more than %d "
+                "positive integer\n",
+                number_of_bars, rate, treble_buffer_size);
         exit(1);
     }
     if (low_cut_off < 0 || high_cut_off < 0) {
@@ -58,9 +85,9 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
     p->g = log10((float)p->height) * 0.05;
 
-    p->FFTbassbufferSize = CAVA_TREBLE_BUFFER_SIZE * 4;
-    p->FFTmidbufferSize = CAVA_TREBLE_BUFFER_SIZE * 2;
-    p->FFTtreblebufferSize = CAVA_TREBLE_BUFFER_SIZE;
+    p->FFTbassbufferSize = treble_buffer_size * 4;
+    p->FFTmidbufferSize = treble_buffer_size * 2;
+    p->FFTtreblebufferSize = treble_buffer_size;
 
     p->input_buffer_size = p->FFTbassbufferSize * channels;
 
@@ -170,7 +197,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     double frequency_constant = log10((float)lower_cut_off / (float)upper_cut_off) /
                                 (1 / ((float)p->number_of_bars + 1) - 1);
 
-    float relative_cut_off[CAVA_TREBLE_BUFFER_SIZE];
+    float relative_cut_off[p->FFTtreblebufferSize];
 
     p->bass_cut_off_bar = -1;
     p->treble_cut_off_bar = -1;

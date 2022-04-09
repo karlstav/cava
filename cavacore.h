@@ -1,12 +1,6 @@
 #pragma once
 #include <stdint.h>
 
-// the size of the smallest input buffer (treble). this will determin the size of all other buffers.
-// matches the BUFFER_SIZE in input/common.h
-#define CAVA_TREBLE_BUFFER_SIZE 1024
-
-#define CAVA_TOTAL_BUFFER_SIZE CAVA_TREBLE_BUFFER_SIZE * 4
-
 #include <fftw3.h>
 
 struct cava_plan {
