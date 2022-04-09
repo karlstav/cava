@@ -29,7 +29,7 @@ as beeing a fixed amount higher than eachother.
 fftw gives out (input samples / 2) + 1 number of ouput samples. cavacore can limit this to the desired needed "bars" in your application.
 
 
-* smoothing filters
+* noise reduction
 
 the raw output of fftw is very jittery, cavacore processes the output signal in two ways to provide a smooth output:
 

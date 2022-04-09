@@ -20,8 +20,8 @@ void main() {
     double blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 0.783, 0.209, 0, 0};
     double blueprint_200MHz[10] = {0, 0.002, 0.980, 0.049, 0.001, 0, 0, 0, 0, 0};
 
-    printf("planning cava 20 bars (left+right) 44100 rate 2 cahnnels, 100 target height, 86 "
-           "framerate \n");
+    printf("planning visualization with 10 bars per channel, 44100 rate, 2 cahnnels, autosens, "
+           "0.77 noise reduction, 50 - 10000 MHz.\n");
 
     struct cava_plan *plan = cava_init(bars_per_channel, rate, channels, 1, 0.77, 50, 10000);
     printf("got lower cut off frequencies:\n");
