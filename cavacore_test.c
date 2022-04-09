@@ -17,8 +17,8 @@ void main() {
     int channels = 2;
     int buffer_size = 512 * channels; // number of samples per cava execute
     int rate = 44100;
-    int blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 78, 20, 0, 0};
-    int blueprint_200MHz[10] = {0, 0, 98, 4, 0, 0, 0, 0, 0, 0};
+    double blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 0.783, 0.209, 0, 0};
+    double blueprint_200MHz[10] = {0, 0.002, 0.980, 0.049, 0.001, 0, 0, 0, 0, 0};
 
     printf("planning cava 20 bars (left+right) 44100 rate 2 cahnnels, 100 target height, 86 "
            "framerate \n");
@@ -54,26 +54,34 @@ void main() {
         cava_execute(cava_in, buffer_size, cava_out, plan);
     }
 
-    int bp_ok = 1;
-    printf("\noutput left, max value should be at 2000Hz:\n");
-    for (int i = 0; i < bars_per_channel; i++) {
-        printf("%d \t", (int)(cava_out[i] * 100));
+    // rounding last output to nearst 1/1000th
+    for (int i = 0; i < bars_per_channel * 2; i++) {
+        cava_out[i] = (double)round(cava_out[i] * 1000) / 1000;
+    }
 
-        // checking if result matches blueprint
-        if ((int)(cava_out[i] * 100) != blueprint_2000MHz[i])
-            bp_ok = 0;
+    printf("\nlast output left, max value should be at 2000Hz:\n");
+    for (int i = 0; i < bars_per_channel; i++) {
+        printf("%.3f \t", cava_out[i]);
     }
     printf("MHz\n");
 
-    printf("output right,  max value should be at 200Hz:\n");
+    printf("last output right,  max value should be at 200Hz:\n");
     for (int i = 0; i < bars_per_channel; i++) {
-        printf("%d \t", (int)(cava_out[i + bars_per_channel] * 100));
-
-        // checking if result matches blueprint
-        if ((int)(cava_out[i + bars_per_channel] * 100) != blueprint_200MHz[i])
-            bp_ok = 0;
+        printf("%.3f \t", cava_out[i + bars_per_channel]);
     }
     printf("MHz\n\n");
+
+    // checking if within 2% of blueprint
+    int bp_ok = 1;
+    for (int i = 0; i < bars_per_channel; i++) {
+        if (cava_out[i] > blueprint_2000MHz[i] * 1.02 || cava_out[i] < blueprint_2000MHz[i] * 0.98)
+            bp_ok = 0;
+    }
+    for (int i = 0; i < bars_per_channel; i++) {
+        if (cava_out[i + bars_per_channel] > blueprint_200MHz[i] * 1.02 ||
+            cava_out[i + bars_per_channel] < blueprint_200MHz[i] * 0.98)
+            bp_ok = 0;
+    }
     cava_destroy(plan);
     free(plan);
     free(cava_in);
