@@ -49,12 +49,12 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         exit(1);
     }
 
-    if (number_of_bars > treble_buffer_size) {
+    if (number_of_bars > treble_buffer_size / 2 + 1) {
         fprintf(stderr,
                 "cava_init called with illegal number of bars: %d, for %d sample rate number of "
                 "bars can't be more than %d "
                 "positive integer\n",
-                number_of_bars, rate, treble_buffer_size);
+                number_of_bars, rate, treble_buffer_size / 2 + 1);
         exit(1);
     }
     if (low_cut_off < 0 || high_cut_off < 0) {
