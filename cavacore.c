@@ -28,15 +28,15 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
     int treble_buffer_size = 128;
 
-    if (rate > 8125)
+    if (rate > 8125 && rate <= 16250)
         treble_buffer_size = 256;
-    else if (rate > 16250)
+    else if (rate > 16250 && rate <= 32500)
         treble_buffer_size = 512;
-    else if (rate > 32500)
+    else if (rate > 32500 && rate <= 75000)
         treble_buffer_size = 1024;
-    else if (rate > 75000)
+    else if (rate > 75000 && rate <= 150000)
         treble_buffer_size = 2048;
-    else if (rate > 150000)
+    else if (rate > 150000 && rate <= 300000)
         treble_buffer_size = 4096;
     else if (rate > 300000)
         treble_buffer_size = 8096;
