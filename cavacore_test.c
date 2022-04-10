@@ -11,7 +11,7 @@
 
 void main() {
 
-    printf("welcome to cavalib standalone test app\n");
+    printf("welcome to cavacore standalone test app\n");
 
     int bars_per_channel = 10;
     int channels = 2;
@@ -21,7 +21,7 @@ void main() {
     double blueprint_200MHz[10] = {0, 0.002, 0.980, 0.049, 0.001, 0, 0, 0, 0, 0};
 
     printf("planning visualization with 10 bars per channel, 44100 rate, 2 cahnnels, autosens, "
-           "0.77 noise reduction, 50 - 10000 MHz.\n");
+           "0.77 noise reduction, 50 - 10000 MHz bandwith.\n");
 
     struct cava_plan *plan = cava_init(bars_per_channel, rate, channels, 1, 0.77, 50, 10000);
     printf("got lower cut off frequencies:\n");
@@ -46,11 +46,15 @@ void main() {
 
     printf("running cava execute 300 times (simulating about 3.5 seconds run time)\n\n");
     for (int k = 0; k < 300; k++) {
+
         // filling up 512*2 samples at a time, making sure the sinus wave is unbroken
+        // 200MHz in right channel, 2000MHz in left
+        // if we where using a proper audio source this would be replaced by a simple read function
         for (int n = 0; n < buffer_size / 2; n++) {
             cava_in[n * 2] = sin(2 * PI * 200 / rate * (n + (k * buffer_size / 2))) * 10000;
             cava_in[n * 2 + 1] = sin(2 * PI * 2000 / rate * (n + (k * buffer_size / 2))) * 10000;
         }
+
         cava_execute(cava_in, buffer_size, cava_out, plan);
     }
 

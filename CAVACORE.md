@@ -11,38 +11,35 @@ the raw output data from fftw will not look very nice when used directly in a vi
 to improve the look of the visualization:
 
 
-* limit bandwith
+## adjustable bandwith
 
-theoretically the human ear can hear frequencies up to 20kHz, but the information above 10k is hard to separate from eachother
-and does not give much feedback by itself when visualizing audio. Similarly audio below 50Hz can be heard but does not directly provide 
-anything to the visualizing of the audio.
-
-
-* spread the output logarithmically
-
-the human ear hears different frequencies logarithmically, so notes that are 2x and 4x higher than eachother, will be preceived
-as beeing a fixed amount higher than eachother.
+Theoretically the human ear can hear frequencies up to 20kHz, but the information above 10k is hard to separate from eachother
+and does not give much feedback by itself when visualizing audio. Similarly audio down to 20Hz can be heard, but the frequencies
+below 50Hz does not directly provide anything to the visualizing of the audio.
 
 
-* limit number of buckets
+## spread the output logarithmically
 
-fftw gives out (input samples / 2) + 1 number of ouput samples. cavacore can limit this to the desired needed "bars" in your application.
-
-
-* noise reduction
-
-the raw output of fftw is very jittery, cavacore processes the output signal in two ways to provide a smooth output:
-
-a. an integral filter calculates a weighted average of the last values
-
-b. fall off filter, when values is lower than last value it uses a  fall down effect instead of the new value
+The human ear hears different frequencies logarithmically, so notes that are 2x and 4x higher than eachother, will be preceived
+as beeing a fixed amount higher than eachother. Therefore cavacore outputs the frequencies logarithmically. Cavacore will also
+group the output in the desired number of samples.
 
 
-* real-time sensitivity adjustment
+## noise reduction
 
-the range of an input signal can vary a lot. cavacore will keep the output signal within the desired range in real-time.
+the raw output of fftw is very noisy, cavacore processes the output signal in two ways to provide a smooth output:
+
+  * an integral filter calculates a weighted average of the last values
+  * fall off filter, when values is lower than last value it uses a  fall down effect instead of the new value
+
+This feature can be adjusted.
+
+
+## real-time sensitivity adjustment
+
+The range of an input signal can vary a lot. cavacore can keep the output signal within range in real-time. This feature can be disabled.
 
 
 # Usage
 
-look in cavacore.h for documentation and the cavacore_test.c application for how to use.
+See cavacore.h for documentation and the cavacore_test.c application for how to use.

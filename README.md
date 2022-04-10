@@ -458,7 +458,7 @@ $ pkill -USR2 cava
 Using cava in other applications
 --------------------------------
 
-The core processing engine in cava has been split into a separate library `cavacore`. Look in CAVACORE.md for usage.
+The core processing engine in cava has been split into a separate library `cavacore`. See CAVACORE.md for details.
 
 
 Contribution
