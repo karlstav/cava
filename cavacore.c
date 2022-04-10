@@ -242,6 +242,9 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                 first_bar = 0;
 
             p->eq[n] *= log2(p->FFTbassbufferSize);
+            if (p->FFTbuffer_lower_cut_off[n] > p->FFTbassbufferSize / 2) {
+                p->FFTbuffer_lower_cut_off[n] = p->FFTbassbufferSize / 2;
+            }
         } else if (p->cut_off_frequency[n] > bass_cut_off &&
                    p->cut_off_frequency[n] < treble_cut_off) {
             // MID
@@ -259,6 +262,9 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
             }
 
             p->eq[n] *= log2(p->FFTmidbufferSize);
+            if (p->FFTbuffer_lower_cut_off[n] > p->FFTmidbufferSize / 2) {
+                p->FFTbuffer_lower_cut_off[n] = p->FFTmidbufferSize / 2;
+            }
         } else {
             // TREBLE
             bar_buffer[n] = 3;
@@ -275,6 +281,9 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
             }
 
             p->eq[n] *= log2(p->FFTtreblebufferSize);
+            if (p->FFTbuffer_lower_cut_off[n] > p->FFTtreblebufferSize / 2) {
+                p->FFTbuffer_lower_cut_off[n] = p->FFTtreblebufferSize / 2;
+            }
         }
 
         if (n > 0) {
@@ -285,20 +294,38 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                 // bass and caluclating new cut off frequencies
                 if (p->FFTbuffer_lower_cut_off[n] <= p->FFTbuffer_lower_cut_off[n - 1]) {
 
-                    p->FFTbuffer_lower_cut_off[n] = p->FFTbuffer_lower_cut_off[n - 1] + 1;
-                    p->FFTbuffer_upper_cut_off[n - 1] = p->FFTbuffer_lower_cut_off[n] - 1;
+                    // check if there is room for more first
+                    int room_for_more = 0;
 
-                    if (bar_buffer[n] == 1)
-                        relative_cut_off[n] = (float)(p->FFTbuffer_lower_cut_off[n]) /
-                                              ((float)p->FFTbassbufferSize / 2);
-                    else if (bar_buffer[n] == 2)
-                        relative_cut_off[n] = (float)(p->FFTbuffer_lower_cut_off[n]) /
-                                              ((float)p->FFTmidbufferSize / 2);
-                    else if (bar_buffer[n] == 3)
-                        relative_cut_off[n] = (float)(p->FFTbuffer_lower_cut_off[n]) /
-                                              ((float)p->FFTtreblebufferSize / 2);
+                    if (bar_buffer[n] == 1) {
+                        if (p->FFTbuffer_lower_cut_off[n - 1] + 1 < p->FFTbassbufferSize / 2 + 1)
+                            room_for_more = 1;
+                    } else if (bar_buffer[n] == 2) {
+                        if (p->FFTbuffer_lower_cut_off[n - 1] + 1 < p->FFTmidbufferSize / 2 + 1)
+                            room_for_more = 1;
+                    } else if (bar_buffer[n] == 3) {
+                        if (p->FFTbuffer_lower_cut_off[n - 1] + 1 < p->FFTtreblebufferSize / 2 + 1)
+                            room_for_more = 1;
+                    }
 
-                    p->cut_off_frequency[n] = relative_cut_off[n] * ((float)p->rate / 2);
+                    if (room_for_more) {
+                        // push the spectrum up
+                        p->FFTbuffer_lower_cut_off[n] = p->FFTbuffer_lower_cut_off[n - 1] + 1;
+                        p->FFTbuffer_upper_cut_off[n - 1] = p->FFTbuffer_lower_cut_off[n] - 1;
+
+                        // calculate new cut off frequency
+                        if (bar_buffer[n] == 1)
+                            relative_cut_off[n] = (float)(p->FFTbuffer_lower_cut_off[n]) /
+                                                  ((float)p->FFTbassbufferSize / 2);
+                        else if (bar_buffer[n] == 2)
+                            relative_cut_off[n] = (float)(p->FFTbuffer_lower_cut_off[n]) /
+                                                  ((float)p->FFTmidbufferSize / 2);
+                        else if (bar_buffer[n] == 3)
+                            relative_cut_off[n] = (float)(p->FFTbuffer_lower_cut_off[n]) /
+                                                  ((float)p->FFTtreblebufferSize / 2);
+
+                        p->cut_off_frequency[n] = relative_cut_off[n] * ((float)p->rate / 2);
+                    }
                 }
             } else {
                 if (p->FFTbuffer_upper_cut_off[n - 1] <= p->FFTbuffer_lower_cut_off[n - 1])
