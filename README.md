@@ -436,6 +436,8 @@ $ pkill -USR2 cava
 
 **Examples on how the equalizer works:**
 
+The equalizer is DEPRECATED as of 0.8.0, can be brought back by popular request.
+
     [eq]
     1=0
     2=1
