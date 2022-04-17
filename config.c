@@ -471,7 +471,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->integral = iniparser_getdouble(ini, "smoothing:integral", 77);
     p->gravity = iniparser_getdouble(ini, "smoothing:gravity", 100);
     p->ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
-    p->noise_reduction = iniparser_getdouble(ini, "smoothing:noise_reduction", 1);
+    p->noise_reduction = iniparser_getdouble(ini, "smoothing:noise_reduction", 0.77);
 
     if (!load_colors(p, ini, error)) {
         return false;
