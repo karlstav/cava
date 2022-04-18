@@ -55,7 +55,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                 number_of_bars, rate, treble_buffer_size / 2 + 1);
         exit(1);
     }
-    if (low_cut_off < 0 || high_cut_off < 0) {
+    if (low_cut_off < 1 || high_cut_off < 1) {
         fprintf(stderr, "low_cut_off must be a positive value\n");
         exit(1);
     }
