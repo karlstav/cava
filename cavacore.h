@@ -86,12 +86,13 @@ extern struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int ch
 // cava_execute, executes visualization
 
 // cava_in, input buffer can be any size. internal buffers in cavacore is
-// 4096 * number of channels at 44100 samples rate, but it is recomended to use less
+// 4096 * number of channels at 44100 samples rate, if new_samples is greater
+// then samples will be discarded. However it is recomended to use less
 // new samples per execution as this determines your framerate.
 // 512 samples at 44100 sample rate mono, gives about 86 frames per second.
 
-// new_samples, the number of samples in cava_in to be processed
-// if you have async reading of data this number can vary from execution to execution
+// new_samples, the number of samples in cava_in to be processed per execution
+// in case of async reading of data this number is allowed to vary from execution to execution
 
 // cava_out, output buffer. Size must be number of bars * number of channels. Bars will
 // be sorted from lowest to highest frequency. Feft channel first then right channel.
