@@ -623,7 +623,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             int frame_time_msec = (1 / (float)p.framerate) * 1000;
             struct timespec framerate_timer = {.tv_sec = 0, .tv_nsec = 0};
             if (p.framerate <= 1) {
-                framerate_timer.tv_sec = frame_time_msec * 1000;
+                framerate_timer.tv_sec = frame_time_msec / 1000;
             } else {
                 framerate_timer.tv_sec = 0;
                 framerate_timer.tv_nsec = frame_time_msec * 1e6;
