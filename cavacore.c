@@ -7,8 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CAVA_TREBLE_BUFFER_SIZE 1024
-
 struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels, int autosens,
                             double noise_reduction, int low_cut_off, int high_cut_off) {
 
