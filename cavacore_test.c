@@ -17,13 +17,22 @@ void main() {
     int channels = 2;
     int buffer_size = 512 * channels; // number of samples per cava execute
     int rate = 44100;
+    double noise_reduction = 0.77;
+    int low_cut_off = 50;
+    int high_cut_off = 10000;
     double blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 0.783, 0.209, 0, 0};
     double blueprint_200MHz[10] = {0, 0.002, 0.980, 0.049, 0.001, 0, 0, 0, 0, 0};
 
-    printf("planning visualization with 10 bars per channel, 44100 rate, 2 cahnnels, autosens, "
-           "0.77 noise reduction, 50 - 10000 MHz bandwith.\n");
+    printf("planning visualization with %d bars per channel, %d rate, %d channels, autosens, "
+           "%.2f noise reduction, %d - %d MHz bandwith.\n",
+           bars_per_channel, rate, channels, noise_reduction, low_cut_off, high_cut_off);
 
-    struct cava_plan *plan = cava_init(bars_per_channel, rate, channels, 1, 0.77, 50, 10000);
+    struct cava_plan *plan =
+        cava_init(bars_per_channel, rate, channels, 1, noise_reduction, low_cut_off, high_cut_off);
+    if (plan->status < 0) {
+        fprintf(stderr, "Error: %s\n", plan->error_message);
+        exit(1);
+    }
     printf("got lower cut off frequencies:\n");
 
     for (int i = 0; i < 10; i++) {

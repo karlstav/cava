@@ -42,6 +42,8 @@ struct cava_plan {
     int sens_init;
     int autosens;
     int frame_skip;
+    int status;
+    char error_message[1024];
 
     double sens;
     double g;
@@ -100,7 +102,9 @@ struct cava_plan {
 // low_cut_off, high_cut_off cut off frequencies for visualization in Hz
 // recomended: 50, 10000
 
-// returns a cava_plan to be used by cava_execute
+// returns a cava_plan to be used by cava_execute. If cava_plan.status is 0 all is OK.
+// If cava_plan.status is -1, cava_init was called with an illegal paramater, see error string in
+// cava_plan.error_message
 extern struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                                    int autosens, double noise_reduction, int low_cut_off,
                                    int high_cut_off);

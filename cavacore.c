@@ -9,19 +9,23 @@
 
 struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels, int autosens,
                             double noise_reduction, int low_cut_off, int high_cut_off) {
+    struct cava_plan *p = malloc(sizeof(struct cava_plan));
+    p->status = 0;
 
     // sanity checks:
     if (channels < 1 || channels > 2) {
-        fprintf(stderr,
-                "cava_init called with illegal number of channels: %d, number of channels "
-                "supported are "
-                "1 and 2\n",
-                channels);
-        exit(1);
+        snprintf(p->error_message, 1024,
+                 "cava_init called with illegal number of channels: %d, number of channels "
+                 "supported are "
+                 "1 and 2",
+                 channels);
+        p->status = -1;
+        return p;
     }
     if (rate < 1 || rate > 384000) {
-        fprintf(stderr, "cava_init called with illegal sample rate: %d\n", rate);
-        exit(1);
+        snprintf(p->error_message, 1024, "cava_init called with illegal sample rate: %d\n", rate);
+        p->status = -1;
+        return p;
     }
 
     int treble_buffer_size = 128;
@@ -40,36 +44,40 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         treble_buffer_size = 8096;
 
     if (number_of_bars < 1) {
-        fprintf(stderr,
-                "cava_init called with illegal number of bars: %d, number of channels must be "
-                "positive integer\n",
-                number_of_bars);
-        exit(1);
+        snprintf(p->error_message, 1024,
+                 "cava_init called with illegal number of bars: %d, number of channels must be "
+                 "positive integer\n",
+                 number_of_bars);
+        p->status = -1;
+        return p;
     }
 
     if (number_of_bars > treble_buffer_size / 2 + 1) {
-        fprintf(stderr,
-                "cava_init called with illegal number of bars: %d, for %d sample rate number of "
-                "bars can't be more than %d "
-                "positive integer\n",
-                number_of_bars, rate, treble_buffer_size / 2 + 1);
-        exit(1);
+        snprintf(p->error_message, 1024,
+                 "cava_init called with illegal number of bars: %d, for %d sample rate number of "
+                 "bars can't be more than %d "
+                 "positive integer\n",
+                 number_of_bars, rate, treble_buffer_size / 2 + 1);
+        p->status = -1;
+        return p;
     }
     if (low_cut_off < 1 || high_cut_off < 1) {
-        fprintf(stderr, "low_cut_off must be a positive value\n");
-        exit(1);
+        snprintf(p->error_message, 1024, "low_cut_off must be a positive value\n");
+        p->status = -1;
+        return p;
     }
     if (low_cut_off >= high_cut_off) {
-        fprintf(stderr, "high_cut_off must be a higher than low_cut_off\n");
-        exit(1);
+        snprintf(p->error_message, 1024, "high_cut_off must be a higher than low_cut_off\n");
+        p->status = -1;
+        return p;
     }
     if ((unsigned int)high_cut_off > rate / 2) {
-        fprintf(stderr,
-                "high_cut_off can't be higher than sample rate / 2. (Nyquist Sampling Theorem)\n");
-        exit(1);
+        snprintf(p->error_message, 1024,
+                 "high_cut_off can't be higher than sample rate / 2. (Nyquist Sampling Theorem)\n");
+        p->status = -1;
+        return p;
     }
 
-    struct cava_plan *p = malloc(sizeof(struct cava_plan));
     p->number_of_bars = number_of_bars;
     p->audio_channels = channels;
     p->rate = rate;
