@@ -19,7 +19,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 #pragma once
 #include <stdint.h>
 
@@ -132,3 +134,7 @@ extern void cava_execute(double *cava_in, int new_samples, double *cava_out,
 
 // cava_destroy, destroys the plan, frees up memory
 extern void cava_destroy(struct cava_plan *plan);
+
+#ifdef __cplusplus
+}
+#endif
