@@ -1,5 +1,5 @@
 #include "config.h"
-#include "config_file.h"
+#include "third_party/incbin.h"
 #include "util.h"
 
 #include <ctype.h>
@@ -13,6 +13,8 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <sys/stat.h>
+
+INCTXT(ConfigFile, "example_files/config");
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
 
@@ -422,7 +424,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             fseek(fp, 0, SEEK_END);
             if (ftell(fp) == 0) {
                 printf("config file is empty, creating default config file\n");
-                fwrite(example_files_config, example_files_config_len, sizeof(unsigned char), fp);
+                fwrite(gConfigFileData, gConfigFileSize - 1, sizeof(char), fp);
             }
             fclose(fp);
         } else {
