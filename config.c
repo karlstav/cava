@@ -1,4 +1,5 @@
 #include "config.h"
+#define INCBIN_SILENCE_BITCODE_WARNING
 #include "third_party/incbin.h"
 #include "util.h"
 
