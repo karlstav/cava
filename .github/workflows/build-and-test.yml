@@ -23,7 +23,7 @@ jobs:
     - name: Run ./configure
       run: ./configure
     - name: Run make
-      run: make
+      run: make CFLAGS='-Werror'
     - name: Prepare tests
       run: |
         pulseaudio -D
@@ -56,7 +56,7 @@ jobs:
     - name: Run ./configure
       run: LDFLAGS="-L/usr/local/opt/ncurses/lib" CPPFLAGS="-I/usr/local/opt/ncurses/include" ./configure
     - name: Run make
-      run: make
+      run: make CFLAGS='-Werror'
     - name: run non zero test
       run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
     - name: run portaudio test
