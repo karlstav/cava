@@ -557,7 +557,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 cava_init(number_of_bars / output_channels, audio.rate, audio.channels, p.autosens,
                           p.noise_reduction, p.lower_cut_off, p.upper_cut_off);
 
-            double center_frequencies[BUFFER_SIZE];
+            double center_frequencies[number_of_bars / output_channels];
 
             // process: calculate x axis values
             int x_axis_info = 0;
@@ -570,15 +570,19 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     if (remainder)
                         printf("\033[%dC", remainder);
                 }
-                for (int n = 0; n < number_of_bars; n++) {
-                    float upper_cut_off_frequency = 10000;
+                for (int n = 0; n < number_of_bars / output_channels; n++) {
+                    float upper_cut_off_frequency;
 
                     if (n < number_of_bars - 1) {
                         upper_cut_off_frequency = plan->cut_off_frequency[n + 1];
+                    } else {
+                        upper_cut_off_frequency = p.upper_cut_off;
                     }
 
                     center_frequencies[n] =
                         pow((plan->cut_off_frequency[n] * upper_cut_off_frequency), 0.5);
+                }
+                for (int n = 0; n < number_of_bars; n++) {
                     if (p.stereo) {
                         if (n < number_of_bars / 2)
                             center_frequency = center_frequencies[number_of_bars / 2 - 1 - n];
