@@ -557,50 +557,36 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 cava_init(number_of_bars / output_channels, audio.rate, audio.channels, p.autosens,
                           p.noise_reduction, p.lower_cut_off, p.upper_cut_off);
 
-            double center_frequencies[number_of_bars / output_channels];
-
             // process: calculate x axis values
             int x_axis_info = 0;
 
             if (p.xaxis != NONE) {
                 x_axis_info = 1;
-                double center_frequency;
+                double cut_off_frequency;
                 if (output_mode == OUTPUT_NONCURSES) {
                     printf("\r\033[%dB", lines + 1);
                     if (remainder)
                         printf("\033[%dC", remainder);
                 }
-                for (int n = 0; n < number_of_bars / output_channels; n++) {
-                    float upper_cut_off_frequency;
-
-                    if (n < number_of_bars - 1) {
-                        upper_cut_off_frequency = plan->cut_off_frequency[n + 1];
-                    } else {
-                        upper_cut_off_frequency = p.upper_cut_off;
-                    }
-
-                    center_frequencies[n] =
-                        pow((plan->cut_off_frequency[n] * upper_cut_off_frequency), 0.5);
-                }
                 for (int n = 0; n < number_of_bars; n++) {
                     if (p.stereo) {
                         if (n < number_of_bars / 2)
-                            center_frequency = center_frequencies[number_of_bars / 2 - 1 - n];
+                            cut_off_frequency = plan->cut_off_frequency[number_of_bars / 2 - 1 - n];
                         else
-                            center_frequency = center_frequencies[n - number_of_bars / 2];
+                            cut_off_frequency = plan->cut_off_frequency[n - number_of_bars / 2];
                     } else {
-                        center_frequency = center_frequencies[n];
+                        cut_off_frequency = plan->cut_off_frequency[n];
                     }
 
-                    float freq_kilohz = center_frequency / 1000;
-                    int freq_floor = center_frequency;
+                    float freq_kilohz = cut_off_frequency / 1000;
+                    int freq_floor = cut_off_frequency;
 
                     if (output_mode == OUTPUT_NCURSES) {
 #ifdef NCURSES
-                        if (center_frequency < 1000)
+                        if (cut_off_frequency < 1000)
                             mvprintw(lines, n * (p.bar_width + p.bar_spacing) + remainder, "%-4d",
                                      freq_floor);
-                        else if (center_frequency > 1000 && center_frequency < 10000)
+                        else if (cut_off_frequency > 1000 && cut_off_frequency < 10000)
                             mvprintw(lines, n * (p.bar_width + p.bar_spacing) + remainder, "%.2f",
                                      freq_kilohz);
                         else
@@ -608,9 +594,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                                      freq_kilohz);
 #endif
                     } else if (output_mode == OUTPUT_NONCURSES) {
-                        if (center_frequency < 1000)
+                        if (cut_off_frequency < 1000)
                             printf("%-4d", freq_floor);
-                        else if (center_frequency > 1000 && center_frequency < 10000)
+                        else if (cut_off_frequency > 1000 && cut_off_frequency < 10000)
                             printf("%.2f", freq_kilohz);
                         else
                             printf("%.1f", freq_kilohz);
