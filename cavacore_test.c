@@ -20,8 +20,8 @@ void main() {
     double noise_reduction = 0.77;
     int low_cut_off = 50;
     int high_cut_off = 10000;
-    double blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 0.783, 0.209, 0, 0};
-    double blueprint_200MHz[10] = {0, 0.002, 0.980, 0.049, 0.001, 0, 0, 0, 0, 0};
+    double blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 0.524, 0.474, 0, 0};
+    double blueprint_200MHz[10] = {0, 0, 0.998, 0.009, 0, 0.001, 0, 0, 0, 0};
 
     printf("planning visualization with %d bars per channel, %d rate, %d channels, autosens, "
            "%.2f noise reduction, %d - %d MHz bandwith.\n",
@@ -60,8 +60,8 @@ void main() {
         // 200MHz in right channel, 2000MHz in left
         // if we where using a proper audio source this would be replaced by a simple read function
         for (int n = 0; n < buffer_size / 2; n++) {
-            cava_in[n * 2] = sin(2 * PI * 200 / rate * (n + (k * buffer_size / 2))) * 10000;
-            cava_in[n * 2 + 1] = sin(2 * PI * 2000 / rate * (n + (k * buffer_size / 2))) * 10000;
+            cava_in[n * 2] = sin(2 * PI * 200 / rate * (n + (k * buffer_size / 2))) * 20000;
+            cava_in[n * 2 + 1] = sin(2 * PI * 2000 / rate * (n + (k * buffer_size / 2))) * 20000;
         }
 
         cava_execute(cava_in, buffer_size, cava_out, plan);
