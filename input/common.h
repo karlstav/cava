@@ -9,10 +9,7 @@
 #include <string.h>
 #include <unistd.h>
 
-// number of bytes to read from audio source x number of channels
-// determins the size of all other buffers
-// matches the CAVA_TREBLE_BUFFER_SIZE in core.h
-
+// number of samples to read from audio source per channel
 #define BUFFER_SIZE 1024
 
 struct audio_data {
