@@ -31,17 +31,17 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     int treble_buffer_size = 128;
 
     if (rate > 8125 && rate <= 16250)
-        treble_buffer_size = 256;
+        treble_buffer_size *= 2;
     else if (rate > 16250 && rate <= 32500)
-        treble_buffer_size = 512;
+        treble_buffer_size *= 4;
     else if (rate > 32500 && rate <= 75000)
-        treble_buffer_size = 1024;
+        treble_buffer_size *= 8;
     else if (rate > 75000 && rate <= 150000)
-        treble_buffer_size = 2048;
+        treble_buffer_size *= 16;
     else if (rate > 150000 && rate <= 300000)
-        treble_buffer_size = 4096;
+        treble_buffer_size *= 32;
     else if (rate > 300000)
-        treble_buffer_size = 8096;
+        treble_buffer_size *= 64;
 
     if (number_of_bars < 1) {
         snprintf(p->error_message, 1024,
@@ -91,8 +91,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
     p->g = log10((float)p->height) * 0.05;
 
-    p->FFTbassbufferSize = treble_buffer_size * 4;
-    p->FFTmidbufferSize = treble_buffer_size * 2;
+    p->FFTbassbufferSize = treble_buffer_size * 8;
+    p->FFTmidbufferSize = treble_buffer_size * 4;
     p->FFTtreblebufferSize = treble_buffer_size;
 
     p->input_buffer_size = p->FFTbassbufferSize * channels;
@@ -196,8 +196,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     // process: calculate cutoff frequencies and eq
     int lower_cut_off = low_cut_off;
     int upper_cut_off = high_cut_off;
-    int bass_cut_off = 150;
-    int treble_cut_off = 2500;
+    int bass_cut_off = 100;
+    int treble_cut_off = 500;
 
     // calculate frequency constant (used to distribute bars across the frequency band)
     double frequency_constant = log10((float)lower_cut_off / (float)upper_cut_off) /
@@ -234,7 +234,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
         // the numbers that come out of the FFT are verry high
         // the EQ is used to "normalize" them by dividing with this verry huge number
-        p->eq[n] /= pow(2, 20);
+        p->eq[n] /= pow(2, 18);
 
         p->eq[n] /= log2(p->FFTbassbufferSize);
 
@@ -247,7 +247,6 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
             if (p->bass_cut_off_bar > 0)
                 first_bar = 0;
 
-            p->eq[n] *= log2(p->FFTbassbufferSize);
             if (p->FFTbuffer_lower_cut_off[n] > p->FFTbassbufferSize / 2) {
                 p->FFTbuffer_lower_cut_off[n] = p->FFTbassbufferSize / 2;
             }
@@ -267,7 +266,6 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                 first_bar = 0;
             }
 
-            p->eq[n] *= log2(p->FFTmidbufferSize);
             if (p->FFTbuffer_lower_cut_off[n] > p->FFTmidbufferSize / 2) {
                 p->FFTbuffer_lower_cut_off[n] = p->FFTmidbufferSize / 2;
             }
@@ -286,7 +284,6 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                 first_bar = 0;
             }
 
-            p->eq[n] *= log2(p->FFTtreblebufferSize);
             if (p->FFTbuffer_lower_cut_off[n] > p->FFTtreblebufferSize / 2) {
                 p->FFTbuffer_lower_cut_off[n] = p->FFTtreblebufferSize / 2;
             }
