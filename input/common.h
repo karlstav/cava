@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 // number of samples to read from audio source per channel
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 512
 
 struct audio_data {
     double *cava_in;

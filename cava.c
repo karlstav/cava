@@ -300,7 +300,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         audio.channels = 2;
 
         audio.input_buffer_size = BUFFER_SIZE * audio.channels;
-        audio.cava_buffer_size = audio.input_buffer_size * 4;
+        audio.cava_buffer_size = audio.input_buffer_size * 8;
 
         audio.cava_in = (double *)malloc(audio.cava_buffer_size * sizeof(double));
         memset(audio.cava_in, 0, sizeof(int) * audio.cava_buffer_size);
