@@ -35,7 +35,7 @@ void main() {
     }
     printf("got lower cut off frequencies:\n");
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < bars_per_channel; i++) {
         printf("%.0f \t", plan->cut_off_frequency[i]);
     }
     printf("MHz\n\n");
