@@ -307,13 +307,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         audio.terminate = 0;
 
-        int *bars_left, *bars_right;
-        double *cava_out;
-
-        bars_left = (int *)malloc(BUFFER_SIZE * sizeof(int));
-        bars_right = (int *)malloc(BUFFER_SIZE * sizeof(int));
-        cava_out = (double *)malloc(BUFFER_SIZE * audio.channels * sizeof(double));
-
         debug("starting audio thread\n");
 
         pthread_t p_thread;
@@ -412,8 +405,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             exit(EXIT_FAILURE);
         }
 
-        int bars[BUFFER_SIZE];
-        int previous_frame[BUFFER_SIZE];
+        int *bars;
+        int *previous_frame;
+
+        int *bars_left, *bars_right;
+        double *cava_out;
 
         int height, lines, width, remainder, fp;
 
@@ -428,12 +424,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         bool reloadConf = false;
         while (!reloadConf) { // jumping back to this loop means that you resized the screen
-            for (int n = 0; n < BUFFER_SIZE; n++) {
-                previous_frame[n] = 0;
-                bars[n] = 0;
-                cava_out[n] = 0;
-                cava_out[n + BUFFER_SIZE] = 0;
-            }
 
             // frequencies on x axis require a bar width of four or more
             if (p.xaxis == FREQUENCY && p.bar_width < 4)
@@ -502,7 +492,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
 
                 // width must be hardcoded for raw output.
-                width = BUFFER_SIZE;
+                width = 512;
 
                 if (strcmp(p.data_format, "ascii") != 0) {
                     // "binary" or "noritake"
@@ -529,13 +519,22 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             if (p.autobars == 1)
                 number_of_bars = (width + p.bar_spacing) / (p.bar_width + p.bar_spacing);
 
-            if (number_of_bars < 1)
+            if (number_of_bars <= 1) {
                 number_of_bars = 1; // must have at least 1 bars
-            if (number_of_bars > BUFFER_SIZE)
-                number_of_bars = BUFFER_SIZE; // cant have more than BUFFER_SIZE bars
+                if (p.stereo) {
+                    number_of_bars = 2; // stereo have at least 2 bars
+                }
+            }
+            if (number_of_bars > 512)
+                number_of_bars = 512; // cant have more than 512 bars on 44100 rate
 
             int output_channels = 1;
             if (p.stereo) { // stereo must have even numbers of bars
+                if (audio.channels == 1) {
+                    fprintf(stderr,
+                            "stereo output configured, but only one channel in audio input.\n");
+                    exit(1);
+                }
                 output_channels = 2;
                 if (number_of_bars % 2 != 0)
                     number_of_bars--;
@@ -556,6 +555,21 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             struct cava_plan *plan =
                 cava_init(number_of_bars / output_channels, audio.rate, audio.channels, p.autosens,
                           p.noise_reduction, p.lower_cut_off, p.upper_cut_off);
+
+            if (audio.channels == 2) {
+                bars_left = (int *)malloc(number_of_bars / output_channels * sizeof(int));
+                bars_right = (int *)malloc(number_of_bars / output_channels * sizeof(int));
+                memset(bars_left, 0, sizeof(int) * number_of_bars / output_channels);
+                memset(bars_right, 0, sizeof(int) * number_of_bars / output_channels);
+            }
+            bars = (int *)malloc(number_of_bars * sizeof(int));
+            previous_frame = (int *)malloc(number_of_bars * sizeof(int));
+            cava_out = (double *)malloc(number_of_bars * audio.channels / output_channels *
+                                        sizeof(double));
+
+            memset(bars, 0, sizeof(int) * number_of_bars);
+            memset(previous_frame, 0, sizeof(int) * number_of_bars);
+            memset(cava_out, 0, sizeof(double) * number_of_bars * audio.channels / output_channels);
 
             // process: calculate x axis values
             int x_axis_info = 0;
@@ -746,29 +760,35 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
                 pthread_mutex_unlock(&audio.lock);
 
-                for (uint32_t n = 0; n < number_of_bars * audio.channels; n++) {
+                for (uint32_t n = 0; n < (number_of_bars / output_channels) * audio.channels; n++) {
                     if (p.autosens)
                         cava_out[n] *= height;
                     else
                         cava_out[n] *= p.sens;
                 }
 
-                for (uint32_t n = 0; n < number_of_bars * audio.channels / output_channels; n++) {
-                    bars_right[n] = cava_out[n];
-                    if (audio.channels == 2)
+                if (audio.channels == 2) {
+                    for (int n = 0; n < number_of_bars / output_channels; n++) {
+                        bars_right[n] = cava_out[n];
+                    }
+                    for (int n = 0; n < number_of_bars / output_channels; n++) {
                         bars_left[n] = cava_out[n + number_of_bars / output_channels];
+                    }
+                } else {
+                    for (int n = 0; n < number_of_bars; n++) {
+                        bars[n] = cava_out[n];
+                    }
                 }
 
                 // process [filter]
                 if (p.monstercat) {
-                    if (p.stereo) {
+                    if (audio.channels == 2) {
                         bars_left =
                             monstercat_filter(bars_left, number_of_bars / 2, p.waves, p.monstercat);
                         bars_right = monstercat_filter(bars_right, number_of_bars / 2, p.waves,
                                                        p.monstercat);
                     } else {
-                        bars_left =
-                            monstercat_filter(bars_left, number_of_bars, p.waves, p.monstercat);
+                        bars = monstercat_filter(bars, number_of_bars, p.waves, p.monstercat);
                     }
                 }
                 if (audio.channels == 2) {
@@ -812,12 +832,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                             }
                         }
                     }
-                } else {
-                    // only one input channel
-                    for (int n = 0; n < number_of_bars; n++) {
-                        bars[n] = bars_left[n];
-                    }
                 }
+
                 for (int n = 0; n < number_of_bars; n++) {
                     // zero values causes divided by zero segfault (if not raw)
                     if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE && bars[n] < 1)
@@ -899,7 +915,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 #endif
 
-                memcpy(previous_frame, bars, BUFFER_SIZE * sizeof(int));
+                memcpy(previous_frame, bars, number_of_bars * sizeof(int));
 
                 // checking if audio thread has exited unexpectedly
                 if (audio.terminate == 1) {
@@ -930,6 +946,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             } // resize terminal
             cava_destroy(plan);
             free(plan);
+            if (audio.channels == 2) {
+                free(bars_left);
+                free(bars_right);
+            }
+            free(cava_out);
+            free(bars);
+            free(previous_frame);
         } // reloading config
 
         //**telling audio thread to terminate**//
@@ -941,9 +964,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         free(audio.source);
         free(audio.cava_in);
-        free(cava_out);
-        free(bars_left);
-        free(bars_right);
         cleanup();
 
         if (should_quit) {
