@@ -57,7 +57,7 @@ void main() {
     for (int k = 0; k < 300; k++) {
 
         // filling up 512*2 samples at a time, making sure the sinus wave is unbroken
-        // 200MHz in right channel, 2000MHz in left
+        // 200MHz in left channel, 2000MHz in right
         // if we where using a proper audio source this would be replaced by a simple read function
         for (int n = 0; n < buffer_size / 2; n++) {
             cava_in[n * 2] = sin(2 * PI * 200 / rate * (n + (k * buffer_size / 2))) * 20000;
@@ -72,13 +72,13 @@ void main() {
         cava_out[i] = (double)round(cava_out[i] * 1000) / 1000;
     }
 
-    printf("\nlast output left, max value should be at 2000Hz:\n");
+    printf("\nlast output left, max value should be at 200Hz:\n");
     for (int i = 0; i < bars_per_channel; i++) {
         printf("%.3f \t", cava_out[i]);
     }
     printf("MHz\n");
 
-    printf("last output right,  max value should be at 200Hz:\n");
+    printf("last output right,  max value should be at 2000Hz:\n");
     for (int i = 0; i < bars_per_channel; i++) {
         printf("%.3f \t", cava_out[i + bars_per_channel]);
     }
@@ -87,12 +87,12 @@ void main() {
     // checking if within 2% of blueprint
     int bp_ok = 1;
     for (int i = 0; i < bars_per_channel; i++) {
-        if (cava_out[i] > blueprint_2000MHz[i] * 1.02 || cava_out[i] < blueprint_2000MHz[i] * 0.98)
+        if (cava_out[i] > blueprint_200MHz[i] * 1.02 || cava_out[i] < blueprint_200MHz[i] * 0.98)
             bp_ok = 0;
     }
     for (int i = 0; i < bars_per_channel; i++) {
-        if (cava_out[i + bars_per_channel] > blueprint_200MHz[i] * 1.02 ||
-            cava_out[i + bars_per_channel] < blueprint_200MHz[i] * 0.98)
+        if (cava_out[i + bars_per_channel] > blueprint_2000MHz[i] * 1.02 ||
+            cava_out[i + bars_per_channel] < blueprint_2000MHz[i] * 0.98)
             bp_ok = 0;
     }
     cava_destroy(plan);
