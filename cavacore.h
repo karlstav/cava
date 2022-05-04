@@ -123,7 +123,8 @@ extern struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int ch
 // in case of async reading of data this number is allowed to vary from execution to execution
 
 // cava_out, output buffer. Size must be number of bars * number of channels. Bars will
-// be sorted from lowest to highest frequency. Feft channel first then right channel.
+// be sorted from lowest to highest frequency. If stereo input channels are configured
+// then all left channel bars will be first then the right.
 
 // plan, the cava_plan struct returned from cava_init
 

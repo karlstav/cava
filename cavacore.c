@@ -371,24 +371,24 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     // fill the bass, mid and treble buffers
     for (uint16_t n = 0; n < p->FFTbassbufferSize; n++) {
         if (p->audio_channels == 2) {
-            p->in_bass_l_raw[n] = p->input_buffer[n * 2];
-            p->in_bass_r_raw[n] = p->input_buffer[n * 2 + 1];
+            p->in_bass_r_raw[n] = p->input_buffer[n * 2];
+            p->in_bass_l_raw[n] = p->input_buffer[n * 2 + 1];
         } else {
             p->in_bass_l_raw[n] = p->input_buffer[n];
         }
     }
     for (uint16_t n = 0; n < p->FFTmidbufferSize; n++) {
         if (p->audio_channels == 2) {
-            p->in_mid_l_raw[n] = p->input_buffer[n * 2];
-            p->in_mid_r_raw[n] = p->input_buffer[n * 2 + 1];
+            p->in_mid_r_raw[n] = p->input_buffer[n * 2];
+            p->in_mid_l_raw[n] = p->input_buffer[n * 2 + 1];
         } else {
             p->in_mid_l_raw[n] = p->input_buffer[n];
         }
     }
     for (uint16_t n = 0; n < p->FFTtreblebufferSize; n++) {
         if (p->audio_channels == 2) {
-            p->in_treble_l_raw[n] = p->input_buffer[n * 2];
-            p->in_treble_r_raw[n] = p->input_buffer[n * 2 + 1];
+            p->in_treble_r_raw[n] = p->input_buffer[n * 2];
+            p->in_treble_l_raw[n] = p->input_buffer[n * 2 + 1];
         } else {
             p->in_treble_l_raw[n] = p->input_buffer[n];
         }

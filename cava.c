@@ -769,10 +769,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                 if (audio.channels == 2) {
                     for (int n = 0; n < number_of_bars / output_channels; n++) {
-                        bars_right[n] = cava_out[n];
+                        bars_left[n] = cava_out[n];
                     }
                     for (int n = 0; n < number_of_bars / output_channels; n++) {
-                        bars_left[n] = cava_out[n + number_of_bars / output_channels];
+                        bars_right[n] = cava_out[n + number_of_bars / output_channels];
                     }
                 } else {
                     for (int n = 0; n < number_of_bars; n++) {
