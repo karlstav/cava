@@ -130,6 +130,11 @@
 # Only supported on ncurses and noncurses output.
 ; xaxis = none
 
+# enable alacritty synchronized updates. 1 = on, 0 = off
+# removes flickering in alacritty terminal emeulator.
+# defaults to off since the behaviour in other terminal emulators is unknown
+; alacritty_sync = 0
+
 [color]
 
 # Colors can be one of seven predefined: black, blue, cyan, green, magenta, red, white, yellow.

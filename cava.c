@@ -871,6 +871,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 // output: draw processed input
 #ifdef NDEBUG
+                if (p.sync_updates) {
+                    printf("\033P=1s\033\\");
+                    fflush(stdout);
+                }
                 int rc;
                 switch (output_mode) {
                 case OUTPUT_NCURSES:
@@ -902,7 +906,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 default:
                     exit(EXIT_FAILURE); // Can't happen.
                 }
-
+                if (p.sync_updates) {
+                    printf("\033P=2s\033\\");
+                    fflush(stdout);
+                }
                 // terminal has been resized breaking to recalibrating values
                 if (rc == -1)
                     resizeTerminal = true;

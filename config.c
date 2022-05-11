@@ -529,6 +529,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         p->bar_spacing = iniparser_getint(ini, "general:bar_spacing", 5);
     }
 
+    p->sync_updates = iniparser_getint(ini, "output:alacritty_sync", 0);
+
     // read & validate: eq
     p->userEQ_keys = iniparser_getsecnkeys(ini, "eq");
     if (p->userEQ_keys > 0) {
