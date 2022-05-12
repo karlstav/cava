@@ -3,9 +3,7 @@ C.A.V.A. [![Build Status](https://github.com/karlstav/cava/workflows/build-and-t
 
 **C**onsole-based **A**udio **V**isualizer for **A**LSA
 
-also supports audio input from Pulseaudio, fifo (mpd), sndio, squeezelite and portaudio.
-
-Now with SDL support!
+also supports audio input from Pulseaudio, fifo (mpd), sndio, squeezelite and portaudio (macOS).
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
@@ -13,44 +11,28 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
 [Demo video](https://youtu.be/9PSp8VA6yjU)
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
-
 - [What it is](#what-it-is)
 - [Installing](#installing)
   - [From Source](#from-source)
-    - [Installing Build Requirements](#installing-build-requirements)
-    - [Building](#building)
-    - [Installing](#installing-1)
-    - [Uninstalling](#uninstalling)
   - [Some distro specific pre-made binaries/recipes](#some-distro-specific-pre-made-binariesrecipes)
-    - [openSUSE](#opensuse)
-    - [Fedora](#fedora)
-    - [Arch](#arch)
-    - [Ubuntu/Debian](#ubuntudebian)
-    - [macOS](#macos)
 - [Capturing audio](#capturing-audio)
-  - [Pulseaudio monitor source (Easy, default if supported)](#pulseaudio-monitor-source-easy-default-if-supported)
-  - [ALSA-loopback device (Tricky)](#alsa-loopback-device-tricky)
-  - [mpd's fifo output](#mpds-fifo-output)
+  - [Pulseaudio](#pulseaudio)
+  - [ALSA](#alsa)
+  - [MPD](#mpd)
   - [sndio](#sndio)
   - [squeezelite](#squeezelite)
   - [macOS](#macos)
-  - [Windows - winscap - WSL](#Windows---winscap---WSL)
+  - [WSL](#wsl)
 - [Running via ssh](#running-via-ssh)
-  - [Raw Output](#raw-output)
-- [Font notes](#font-notes)
-  - [In ttys](#in-ttys)
-  - [In terminal emulators](#in-terminal-emulators)
-- [Latency notes](#latency-notes)
+- [Troubleshooting](#troubleshooting)
 - [Usage](#usage)
   - [Controls](#controls)
 - [Configuration](#configuration)
 - [Using cava in other applications](#using-cava-in-other-applications)
+  - [cavacore](#cavacore-library)
+  - [Raw Output](#raw-output)
 - [Contribution](#contribution)
 
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 
 What it is
@@ -219,7 +201,7 @@ cava is in homebrew.
 Capturing audio
 ---------------
 
-### Pulseaudio monitor source (Easy, default if supported)
+### Pulseaudio
 
 Just make sure you have installed pulseaudio dev files and that cava has been built with pulseaudio support (it should be automatically if the dev files are found).
 
@@ -228,7 +210,7 @@ If you're lucky all you have to do is to run cava.
 If nothing happens you might have to use a different source than the default. The default might also be your microphone. Look at the [config](#configuration) file for help. 
 
 
-### ALSA-loopback device (Tricky)
+### ALSA
 
 Set
 
@@ -258,7 +240,7 @@ If you are having problems with the alsa method on Rasberry PI, try enabling `mm
 dtoverlay=i2s-mmap
 ```
 
-### mpd's fifo output
+### mpd
 
 Add these lines in mpd:
 
@@ -330,9 +312,10 @@ method = portaudio
 source = "Soundflower (2ch)"
 ```
 
-### Windows - winscap - WSL
+### WSL
 
-@quantum5 has written a handy tool called [winscap](https://github.com/quantum5/winscap) to capture audio from Windows and output it to stdout. Just follow the instructions in the readme on how to set it up with cava.
+@quantum5 has written a handy tool called [winscap](https://github.com/quantum5/winscap) to capture audio from Windows and output it to stdout.
+This way cava can be used in a terminal running windows subsystem for linux. Just follow the instructions in the readme on how to set it up with cava.
 
 
 Running via ssh
@@ -346,20 +329,32 @@ exit with ctrl+z then run 'bg' to keep it running after you log out.
 
 (You must be root to redirect to console. Simple sudo is not enough: Run `sudo su` first.)
 
-### Raw Output
 
-You can also use Cava's output for other programs by using raw output mode, which will write bar data to `STDOUT` that can be piped into other processes. More information on this option is documented in [the example config file](/example_files/config).
+## Troubleshooting
 
-A useful starting point example script written in python that consumes raw data can be found [here](https://github.com/karlstav/cava/issues/123#issuecomment-307891020).
+### No bars in terminal
 
-Font notes
-----------
+Nost likley issue [#399](https://github.com/karlstav/cava/issues/399). Locale settings need to be set correctly in order for cava to work.
 
-Since the graphics are simply based on characters, performance is dependent on the terminal font.
+### Visualizer reacts to microphone instead of output
 
-### In ttys
+This is a known issue with pipewire. Try the workaround described [here](https://github.com/karlstav/cava/issues/422#issuecomment-994270910)
 
-If you run this in a TTY the program will change the font to the included `cava.psf` (actually a slightly modified "unifont").
+### Vertical lines in bars
+
+This is either an issue with the font, or line spacing being enabled in the terminal emulater. Try to change font or disable line spacing.
+
+### Low resolution
+
+Since the graphics are simply based on characters, try decreasing the font size.
+
+### Low frame rate
+
+Some terminal emulators are just slow. Cava will look best in a GPU based terminal like kitty or alacritty. You can also try to increase the font size
+
+### Font is changed in ttys after exit
+
+If you run cava in a TTY (like ctrl+alt+F2) the program will change the font to the included `cava.psf` (actually a slightly modified "unifont").
 
 In console fonts it seems that only 256 Unicode characters are supported, probably because they are bitmap fonts. I could not find a font with Unicode characters 2581-2587 (the 1/8 - 7/8 blocks used on the top of each bar to increase resolution).
 
@@ -367,23 +362,6 @@ So in `cava.psf`, the characters 1-7 are actually replaced by Unicode characters
 
 Actually, `setfont` is supposed to return the default font, but this usually isn't set. I haven't found another way to get the current font. So cava sets the font to "Lat2-Fixed16" when interrupted. All major distros should have it. It will revert to your default font at reboot.
 
-### In terminal emulators
-
-In terminal emulators like `xterm`, the font settings is chosen in the software and cannot be changed by an application. So find your terminal settings and try out different fonts and settings. Also character spacing affects the look of the bar spectrum.
-
-Performance is also different, urxvt is the best I found so far, while Gnome-terminal is quite slow.
-
-Cava also disables the terminal cursor, and turns it back on on exit, but in case it terminates unexpectedly, run `setterm -cursor on` to get it back.
-
-Tip: Cava will look much nicer in small font sizes. Use a second terminal emulator for cava and set the font size to 1. Warning, can cause high CPU usage and latency if the terminal window is too large!
-
-
-Latency notes
--------------
-
-If you see latency issues (sound before image) in a terminal emulator, try increasing the font size. This will reduce the number of characters that have to be shown.
-
-If your audio device has a huge buffer, you might experience that cava is actually faster than the audio you hear. This reduces the experience of the visualization. To fix this, try decreasing the buffer settings in your audio playing software.
 
 Usage
 -----
@@ -419,9 +397,7 @@ Configuration
 
 As of version 0.4.0 all options are done in the config file, no more command-line arguments!
 
-By default a configuration file is located in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.config/cava/config`, but cava can also be made to use a different file with the `-p` option.
-
-If for some reason the config file is not in the config dir, copy the [bundled configuration file](/example_files/config) to the config dir manually.
+By default a configuration file is created upon first launch in `$XDG_CONFIG_HOME/cava/config` or `$HOME/.config/cava/config`, but cava can also be made to use a different file with the `-p` option.
 
 Sending cava a SIGUSR1 signal, will force cava to reload its configuration file. Thus, it behaves as if the user pressed <kbd>r</kbd> in the terminal. One might send a SIGUSR1 signal using `pkill` or `killall`.
 For example:
@@ -460,7 +436,15 @@ The equalizer is DEPRECATED as of 0.8.0, can be brought back by popular request.
 Using cava in other applications
 --------------------------------
 
+### cavacore library
+
 The core processing engine in cava has been split into a separate library `cavacore`. See CAVACORE.md for details.
+
+### Raw Output
+
+You can also use Cava's output for other programs by using raw output mode, which will write bar data to `STDOUT` that can be piped into other processes. More information on this option is documented in [the example config file](/example_files/config).
+
+A useful starting point example script written in python that consumes raw data can be found [here](https://github.com/karlstav/cava/issues/123#issuecomment-307891020).
 
 
 Contribution
