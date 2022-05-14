@@ -139,7 +139,7 @@ void *input_portaudio(void *audiodata) {
     err = Pa_OpenStream(&stream, &inputParameters, NULL, audio->rate, audio->input_buffer_size / 2,
                         paClipOff, recordCallback, &data);
     if (err != paNoError) {
-        fprintf(stderr, "Error: failure in opening stream (%x)\n", err);
+        fprintf(stderr, "Error: failure in opening stream (%s)\n", Pa_GetErrorText(err));
         exit(EXIT_FAILURE);
     }
 
@@ -149,7 +149,7 @@ void *input_portaudio(void *audiodata) {
         data.frameIndex = 0;
         err = Pa_StartStream(stream);
         if (err != paNoError) {
-            fprintf(stderr, "Error: failure in starting stream (%x)\n", err);
+            fprintf(stderr, "Error: failure in starting stream (%s)\n", Pa_GetErrorText(err));
             exit(EXIT_FAILURE);
         }
 
@@ -161,7 +161,7 @@ void *input_portaudio(void *audiodata) {
         }
         // check for errors
         if (err < 0) {
-            fprintf(stderr, "Error: failure in recording audio (%x)\n", err);
+            fprintf(stderr, "Error: failure in recording audio (%s)\n", Pa_GetErrorText(err));
             exit(EXIT_FAILURE);
         }
 
@@ -171,7 +171,7 @@ void *input_portaudio(void *audiodata) {
     }
     // close stream
     if ((err = Pa_CloseStream(stream)) != paNoError) {
-        fprintf(stderr, "Error: failure in closing stream (%x)\n", err);
+        fprintf(stderr, "Error: failure in closing stream (%s)\n", Pa_GetErrorText(err));
         exit(EXIT_FAILURE);
     }
 
