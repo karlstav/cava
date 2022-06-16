@@ -334,7 +334,7 @@ exit with ctrl+z then run 'bg' to keep it running after you log out.
 
 ### No bars in terminal
 
-Nost likley issue [#399](https://github.com/karlstav/cava/issues/399). Locale settings need to be set correctly in order for cava to work.
+Most likley issue [#399](https://github.com/karlstav/cava/issues/399). Locale settings need to be set correctly in order for cava to work.
 
 ### Visualizer reacts to microphone instead of output
 
