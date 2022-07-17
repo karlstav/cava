@@ -552,6 +552,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                   number_of_bars, p.bar_width, remainder);
 #endif
 
+            double userEQ_keys_to_bars_ratio;
+
+            if (p.userEQ_enabled && (number_of_bars / output_channels > 0)) {
+                userEQ_keys_to_bars_ratio = (double)(((double)p.userEQ_keys) /
+                                                     ((double)(number_of_bars / output_channels)));
+            }
+
             struct cava_plan *plan =
                 cava_init(number_of_bars / output_channels, audio.rate, audio.channels, p.autosens,
                           p.noise_reduction, p.lower_cut_off, p.upper_cut_off);
@@ -769,13 +776,22 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                 if (audio.channels == 2) {
                     for (int n = 0; n < number_of_bars / output_channels; n++) {
+                        if (p.userEQ_enabled)
+                            cava_out[n] *=
+                                p.userEQ[(int)floor(((double)n) * userEQ_keys_to_bars_ratio)];
                         bars_left[n] = cava_out[n];
                     }
                     for (int n = 0; n < number_of_bars / output_channels; n++) {
+                        if (p.userEQ_enabled)
+                            cava_out[n + number_of_bars / output_channels] *=
+                                p.userEQ[(int)floor(((double)n) * userEQ_keys_to_bars_ratio)];
                         bars_right[n] = cava_out[n + number_of_bars / output_channels];
                     }
                 } else {
                     for (int n = 0; n < number_of_bars; n++) {
+                        if (p.userEQ_enabled)
+                            cava_out[n] *=
+                                p.userEQ[(int)floor(((double)n) * userEQ_keys_to_bars_ratio)];
                         bars[n] = cava_out[n];
                     }
                 }

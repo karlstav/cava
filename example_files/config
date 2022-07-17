@@ -198,8 +198,6 @@
 # This one is tricky. You can have as much keys as you want.
 # Remember to uncomment more then one key! More keys = more precision.
 # Look at readme.md on github for further explanations and examples.
-# DEPRECATED as of 0.8.0 can be brought back by popular request, open issue at:
-# https://github.com/karlstav/cava
 ; 1 = 1 # bass
 ; 2 = 1
 ; 3 = 1 # midtone
