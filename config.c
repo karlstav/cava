@@ -61,23 +61,6 @@ int validate_color(char *checkColor, void *params, void *err) {
     struct error_s *error = (struct error_s *)err;
     int validColor = 0;
     if (checkColor[0] == '#' && strlen(checkColor) == 7) {
-        // If the output mode is not ncurses, tell the user to use a named colour instead of hex
-        // colours.
-        if (p->output != OUTPUT_NCURSES && p->output != OUTPUT_SDL) {
-#if defined(NCURSES) || defined(SDL)
-            write_errorf(error,
-                         "hex color configured, but ncurses not set. Forcing ncurses mode.\n");
-            p->output = OUTPUT_NCURSES;
-#else
-            write_errorf(error, "Only 'ncurses' and sdl output method supports HTML colors "
-                                "(required by gradient). "
-                                "Cava was built without sdl or ncurses support, install ncurses(w) "
-                                "or sdl dev files "
-                                "and rebuild.\n");
-            return 0;
-#endif
-        }
-        // 0 to 9 and a to f
         for (int i = 1; checkColor[i]; ++i) {
             if (!isdigit(checkColor[i])) {
                 if (tolower(checkColor[i]) >= 'a' && tolower(checkColor[i]) <= 'f') {
@@ -153,6 +136,8 @@ bool validate_colors(void *params, void *err) {
         p->col = 6;
     if (strcmp(p->color, "white") == 0)
         p->col = 7;
+    if (p->color[0] == '#')
+        p->col = 8;
     // default if invalid
 
     // validate: background color
@@ -172,6 +157,8 @@ bool validate_colors(void *params, void *err) {
         p->bgcol = 6;
     if (strcmp(p->bcolor, "white") == 0)
         p->bgcol = 7;
+    if (p->bcolor[0] == '#')
+        p->bgcol = 8;
     // default if invalid
 
     return true;
@@ -237,21 +224,18 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         }
     }
     if (p->output == OUTPUT_NOT_SUPORTED) {
-#ifndef NCURSES
-        write_errorf(
-            error,
-            "output method %s is not supported, supported methods are: 'noncurses' and 'raw'\n",
-            outputMethod);
-        return false;
-#endif
+
+        char supportedOutput[1024] = "'noncurses', 'raw', 'noritake'";
 
 #ifdef NCURSES
-        write_errorf(error,
-                     "output method %s is not supported, supported methods are: 'ncurses', "
-                     "'noncurses' and 'raw'\n",
-                     outputMethod);
-        return false;
+        strcat(supportedOutput, ", 'ncurses'");
 #endif
+#ifdef SDL
+        strcat(supportedOutput, ", 'sdl'");
+#endif
+        write_errorf(error, "output method %s is not supported, supported methods are: %s\n",
+                     outputMethod, supportedOutput);
+        return false;
     }
 
     p->xaxis = NONE;

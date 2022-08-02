@@ -453,7 +453,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 if (p.xaxis != NONE)
                     lines--;
 
-                init_terminal_noncurses(inAtty, p.col, p.bgcol, width, lines, p.bar_width);
+                init_terminal_noncurses(inAtty, p.color, p.bcolor, p.col, p.bgcol, p.gradient,
+                                        p.gradient_count, p.gradient_colors, width, lines,
+                                        p.bar_width);
                 height = lines * 8;
                 break;
 
@@ -909,7 +911,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 case OUTPUT_NONCURSES:
                     rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars, p.bar_width,
                                                  p.bar_spacing, remainder, bars, previous_frame,
-                                                 x_axis_info);
+                                                 p.gradient, x_axis_info);
                     break;
                 case OUTPUT_RAW:
                     rc = print_raw_out(number_of_bars, fp, p.raw_format, p.bit_format,

@@ -35,6 +35,18 @@ int setecho(int fd, int onoff) {
     return 0;
 }
 
+struct colors {
+    short unsigned int rgb[3];
+};
+
+struct colors *gradient_colors;
+
+struct colors parse_color(char *color_string) {
+    struct colors color;
+    sscanf(++color_string, "%02hx%02hx%02hx", &color.rgb[0], &color.rgb[1], &color.rgb[2]);
+    return color;
+}
+
 // general: cleanup
 void free_terminal_noncurses(void) {
     free(frame_buffer);
@@ -45,9 +57,12 @@ void free_terminal_noncurses(void) {
         free(barstring[i]);
         free(ttybarstring[i]);
     }
+    free(gradient_colors);
 }
 
-int init_terminal_noncurses(int tty, int col, int bgcol, int width, int lines, int bar_width) {
+int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg_color_string,
+                            int col, int bgcol, int gradient, int gradient_count,
+                            char **gradient_color_strings, int width, int lines, int bar_width) {
 
     free_terminal_noncurses();
 
@@ -114,19 +129,62 @@ int init_terminal_noncurses(int tty, int col, int bgcol, int width, int lines, i
     printf("\033[0m\n");
     system("clear");
 
-    if (col)
+    if (col == 38) {
+        struct colors fg_color = parse_color(fg_color_string);
+        printf("\033[38;2;%d;%d;%dm", fg_color.rgb[0], fg_color.rgb[1], fg_color.rgb[2]);
+    } else {
         printf("\033[%dm", col); // setting color
+    }
 
-    // printf("\033[1m"); // setting "bright" color mode, looks cooler... I think
+    if (gradient) {
+        struct colors gradient_color_defs[gradient_count];
+        for (int i = 0; i < gradient_count; i++) {
+            gradient_color_defs[i] = parse_color(gradient_color_strings[i]);
+        }
+
+        gradient_colors = (struct colors *)malloc((lines * 2) * sizeof(struct colors));
+
+        int individual_size = lines / (gradient_count - 1);
+
+        float rest = lines / (float)(gradient_count - 1) - individual_size;
+
+        float rest_total = 0;
+        int gradient_lines = 0;
+
+        for (int i = 0; i < gradient_count - 1; i++) {
+            individual_size = lines / (gradient_count - 1);
+            if (rest_total > 1.0) {
+                individual_size++;
+                rest_total = rest_total - 1.0;
+            }
+            for (int n = 0; n < individual_size; n++) {
+                for (int c = 0; c < 3; c++) {
+                    float next_color =
+                        gradient_color_defs[i + 1].rgb[c] - gradient_color_defs[i].rgb[c];
+                    next_color *= n / (float)individual_size;
+                    gradient_colors[gradient_lines].rgb[c] =
+                        gradient_color_defs[i].rgb[c] + next_color;
+                }
+                gradient_lines++;
+            }
+            rest_total = rest_total + rest;
+        }
+        gradient_colors[lines - 1] = gradient_color_defs[gradient_count - 1];
+    }
 
     if (bgcol != 0) {
 
         bgcol += 40;
-        printf("\033[%dm", bgcol);
+
+        if (bgcol == 48) {
+            struct colors bg_color = parse_color(bg_color_string);
+            printf("\033[48;2;%d;%d;%dm", bg_color.rgb[0], bg_color.rgb[1], bg_color.rgb[2]);
+        } else {
+            printf("\033[%dm", bgcol);
+        }
 
         for (int n = lines; n >= 0; n--) {
             for (int i = 0; i < width; i++) {
-
                 printf(" "); // setting backround color
             }
             if (n != 0)
@@ -156,7 +214,7 @@ void get_terminal_dim_noncurses(int *width, int *lines) {
 
 int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, int bar_width,
                             int bar_spacing, int rest, int bars[], int previous_frame[],
-                            int x_axis_info) {
+                            int gradient, int x_axis_info) {
 
     int current_cell, prev_cell, same_line, new_line, cx;
 
@@ -183,6 +241,20 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
         frame_buffer[0] = '\0';
 
     for (int current_line = lines - 1; current_line >= 0; current_line--) {
+
+        if (gradient) {
+            if (tty) {
+                cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[38;2;%d;%d;%dm",
+                               gradient_colors[current_line].rgb[0],
+                               gradient_colors[current_line].rgb[1],
+                               gradient_colors[current_line].rgb[2]);
+            } else if (!tty) {
+                cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[38;2;%d;%d;%dm",
+                               gradient_colors[current_line].rgb[0],
+                               gradient_colors[current_line].rgb[1],
+                               gradient_colors[current_line].rgb[2]);
+            }
+        }
 
         int same_bar = 0;
         int center_adjusted = 0;
