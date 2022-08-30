@@ -342,7 +342,7 @@ This is a known issue with pipewire. Try the workaround described [here](https:/
 
 ### Vertical lines in bars
 
-This is either an issue with the font, or line spacing being enabled in the terminal emulater. Try to change font or disable line spacing.
+This is either an issue with the font, or line spacing being enabled in the terminal emulator. Try to change font or disable line spacing.
 
 ### Low resolution
 
