@@ -412,6 +412,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         double *cava_out;
 
         int height, lines, width, remainder, fp;
+        int dimension_bar, dimension_value;
 
 #ifdef SDL
         // output: start sdl mode
@@ -515,11 +516,19 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     p.autobars = 1;
             }
 
+            if (p.orientation == ORIENT_LEFT || p.orientation == ORIENT_RIGHT) {
+                dimension_bar = height;
+                dimension_value = width;
+            } else {
+                dimension_bar = width;
+                dimension_value = height;
+            }
+
             // getting numbers of bars
             int number_of_bars = p.fixedbars;
 
             if (p.autobars == 1)
-                number_of_bars = (width + p.bar_spacing) / (p.bar_width + p.bar_spacing);
+                number_of_bars = (dimension_bar + p.bar_spacing) / (p.bar_width + p.bar_spacing);
 
             if (number_of_bars <= 1) {
                 number_of_bars = 1; // must have at least 1 bars
@@ -543,15 +552,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             }
 
             // checks if there is stil extra room, will use this to center
-            remainder = (width - number_of_bars * p.bar_width - number_of_bars * p.bar_spacing +
+            remainder = (dimension_bar - number_of_bars * p.bar_width - number_of_bars * p.bar_spacing +
                          p.bar_spacing) /
                         2;
             if (remainder < 0)
                 remainder = 0;
 
 #ifndef NDEBUG
-            debug("height: %d width: %d bars:%d bar width: %d remainder: %d\n", height, width,
-                  number_of_bars, p.bar_width, remainder);
+            debug("height: %d width: %d dimension_bar: %d dimension_value: %d bars:%d bar width: %d remainder: %d\n", height, width,
+                  dimension_bar, dimension_value, number_of_bars, p.bar_width, remainder);
 #endif
 
             double userEQ_keys_to_bars_ratio;
@@ -771,7 +780,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                 for (uint32_t n = 0; n < (number_of_bars / output_channels) * audio.channels; n++) {
                     if (p.autosens)
-                        cava_out[n] *= height;
+                        cava_out[n] *= dimension_value;
                     else
                         cava_out[n] *= p.sens;
                 }
@@ -904,8 +913,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
 #ifdef SDL
                 case OUTPUT_SDL:
-                    rc = draw_sdl(number_of_bars, p.bar_width, p.bar_spacing, remainder, height,
-                                  bars, previous_frame, frame_time_msec);
+                    rc = draw_sdl(number_of_bars, p.bar_width, p.bar_spacing, remainder, dimension_value,
+                                  bars, previous_frame, frame_time_msec, p.orientation);
                     break;
 #endif
                 case OUTPUT_NONCURSES:

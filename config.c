@@ -26,7 +26,7 @@ enum input_method default_methods[] = {
     INPUT_PULSE,
 };
 
-char *outputMethod, *channels, *xaxisScale, *monoOption;
+char *outputMethod, *orientation, *channels, *xaxisScale, *monoOption;
 
 const char *input_method_names[] = {
     "fifo", "portaudio", "alsa", "pulse", "sndio", "shmem",
@@ -236,6 +236,19 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         write_errorf(error, "output method %s is not supported, supported methods are: %s\n",
                      outputMethod, supportedOutput);
         return false;
+    }
+
+    p->orientation = ORIENT_BOTTOM;
+    if (p->output == OUTPUT_SDL) {
+        if (strcmp(orientation, "top") == 0) {
+            p->orientation = ORIENT_TOP;
+        }
+        if (strcmp(orientation, "left") == 0) {
+            p->orientation = ORIENT_LEFT;
+        }
+        if (strcmp(orientation, "right") == 0) {
+            p->orientation = ORIENT_RIGHT;
+        }
     }
 
     p->xaxis = NONE;
@@ -452,6 +465,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     outputMethod = (char *)iniparser_getstring(ini, "output:method", "noncurses");
 #endif
 
+    orientation = (char *)iniparser_getstring(ini, "output:orientation", "bottom");
     xaxisScale = (char *)iniparser_getstring(ini, "output:xaxis", "none");
     p->monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 0);
     p->waves = iniparser_getint(ini, "smoothing:waves", 0);

@@ -93,6 +93,10 @@
 # 'sdl' uses the Simple DirectMedia Layer to render in a graphical context.
 ; method = ncurses
 
+# Orientation of the visualization. Can be 'bottom', 'top', 'left' or 'right'.
+# Default is 'bottom'. Other orientations are only supported out sdl output.
+; orientation = bottom
+
 # Visual channels. Can be 'stereo' or 'mono'.
 # 'stereo' mirrors both channels with low frequencies in center.
 # 'mono' outputs left to right lowest to highest frequencies.
