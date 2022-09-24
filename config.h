@@ -57,6 +57,8 @@ enum data_format { FORMAT_ASCII = 0, FORMAT_BINARY = 1, FORMAT_NTK3000 = 2 };
 
 enum xaxis_scale { NONE, FREQUENCY, NOTE };
 
+enum orientation { ORIENT_BOTTOM, ORIENT_TOP, ORIENT_LEFT, ORIENT_RIGHT};
+
 struct config_params {
     char *color, *bcolor, *raw_target, *audio_source,
         /**gradient_color_1, *gradient_color_2,*/ **gradient_colors, *data_format;
@@ -68,6 +70,7 @@ struct config_params {
     enum output_method output;
     enum xaxis_scale xaxis;
     enum mono_option mono_opt;
+    enum orientation orientation;
     int userEQ_keys, userEQ_enabled, col, bgcol, autobars, stereo, raw_format, ascii_range,
         bit_format, gradient, gradient_count, fixedbars, framerate, bar_width, bar_spacing,
         bar_height, autosens, overshoot, waves, fifoSample, fifoSampleBits, sleep_timer, sdl_width,
