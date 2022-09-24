@@ -81,6 +81,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     p->audio_channels = channels;
     p->rate = rate;
     p->autosens = 1;
+    p->sens_init = 1;
     p->sens = 1;
     p->autosens = autosens;
     p->framerate = 75;
