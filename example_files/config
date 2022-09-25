@@ -94,7 +94,7 @@
 ; method = ncurses
 
 # Orientation of the visualization. Can be 'bottom', 'top', 'left' or 'right'.
-# Default is 'bottom'. Other orientations are only supported out sdl output.
+# Default is 'bottom'. Other orientations are only supported on sdl output.
 ; orientation = bottom
 
 # Visual channels. Can be 'stereo' or 'mono'.
