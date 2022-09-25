@@ -80,31 +80,31 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
         SDL_SetRenderDrawColor(gRenderer, bg_color.R, bg_color.G, bg_color.B, 0xFF);
         SDL_RenderClear(gRenderer);
         for (int bar = 0; bar < bars_count; bar++) {
-            switch(orientation) {
-                case ORIENT_LEFT:
-                    fillRect.x = 0;
-                    fillRect.y = bar * (bar_width + bar_spacing) + remainder;
-                    fillRect.w = bars[bar];
-                    fillRect.h = bar_width;
-                    break;
-                case ORIENT_RIGHT:
-                    fillRect.x = height - bars[bar];
-                    fillRect.y = bar * (bar_width + bar_spacing) + remainder;
-                    fillRect.w = bars[bar];
-                    fillRect.h = bar_width;
-                    break;
-                case ORIENT_TOP:
-                    fillRect.x = bar * (bar_width + bar_spacing) + remainder;
-                    fillRect.y = 0;
-                    fillRect.w = bar_width;
-                    fillRect.h = bars[bar];
-                    break;
-                default:
-                    fillRect.x = bar * (bar_width + bar_spacing) + remainder;
-                    fillRect.y = height - bars[bar];
-                    fillRect.w = bar_width;
-                    fillRect.h = bars[bar];
-                    break;
+            switch (orientation) {
+            case ORIENT_LEFT:
+                fillRect.x = 0;
+                fillRect.y = bar * (bar_width + bar_spacing) + remainder;
+                fillRect.w = bars[bar];
+                fillRect.h = bar_width;
+                break;
+            case ORIENT_RIGHT:
+                fillRect.x = height - bars[bar];
+                fillRect.y = bar * (bar_width + bar_spacing) + remainder;
+                fillRect.w = bars[bar];
+                fillRect.h = bar_width;
+                break;
+            case ORIENT_TOP:
+                fillRect.x = bar * (bar_width + bar_spacing) + remainder;
+                fillRect.y = 0;
+                fillRect.w = bar_width;
+                fillRect.h = bars[bar];
+                break;
+            default:
+                fillRect.x = bar * (bar_width + bar_spacing) + remainder;
+                fillRect.y = height - bars[bar];
+                fillRect.w = bar_width;
+                fillRect.h = bars[bar];
+                break;
             }
 
             SDL_SetRenderDrawColor(gRenderer, fg_color.R, fg_color.G, fg_color.B, 0xFF);

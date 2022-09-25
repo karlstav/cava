@@ -552,15 +552,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             }
 
             // checks if there is stil extra room, will use this to center
-            remainder = (dimension_bar - number_of_bars * p.bar_width - number_of_bars * p.bar_spacing +
-                         p.bar_spacing) /
+            remainder = (dimension_bar - number_of_bars * p.bar_width -
+                         number_of_bars * p.bar_spacing + p.bar_spacing) /
                         2;
             if (remainder < 0)
                 remainder = 0;
 
 #ifndef NDEBUG
-            debug("height: %d width: %d dimension_bar: %d dimension_value: %d bars:%d bar width: %d remainder: %d\n", height, width,
-                  dimension_bar, dimension_value, number_of_bars, p.bar_width, remainder);
+            debug("height: %d width: %d dimension_bar: %d dimension_value: %d bars:%d bar width: "
+                  "%d remainder: %d\n",
+                  height, width, dimension_bar, dimension_value, number_of_bars, p.bar_width,
+                  remainder);
 #endif
 
             double userEQ_keys_to_bars_ratio;
@@ -913,8 +915,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
 #ifdef SDL
                 case OUTPUT_SDL:
-                    rc = draw_sdl(number_of_bars, p.bar_width, p.bar_spacing, remainder, dimension_value,
-                                  bars, previous_frame, frame_time_msec, p.orientation);
+                    rc = draw_sdl(number_of_bars, p.bar_width, p.bar_spacing, remainder,
+                                  dimension_value, bars, previous_frame, frame_time_msec,
+                                  p.orientation);
                     break;
 #endif
                 case OUTPUT_NONCURSES:
