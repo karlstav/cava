@@ -20,9 +20,17 @@ struct colors {
 
 #define MAX_COLOR_REDEFINITION 256
 
-const wchar_t *bar_heights[] = {L"\u2581", L"\u2582", L"\u2583", L"\u2584",
-                                L"\u2585", L"\u2586", L"\u2587", L"\u2588"};
-int num_bar_heights = (sizeof(bar_heights) / sizeof(bar_heights[0]));
+const int num_bar_heights = 8;
+const wchar_t *bar_heights_bottom[] = {L"\u2581", L"\u2582", L"\u2583", L"\u2584",
+                                       L"\u2585", L"\u2586", L"\u2587", L"\u2588"};
+const wchar_t *bar_heights_top[] = {L"\u2594",     L"\U0001FB82", L"\U0001FB83", L"\u2580",
+                                    L"\U0001FB84", L"\U0001FB85", L"\U0001FB86", L"\u2588"};
+const wchar_t *bar_heights_left[] = {L"\u258F", L"\u258E", L"\u258D", L"\u258C",
+                                     L"\u258B", L"\u258A", L"\u2589", L"\u2588"};
+const wchar_t *bar_heights_right[] = {L"\u2595",     L"\U0001FB87", L"\U0001FB88", L"\u2590",
+                                      L"\U0001FB89", L"\U0001FB8A", L"\U0001FB8B", L"\u2588"};
+const wchar_t **bar_heights[] = {bar_heights_bottom, bar_heights_top, bar_heights_left,
+                                 bar_heights_right};
 
 // static struct colors the_color_redefinitions[MAX_COLOR_REDEFINITION];
 
@@ -67,6 +75,28 @@ static NCURSES_COLOR_T change_color_definition(NCURSES_COLOR_T color_number,
         return_color_number = color_number;
     }
     return return_color_number;
+}
+
+static void get_screen_coords(int val, int col, int max_value, enum orientation orientation, int *x,
+                              int *y) {
+    switch (orientation) {
+    case ORIENT_LEFT:
+        *x = val;
+        *y = col;
+        break;
+    case ORIENT_RIGHT:
+        *x = max_value - val;
+        *y = col;
+        break;
+    case ORIENT_TOP:
+        *x = col;
+        *y = val;
+        break;
+    default:
+        *x = col;
+        *y = max_value - val;
+        break;
+    }
 }
 
 void init_terminal_ncurses(char *const fg_color_string, char *const bg_color_string,
@@ -191,33 +221,42 @@ void get_terminal_dim_ncurses(int *width, int *height) {
 
 #define TERMINAL_RESIZED -1
 
-int draw_terminal_ncurses(int is_tty, int terminal_height, int terminal_width, int bars_count,
+int draw_terminal_ncurses(int is_tty, int dimension_value, int dimension_bar, int bars_count,
                           int bar_width, int bar_spacing, int rest, const int bars[],
-                          int previous_frame[], int gradient, int x_axis_info) {
-    const int height = terminal_height - 1;
+                          int previous_frame[], int gradient, int x_axis_info,
+                          enum orientation orientation) {
+    const int max_value = dimension_value - 1;
 
     // output: check if terminal has been resized
     if (!is_tty) {
         if (x_axis_info)
-            terminal_height++;
+            dimension_value++;
+        int terminal_width, terminal_height;
+        if (orientation == ORIENT_LEFT || orientation == ORIENT_RIGHT) {
+            terminal_width = dimension_value;
+            terminal_height = dimension_bar;
+        } else {
+            terminal_width = dimension_bar;
+            terminal_height = dimension_value;
+        }
         if (LINES != terminal_height || COLS != terminal_width) {
             return TERMINAL_RESIZED;
             if (x_axis_info)
-                terminal_height--;
+                dimension_value--;
         }
     }
 
     // Compute how much of the screen we possibly need to update ahead-of-time.
-    int max_update_y = 0;
+    int max_update_value = 0;
     for (int bar = 0; bar < bars_count; bar++) {
-        max_update_y = max(max_update_y, max(bars[bar], previous_frame[bar]));
+        max_update_value = max(max_update_value, max(bars[bar], previous_frame[bar]));
     }
 
-    max_update_y = (max_update_y + num_bar_heights) / num_bar_heights;
+    max_update_value = (max_update_value + num_bar_heights) / num_bar_heights;
 
-    for (int y = 0; y < max_update_y; y++) {
+    for (int val = 0; val < max_update_value; val++) {
         if (gradient) {
-            change_colors(y, height);
+            change_colors(val, max_value);
         }
 
         for (int bar = 0; bar < bars_count; bar++) {
@@ -229,14 +268,14 @@ int draw_terminal_ncurses(int is_tty, int terminal_height, int terminal_width, i
             int f_cell = (bars[bar] - 1) / num_bar_heights;
             int f_last_cell = (previous_frame[bar] - 1) / num_bar_heights;
 
-            if (f_cell >= y) {
+            if (f_cell >= val) {
                 int bar_step;
 
-                if (f_cell == y) {
-                    // The "cap" of the bar occurs at this [y].
+                if (f_cell == val) {
+                    // The "cap" of the bar occurs at this [val].
                     bar_step = (bars[bar] - 1) % num_bar_heights;
-                } else if (f_last_cell <= y) {
-                    // The bar is full at this [y].
+                } else if (f_last_cell <= val) {
+                    // The bar is full at this [val].
                     bar_step = num_bar_heights - 1;
                 } else {
                     // No update necessary since last frame.
@@ -244,17 +283,22 @@ int draw_terminal_ncurses(int is_tty, int terminal_height, int terminal_width, i
                 }
 
                 for (int col = cur_col, i = 0; i < bar_width; i++, col++) {
+                    int x, y;
+                    get_screen_coords(val, col, max_value, orientation, &x, &y);
+
                     if (is_tty) {
-                        mvaddch(height - y, col, 0x41 + bar_step);
+                        mvaddch(y, x, 0x41 + bar_step);
                     } else {
-                        mvaddwstr(height - y, col, bar_heights[bar_step]);
+                        mvaddwstr(y, x, bar_heights[orientation][bar_step]);
                     }
                 }
-            } else if (f_last_cell >= y) {
+            } else if (f_last_cell >= val) {
                 // This bar was taller during the last frame than during this frame, so
                 // clear the excess characters.
                 for (int col = cur_col, i = 0; i < bar_width; i++, col++) {
-                    mvaddch(height - y, col, ' ');
+                    int x, y;
+                    get_screen_coords(val, col, max_value, orientation, &x, &y);
+                    mvaddch(y, x, ' ');
                 }
             }
         }

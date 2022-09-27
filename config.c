@@ -239,7 +239,7 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     }
 
     p->orientation = ORIENT_BOTTOM;
-    if (p->output == OUTPUT_SDL) {
+    if (p->output == OUTPUT_SDL || p->output == OUTPUT_NCURSES) {
         if (strcmp(orientation, "top") == 0) {
             p->orientation = ORIENT_TOP;
         }
