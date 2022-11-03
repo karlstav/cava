@@ -205,7 +205,7 @@ AC_CHECK_LIB(SDL2,SDL_Init, have_sdl=yes, have_sdl=no)
       CPPFLAGS="$CPPFLAGS -DSDL"
     fi
 
-    if [[ $have_fftw = "no" ]] ; then
+    if [[ $have_sdl = "no" ]] ; then
       AC_MSG_NOTICE([INFO: building without sdl support])
     fi
 ],
