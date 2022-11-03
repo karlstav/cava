@@ -79,7 +79,8 @@
 
 [output]
 
-# Output method. Can be 'ncurses', 'noncurses', 'raw', 'noritake' or 'sdl'.
+# Output method. Can be 'ncurses', 'noncurses', 'raw', 'noritake', 'sdl'
+# or 'sdl_glsl'.
 # 'noncurses' uses a custom framebuffer technique and prints only changes
 # from frame to frame in the terminal. 'ncurses' is default if supported.
 #
@@ -91,6 +92,8 @@
 #  in graphic mode. It only support the 3000 series graphical VFDs for now.
 #
 # 'sdl' uses the Simple DirectMedia Layer to render in a graphical context.
+# 'sdl_glsl' uses SDL to create an OpenGL context. Write your own shaders or
+# use one of the predefined ones.
 ; method = ncurses
 
 # Orientation of the visualization. Can be 'bottom', 'top', 'left' or 'right'.
@@ -141,6 +144,13 @@
 # defaults to off since the behaviour in other terminal emulators is unknown
 ; alacritty_sync = 0
 
+# Shaders for sdl_glsl, located in $HOME/.config/cava/shaders
+; vertex_shader = pass_through.vert
+; fragment_shader = normalized_bars.frag
+
+; for glsl output mode, keep rendering even if no audio
+; continuous_rendering = 0
+
 [color]
 
 # Colors can be one of seven predefined: black, blue, cyan, green, magenta, red, white, yellow.
@@ -150,7 +160,7 @@
 ; background = default
 ; foreground = default
 
-# SDL only support hex code colors, these are the default:
+# SDL and sdl_glsl only support hex code colors, these are the default:
 ; background = '#111111'
 ; foreground = '#33cccc'
 

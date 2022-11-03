@@ -48,6 +48,7 @@ enum output_method {
     OUTPUT_NONCURSES,
     OUTPUT_RAW,
     OUTPUT_SDL,
+    OUTPUT_SDL_GLSL,
     OUTPUT_NORITAKE,
     OUTPUT_NOT_SUPORTED
 };
@@ -61,7 +62,9 @@ enum orientation { ORIENT_BOTTOM, ORIENT_TOP, ORIENT_LEFT, ORIENT_RIGHT };
 
 struct config_params {
     char *color, *bcolor, *raw_target, *audio_source,
-        /**gradient_color_1, *gradient_color_2,*/ **gradient_colors, *data_format;
+        /**gradient_color_1, *gradient_color_2,*/ **gradient_colors, *data_format, *vertex_shader,
+        *fragment_shader;
+    ;
     char bar_delim, frame_delim;
     double monstercat, integral, gravity, ignore, sens, noise_reduction;
     unsigned int lower_cut_off, upper_cut_off;
@@ -74,7 +77,8 @@ struct config_params {
     int userEQ_keys, userEQ_enabled, col, bgcol, autobars, stereo, raw_format, ascii_range,
         bit_format, gradient, gradient_count, fixedbars, framerate, bar_width, bar_spacing,
         bar_height, autosens, overshoot, waves, fifoSample, fifoSampleBits, sleep_timer, sdl_width,
-        sdl_height, sdl_x, sdl_y, draw_and_quit, zero_test, non_zero_test, reverse, sync_updates;
+        sdl_height, sdl_x, sdl_y, draw_and_quit, zero_test, non_zero_test, reverse, sync_updates,
+        continuous_rendering;
 };
 
 struct error_s {

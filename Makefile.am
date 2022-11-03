@@ -43,3 +43,6 @@ if SDL
     cava_SOURCES += output/sdl_cava.c
 endif
 
+if SDL_GLSL
+    cava_SOURCES += output/sdl_glsl.c
+endif

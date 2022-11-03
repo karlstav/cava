@@ -17,6 +17,18 @@
 
 INCTXT(ConfigFile, "example_files/config");
 
+// add your custom shaders to be installed here
+#define NUMBER_OF_SHADERS 2
+INCTXT(normalized_barsfrag, "output/shaders/normalized_bars.frag");
+INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
+
+// INCTXT will create a char g<name>Data
+const char *default_shader_data[NUMBER_OF_SHADERS] = {gnormalized_barsfragData,
+                                                      gpass_throughvertData};
+
+// name of the installed shader file, technically does not have to be the same as in the source
+const char *default_shader_name[NUMBER_OF_SHADERS] = {"normalized_bars.frag", "pass_through.vert"};
+
 double smoothDef[5] = {1, 1, 1, 1, 1};
 
 enum input_method default_methods[] = {
@@ -26,7 +38,8 @@ enum input_method default_methods[] = {
     INPUT_PULSE,
 };
 
-char *outputMethod, *orientation, *channels, *xaxisScale, *monoOption;
+char *outputMethod, *orientation, *channels, *xaxisScale, *monoOption, *fragmentShader,
+    *vertexShader;
 
 const char *input_method_names[] = {
     "fifo", "portaudio", "alsa", "pulse", "sndio", "shmem",
@@ -184,6 +197,14 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         return false;
 #endif
     }
+    if (strcmp(outputMethod, "sdl_glsl") == 0) {
+        p->output = OUTPUT_SDL_GLSL;
+#ifndef SDL_GLSL
+        write_errorf(error, "cava was built without sdl support, install sdl dev files "
+                            "and run make clean && ./configure && make again\n");
+        return false;
+#endif
+    }
     if (strcmp(outputMethod, "noncurses") == 0) {
         p->output = OUTPUT_NONCURSES;
         p->bgcol = 0;
@@ -232,6 +253,9 @@ bool validate_config(struct config_params *p, struct error_s *error) {
 #endif
 #ifdef SDL
         strcat(supportedOutput, ", 'sdl'");
+#endif
+#ifdef SDL_GLSL
+        strcat(supportedOutput, ", 'sdl_glsl'");
 #endif
         write_errorf(error, "output method %s is not supported, supported methods are: %s\n",
                      outputMethod, supportedOutput);
@@ -391,30 +415,29 @@ bool load_colors(struct config_params *p, dictionary *ini, void *err) {
 bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colorsOnly,
                  struct error_s *error) {
     FILE *fp;
+    char cava_config_home[PATH_MAX / 2];
 
     // config: creating path to default config file
-    if (configPath[0] == '\0') {
-        char *configFile = "config";
-        char *configHome = getenv("XDG_CONFIG_HOME");
+    char *configHome = getenv("XDG_CONFIG_HOME");
+    if (configHome != NULL) {
+        sprintf(cava_config_home, "%s/%s/", configHome, PACKAGE);
+        mkdir(cava_config_home, 0777);
+    } else {
+        configHome = getenv("HOME");
         if (configHome != NULL) {
-            sprintf(configPath, "%s/%s/", configHome, PACKAGE);
+            sprintf(cava_config_home, "%s/%s/", configHome, ".config");
+            mkdir(cava_config_home, 0777);
+            sprintf(cava_config_home, "%s/%s/%s/", configHome, ".config", PACKAGE);
+            mkdir(cava_config_home, 0777);
         } else {
-            configHome = getenv("HOME");
-            if (configHome != NULL) {
-                sprintf(configPath, "%s/%s/", configHome, ".config");
-                mkdir(configPath, 0777);
-                sprintf(configPath, "%s/%s/%s/", configHome, ".config", PACKAGE);
-            } else {
-                write_errorf(error, "No HOME found (ERR_HOMELESS), exiting...");
-                return false;
-            }
+            write_errorf(error, "No HOME found (ERR_HOMELESS), exiting...");
+            return false;
         }
-
-        // config: create directory
-        mkdir(configPath, 0777);
-
+    }
+    if (configPath[0] == '\0') {
         // config: adding default filename file
-        strcat(configPath, configFile);
+        strcat(configPath, cava_config_home);
+        strcat(configPath, "config");
 
         // open file or create file if it does not exist
         fp = fopen(configPath, "ab+");
@@ -446,6 +469,25 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             return false;
         }
     }
+
+    // create default shader files if they do not exist
+    char *shaderPath = malloc(sizeof(char) * PATH_MAX);
+    sprintf(shaderPath, "%s/shaders", cava_config_home);
+    mkdir(shaderPath, 0777);
+
+    for (int i = i; i < NUMBER_OF_SHADERS; i++) {
+        char *shaderFile = malloc(sizeof(char) * PATH_MAX);
+        sprintf(shaderFile, "%s/%s", shaderPath, default_shader_name[i]);
+        fp = fopen(shaderFile, "ab+");
+        fseek(fp, 0, SEEK_END);
+        if (ftell(fp) == 0) {
+            printf("shader file is empty, creating default shader file\n");
+            fwrite(default_shader_data[i], strlen(default_shader_data[i]), sizeof(char), fp);
+        }
+        fclose(fp);
+        free(shaderFile);
+    }
+    free(shaderPath);
 
     // config: parse ini
     dictionary *ini;
@@ -504,6 +546,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     free(monoOption);
     free(p->raw_target);
     free(p->data_format);
+    free(vertexShader);
+    free(fragmentShader);
 
     channels = strdup(iniparser_getstring(ini, "output:channels", "stereo"));
     monoOption = strdup(iniparser_getstring(ini, "output:mono_option", "average"));
@@ -520,14 +564,23 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->sdl_x = iniparser_getint(ini, "output:sdl_x", -1);
     p->sdl_y = iniparser_getint(ini, "output:sdl_y", -1);
 
-    if (strcmp(outputMethod, "sdl") == 0) {
+    if (strcmp(outputMethod, "sdl") == 0 || strcmp(outputMethod, "sdl_glsl") == 0) {
         p->color = strdup(iniparser_getstring(ini, "color:foreground", "#33cccc"));
         p->bcolor = strdup(iniparser_getstring(ini, "color:background", "#111111"));
         p->bar_width = iniparser_getint(ini, "general:bar_width", 20);
         p->bar_spacing = iniparser_getint(ini, "general:bar_spacing", 5);
     }
+    p->continuous_rendering = iniparser_getint(ini, "output:continuous_rendering", 0);
 
     p->sync_updates = iniparser_getint(ini, "output:alacritty_sync", 0);
+
+    vertexShader = strdup(iniparser_getstring(ini, "output:vertex_shader", "pass_through.vert"));
+    fragmentShader =
+        strdup(iniparser_getstring(ini, "output:fragment_shader", "normalized_bars.frag"));
+    p->vertex_shader = malloc(sizeof(char) * PATH_MAX);
+    p->fragment_shader = malloc(sizeof(char) * PATH_MAX);
+    sprintf(p->vertex_shader, "%s/shaders/%s", cava_config_home, vertexShader);
+    sprintf(p->fragment_shader, "%s/shaders/%s", cava_config_home, fragmentShader);
 
     // read & validate: eq
     p->userEQ_keys = iniparser_getsecnkeys(ini, "eq");

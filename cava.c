@@ -45,6 +45,10 @@
 #include "output/sdl_cava.h"
 #endif
 
+#ifdef SDL_GLSL
+#include "output/sdl_glsl.h"
+#endif
+
 #include "output/noritake.h"
 #include "output/raw.h"
 #include "output/terminal_noncurses.h"
@@ -95,6 +99,12 @@ void cleanup(void) {
 #else
         ;
 #endif
+#ifdef SDL_GLSL
+    } else if (output_mode == OUTPUT_SDL_GLSL) {
+        cleanup_sdl_glsl();
+#else
+        ;
+#endif
     }
 }
 
@@ -135,7 +145,7 @@ static bool directory_exists(const char *path) {
 
 #endif
 
-int *monstercat_filter(int *bars, int number_of_bars, int waves, double monstercat) {
+float *monstercat_filter(float *bars, int number_of_bars, int waves, double monstercat) {
 
     int z;
 
@@ -408,8 +418,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         int *bars;
         int *previous_frame;
 
-        int *bars_left, *bars_right;
+        float *bars_left, *bars_right;
         double *cava_out;
+        float *bars_raw;
 
         int height, lines, width, remainder, fp;
         int *dimension_bar, *dimension_value;
@@ -426,6 +437,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         // output: start sdl mode
         if (output_mode == OUTPUT_SDL) {
             init_sdl_window(p.sdl_width, p.sdl_height, p.sdl_x, p.sdl_y);
+            height = p.sdl_height;
+            width = p.sdl_width;
+        }
+#endif
+#ifdef SDL_GLSL
+        if (output_mode == OUTPUT_SDL_GLSL) {
+            init_sdl_glsl_window(p.sdl_width, p.sdl_height, p.sdl_x, p.sdl_y, p.vertex_shader,
+                                 p.fragment_shader);
             height = p.sdl_height;
             width = p.sdl_width;
         }
@@ -455,6 +474,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             // output: get sdl window size
             case OUTPUT_SDL:
                 init_sdl_surface(&width, &height, p.color, p.bcolor);
+                break;
+#endif
+#ifdef SDL_GLSL
+            // output: get sdl window size
+            case OUTPUT_SDL_GLSL:
+                init_sdl_glsl_surface(&width, &height, p.color, p.bcolor);
+                p.bar_width = 1; // not used
+                p.bar_spacing = 1;
                 break;
 #endif
             case OUTPUT_NONCURSES:
@@ -505,6 +532,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                 // width must be hardcoded for raw output.
                 width = 512;
+
+                p.bar_width = 1; // not used
+                p.bar_spacing = 1;
 
                 if (strcmp(p.data_format, "ascii") != 0) {
                     // "binary" or "noritake"
@@ -578,17 +608,19 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                           p.noise_reduction, p.lower_cut_off, p.upper_cut_off);
 
             if (audio.channels == 2) {
-                bars_left = (int *)malloc(number_of_bars / output_channels * sizeof(int));
-                bars_right = (int *)malloc(number_of_bars / output_channels * sizeof(int));
-                memset(bars_left, 0, sizeof(int) * number_of_bars / output_channels);
-                memset(bars_right, 0, sizeof(int) * number_of_bars / output_channels);
+                bars_left = (float *)malloc(number_of_bars / output_channels * sizeof(float));
+                bars_right = (float *)malloc(number_of_bars / output_channels * sizeof(float));
+                memset(bars_left, 0, sizeof(float) * number_of_bars / output_channels);
+                memset(bars_right, 0, sizeof(float) * number_of_bars / output_channels);
             }
             bars = (int *)malloc(number_of_bars * sizeof(int));
+            bars_raw = (float *)malloc(number_of_bars * sizeof(float));
             previous_frame = (int *)malloc(number_of_bars * sizeof(int));
             cava_out = (double *)malloc(number_of_bars * audio.channels / output_channels *
                                         sizeof(double));
 
             memset(bars, 0, sizeof(int) * number_of_bars);
+            memset(bars_raw, 0, sizeof(float) * number_of_bars);
             memset(previous_frame, 0, sizeof(int) * number_of_bars);
             memset(cava_out, 0, sizeof(double) * number_of_bars * audio.channels / output_channels);
 
@@ -782,10 +814,19 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 pthread_mutex_unlock(&audio.lock);
 
                 for (uint32_t n = 0; n < (number_of_bars / output_channels) * audio.channels; n++) {
-                    if (p.autosens)
-                        cava_out[n] *= *dimension_value;
-                    else
-                        cava_out[n] *= p.sens;
+                    if (p.autosens) {
+                        if (output_mode != OUTPUT_SDL_GLSL) {
+                            cava_out[n] *= *dimension_value;
+                        }
+                    } else {
+                        // cava_out[n] *= p.sens;
+                    }
+                    if (output_mode == OUTPUT_SDL_GLSL) {
+                        if (cava_out[n] > 1.0)
+                            cava_out[n] = 1.0;
+                        else if (cava_out[n] < 0.0)
+                            cava_out[n] = 0.0;
+                    }
                 }
 
                 if (audio.channels == 2) {
@@ -806,7 +847,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         if (p.userEQ_enabled)
                             cava_out[n] *=
                                 p.userEQ[(int)floor(((double)n) * userEQ_keys_to_bars_ratio)];
-                        bars[n] = cava_out[n];
+                        bars_raw[n] = cava_out[n];
                     }
                 }
 
@@ -818,7 +859,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         bars_right = monstercat_filter(bars_right, number_of_bars / 2, p.waves,
                                                        p.monstercat);
                     } else {
-                        bars = monstercat_filter(bars, number_of_bars, p.waves, p.monstercat);
+                        bars_raw =
+                            monstercat_filter(bars_raw, number_of_bars, p.waves, p.monstercat);
                     }
                 }
                 if (audio.channels == 2) {
@@ -827,15 +869,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         for (int n = 0; n < number_of_bars; n++) {
                             if (n < number_of_bars / 2) {
                                 if (p.reverse) {
-                                    bars[n] = bars_left[n];
+                                    bars_raw[n] = bars_left[n];
                                 } else {
-                                    bars[n] = bars_left[number_of_bars / 2 - n - 1];
+                                    bars_raw[n] = bars_left[number_of_bars / 2 - n - 1];
                                 }
                             } else {
                                 if (p.reverse) {
-                                    bars[n] = bars_right[number_of_bars - n - 1];
+                                    bars_raw[n] = bars_right[number_of_bars - n - 1];
                                 } else {
-                                    bars[n] = bars_right[n - number_of_bars / 2];
+                                    bars_raw[n] = bars_right[n - number_of_bars / 2];
                                 }
                             }
                         }
@@ -844,30 +886,39 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         for (int n = 0; n < number_of_bars; n++) {
                             if (p.reverse) {
                                 if (p.mono_opt == AVERAGE) {
-                                    bars[number_of_bars - n - 1] =
+                                    bars_raw[number_of_bars - n - 1] =
                                         (bars_left[n] + bars_right[n]) / 2;
                                 } else if (p.mono_opt == LEFT) {
-                                    bars[number_of_bars - n - 1] = bars_left[n];
+                                    bars_raw[number_of_bars - n - 1] = bars_left[n];
                                 } else if (p.mono_opt == RIGHT) {
-                                    bars[number_of_bars - n - 1] = bars_right[n];
+                                    bars_raw[number_of_bars - n - 1] = bars_right[n];
                                 }
                             } else {
                                 if (p.mono_opt == AVERAGE) {
-                                    bars[n] = (bars_left[n] + bars_right[n]) / 2;
+                                    bars_raw[n] = (bars_left[n] + bars_right[n]) / 2;
                                 } else if (p.mono_opt == LEFT) {
-                                    bars[n] = bars_left[n];
+                                    bars_raw[n] = bars_left[n];
                                 } else if (p.mono_opt == RIGHT) {
-                                    bars[n] = bars_right[n];
+                                    bars_raw[n] = bars_right[n];
                                 }
                             }
                         }
                     }
                 }
 
+                int re_paint = 0;
                 for (int n = 0; n < number_of_bars; n++) {
+                    bars[n] = bars_raw[n];
                     // zero values causes divided by zero segfault (if not raw)
                     if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE && bars[n] < 1)
                         bars[n] = 1;
+
+                    if (output_mode == OUTPUT_SDL_GLSL)
+                        bars[n] =
+                            bars_raw[n] * 1000; // values are 0-1, only used to check for changes
+
+                    if (bars[n] != previous_frame[n])
+                        re_paint = 1;
 #ifndef NDEBUG
                     mvprintw(n, 0, "%d: f:%f->%f (%d->%d), eq:\
 						%15e, peak:%d \n",
@@ -920,6 +971,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     rc = draw_sdl(number_of_bars, p.bar_width, p.bar_spacing, remainder,
                                   *dimension_value, bars, previous_frame, frame_time_msec,
                                   p.orientation);
+
+                    break;
+#endif
+#ifdef SDL_GLSL
+                case OUTPUT_SDL_GLSL:
+                    rc = draw_sdl_glsl(number_of_bars, bars_raw, frame_time_msec, re_paint,
+                                       p.continuous_rendering);
                     break;
 #endif
                 case OUTPUT_NONCURSES:
