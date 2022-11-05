@@ -76,7 +76,7 @@ void init_sdl_glsl_window(int width, int height, int x, int y, char *const verte
     uniform_bars_count = glGetUniformLocation(shading_program, "bars_count");
     uniform_res = glGetUniformLocation(shading_program, "u_resolution");
     uniform_bg_col = glGetUniformLocation(shading_program, "bg_color");
-    uniform_fg_col = glGetUniformLocation(shading_program, "fg_color_red");
+    uniform_fg_col = glGetUniformLocation(shading_program, "fg_color");
     glUniform3f(uniform_res, (float)width, (float)height, 0.0f);
 
     if (glGetError() != 0) {
@@ -90,12 +90,12 @@ void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string,
     struct colors color = {0};
 
     parse_color(bg_color_string, &color);
-    glUniform3f(uniform_bg_col, (float)color.R / 255.0, (float)color.R / 255.0,
-                (float)color.R / 255.0);
+    glUniform3f(uniform_bg_col, (float)color.R / 255.0, (float)color.G / 255.0,
+                (float)color.B / 255.0);
 
     parse_color(fg_color_string, &color);
-    glUniform3f(uniform_fg_col, (float)color.R / 255.0, (float)color.R / 255.0,
-                (float)color.R / 255.0);
+    glUniform3f(uniform_fg_col, (float)color.R / 255.0, (float)color.G / 255.0,
+                (float)color.B / 255.0);
 
     SDL_GetWindowSize(glWindow, w, h);
     glUniform3f(uniform_res, (float)*w, (float)*h, 0.0f);

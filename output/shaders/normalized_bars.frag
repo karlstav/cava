@@ -11,8 +11,8 @@ uniform int bars_count;    // number of bars (left + right) (configurable)
 uniform vec3 u_resolution; // window resolution, not used here
 
 //colors, configurable in cava config file
-uniform vec3 bg_color; // background color(r,g,b) (0.0 - 1.0), not used here
-uniform vec3 fg_color; // foreground color, not used here
+uniform vec3 fg_color; // foreground color(r,g,b) (0.0 - 1.0)
+uniform vec3 bg_color; // background color, not used here
 
 float normalize_C(float x, float x_min, float x_max, float r_min, float r_max )
 {
@@ -31,9 +31,9 @@ void main()
     float x = normalize_C(fragCoord.y, 1.0, -1.0, 0.0, bars[bar]);
 
     // set color
-    fragColor.r=0;
-    fragColor.g=x;
-    fragColor.b=x*0.9;
+    fragColor.r=fg_color.x*x;
+    fragColor.g=fg_color.y*x;
+    fragColor.b=fg_color.z*x;
     fragColor.a=1.0;
 
 }
