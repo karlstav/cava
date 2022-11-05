@@ -480,8 +480,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             // output: get sdl window size
             case OUTPUT_SDL_GLSL:
                 init_sdl_glsl_surface(&width, &height, p.color, p.bcolor);
-                p.bar_width = 1; // not used
-                p.bar_spacing = 1;
                 break;
 #endif
             case OUTPUT_NONCURSES:

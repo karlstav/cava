@@ -570,6 +570,11 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         p->bar_width = iniparser_getint(ini, "general:bar_width", 20);
         p->bar_spacing = iniparser_getint(ini, "general:bar_spacing", 5);
     }
+    if (strcmp(outputMethod, "sdl_glsl") == 0) {
+        p->bar_width = iniparser_getint(ini, "general:bar_width", 1);
+        p->bar_spacing = iniparser_getint(ini, "general:bar_spacing", 0);
+    }
+
     p->continuous_rendering = iniparser_getint(ini, "output:continuous_rendering", 0);
 
     p->sync_updates = iniparser_getint(ini, "output:alacritty_sync", 0);

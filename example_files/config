@@ -19,7 +19,7 @@
 # 200 means double height. Accepts only non-negative values.
 ; sensitivity = 100
 
-# The number of bars (0-200). 0 sets it to auto (fill up console).
+# The number of bars (0-512). 0 sets it to auto (fill up console).
 # Bars' width and space between bars in number of characters.
 ; bars = 0
 ; bar_width = 2
@@ -30,6 +30,10 @@
 # For SDL width and space between bars is in pixels, defaults are:
 ; bar_width = 20
 ; bar_spacing = 5
+
+# sdl_glsl have these default values, they are only used to calulate max number of bars.
+; bar_width = 1
+; bar_spacing = 0
 
 
 # Lower and higher cutoff frequencies for lowest and highest bars
