@@ -475,7 +475,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     sprintf(shaderPath, "%s/shaders", cava_config_home);
     mkdir(shaderPath, 0777);
 
-    for (int i = i; i < NUMBER_OF_SHADERS; i++) {
+    for (int i = 0; i < NUMBER_OF_SHADERS; i++) {
         char *shaderFile = malloc(sizeof(char) * PATH_MAX);
         sprintf(shaderFile, "%s/%s", shaderPath, default_shader_name[i]);
         fp = fopen(shaderFile, "ab+");
