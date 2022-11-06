@@ -51,6 +51,16 @@ void init_sdl_glsl_window(int width, int height, int x, int y, char *const verte
         fprintf(stderr, "SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         exit(1);
     }
+
+#ifdef __APPLE__
+    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,1);
+#endif
+
     glWindow = SDL_CreateWindow("cava", x, y, width, height,
                                 SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (glWindow == NULL) {
