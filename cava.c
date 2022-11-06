@@ -903,13 +903,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         }
                     }
                 }
-
+#ifdef SDL_GLSL
                 int re_paint = 0;
+#endif
                 for (int n = 0; n < number_of_bars; n++) {
                     bars[n] = bars_raw[n];
                     // zero values causes divided by zero segfault (if not raw)
                     if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE && bars[n] < 1)
                         bars[n] = 1;
+#ifdef SDL_GLSL
 
                     if (output_mode == OUTPUT_SDL_GLSL)
                         bars[n] =
@@ -917,6 +919,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                     if (bars[n] != previous_frame[n])
                         re_paint = 1;
+#endif
+
 #ifndef NDEBUG
                     mvprintw(n, 0, "%d: f:%f->%f (%d->%d), eq:\
 						%15e, peak:%d \n",
