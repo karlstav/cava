@@ -54,6 +54,7 @@ Required components:
 * [FFTW](http://www.fftw.org/)
 * libtool
 * automake
+* autoconf-archive (needed for setting up OpenGL)
 * build-essentials
 * [iniparser](https://github.com/ndevilla/iniparser)
 
@@ -77,7 +78,7 @@ All the requirements can be installed easily in all major distros:
 
 Debian Buster or higher/Ubuntu 18.04 or higher:
 
-    apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake libiniparser-dev libsdl2-2.0-0 libsdl2-dev
+    apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev
 
 
 older Debian/Ubuntu:
@@ -87,17 +88,17 @@ older Debian/Ubuntu:
 
 ArchLinux:
 
-    pacman -S base-devel fftw ncurses alsa-lib iniparser pulseaudio
+    pacman -S base-devel fftw ncurses alsa-lib iniparser pulseaudio autoconf-archive
 
 
 openSUSE:
 
-    zypper install alsa-devel ncurses-devel fftw3-devel libpulse-devel libtool
+    zypper install alsa-devel ncurses-devel fftw3-devel libpulse-devel libtool autoconf-archive
 
 
 Fedora:
 
-    dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool autoconf-archive
 
     
 macOS:
@@ -108,7 +109,7 @@ First install homebrew if you have't already:
 
 Then install prerequisites:
 
-    brew install fftw ncurses libtool automake portaudio
+    brew install fftw ncurses libtool automake autoconf-archive portaudio
     
 Then fix macOS not finding libtool and ncursesw:
 
