@@ -27,7 +27,7 @@ void main()
     int bar = int(bars_count * fragCoord.x);
 
     // create a normal along the y axis based on the bar height
-    float x = normalize_C(fragCoord.y, 1.0, -1.0, 0.0, bars[bar]);
+    float x = normalize_C(fragCoord.y, 1.0, 0.0, 0.0, bars[bar]);
 
     // set color
     fragColor.r=fg_color.x*x;
