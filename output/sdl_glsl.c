@@ -13,9 +13,7 @@ SDL_Window *glWindow = NULL;
 GLuint shading_program;
 GLint uniform_bars;
 GLint uniform_bars_count;
-GLint uniform_res;
-GLint uniform_bg_col;
-GLint uniform_fg_col;
+
 SDL_GLContext *glContext = NULL;
 
 struct colors {
@@ -53,12 +51,9 @@ void init_sdl_glsl_window(int width, int height, int x, int y, char *const verte
     }
 
 #ifdef __APPLE__
-    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,1);
 #endif
 
     glWindow = SDL_CreateWindow("cava", x, y, width, height,
@@ -72,6 +67,7 @@ void init_sdl_glsl_window(int width, int height, int x, int y, char *const verte
         fprintf(stderr, "GLContext could not be created! SDL Error: %s\n", SDL_GetError());
         exit(1);
     }
+
     shading_program = custom_shaders(vertex_shader, fragmnet_shader);
     glReleaseShaderCompiler();
     if (shading_program == 0) {
@@ -81,15 +77,46 @@ void init_sdl_glsl_window(int width, int height, int x, int y, char *const verte
 
     glUseProgram(shading_program);
 
+    GLint gVertexPos2DLocation = -1;
+
+    gVertexPos2DLocation = glGetAttribLocation(shading_program, "vertexPosition_modelspace");
+    if (gVertexPos2DLocation == -1) {
+        fprintf(stderr, "could not find vertex position shader variable!\n");
+        exit(1);
+    }
+
+    glClearColor(0.f, 0.f, 0.f, 1.f);
+
+    GLfloat vertexData[] = {-1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f};
+
+    GLuint indexData[] = {0, 1, 2, 3};
+
+    GLuint gVBO = 0;
+    glGenBuffers(1, &gVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, gVBO);
+    glBufferData(GL_ARRAY_BUFFER, 2 * 4 * sizeof(GLfloat), vertexData, GL_STATIC_DRAW);
+
+    GLuint gIBO = 0;
+    glGenBuffers(1, &gIBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 4 * sizeof(GLuint), indexData, GL_STATIC_DRAW);
+
+    GLuint gVAO = 0;
+    glGenVertexArrays(1, &gVAO);
+    glBindVertexArray(gVAO);
+    glEnableVertexAttribArray(gVertexPos2DLocation);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gVBO);
+    glVertexAttribPointer(gVertexPos2DLocation, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), NULL);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
+
     uniform_bars = glGetUniformLocation(shading_program, "bars");
     uniform_bars_count = glGetUniformLocation(shading_program, "bars_count");
-    uniform_res = glGetUniformLocation(shading_program, "u_resolution");
-    uniform_bg_col = glGetUniformLocation(shading_program, "bg_color");
-    uniform_fg_col = glGetUniformLocation(shading_program, "fg_color");
-    glUniform3f(uniform_res, (float)width, (float)height, 0.0f);
 
-    if (glGetError() != 0) {
-        fprintf(stderr, "glError: %#08x\n", glGetError());
+    int error = glGetError();
+    if (error != 0) {
+        fprintf(stderr, "glError on init: %d\n", error);
         exit(1);
     }
 }
@@ -98,14 +125,20 @@ void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string,
                            char *const bg_color_string) {
     struct colors color = {0};
 
+    GLint uniform_bg_col;
+    uniform_bg_col = glGetUniformLocation(shading_program, "bg_color");
     parse_color(bg_color_string, &color);
     glUniform3f(uniform_bg_col, (float)color.R / 255.0, (float)color.G / 255.0,
                 (float)color.B / 255.0);
 
+    GLint uniform_fg_col;
+    uniform_fg_col = glGetUniformLocation(shading_program, "fg_color");
     parse_color(fg_color_string, &color);
     glUniform3f(uniform_fg_col, (float)color.R / 255.0, (float)color.G / 255.0,
                 (float)color.B / 255.0);
 
+    GLint uniform_res;
+    uniform_res = glGetUniformLocation(shading_program, "u_resolution");
     SDL_GetWindowSize(glWindow, w, h);
     glUniform3f(uniform_res, (float)*w, (float)*h, 0.0f);
 }
@@ -120,8 +153,8 @@ int draw_sdl_glsl(int bars_count, const float bars[], int frame_time, int re_pai
         glUniform1fv(uniform_bars, bars_count, bars);
         glUniform1i(uniform_bars_count, bars_count);
 
-        glClear(GL_COLOR_BUFFER_BIT);
-        glRectf(-1.0, -1.0, 1.0, 1.0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
         SDL_GL_SwapWindow(glWindow);
     }
     SDL_Delay(frame_time);
@@ -129,7 +162,7 @@ int draw_sdl_glsl(int bars_count, const float bars[], int frame_time, int re_pai
     SDL_PollEvent(&event);
     if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
         glViewport(0, 0, event.window.data1, event.window.data2);
-        glUniform3f(uniform_res, event.window.data1, event.window.data2, 0.0f);
+        rc = -1;
     }
     if (event.type == SDL_QUIT)
         rc = -2;
