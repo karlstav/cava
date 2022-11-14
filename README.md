@@ -1,9 +1,13 @@
 C.A.V.A. [![Build Status](https://github.com/karlstav/cava/workflows/build-and-test/badge.svg)](https://github.com/karlstav/cava/actions)
 ====================
 
-**C**onsole-based **A**udio **V**isualizer for **A**LSA
+**C**ross-platform **A**udio **V**isu**a**lizer for the desktop
 
-also supports audio input from Pulseaudio, fifo (mpd), sndio, squeezelite and portaudio (macOS).
+works on:
+* Linux
+* Free-BSD
+* macOS
+* Windows
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 

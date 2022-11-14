@@ -1,13 +1,19 @@
-#define GL_GLEXT_PROTOTYPES 1
+#define GL_GLEXT_PROTOTYPES 0
+#ifdef WIN64
+#include <SDL.h>
+#include <GL/glew.h>
+#else
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
-
+#endif
 #include "output/sdl_glsl.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
 
 #include "util.h"
+
+
 
 SDL_Window *glWindow = NULL;
 GLuint shading_program;
@@ -34,7 +40,7 @@ GLuint custom_shaders(const char *, const char *);
 
 const char *read_file(const char *);
 
-GLuint compile_shader(GLenum type, GLsizei, const char **);
+GLuint compile_shader(GLenum type, const char **);
 GLuint program_check(GLuint);
 
 void init_sdl_glsl_window(int width, int height, int x, int y, char *const vertex_shader,
@@ -68,13 +74,29 @@ void init_sdl_glsl_window(int width, int height, int x, int y, char *const verte
         exit(1);
     }
 
+#ifdef WIN64
+    // Initialize GLEW
+    glewExperimental = GL_TRUE;
+    GLenum glewError = glewInit();
+    if (glewError != GLEW_OK) {
+        printf(stderr, "Error initializing GLEW! %s\n", glewGetErrorString(glewError));
+        exit(1);
+    }
+#endif
+
+    // Use Vsync
+    if (SDL_GL_SetSwapInterval(1) < 0) {
+        printf("Warning: Unable to set VSync! SDL Error: %s\n", SDL_GetError());
+    }
+
+
     shading_program = custom_shaders(vertex_shader, fragmnet_shader);
     glReleaseShaderCompiler();
     if (shading_program == 0) {
         fprintf(stderr, "could not compile shaders: %s\n", SDL_GetError());
         exit(1);
     }
-
+    
     glUseProgram(shading_program);
 
     GLint gVertexPos2DLocation = -1;
@@ -231,21 +253,21 @@ GLuint custom_shaders(const char *vsPath, const char *fsPath) {
 GLuint get_shader(GLenum eShaderType, const char *filename) {
 
     const char *shaderSource = read_file(filename);
-    GLuint shader = compile_shader(eShaderType, 1, &shaderSource);
+    GLuint shader = compile_shader(eShaderType, &shaderSource);
     return shader;
 }
 
-GLuint compile_shader(GLenum type, GLsizei nsources, const char **sources) {
+GLuint compile_shader(GLenum type, const char **sources) {
 
     GLuint shader;
     GLint success, len;
-    GLsizei i, srclens[nsources];
+    GLsizei i, srclens[1];
 
-    for (i = 0; i < nsources; ++i)
-        srclens[i] = (GLsizei)strlen(sources[i]);
+ 
+   srclens[0] = (GLsizei)strlen(sources[0]);
 
     shader = glCreateShader(type);
-    glShaderSource(shader, nsources, sources, srclens);
+    glShaderSource(shader, 1, sources, srclens);
     glCompileShader(shader);
 
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);

@@ -31,6 +31,19 @@
 #define HAS_SNDIO false
 #endif
 
+#ifdef WIN64
+#define HAS_WINSCAP true
+#define SDL true
+#define HAS_FIFO false
+#define HAS_SHMEM false
+#define PATH_MAX 260
+#else
+#define HAS_WINSCAP false
+#define HAS_FIFO true
+#define HAS_SHMEM true
+
+#endif
+
 // These are in order of least-favourable to most-favourable choices, in case
 // multiple are supported and configured.
 enum input_method {
@@ -40,7 +53,8 @@ enum input_method {
     INPUT_PULSE,
     INPUT_SNDIO,
     INPUT_SHMEM,
-    INPUT_MAX
+    INPUT_WINSCAP,
+    INPUT_MAX,
 };
 
 enum output_method {
@@ -64,7 +78,7 @@ struct config_params {
     char *color, *bcolor, *raw_target, *audio_source,
         /**gradient_color_1, *gradient_color_2,*/ **gradient_colors, *data_format, *vertex_shader,
         *fragment_shader;
-    ;
+
     char bar_delim, frame_delim;
     double monstercat, integral, gravity, ignore, sens, noise_reduction;
     unsigned int lower_cut_off, upper_cut_off;

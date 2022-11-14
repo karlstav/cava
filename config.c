@@ -1,10 +1,11 @@
 #include "config.h"
-#define INCBIN_SILENCE_BITCODE_WARNING
-#include "third_party/incbin.h"
+
 #include "util.h"
 
 #include <ctype.h>
+#ifndef WIN64
 #include <iniparser.h>
+#endif
 #include <math.h>
 
 #ifdef SNDIO
@@ -15,19 +16,33 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 
+
+#define NUMBER_OF_SHADERS 2
+
+#ifdef WIN64
+#include "Windows.h"
+#define PATH_MAX 260
+#define PACKAGE "cava"
+#define _CRT_SECURE_NO_WARNINGS 1
+#else
+#define INCBIN_SILENCE_BITCODE_WARNING
+#include "third_party/incbin.h"
+
 INCTXT(ConfigFile, "example_files/config");
 
 // add your custom shaders to be installed here
-#define NUMBER_OF_SHADERS 2
 INCTXT(normalized_barsfrag, "output/shaders/normalized_bars.frag");
 INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
 
 // INCTXT will create a char g<name>Data
 const char *default_shader_data[NUMBER_OF_SHADERS] = {gnormalized_barsfragData,
                                                       gpass_throughvertData};
-
+#endif // WIN64
 // name of the installed shader file, technically does not have to be the same as in the source
 const char *default_shader_name[NUMBER_OF_SHADERS] = {"normalized_bars.frag", "pass_through.vert"};
+
+
+
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
 
@@ -35,19 +50,20 @@ enum input_method default_methods[] = {
     INPUT_FIFO,
     INPUT_PORTAUDIO,
     INPUT_ALSA,
-    INPUT_PULSE,
+    INPUT_PULSE, 
+    INPUT_WINSCAP,
 };
 
 char *outputMethod, *orientation, *channels, *xaxisScale, *monoOption, *fragmentShader,
     *vertexShader;
 
 const char *input_method_names[] = {
-    "fifo", "portaudio", "alsa", "pulse", "sndio", "shmem",
+    "fifo", "portaudio", "alsa", "pulse", "sndio", "shmem", "winscap",
 };
 
 const bool has_input_method[] = {
-    true, /** Always have at least FIFO and shmem input. */
-    HAS_PORTAUDIO, HAS_ALSA, HAS_PULSE, HAS_SNDIO, true,
+    HAS_FIFO, /** Always have at least FIFO and shmem input. */
+    HAS_PORTAUDIO, HAS_ALSA, HAS_PULSE, HAS_SNDIO, HAS_SHMEM, HAS_WINSCAP,
 };
 
 enum input_method input_method_by_name(const char *str) {
@@ -68,7 +84,6 @@ void write_errorf(void *err, const char *fmt, ...) {
         vsnprintf((char *)error->message + error->length, MAX_ERROR_LEN - error->length, fmt, args);
     va_end(args);
 }
-
 int validate_color(char *checkColor, void *params, void *err) {
     struct config_params *p = (struct config_params *)params;
     struct error_s *error = (struct error_s *)err;
@@ -173,9 +188,21 @@ bool validate_colors(void *params, void *err) {
     if (p->bcolor[0] == '#')
         p->bgcol = 8;
     // default if invalid
+    if (p->gradient) {
+
+        if (p->gradient_count < 2) {
+            write_errorf(error, "\nAtleast two colors must be given as gradient!\n");
+            return false;
+        }
+        if (p->gradient_count > 8) {
+            write_errorf(error, "\nMaximum 8 colors can be specified as gradient!\n");
+            return false;
+        }
+    }
 
     return true;
 }
+
 
 bool validate_config(struct config_params *p, struct error_s *error) {
     // validate: output method
@@ -347,6 +374,7 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     }
 
     // validate: noise_reduction
+    p->noise_reduction /= 100;
     if (p->noise_reduction < 0) {
         p->noise_reduction = 0;
     } else if (p->noise_reduction > 1) {
@@ -365,51 +393,7 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     // setting sens
     p->sens = p->sens / 100;
 
-    return true;
-}
-
-bool load_colors(struct config_params *p, dictionary *ini, void *err) {
-    struct error_s *error = (struct error_s *)err;
-
-    free(p->color);
-    free(p->bcolor);
-
-    p->color = strdup(iniparser_getstring(ini, "color:foreground", "default"));
-    p->bcolor = strdup(iniparser_getstring(ini, "color:background", "default"));
-
-    p->gradient = iniparser_getint(ini, "color:gradient", 0);
-    if (p->gradient) {
-        for (int i = 0; i < p->gradient_count; ++i) {
-            free(p->gradient_colors[i]);
-        }
-        p->gradient_count = iniparser_getint(ini, "color:gradient_count", 8);
-        if (p->gradient_count < 2) {
-            write_errorf(error, "\nAtleast two colors must be given as gradient!\n");
-            return false;
-        }
-        if (p->gradient_count > 8) {
-            write_errorf(error, "\nMaximum 8 colors can be specified as gradient!\n");
-            return false;
-        }
-        p->gradient_colors = (char **)malloc(sizeof(char *) * p->gradient_count * 9);
-        p->gradient_colors[0] =
-            strdup(iniparser_getstring(ini, "color:gradient_color_1", "#59cc33"));
-        p->gradient_colors[1] =
-            strdup(iniparser_getstring(ini, "color:gradient_color_2", "#80cc33"));
-        p->gradient_colors[2] =
-            strdup(iniparser_getstring(ini, "color:gradient_color_3", "#a6cc33"));
-        p->gradient_colors[3] =
-            strdup(iniparser_getstring(ini, "color:gradient_color_4", "#cccc33"));
-        p->gradient_colors[4] =
-            strdup(iniparser_getstring(ini, "color:gradient_color_5", "#cca633"));
-        p->gradient_colors[5] =
-            strdup(iniparser_getstring(ini, "color:gradient_color_6", "#cc8033"));
-        p->gradient_colors[6] =
-            strdup(iniparser_getstring(ini, "color:gradient_color_7", "#cc5933"));
-        p->gradient_colors[7] =
-            strdup(iniparser_getstring(ini, "color:gradient_color_8", "#cc3333"));
-    }
-    return true;
+    return validate_colors(p, error);
 }
 
 bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colorsOnly,
@@ -417,16 +401,25 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     FILE *fp;
     char cava_config_home[PATH_MAX / 2];
 
+
+
+
     // config: creating path to default config file
     char *configHome = getenv("XDG_CONFIG_HOME");
     if (configHome != NULL) {
         sprintf(cava_config_home, "%s/%s/", configHome, PACKAGE);
         mkdir(cava_config_home, 0777);
     } else {
+#ifndef WIN64
         configHome = getenv("HOME");
+
+#else
+        configHome = getenv("userprofile");
+#endif
         if (configHome != NULL) {
             sprintf(cava_config_home, "%s/%s/", configHome, ".config");
             mkdir(cava_config_home, 0777);
+
             sprintf(cava_config_home, "%s/%s/%s/", configHome, ".config", PACKAGE);
             mkdir(cava_config_home, 0777);
         } else {
@@ -444,8 +437,15 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         if (fp) {
             fseek(fp, 0, SEEK_END);
             if (ftell(fp) == 0) {
+#ifndef WIN64
                 printf("config file is empty, creating default config file\n");
                 fwrite(gConfigFileData, gConfigFileSize - 1, sizeof(char), fp);
+#else
+                printf("WARNING: config file is empty, windows does not support automatic default config "
+                       "generation.\n An empty file was created at %s, overwrite with the default "
+                       "config from the source to get a complete and documented list of options.\n\n",
+                       configPath);
+#endif
             }
             fclose(fp);
         } else {
@@ -478,27 +478,108 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     for (int i = 0; i < NUMBER_OF_SHADERS; i++) {
         char *shaderFile = malloc(sizeof(char) * PATH_MAX);
         sprintf(shaderFile, "%s/%s", shaderPath, default_shader_name[i]);
+
+#ifndef WIN64
         fp = fopen(shaderFile, "ab+");
         fseek(fp, 0, SEEK_END);
         if (ftell(fp) == 0) {
             printf("shader file is empty, creating default shader file\n");
             fwrite(default_shader_data[i], strlen(default_shader_data[i]), sizeof(char), fp);
+
         }
         fclose(fp);
         free(shaderFile);
+#else
+            printf("WARNING: shader file is empty, windows does not support automatic default shader "
+                   "generation.\n You should copy the shader %s from the source to %s\n\n",
+               default_shader_name[i], shaderPath);
+#endif
     }
     free(shaderPath);
-
+#ifndef WIN64
     // config: parse ini
     dictionary *ini;
     ini = iniparser_load(configPath);
 
-    if (colorsOnly) {
-        if (!load_colors(p, ini, error)) {
-            return false;
-        }
+    free(p->color);
+    free(p->bcolor);
+
+    p->color = strdup(iniparser_getstring(ini, "color:foreground", "default"));
+    p->bcolor = strdup(iniparser_getstring(ini, "color:background", "default"));
+
+    p->gradient = iniparser_getint(ini, "color:gradient", 0);
+    p->gradient_count = iniparser_getint(ini, "color:gradient_count", 8);
+    for (int i = 0; i < 8; ++i) {
+        free(p->gradient_colors[i]);
+    }
+        p->gradient_colors = (char **)malloc(sizeof(char *) * p->gradient_count * 9);
+        p->gradient_colors[0] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_1", "#59cc33"));
+        p->gradient_colors[1] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_2", "#80cc33"));
+        p->gradient_colors[2] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_3", "#a6cc33"));
+        p->gradient_colors[3] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_4", "#cccc33"));
+        p->gradient_colors[4] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_5", "#cca633"));
+        p->gradient_colors[5] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_6", "#cc8033"));
+        p->gradient_colors[6] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_7", "#cc5933"));
+        p->gradient_colors[7] =
+            strdup(iniparser_getstring(ini, "color:gradient_color_8", "#cc3333"));
+
+#else
+    outputMethod = malloc(sizeof(char) * 32);
+    p->color = malloc(sizeof(char) * 14);
+    p->bcolor = malloc(sizeof(char) * 14);
+    p->audio_source = malloc(sizeof(char) * 129);
+    p->gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
+    for (int i = 0; i < 8; ++i) {
+        p->gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);
+    }
+    xaxisScale = malloc(sizeof(char) * 32);
+    channels = malloc(sizeof(char) * 32);
+    monoOption = malloc(sizeof(char) * 32);
+    p->raw_target = malloc(sizeof(char) * 129);
+    p->data_format = malloc(sizeof(char) * 32);
+    channels = malloc(sizeof(char) * 32);
+    orientation = malloc(sizeof(char) * 32);
+    vertexShader = malloc(sizeof(char) * PATH_MAX / 2);
+    p->vertex_shader = malloc(sizeof(char) * PATH_MAX);
+    fragmentShader = malloc(sizeof(char) * PATH_MAX / 2);
+    p->fragment_shader = malloc(sizeof(char) * PATH_MAX);
+
+    GetPrivateProfileString("color", "foreground", "#33cccc", p->color, 9, configPath);
+    GetPrivateProfileString("color", "background", "#111111", p->bcolor, 9, configPath);
+    p->gradient = GetPrivateProfileInt("color", "gradient", 0, configPath);
+    p->gradient_count = GetPrivateProfileInt("color", "gradient_count", 8, configPath);
+
+    GetPrivateProfileString("color", "gradient_color_1", "#59cc33", p->gradient_colors[0], 9,
+                            configPath);
+    GetPrivateProfileString("color", "gradient_color_2", "#80cc33", p->gradient_colors[1], 9,
+                            configPath);
+    GetPrivateProfileString("color", "gradient_color_3", "#a6cc33", p->gradient_colors[2], 9,
+                            configPath);
+    GetPrivateProfileString("color", "gradient_color_4", "#cccc33", p->gradient_colors[3], 9,
+                            configPath);
+    GetPrivateProfileString("color", "gradient_color_5", "#cca633", p->gradient_colors[4], 9,
+                            configPath);
+    GetPrivateProfileString("color", "gradient_color_6", "#cc8033", p->gradient_colors[5], 9,
+                            configPath);
+    GetPrivateProfileString("color", "gradient_color_7", "#cc5933", p->gradient_colors[6], 9,
+                            configPath);
+    GetPrivateProfileString("color", "gradient_color_8", "#cc3333", p->gradient_colors[7], 9,
+                            configPath);
+
+
+
+#endif
+            if (colorsOnly) {
         return validate_colors(p, error);
     }
+#ifndef WIN64
 
 #ifdef NCURSES
     outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
@@ -582,10 +663,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     vertexShader = strdup(iniparser_getstring(ini, "output:vertex_shader", "pass_through.vert"));
     fragmentShader =
         strdup(iniparser_getstring(ini, "output:fragment_shader", "normalized_bars.frag"));
-    p->vertex_shader = malloc(sizeof(char) * PATH_MAX);
-    p->fragment_shader = malloc(sizeof(char) * PATH_MAX);
-    sprintf(p->vertex_shader, "%s/shaders/%s", cava_config_home, vertexShader);
-    sprintf(p->fragment_shader, "%s/shaders/%s", cava_config_home, fragmentShader);
+
 
     // read & validate: eq
     p->userEQ_keys = iniparser_getsecnkeys(ini, "eq");
@@ -666,8 +744,85 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
                      input_method_names[p->input]);
         return false;
     }
+    iniparser_freedict(ini);
+    #else
+
+    GetPrivateProfileString("output", "method", "sdl", outputMethod, 16, configPath);
+
+    p->waves = GetPrivateProfileInt("smoothing", "waves", 0, configPath);
+    p->noise_reduction = GetPrivateProfileInt("smoothing", "noise_reduction", 77, configPath);
+    GetPrivateProfileString("output", "xaxis", "none", xaxisScale, 16, configPath);
+    GetPrivateProfileString("output", "orientation", "bottom", orientation, 16, configPath);
+
+
+    p->fixedbars = GetPrivateProfileInt("general", "bars", 0, configPath);
+    p->bar_width = GetPrivateProfileInt("general", "bar_width", 20, configPath);
+    p->bar_spacing = GetPrivateProfileInt("general", "bar_spacing", 5, configPath);
+    p->bar_height = GetPrivateProfileInt("general", "bar_height", 32, configPath);
+    p->framerate = GetPrivateProfileInt("general", "framerate", 60, configPath);
+    p->sens = GetPrivateProfileInt("general", "sensitivity", 100, configPath);
+    p->autosens = GetPrivateProfileInt("general", "autosens", 1, configPath);
+    p->overshoot = GetPrivateProfileInt("general", "overshoot", 20, configPath);
+    p->lower_cut_off = GetPrivateProfileInt("general", "lower_cutoff_freq", 50, configPath);
+    p->upper_cut_off = GetPrivateProfileInt("general", "higher_cutoff_freq", 10000, configPath);
+    p->sleep_timer = GetPrivateProfileInt("general", "sleep_timer", 0, configPath);
+
+
+    GetPrivateProfileString("output", "channels", "stereo", channels, 16, configPath);
+    GetPrivateProfileString("output", "mono_option", "average", monoOption, 16, configPath);
+    p->reverse = GetPrivateProfileInt("output", "reverse", 0, configPath);
+    GetPrivateProfileString("output", "raw_target", "stdout", p->raw_target, 64, configPath);
+    GetPrivateProfileString("output", "data_format", "binary", p->data_format, 16, configPath);
+    p->bar_delim = (char)GetPrivateProfileInt("output", "bar_delimiter", 50, configPath);
+    p->frame_delim = (char)GetPrivateProfileInt("output", "frame_delimiter", 10, configPath);
+    p->ascii_range = GetPrivateProfileInt("output", "ascii_max_range", 1000, configPath);
+    p->bit_format = GetPrivateProfileInt("output", "bit_format", 16, configPath);
+
+    p->sdl_width = GetPrivateProfileInt("output", "sdl_width", 1000, configPath);
+    p->sdl_height = GetPrivateProfileInt("output", "sdl_height", 500, configPath);
+    p->sdl_x = GetPrivateProfileInt("output", "sdl_x", -1, configPath);
+    p->sdl_y = GetPrivateProfileInt("output", "sdl_y", -1, configPath);
+
+    p->sync_updates = GetPrivateProfileInt("output", "alacritty_sync", 0, configPath);
+
+
+    p->userEQ_enabled = 0;
+
+
+    p->input = GetPrivateProfileInt("input", "method", INPUT_WINSCAP, configPath);
+    if (p->input != INPUT_WINSCAP) {
+        write_errorf(error, "cava was built without '%s' input support\n",
+                     input_method_names[p->input]);
+        return false;
+    }
+    GetPrivateProfileString("input", "source", "auto", p->audio_source, 64, configPath);
+
+
+    if (strcmp(outputMethod, "sdl_glsl") == 0) {
+        p->bar_width = GetPrivateProfileInt("general", "bar_width", 1, configPath);
+        p->bar_spacing = GetPrivateProfileInt("general", "bar_spacing", 0, configPath);
+    }
+
+    p->continuous_rendering = GetPrivateProfileInt("output", "continuous_rendering", 0, configPath);
+
+    GetPrivateProfileString("output", "vertex_shader", "pass_through.vert", vertexShader, 64,
+                            configPath);
+    GetPrivateProfileString("output", "fragment_shader", "normalized_bars.frag", fragmentShader, 64,
+                            configPath);
+
+    #endif
+
+
+    sprintf(p->vertex_shader, "%s/shaders/%s", cava_config_home, vertexShader);
+    sprintf(p->fragment_shader, "%s/shaders/%s", cava_config_home, fragmentShader);
+
 
     bool result = validate_config(p, error);
-    iniparser_freedict(ini);
+
+
+
     return result;
+    
+
+
 }

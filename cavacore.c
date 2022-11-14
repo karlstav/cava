@@ -203,13 +203,13 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     double frequency_constant = log10((float)lower_cut_off / (float)upper_cut_off) /
                                 (1 / ((float)p->number_of_bars + 1) - 1);
 
-    float relative_cut_off[p->FFTtreblebufferSize];
+    float *relative_cut_off = (float *)malloc((p->number_of_bars + 1) * sizeof(float));
 
     p->bass_cut_off_bar = -1;
     p->treble_cut_off_bar = -1;
     int first_bar = 1;
     int first_treble_bar = 0;
-    int bar_buffer[p->number_of_bars + 1];
+    int *bar_buffer = (int *)malloc((p->number_of_bars + 1) * sizeof(int));
 
     for (int n = 0; n < p->number_of_bars + 1; n++) {
         double bar_distribution_coefficient = frequency_constant * (-1);
@@ -336,7 +336,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
             }
         }
     }
-
+    free(bar_buffer);
+    free(relative_cut_off);
     return p;
 }
 
@@ -532,6 +533,19 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
 
 void cava_destroy(struct cava_plan *p) {
 
+    free(p->input_buffer);
+    free(p->bass_multiplier);
+    free(p->mid_multiplier);
+    free(p->treble_multiplier);
+    free(p->eq);
+    free(p->cut_off_frequency);
+    free(p->FFTbuffer_lower_cut_off);
+    free(p->FFTbuffer_upper_cut_off);
+    free(p->cava_fall);
+    free(p->cava_mem);
+    free(p->cava_peak);
+    free(p->prev_cava_out);
+
     fftw_free(p->in_bass_l);
     fftw_free(p->in_bass_l_raw);
     fftw_free(p->out_bass_l);
@@ -564,16 +578,5 @@ void cava_destroy(struct cava_plan *p) {
         fftw_destroy_plan(p->p_treble_r);
     }
 
-    free(p->input_buffer);
-    free(p->bass_multiplier);
-    free(p->mid_multiplier);
-    free(p->treble_multiplier);
-    free(p->eq);
-    free(p->cut_off_frequency);
-    free(p->FFTbuffer_lower_cut_off);
-    free(p->FFTbuffer_upper_cut_off);
-    free(p->cava_fall);
-    free(p->cava_mem);
-    free(p->cava_peak);
-    free(p->prev_cava_out);
+
 }
