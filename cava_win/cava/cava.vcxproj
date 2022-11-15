@@ -110,7 +110,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);WIN64;SDL;SDL_GLSL;_CRT_SECURE_NO_WARNINGS;_TIMESPEC_DEFINED;NDEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);SDL;SDL_GLSL;_CRT_SECURE_NO_WARNINGS;_TIMESPEC_DEFINED;NDEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\glew-2.2.0-win32\glew-2.2.0\include;C:\SDL2-2.24.2\include;C:\fftw-3.3.5-dll64;C:\Users\karl\cava;C:\Users\karl\iniparser\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>

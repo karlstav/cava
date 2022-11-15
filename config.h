@@ -31,7 +31,7 @@
 #define HAS_SNDIO false
 #endif
 
-#ifdef WIN64
+#ifdef _MSC_VER
 #define HAS_WINSCAP true
 #define SDL true
 #define HAS_FIFO false

@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifndef WIN64
+#ifndef _MSC_VER
 #include <termios.h>
 #include <dirent.h>
 #include <getopt.h>
@@ -25,13 +25,13 @@
 #include <unistd.h>
 #endif
 
-#ifdef WIN64
+#ifdef _MSC_VER
 #include "input/winscap.h"
 #define PATH_MAX 260
 #define PACKAGE "cava"
 #define VERSION 0.8.3
 #define _CRT_SECURE_NO_WARNINGS 1
-#endif // WIN64
+#endif // _MSC_VER
 
 
 #include <signal.h>
@@ -58,7 +58,7 @@
 
 #include "input/common.h"
 
-#ifndef WIN64
+#ifndef _MSC_VER
 #ifdef NCURSES
 #include "output/terminal_bcircle.h"
 #include "output/terminal_ncurses.h"
@@ -108,7 +108,7 @@ void cleanup(void) {
         ;
 #endif
     } else if (output_mode == OUTPUT_NONCURSES) {
-#ifndef WIN64
+#ifndef _MSC_VER
         cleanup_terminal_noncurses();
 #endif
     } else if (output_mode == OUTPUT_SDL) {
@@ -128,7 +128,7 @@ void cleanup(void) {
 
 // general: handle signals
 void sig_handler(int sig_no) {
-#ifndef WIN64
+#ifndef _MSC_VER
 
     if (sig_no == SIGUSR1) {
         should_reload = 1;
@@ -167,7 +167,7 @@ static bool directory_exists(const char *path) {
 #endif
 
 float *monstercat_filter(float *bars, int number_of_bars, int waves, double monstercat) {
-#ifndef WIN64
+#ifndef _MSC_VER
 
     int z;
 
@@ -213,7 +213,7 @@ int main(int argc, char **argv) {
     // general: handle command-line arguments
     char configPath[PATH_MAX];
     configPath[0] = '\0';
-#ifndef WIN64
+#ifndef _MSC_VER
     // general: handle Ctrl+C
     struct sigaction action;
     memset(&action, 0, sizeof(action));
@@ -243,7 +243,7 @@ Keys:\n\
         q         Quit\n\
 \n\
 as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n";
-#ifndef WIN64
+#ifndef _MSC_VER
 
     int c;
     while ((c = getopt(argc, argv, "p:vh")) != -1) {
@@ -284,7 +284,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         int inAtty;
 
         output_mode = p.output;
-#ifndef WIN64
+#ifndef _MSC_VER
         if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE) {
             // Check if we're running in a tty
             inAtty = 0;
@@ -358,7 +358,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 
         switch (p.input) {
-#ifndef WIN64
+#ifndef _MSC_VER
 
 #ifdef ALSA
         case INPUT_ALSA:
@@ -426,7 +426,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             break;
 #endif
 #endif
-#ifdef WIN64
+#ifdef _MSC_VER
         case INPUT_WINSCAP:
             thr_id = pthread_create(&p_thread, NULL, input_winscap, (void *)&audio);
             break;
@@ -438,7 +438,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         if (p.input == INPUT_ALSA || p.input == INPUT_WINSCAP) {
             timeout_counter = 0;
             while (true) {
-#ifdef WIN64
+#ifdef _MSC_VER
                 Sleep(1);
 #else
                 nanosleep(&timeout_timer, NULL);
@@ -535,7 +535,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 init_sdl_glsl_surface(&width, &height, p.color, p.bcolor);
                 break;
 #endif
-#ifndef WIN64
+#ifndef _MSC_VER
             case OUTPUT_NONCURSES:
                 get_terminal_dim_noncurses(&width, &lines);
 
@@ -683,7 +683,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             memset(previous_frame, 0, sizeof(int) * number_of_bars);
             memset(cava_out, 0, sizeof(double) * number_of_bars * audio.channels / output_channels);
 
-#ifndef WIN64
+#ifndef _MSC_VER
 
             // process: calculate x axis values
             int x_axis_info = 0;
@@ -735,7 +735,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
                 printf("\r\033[%dA", lines + 1);
             }
-#endif // !WIN64
+#endif // !_MSC_VER
             bool resizeTerminal = false;
 
             int frame_time_msec = (1 / (float)p.framerate) * 1000;
@@ -836,7 +836,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 #ifndef NDEBUG
                 // clear();
-#ifndef WIN64
+#ifndef _MSC_VER
                 refresh();
 #endif
 #endif
@@ -850,7 +850,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         break;
                     }
                 }
-#ifndef WIN64
+#ifndef _MSC_VER
 
                 if (output_mode != OUTPUT_SDL) {
                     if (p.sleep_timer) {
@@ -869,7 +869,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     }
                 }
 
-#endif // !WIN64
+#endif // !_MSC_VER
 
                 // process: execute cava
                 pthread_mutex_lock(&audio.lock);
@@ -1017,9 +1017,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                          minvalue); // checking maxvalue 10000
                 mvprintw(number_of_bars + 3, 0, "max value: %d\n",
                          maxvalue); // checking maxvalue 10000
-#ifndef WIN64
+#ifndef _MSC_VER
                 (void)x_axis_info;
-#endif // !WIN64
+#endif // !_MSC_VER
 #endif
 
 // output: draw processed input
@@ -1044,7 +1044,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                                        p.continuous_rendering);
                     break;
 #endif
-#ifndef WIN64
+#ifndef _MSC_VER
                 case OUTPUT_NCURSES:
 #ifdef NCURSES
                     rc = draw_terminal_ncurses(inAtty, *dimension_value / 8, *dimension_bar,
@@ -1067,7 +1067,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                                        p.bar_height, bars);
                     break;
 
-#endif // !WIN64
+#endif // !_MSC_VER
                 default:
                     exit(EXIT_FAILURE); // Can't happen.
                 }
@@ -1099,10 +1099,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 pthread_mutex_unlock(&audio.lock);
 
 
-#ifndef WIN64
+#ifndef _MSC_VER
                 if (output_mode != OUTPUT_SDL)
                     nanosleep(&framerate_timer, NULL);
-#endif // !WIN64
+#endif // !_MSC_VER
 
                 if (p.draw_and_quit > 0) {
                     total_frames++;

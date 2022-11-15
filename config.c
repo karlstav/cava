@@ -3,7 +3,7 @@
 #include "util.h"
 
 #include <ctype.h>
-#ifndef WIN64
+#ifndef _MSC_VER
 #include <iniparser.h>
 #endif
 #include <math.h>
@@ -19,7 +19,7 @@
 
 #define NUMBER_OF_SHADERS 2
 
-#ifdef WIN64
+#ifdef _MSC_VER
 #include "Windows.h"
 #define PATH_MAX 260
 #define PACKAGE "cava"
@@ -37,7 +37,7 @@ INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
 // INCTXT will create a char g<name>Data
 const char *default_shader_data[NUMBER_OF_SHADERS] = {gnormalized_barsfragData,
                                                       gpass_throughvertData};
-#endif // WIN64
+#endif // _MSC_VER
 // name of the installed shader file, technically does not have to be the same as in the source
 const char *default_shader_name[NUMBER_OF_SHADERS] = {"normalized_bars.frag", "pass_through.vert"};
 
@@ -410,7 +410,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         sprintf(cava_config_home, "%s/%s/", configHome, PACKAGE);
         mkdir(cava_config_home, 0777);
     } else {
-#ifndef WIN64
+#ifndef _MSC_VER
         configHome = getenv("HOME");
 
 #else
@@ -437,7 +437,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         if (fp) {
             fseek(fp, 0, SEEK_END);
             if (ftell(fp) == 0) {
-#ifndef WIN64
+#ifndef _MSC_VER
                 printf("config file is empty, creating default config file\n");
                 fwrite(gConfigFileData, gConfigFileSize - 1, sizeof(char), fp);
 #else
@@ -479,7 +479,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         char *shaderFile = malloc(sizeof(char) * PATH_MAX);
         sprintf(shaderFile, "%s/%s", shaderPath, default_shader_name[i]);
 
-#ifndef WIN64
+#ifndef _MSC_VER
         fp = fopen(shaderFile, "ab+");
         fseek(fp, 0, SEEK_END);
         if (ftell(fp) == 0) {
@@ -496,7 +496,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 #endif
     }
     free(shaderPath);
-#ifndef WIN64
+#ifndef _MSC_VER
     // config: parse ini
     dictionary *ini;
     ini = iniparser_load(configPath);
@@ -579,7 +579,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             if (colorsOnly) {
         return validate_colors(p, error);
     }
-#ifndef WIN64
+#ifndef _MSC_VER
 
 #ifdef NCURSES
     outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
