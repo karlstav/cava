@@ -52,7 +52,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -75,6 +75,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Linkage-pthreads>
     </Linkage-pthreads>
+    <Linkage-glew>
+    </Linkage-glew>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -115,8 +117,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>C:\Users\karl\cava\cava_win\packages\pthreads.2.9.1.4\build\native\lib\v110\x64\Release\dynamic\cdecl\libpthread.lib;opengl32.lib;C:\glew-2.2.0-win32\glew-2.2.0\lib\Release\x64\glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Users\karl\cava_win\cava\packages\pthreads.redist.2.9.1.4\build\native\bin\v110\x64\Release\dynamic\cdecl;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;$(SolutionDir)\packages\glew.1.9.0.1\build\native\lib\v110\x64\Release\dynamic\glew.lib;$(SolutionDir)\packages\libfftw.3.3.4\build\native\lib\x64\libfftw3f-3.lib;$(SolutionDir)\packages\pthreads.2.9.1.4\build\native\lib\v110\x64\Release\dynamic\cdecl\libpthread.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -125,7 +127,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);WIN64;SDL;_CRT_SECURE_NO_WARNINGS;_TIMESPEC_DEFINED;NDEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SDL;SDL_GLSL;_CRT_SECURE_NO_WARNINGS;_TIMESPEC_DEFINED;NDEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\karl\cava;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
@@ -134,7 +136,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>C:\Users\karl\cava\cava\packages\pthreads.2.9.1.4\build\native\lib\v110\x64\Release\dynamic\cdecl\libpthread.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;$(SolutionDir)\packages\glew.1.9.0.1\build\native\lib\v110\x64\Release\dynamic\glew.lib;$(SolutionDir)\packages\libfftw.3.3.4\build\native\lib\x64\libfftw3f-3.lib;$(SolutionDir)\packages\pthreads.2.9.1.4\build\native\lib\v110\x64\Release\dynamic\cdecl\libpthread.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -168,8 +171,9 @@
     <Import Project="..\packages\sdl2.2.0.5\build\native\sdl2.targets" Condition="Exists('..\packages\sdl2.2.0.5\build\native\sdl2.targets')" />
     <Import Project="..\packages\libfftw.redist.3.3.4\build\native\libfftw.redist.targets" Condition="Exists('..\packages\libfftw.redist.3.3.4\build\native\libfftw.redist.targets')" />
     <Import Project="..\packages\libfftw.3.3.4\build\native\libfftw.targets" Condition="Exists('..\packages\libfftw.3.3.4\build\native\libfftw.targets')" />
+    <Import Project="..\packages\glew.redist.1.9.0.1\build\native\glew.redist.targets" Condition="Exists('..\packages\glew.redist.1.9.0.1\build\native\glew.redist.targets')" />
+    <Import Project="..\packages\glew.1.9.0.1\build\native\glew.targets" Condition="Exists('..\packages\glew.1.9.0.1\build\native\glew.targets')" />
     <Import Project="..\packages\fftw_339.3.3.9.202108273\build\native\fftw_339.targets" Condition="Exists('..\packages\fftw_339.3.3.9.202108273\build\native\fftw_339.targets')" />
-    <Import Project="..\packages\glfw.3.3.8\build\native\glfw.targets" Condition="Exists('..\packages\glfw.3.3.8\build\native\glfw.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -181,8 +185,8 @@
     <Error Condition="!Exists('..\packages\sdl2.2.0.5\build\native\sdl2.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\sdl2.2.0.5\build\native\sdl2.targets'))" />
     <Error Condition="!Exists('..\packages\libfftw.redist.3.3.4\build\native\libfftw.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\libfftw.redist.3.3.4\build\native\libfftw.redist.targets'))" />
     <Error Condition="!Exists('..\packages\libfftw.3.3.4\build\native\libfftw.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\libfftw.3.3.4\build\native\libfftw.targets'))" />
-    <Error Condition="!Exists('..\packages\fftw_339.3.3.9.202108273\build\native\fftw_339.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\fftw_339.3.3.9.202108273\build\native\fftw_339.props'))" />
+    <Error Condition="!Exists('..\packages\glew.redist.1.9.0.1\build\native\glew.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\glew.redist.1.9.0.1\build\native\glew.redist.targets'))" />
+    <Error Condition="!Exists('..\packages\glew.1.9.0.1\build\native\glew.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\glew.1.9.0.1\build\native\glew.targets'))" />
     <Error Condition="!Exists('..\packages\fftw_339.3.3.9.202108273\build\native\fftw_339.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\fftw_339.3.3.9.202108273\build\native\fftw_339.targets'))" />
-    <Error Condition="!Exists('..\packages\glfw.3.3.8\build\native\glfw.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\glfw.3.3.8\build\native\glfw.targets'))" />
   </Target>
 </Project>
