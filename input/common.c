@@ -1,7 +1,7 @@
 #include "input/common.h"
+#include <limits.h>
 #include <math.h>
 #include <string.h>
-#include <limits.h>
 
 int write_to_cava_input_buffers(int16_t samples, unsigned char *buf, void *data) {
     if (samples == 0)
@@ -21,14 +21,12 @@ int write_to_cava_input_buffers(int16_t samples, unsigned char *buf, void *data)
     int n = 0;
     for (uint16_t i = 0; i < samples; i++) {
         switch (bytes_per_sample) {
-        case 1:
-            ;
+        case 1:;
             int8_t *buf8 = &buf[n];
             audio->cava_in[i + audio->samples_counter] = *buf8 * UCHAR_MAX;
             break;
         case 3:
-        case 4:
-            ;
+        case 4:;
             if (audio->IEEE_FLOAT) {
                 float *ieee_float = &buf[n];
                 audio->cava_in[i + audio->samples_counter] = *ieee_float * USHRT_MAX;
@@ -37,7 +35,7 @@ int write_to_cava_input_buffers(int16_t samples, unsigned char *buf, void *data)
                 audio->cava_in[i + audio->samples_counter] = (double)*buf32 / USHRT_MAX;
             }
             break;
-        default://we default to 16
+        default: // we default to 16
             ;
             int16_t *buf16 = &buf[n];
             audio->cava_in[i + audio->samples_counter] = *buf16;

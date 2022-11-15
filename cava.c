@@ -17,11 +17,11 @@
 #include <stdlib.h>
 
 #ifndef _MSC_VER
-#include <termios.h>
+#include <ctype.h>
 #include <dirent.h>
 #include <getopt.h>
-#include <ctype.h>
 #include <sys/ioctl.h>
+#include <termios.h>
 #include <unistd.h>
 #endif
 
@@ -31,7 +31,6 @@
 #define PACKAGE "cava"
 #define _CRT_SECURE_NO_WARNINGS 1
 #endif // _MSC_VER
-
 
 #include <signal.h>
 #include <string.h>
@@ -45,7 +44,6 @@
 
 #include "debug.h"
 #include "util.h"
-
 
 #ifdef SDL
 #include "output/sdl_cava.h"
@@ -355,7 +353,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         pthread_mutex_init(&audio.lock, NULL);
 
-
         switch (p.input) {
 #ifndef _MSC_VER
 
@@ -441,9 +438,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 Sleep(1);
 #else
                 nanosleep(&timeout_timer, NULL);
-#endif 
+#endif
                 pthread_mutex_lock(&audio.lock);
-                if (audio.format != -1 && audio.rate != 0 )
+                if (audio.format != -1 && audio.rate != 0)
                     break;
 
                 pthread_mutex_unlock(&audio.lock);
@@ -465,7 +462,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             fprintf(stderr, "higher cuttoff frequency can't be higher than sample rate / 2");
             exit(EXIT_FAILURE);
         }
-
 
         int *bars;
         int *previous_frame;
@@ -1096,7 +1092,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     exit(EXIT_FAILURE);
                 }
                 pthread_mutex_unlock(&audio.lock);
-
 
 #ifndef _MSC_VER
                 if (output_mode != OUTPUT_SDL)

@@ -109,7 +109,6 @@ void *input_pulse(void *data) {
     /* The sample type to use */
     static const pa_sample_spec ss = {.format = PA_SAMPLE_S16LE, .rate = 44100, .channels = 2};
 
-
     const int frag_size = frames * audio->channels * audio->format / 8 *
                           2; // we double this because of cpu performance issues with pulseaudio
 

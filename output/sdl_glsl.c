@@ -1,7 +1,7 @@
 #define GL_GLEXT_PROTOTYPES 0
 #ifdef _MSC_VER
-#include <SDL.h>
 #include <GL/glew.h>
+#include <SDL.h>
 #else
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
@@ -12,8 +12,6 @@
 #include <stdlib.h>
 
 #include "util.h"
-
-
 
 SDL_Window *glWindow = NULL;
 GLuint shading_program;
@@ -89,14 +87,13 @@ void init_sdl_glsl_window(int width, int height, int x, int y, char *const verte
         printf("Warning: Unable to set VSync! SDL Error: %s\n", SDL_GetError());
     }
 
-
     shading_program = custom_shaders(vertex_shader, fragmnet_shader);
     glReleaseShaderCompiler();
     if (shading_program == 0) {
         fprintf(stderr, "could not compile shaders: %s\n", SDL_GetError());
         exit(1);
     }
-    
+
     glUseProgram(shading_program);
 
     GLint gVertexPos2DLocation = -1;
@@ -267,8 +264,7 @@ GLuint compile_shader(GLenum type, const char **sources) {
     GLint success, len;
     GLsizei i, srclens[1];
 
- 
-   srclens[0] = (GLsizei)strlen(sources[0]);
+    srclens[0] = (GLsizei)strlen(sources[0]);
 
     shader = glCreateShader(type);
     glShaderSource(shader, 1, sources, srclens);

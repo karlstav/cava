@@ -12,4 +12,3 @@ void *input_winscap(void *data);
 #ifdef __cplusplus
 }
 #endif
-

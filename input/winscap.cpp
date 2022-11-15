@@ -15,7 +15,6 @@
 
 #include "input/common.h"
 
-
 #define REFTIMES_PER_SEC 10000000
 #define REFTIMES_PER_MILLISEC 10000
 
@@ -31,12 +30,10 @@ class CCoInitialize {
     operator HRESULT() const { return m_hr; }
 };
 
-
 const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
 const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
 const IID IID_IAudioClient = __uuidof(IAudioClient);
 const IID IID_IAudioCaptureClient = __uuidof(IAudioCaptureClient);
-
 
 class DeviceChangeNotification : public IMMNotificationClient {
     volatile ULONG ref;
@@ -201,14 +198,14 @@ void input_winscap(void *data) {
 
         WAVEFORMATEX format = *wfx;
 
-        
-        DWORD dwDelay = (DWORD)(((double)REFTIMES_PER_SEC * bufferFrameCount / format.nSamplesPerSec) /
-                                REFTIMES_PER_MILLISEC / 2);
+        DWORD dwDelay =
+            (DWORD)(((double)REFTIMES_PER_SEC * bufferFrameCount / format.nSamplesPerSec) /
+                    REFTIMES_PER_MILLISEC / 2);
 
         LPBYTE pSilence = (LPBYTE)malloc(bufferFrameCount * format.nBlockAlign);
         EnsureFree freeSilence(pSilence);
         ZeroMemory(pSilence, bufferFrameCount * format.nBlockAlign);
-        
+
         ensure(pClient->Start());
         EnsureCaptureStop autoStop(pClient);
 
@@ -242,7 +239,8 @@ void input_winscap(void *data) {
                 if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
                     pData = pSilence;
 
-                write_to_cava_input_buffers(numFramesAvailable * format.nChannels, (unsigned char *)pData, audio);
+                write_to_cava_input_buffers(numFramesAvailable * format.nChannels,
+                                            (unsigned char *)pData, audio);
 
                 ensure(pCapture->ReleaseBuffer(numFramesAvailable));
                 ensure(pCapture->GetNextPacketSize(&packetLength));

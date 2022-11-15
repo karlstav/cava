@@ -577,6 +577,4 @@ void cava_destroy(struct cava_plan *p) {
         fftw_free(p->in_treble_r_raw);
         fftw_destroy_plan(p->p_treble_r);
     }
-
-
 }
