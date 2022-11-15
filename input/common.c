@@ -1,6 +1,7 @@
 #include "input/common.h"
 #include <math.h>
 #include <string.h>
+#include <limits.h>
 
 int write_to_cava_input_buffers(int16_t samples, unsigned char *buf, void *data) {
     if (samples == 0)

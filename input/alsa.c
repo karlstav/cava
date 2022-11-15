@@ -59,45 +59,6 @@ static void initialize_audio_parameters(snd_pcm_t **handle, struct audio_data *a
     // snd_pcm_hw_params_get_period_time(params, &sample_rate, &dir);
 }
 
-static int get_certain_frame(signed char *buffer, int buffer_index, int adjustment) {
-    // using the 10 upper bits this would give me a vert res of 1024, enough...
-    int temp = buffer[buffer_index + adjustment - 1] << 2;
-    int lo = buffer[buffer_index + adjustment - 2] >> 6;
-    if (lo < 0)
-        lo = abs(lo) + 1;
-    if (temp >= 0)
-        temp += lo;
-    else
-        temp -= lo;
-    return temp;
-}
-/*
-static void fill_audio_outs(struct audio_data* audio, signed char* buffer,
-const int size) {
-        int radj = audio->format / 4; // adjustments for interleaved
-        int ladj = audio->format / 8;
-        static int audio_out_buffer_index = 0;
-        // sorting out one channel and only biggest octet
-        for (int buffer_index = 0; buffer_index < size; buffer_index += ladj * 2) {
-                // first channel
-                int tempr = get_certain_frame(buffer, buffer_index, radj);
-                // second channel
-                int templ = get_certain_frame(buffer, buffer_index, ladj);
-
-                // mono: adding channels and storing it in the buffer
-                if (audio->channels == 1)
-                        audio->audio_out_l[audio_out_buffer_index] = (templ + tempr) / 2;
-                else { // stereo storing channels in buffer
-                        audio->audio_out_l[audio_out_buffer_index] = templ;
-                        audio->audio_out_r[audio_out_buffer_index] = tempr;
-                }
-
-                ++audio_out_buffer_index;
-                audio_out_buffer_index %= audio->FFTbufferSize;
-        }
-}
-*/
-
 void *input_alsa(void *data) {
     int err;
     struct audio_data *audio = (struct audio_data *)data;
@@ -109,41 +70,14 @@ void *input_alsa(void *data) {
     initialize_audio_parameters(&handle, audio, &frames);
     snd_pcm_get_params(handle, &buffer_size, &period_size);
 
-    int radj = audio->format / 4; // adjustments for interleaved
-    int ladj = audio->format / 8;
-    int16_t buf[period_size];
-    int32_t buffer32[period_size];
+    unsigned char buf[buffer_size];
     frames = period_size / ((audio->format / 8) * CHANNELS_COUNT);
-    // printf("period size: %lu\n", period_size);
-    // exit(0);
 
-    // frames * bits/8 * channels
-    // const int size = frames * (audio->format / 8) * CHANNELS_COUNT;
     signed char *buffer = malloc(period_size);
 
     while (!audio->terminate) {
-        switch (audio->format) {
-        case 16:
-            err = snd_pcm_readi(handle, buf, frames);
-            break;
-        case 32:
-            err = snd_pcm_readi(handle, buffer32, frames);
-            for (uint16_t i = 0; i < frames * 2; i++) {
-                buf[i] = buffer32[i] / pow(2, 16);
-            }
-            break;
-        default:
-            err = snd_pcm_readi(handle, buffer, frames);
-            // sorting out one channel and only biggest octet
-            for (uint16_t i = 0; i < period_size * 2; i += ladj * 2) {
-                // first channel
-                buf[i] = get_certain_frame(buffer, i, ladj);
-                // second channel
-                buf[i + 1] = get_certain_frame(buffer, i, radj);
-            }
-            // fill_audio_outs(audio, buffer, period_size);
-            break;
-        }
+
+        err = snd_pcm_readi(handle, buf, frames);
 
         if (err == -EPIPE) {
             /* EPIPE means overrun */
