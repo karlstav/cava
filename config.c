@@ -496,6 +496,14 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 #endif
     }
     free(shaderPath);
+
+    p->gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
+    for (int i = 0; i < 8; ++i) {
+        p->gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);
+    }
+    p->vertex_shader = malloc(sizeof(char) * PATH_MAX);
+    p->fragment_shader = malloc(sizeof(char) * PATH_MAX);
+
 #ifndef _MSC_VER
     // config: parse ini
     dictionary *ini;
@@ -535,10 +543,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->color = malloc(sizeof(char) * 14);
     p->bcolor = malloc(sizeof(char) * 14);
     p->audio_source = malloc(sizeof(char) * 129);
-    p->gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
-    for (int i = 0; i < 8; ++i) {
-        p->gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);
-    }
+
     xaxisScale = malloc(sizeof(char) * 32);
     channels = malloc(sizeof(char) * 32);
     monoOption = malloc(sizeof(char) * 32);
@@ -547,9 +552,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     channels = malloc(sizeof(char) * 32);
     orientation = malloc(sizeof(char) * 32);
     vertexShader = malloc(sizeof(char) * PATH_MAX / 2);
-    p->vertex_shader = malloc(sizeof(char) * PATH_MAX);
     fragmentShader = malloc(sizeof(char) * PATH_MAX / 2);
-    p->fragment_shader = malloc(sizeof(char) * PATH_MAX);
 
     GetPrivateProfileString("color", "foreground", "#33cccc", p->color, 9, configPath);
     GetPrivateProfileString("color", "background", "#111111", p->bcolor, 9, configPath);
@@ -582,24 +585,20 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 #ifndef _MSC_VER
 
 #ifdef NCURSES
-    outputMethod = (char *)iniparser_getstring(ini, "output:method", "ncurses");
+    outputMethod = strdup(iniparser_getstring(ini, "output:method", "ncurses"));
 #endif
 #ifndef NCURSES
-    outputMethod = (char *)iniparser_getstring(ini, "output:method", "noncurses");
+    outputMethod = strdup(iniparser_getstring(ini, "output:method", "noncurses"));
 #endif
 
-    orientation = (char *)iniparser_getstring(ini, "output:orientation", "bottom");
-    xaxisScale = (char *)iniparser_getstring(ini, "output:xaxis", "none");
+    orientation = strdup(iniparser_getstring(ini, "output:orientation", "bottom"));
+    xaxisScale = strdup(iniparser_getstring(ini, "output:xaxis", "none"));
     p->monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 0);
     p->waves = iniparser_getint(ini, "smoothing:waves", 0);
     p->integral = iniparser_getdouble(ini, "smoothing:integral", 77);
     p->gravity = iniparser_getdouble(ini, "smoothing:gravity", 100);
     p->ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
-    p->noise_reduction = iniparser_getdouble(ini, "smoothing:noise_reduction", 0.77);
-
-    if (!load_colors(p, ini, error)) {
-        return false;
-    }
+    p->noise_reduction = iniparser_getdouble(ini, "smoothing:noise_reduction", 77);
 
     p->fixedbars = iniparser_getint(ini, "general:bars", 0);
     p->bar_width = iniparser_getint(ini, "general:bar_width", 2);
@@ -691,7 +690,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         enum input_method method = default_methods[i];
         if (has_input_method[method]) {
             input_method_name =
-                (char *)iniparser_getstring(ini, "input:method", input_method_names[method]);
+                strdup(iniparser_getstring(ini, "input:method", input_method_names[method]));
         }
     }
 
