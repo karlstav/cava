@@ -29,7 +29,6 @@
 #include "input/winscap.h"
 #define PATH_MAX 260
 #define PACKAGE "cava"
-#define VERSION 0.8.3
 #define _CRT_SECURE_NO_WARNINGS 1
 #endif // _MSC_VER
 
