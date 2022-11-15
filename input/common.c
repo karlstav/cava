@@ -7,8 +7,6 @@ int write_to_cava_input_buffers(int16_t samples, unsigned char *buf, void *data)
     if (samples == 0)
         return 0;
     struct audio_data *audio = (struct audio_data *)data;
-    int16_t buf16;
-    uint16_t ubuf16;
     pthread_mutex_lock(&audio->lock);
     int bytes_per_sample = audio->format / 8;
     if (audio->samples_counter + samples > audio->cava_buffer_size) {
@@ -22,22 +20,21 @@ int write_to_cava_input_buffers(int16_t samples, unsigned char *buf, void *data)
     for (uint16_t i = 0; i < samples; i++) {
         switch (bytes_per_sample) {
         case 1:;
-            int8_t *buf8 = &buf[n];
+            int8_t *buf8 = (int8_t *)&buf[n];
             audio->cava_in[i + audio->samples_counter] = *buf8 * UCHAR_MAX;
             break;
         case 3:
         case 4:;
             if (audio->IEEE_FLOAT) {
-                float *ieee_float = &buf[n];
+                float *ieee_float = (float *)&buf[n];
                 audio->cava_in[i + audio->samples_counter] = *ieee_float * USHRT_MAX;
             } else {
-                int32_t *buf32 = &buf[n];
+                int32_t *buf32 = (int32_t *)&buf[n];
                 audio->cava_in[i + audio->samples_counter] = (double)*buf32 / USHRT_MAX;
             }
             break;
-        default: // we default to 16
-            ;
-            int16_t *buf16 = &buf[n];
+        default:;
+            int16_t *buf16 = (int16_t *)&buf[n];
             audio->cava_in[i + audio->samples_counter] = *buf16;
             break;
         }

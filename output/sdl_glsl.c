@@ -262,7 +262,7 @@ GLuint compile_shader(GLenum type, const char **sources) {
 
     GLuint shader;
     GLint success, len;
-    GLsizei i, srclens[1];
+    GLsizei srclens[1];
 
     srclens[0] = (GLsizei)strlen(sources[0]);
 
