@@ -163,6 +163,10 @@ void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string,
     uniform_res = glGetUniformLocation(shading_program, "u_resolution");
     SDL_GetWindowSize(glWindow, w, h);
     glUniform3f(uniform_res, (float)*w, (float)*h, 0.0f);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
+    SDL_GL_SwapWindow(glWindow);
 }
 
 int draw_sdl_glsl(int bars_count, const float bars[], int frame_time, int re_paint,
