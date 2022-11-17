@@ -1,11 +1,11 @@
-C.A.V.A. [![Build Status](https://github.com/karlstav/cava/workflows/build-and-test/badge.svg)](https://github.com/karlstav/cava/actions)
+CAVA [![Build Status](https://github.com/karlstav/cava/workflows/build-and-test/badge.svg)](https://github.com/karlstav/cava/actions)
 ====================
 
 **C**ross-platform **A**udio **V**isu**a**lizer for the desktop
 
 works on:
 * Linux
-* Free-BSD
+* FreeBSD
 * macOS
 * Windows
 
@@ -18,15 +18,15 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
 - [What it is](#what-it-is)
 - [Installing](#installing)
   - [From Source](#from-source)
-  - [Some distro specific pre-made binaries/recipes](#some-distro-specific-pre-made-binariesrecipes)
+  - [Package managers](#package-managers)
 - [Capturing audio](#capturing-audio)
   - [Pulseaudio](#pulseaudio)
   - [ALSA](#alsa)
   - [MPD](#mpd)
   - [sndio](#sndio)
   - [squeezelite](#squeezelite)
-  - [macOS](#macos)
-  - [WSL](#wsl)
+  - [macOS](#macos-1)
+  - [Windows](#windows)
 - [Running via ssh](#running-via-ssh)
 - [Troubleshooting](#troubleshooting)
 - [Usage](#usage)
@@ -125,6 +125,10 @@ Then fix macOS not finding libtool and ncursesw:
 Tested on macOS Big Sur
 
 
+Windows:
+
+see separate readme in `cava_win` folder.
+
 #### Building
  First of all clone this repo and cd in to it, then run:
  
@@ -134,7 +138,7 @@ Tested on macOS Big Sur
 
 If you have a recommended component installed, but do not wish to use it (perhaps if building a binary on one machine to be used on another), then the corresponding feature can be disabled during configuration (see configure --help for details).
 
-
+For windows there is a VS solution file in the `cava_win` folder.
     
 #### Installing 
 
@@ -151,7 +155,7 @@ Or you can change `PREFIX`, for example:
     make uninstall
 
 
-### Some distro specific pre-made binaries/recipes
+### Package managers
 
 All distro specific instalation sources might be out of date. Please check version before reporting any issues here.
 
@@ -317,10 +321,9 @@ method = portaudio
 source = "Soundflower (2ch)"
 ```
 
-### WSL
+### Windows
 
-@quantum5 has written a handy tool called [winscap](https://github.com/quantum5/winscap) to capture audio from Windows and output it to stdout.
-This way cava can be used in a terminal running windows subsystem for linux. Just follow the instructions in the readme on how to set it up with cava.
+Should capture the audio from the default output device automatically.
 
 
 Running via ssh
