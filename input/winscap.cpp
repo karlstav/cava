@@ -147,7 +147,7 @@ void input_winscap(void *data) {
     DeviceChangeNotification deviceChangeNotification(deviceChanged, hEvent);
     pEnumerator->RegisterEndpointNotificationCallback(&deviceChangeNotification);
 
-    for (;;) {
+    while (!audio->terminate) {
         ResetEvent(hEvent);
 
         IMMDevice *pDevice = NULL;
@@ -216,7 +216,7 @@ void input_winscap(void *data) {
             audio->IEEE_FLOAT = 1;
         pthread_mutex_unlock(&audio->lock);
 
-        while (!deviceChanged) {
+        while (!deviceChanged && !audio->terminate) {
             Sleep(dwDelay);
 
             UINT32 packetLength;
