@@ -358,7 +358,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 #ifdef ALSA
         case INPUT_ALSA:
-            // input_alsa: wait for the input to be ready
             if (is_loop_device_for_sure(audio.source)) {
                 if (directory_exists("/sys/")) {
                     if (!directory_exists("/sys/module/snd_aloop/")) {
@@ -371,54 +370,41 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
             }
 
-            thr_id = pthread_create(&p_thread, NULL, input_alsa,
-                                    (void *)&audio); // starting alsamusic listener
+            thr_id = pthread_create(&p_thread, NULL, input_alsa, (void *)&audio);
             break;
 #endif
 
         case INPUT_FIFO:
-            // starting fifomusic listener
-            thr_id = pthread_create(&p_thread, NULL, input_fifo, (void *)&audio);
             audio.rate = p.fifoSample;
             audio.format = p.fifoSampleBits;
+            thr_id = pthread_create(&p_thread, NULL, input_fifo, (void *)&audio);
             break;
 #ifdef PULSE
         case INPUT_PULSE:
+            audio.format = 16;
+            audio.rate = 44100;
             if (strcmp(audio.source, "auto") == 0) {
                 getPulseDefaultSink((void *)&audio);
             }
-            // starting pulsemusic listener
             thr_id = pthread_create(&p_thread, NULL, input_pulse, (void *)&audio);
-            audio.rate = 44100;
             break;
 #endif
 #ifdef SNDIO
         case INPUT_SNDIO:
-            thr_id = pthread_create(&p_thread, NULL, input_sndio, (void *)&audio);
+            audio.format = 16;
             audio.rate = 44100;
+            thr_id = pthread_create(&p_thread, NULL, input_sndio, (void *)&audio);
             break;
 #endif
         case INPUT_SHMEM:
+            audio.format = 16;
             thr_id = pthread_create(&p_thread, NULL, input_shmem, (void *)&audio);
-
-            timeout_counter = 0;
-            while (audio.rate == 0) {
-                nanosleep(&timeout_timer, NULL);
-                timeout_counter++;
-                if (timeout_counter > 2000) {
-                    cleanup();
-                    fprintf(stderr, "could not get rate and/or format, problems with audio thread? "
-                                    "quiting...\n");
-                    exit(EXIT_FAILURE);
-                }
-            }
-            debug("got format: %d and rate %d\n", audio.format, audio.rate);
-            // audio.rate = 44100;
             break;
 #ifdef PORTAUDIO
         case INPUT_PORTAUDIO:
-            thr_id = pthread_create(&p_thread, NULL, input_portaudio, (void *)&audio);
+            audio.format = 16;
             audio.rate = 44100;
+            thr_id = pthread_create(&p_thread, NULL, input_portaudio, (void *)&audio);
             break;
 #endif
 #endif
@@ -431,30 +417,29 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             exit(EXIT_FAILURE); // Can't happen.
         }
 
-        if (p.input == INPUT_ALSA || p.input == INPUT_WINSCAP) {
-            timeout_counter = 0;
-            while (true) {
+        timeout_counter = 0;
+        while (true) {
 #ifdef _MSC_VER
-                Sleep(1);
+            Sleep(1);
 #else
-                nanosleep(&timeout_timer, NULL);
+            nanosleep(&timeout_timer, NULL);
 #endif
-                pthread_mutex_lock(&audio.lock);
-                if (audio.format != -1 && audio.rate != 0)
-                    break;
+            pthread_mutex_lock(&audio.lock);
+            if (audio.format != -1 && audio.rate != 0)
+                break;
 
-                pthread_mutex_unlock(&audio.lock);
-                timeout_counter++;
-                if (timeout_counter > 2000) {
-                    cleanup();
-                    fprintf(stderr, "could not get rate and/or format, problems with audio thread? "
-                                    "quiting...\n");
-                    exit(EXIT_FAILURE);
-                }
-            }
             pthread_mutex_unlock(&audio.lock);
-            debug("got format: %d and rate %d\n", audio.format, audio.rate);
+            timeout_counter++;
+            if (timeout_counter > 2000) {
+                cleanup();
+                fprintf(stderr, "could not get rate and/or format, problems with audio thread? "
+                                "quiting...\n");
+                exit(EXIT_FAILURE);
+            }
         }
+        pthread_mutex_unlock(&audio.lock);
+        debug("got format: %d and rate %d\n", audio.format, audio.rate);
+
         int audio_channels = audio.channels;
 
         if (p.upper_cut_off > audio.rate / 2) {

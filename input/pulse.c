@@ -101,9 +101,7 @@ void getPulseDefaultSink(void *data) {
 void *input_pulse(void *data) {
 
     struct audio_data *audio = (struct audio_data *)data;
-    audio->channels = 2;
     uint16_t frames = audio->input_buffer_size / audio->channels;
-    audio->format = 16;
     unsigned char buf[audio->input_buffer_size * audio->format / 8];
 
     /* The sample type to use */

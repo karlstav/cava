@@ -7,14 +7,14 @@ void *input_sndio(void *data) {
     struct audio_data *audio = (struct audio_data *)data;
     struct sio_par par;
     struct sio_hdl *hdl;
-    audio->format = 16;
     unsigned char buf[audio->input_buffer_size * audio->format / 8];
 
     sio_initpar(&par);
     par.sig = 1;
     par.bits = audio->format;
     par.le = 1;
-    par.rate = 44100;
+    par.rate = audio->rate;
+    ;
     par.rchan = 2;
     par.appbufsz = sizeof(buf) / par.rchan;
 
