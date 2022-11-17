@@ -469,20 +469,20 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         char *shaderFile = malloc(sizeof(char) * PATH_MAX);
         sprintf(shaderFile, "%s/%s", shaderPath, default_shader_name[i]);
 
-#ifndef _MSC_VER
         fp = fopen(shaderFile, "ab+");
         fseek(fp, 0, SEEK_END);
         if (ftell(fp) == 0) {
+#ifndef _MSC_VER
             printf("shader file is empty, creating default shader file\n");
             fwrite(default_shader_data[i], strlen(default_shader_data[i]), sizeof(char), fp);
-        }
-        fclose(fp);
-        free(shaderFile);
 #else
         printf("WARNING: shader file is empty, windows does not support automatic default shader "
                "generation.\n You should copy the shader %s from the source to %s\n\n",
                default_shader_name[i], shaderPath);
 #endif
+        }
+        fclose(fp);
+        free(shaderFile);
     }
     free(shaderPath);
 
