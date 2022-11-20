@@ -34,11 +34,7 @@ struct audio_data {
 };
 
 void reset_output_buffers(struct audio_data *data);
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 int write_to_cava_input_buffers(int16_t size, unsigned char *buf, void *data);
-#ifdef __cplusplus
-}
-#endif
+
 extern pthread_mutex_t lock;

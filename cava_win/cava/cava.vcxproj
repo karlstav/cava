@@ -149,7 +149,7 @@
     <ClCompile Include="..\..\cavacore.c" />
     <ClCompile Include="..\..\config.c" />
     <ClCompile Include="..\..\input\common.c" />
-    <ClCompile Include="..\..\input\winscap.cpp" />
+    <ClCompile Include="..\..\input\winscap.c" />
     <ClCompile Include="..\..\output\sdl_cava.c" />
     <ClCompile Include="..\..\output\sdl_glsl.c" />
   </ItemGroup>
