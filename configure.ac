@@ -224,7 +224,6 @@ AC_CHECK_LIB(SDL2,SDL_Init, have_sdl=yes, have_sdl=no)
       ],
         [have_opengl=no]
       )
-      AM_CONDITIONAL([SDL_GLSL], [test "x$have_opengl" = "xyes"])
     fi
 
     if [[ $have_sdl = "no" ]] ; then
@@ -235,6 +234,7 @@ AC_CHECK_LIB(SDL2,SDL_Init, have_sdl=yes, have_sdl=no)
 )
 
 AM_CONDITIONAL([SDL], [test "x$have_sdl" = "xyes"])
+AM_CONDITIONAL([SDL_GLSL], [test "x$have_opengl" = "xyes"])
 
 dnl ######################
 dnl checking for ncursesw
