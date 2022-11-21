@@ -161,7 +161,6 @@
     <ClInclude Include="..\..\input\winscap.h" />
     <ClInclude Include="..\..\output\sdl_cava.h" />
     <ClInclude Include="..\..\output\sdl_glsl.h" />
-    <ClInclude Include="..\..\third_party\incbin.h" />
     <ClInclude Include="..\..\util.h" />
   </ItemGroup>
   <ItemGroup>
