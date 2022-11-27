@@ -1,13 +1,7 @@
 CAVA [![Build Status](https://github.com/karlstav/cava/workflows/build-and-test/badge.svg)](https://github.com/karlstav/cava/actions)
 ====================
 
-**C**ross-platform **A**udio **V**isu**a**lizer for the desktop
-
-works on:
-* Linux
-* FreeBSD
-* macOS
-* Windows
+**C**ross-platform **A**udio **V**isu**a**lizer
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
@@ -42,7 +36,13 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
 What it is
 ----------
 
-C.A.V.A. is a bar spectrum audio visualizer for the Linux terminal using ALSA, pulseaudio or fifo buffer for input.
+Cava is a bar spectrum audio visualizer for terminal (ncurses) or desktop (SDL).
+
+works on:
+* Linux
+* FreeBSD
+* macOS
+* Windows
 
 This program is not intended for scientific use. It's written to look responsive and aesthetic when used to visualize music. 
 
