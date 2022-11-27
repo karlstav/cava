@@ -53,6 +53,7 @@
 
 # Audio capturing method. Possible methods are: 'pulse', 'alsa', 'fifo', 'sndio' or 'shmem'
 # Defaults to 'pulse', 'alsa' or 'fifo', in that order, dependent on what support cava was built with.
+# On windows this is automatic and no input settings are needed.
 #
 # All input methods uses the same config variable 'source'
 # to define where it should get the audio.

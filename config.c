@@ -478,7 +478,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 #else
             printf(
                 "WARNING: shader file is empty, windows does not support automatic default shader "
-                "generation.\n You should copy the shader %s from the source to %s\n\n",
+                "generation.\n In order to use the shader copy the file %s from the source to "
+                "%s\n\n",
                 default_shader_name[i], shaderPath);
 #endif
         }
