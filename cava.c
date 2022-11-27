@@ -1108,6 +1108,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             }
             free(cava_out);
             free(bars);
+            free(bars_raw);
             free(previous_frame);
         } // reloading config
 

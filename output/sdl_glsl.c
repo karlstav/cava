@@ -255,6 +255,7 @@ GLuint get_shader(GLenum eShaderType, const char *filename) {
 
     const char *shaderSource = read_file(filename);
     GLuint shader = compile_shader(eShaderType, &shaderSource);
+    free((char *)shaderSource);
     return shader;
 }
 

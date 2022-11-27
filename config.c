@@ -511,6 +511,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     for (int i = 0; i < 8; ++i) {
         free(p->gradient_colors[i]);
     }
+    free(p->gradient_colors);
     p->gradient_colors = (char **)malloc(sizeof(char *) * p->gradient_count * 9);
     p->gradient_colors[0] = strdup(iniparser_getstring(ini, "color:gradient_color_1", "#59cc33"));
     p->gradient_colors[1] = strdup(iniparser_getstring(ini, "color:gradient_color_2", "#80cc33"));
@@ -626,6 +627,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->sdl_y = iniparser_getint(ini, "output:sdl_y", -1);
 
     if (strcmp(outputMethod, "sdl") == 0 || strcmp(outputMethod, "sdl_glsl") == 0) {
+        free(p->color);
+        free(p->bcolor);
         p->color = strdup(iniparser_getstring(ini, "color:foreground", "#33cccc"));
         p->bcolor = strdup(iniparser_getstring(ini, "color:background", "#111111"));
         p->bar_width = iniparser_getint(ini, "general:bar_width", 20);
@@ -665,15 +668,15 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     free(p->audio_source);
 
-    char *input_method_name;
+    int default_input = -1;
     for (size_t i = 0; i < ARRAY_SIZE(default_methods); i++) {
         enum input_method method = default_methods[i];
         if (has_input_method[method]) {
-            input_method_name =
-                strdup(iniparser_getstring(ini, "input:method", input_method_names[method]));
+            default_input++;
         }
     }
-
+    char *input_method_name =
+        strdup(iniparser_getstring(ini, "input:method", input_method_names[default_input]));
     p->input = input_method_by_name(input_method_name);
     switch (p->input) {
 #ifdef ALSA
@@ -723,6 +726,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
                      input_method_names[p->input]);
         return false;
     }
+    free(input_method_name);
     iniparser_freedict(ini);
 #else
 
