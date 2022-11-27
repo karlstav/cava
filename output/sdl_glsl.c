@@ -1,7 +1,11 @@
-#define GL_GLEXT_PROTOTYPES 1
+#define GL_GLEXT_PROTOTYPES 0
+#ifdef _MSC_VER
+#include <GL/glew.h>
+#include <SDL.h>
+#else
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
-
+#endif
 #include "output/sdl_glsl.h"
 
 #include <stdbool.h>
@@ -34,7 +38,7 @@ GLuint custom_shaders(const char *, const char *);
 
 const char *read_file(const char *);
 
-GLuint compile_shader(GLenum type, GLsizei, const char **);
+GLuint compile_shader(GLenum type, const char **);
 GLuint program_check(GLuint);
 
 void init_sdl_glsl_window(int width, int height, int x, int y, char *const vertex_shader,
@@ -66,6 +70,21 @@ void init_sdl_glsl_window(int width, int height, int x, int y, char *const verte
     if (glContext == NULL) {
         fprintf(stderr, "GLContext could not be created! SDL Error: %s\n", SDL_GetError());
         exit(1);
+    }
+
+#ifdef _MSC_VER
+    // Initialize GLEW
+    glewExperimental = GL_TRUE;
+    GLenum glewError = glewInit();
+    if (glewError != GLEW_OK) {
+        printf(stderr, "Error initializing GLEW! %s\n", glewGetErrorString(glewError));
+        exit(1);
+    }
+#endif
+
+    // Use Vsync
+    if (SDL_GL_SetSwapInterval(1) < 0) {
+        printf("Warning: Unable to set VSync! SDL Error: %s\n", SDL_GetError());
     }
 
     shading_program = custom_shaders(vertex_shader, fragmnet_shader);
@@ -141,6 +160,10 @@ void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string,
     uniform_res = glGetUniformLocation(shading_program, "u_resolution");
     SDL_GetWindowSize(glWindow, w, h);
     glUniform3f(uniform_res, (float)*w, (float)*h, 0.0f);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
+    SDL_GL_SwapWindow(glWindow);
 }
 
 int draw_sdl_glsl(int bars_count, const float bars[], int frame_time, int re_paint,
@@ -231,21 +254,21 @@ GLuint custom_shaders(const char *vsPath, const char *fsPath) {
 GLuint get_shader(GLenum eShaderType, const char *filename) {
 
     const char *shaderSource = read_file(filename);
-    GLuint shader = compile_shader(eShaderType, 1, &shaderSource);
+    GLuint shader = compile_shader(eShaderType, &shaderSource);
+    free((char *)shaderSource);
     return shader;
 }
 
-GLuint compile_shader(GLenum type, GLsizei nsources, const char **sources) {
+GLuint compile_shader(GLenum type, const char **sources) {
 
     GLuint shader;
     GLint success, len;
-    GLsizei i, srclens[nsources];
+    GLsizei srclens[1];
 
-    for (i = 0; i < nsources; ++i)
-        srclens[i] = (GLsizei)strlen(sources[i]);
+    srclens[0] = (GLsizei)strlen(sources[0]);
 
     shader = glCreateShader(type);
-    glShaderSource(shader, nsources, sources, srclens);
+    glShaderSource(shader, 1, sources, srclens);
     glCompileShader(shader);
 
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);

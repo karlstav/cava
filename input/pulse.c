@@ -101,16 +101,13 @@ void getPulseDefaultSink(void *data) {
 void *input_pulse(void *data) {
 
     struct audio_data *audio = (struct audio_data *)data;
-    uint16_t frames = audio->input_buffer_size / 2;
-    int channels = 2;
-    int16_t buf[frames * channels];
+    uint16_t frames = audio->input_buffer_size / audio->channels;
+    unsigned char buf[audio->input_buffer_size * audio->format / 8];
 
     /* The sample type to use */
     static const pa_sample_spec ss = {.format = PA_SAMPLE_S16LE, .rate = 44100, .channels = 2};
 
-    audio->format = 16;
-
-    const int frag_size = frames * channels * audio->format / 8 *
+    const int frag_size = frames * audio->channels * audio->format / 8 *
                           2; // we double this because of cpu performance issues with pulseaudio
 
     pa_buffer_attr pb = {.maxlength = (uint32_t)-1, // BUFSIZE * 2,
@@ -137,7 +134,7 @@ void *input_pulse(void *data) {
             audio->terminate = 1;
         }
 
-        write_to_cava_input_buffers(frames * channels, buf, data);
+        write_to_cava_input_buffers(audio->input_buffer_size, buf, data);
     }
 
     pa_simple_free(s);

@@ -7,13 +7,14 @@ void *input_sndio(void *data) {
     struct audio_data *audio = (struct audio_data *)data;
     struct sio_par par;
     struct sio_hdl *hdl;
-    int16_t buf[audio->input_buffer_size];
+    unsigned char buf[audio->input_buffer_size * audio->format / 8];
 
     sio_initpar(&par);
     par.sig = 1;
-    par.bits = 16;
+    par.bits = audio->format;
     par.le = 1;
-    par.rate = 44100;
+    par.rate = audio->rate;
+    ;
     par.rchan = 2;
     par.appbufsz = sizeof(buf) / par.rchan;
 
@@ -33,14 +34,13 @@ void *input_sndio(void *data) {
         exit(EXIT_FAILURE);
     }
 
-    uint16_t frames = (sizeof(buf) / sizeof(buf[0])) / 2;
     while (audio->terminate != 1) {
         if (sio_read(hdl, buf, sizeof(buf)) == 0) {
             fprintf(stderr, __FILE__ ": sio_read() failed: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
 
-        write_to_cava_input_buffers(frames * 2, buf, audio);
+        write_to_cava_input_buffers(audio->input_buffer_size, buf, audio);
     }
 
     sio_stop(hdl);

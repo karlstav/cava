@@ -15,18 +15,28 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <termios.h>
 
+#ifndef _MSC_VER
 #include <ctype.h>
 #include <dirent.h>
 #include <getopt.h>
+#include <sys/ioctl.h>
+#include <termios.h>
+#include <unistd.h>
+#endif
+
+#ifdef _MSC_VER
+#include "input/winscap.h"
+#define PATH_MAX 260
+#define PACKAGE "cava"
+#define _CRT_SECURE_NO_WARNINGS 1
+#endif // _MSC_VER
+
 #include <signal.h>
 #include <string.h>
-#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
-#include <unistd.h>
 
 #include "cavacore.h"
 
@@ -34,12 +44,6 @@
 
 #include "debug.h"
 #include "util.h"
-
-#ifdef NCURSES
-#include "output/terminal_bcircle.h"
-#include "output/terminal_ncurses.h"
-#include <curses.h>
-#endif
 
 #ifdef SDL
 #include "output/sdl_cava.h"
@@ -49,17 +53,26 @@
 #include "output/sdl_glsl.h"
 #endif
 
+#include "input/common.h"
+
+#ifndef _MSC_VER
+#ifdef NCURSES
+#include "output/terminal_bcircle.h"
+#include "output/terminal_ncurses.h"
+#include <curses.h>
+#endif
+
 #include "output/noritake.h"
 #include "output/raw.h"
 #include "output/terminal_noncurses.h"
 
 #include "input/alsa.h"
-#include "input/common.h"
 #include "input/fifo.h"
 #include "input/portaudio.h"
 #include "input/pulse.h"
 #include "input/shmem.h"
 #include "input/sndio.h"
+#endif
 
 #ifdef __GNUC__
 // curses.h or other sources may already define
@@ -92,7 +105,9 @@ void cleanup(void) {
         ;
 #endif
     } else if (output_mode == OUTPUT_NONCURSES) {
+#ifndef _MSC_VER
         cleanup_terminal_noncurses();
+#endif
     } else if (output_mode == OUTPUT_SDL) {
 #ifdef SDL
         cleanup_sdl();
@@ -110,6 +125,8 @@ void cleanup(void) {
 
 // general: handle signals
 void sig_handler(int sig_no) {
+#ifndef _MSC_VER
+
     if (sig_no == SIGUSR1) {
         should_reload = 1;
         return;
@@ -126,6 +143,7 @@ void sig_handler(int sig_no) {
     }
     signal(sig_no, SIG_DFL);
     raise(sig_no);
+#endif
 }
 
 #ifdef ALSA
@@ -146,6 +164,7 @@ static bool directory_exists(const char *path) {
 #endif
 
 float *monstercat_filter(float *bars, int number_of_bars, int waves, double monstercat) {
+#ifndef _MSC_VER
 
     int z;
 
@@ -178,7 +197,7 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
             }
         }
     }
-
+#endif
     return bars;
 }
 
@@ -191,7 +210,7 @@ int main(int argc, char **argv) {
     // general: handle command-line arguments
     char configPath[PATH_MAX];
     configPath[0] = '\0';
-
+#ifndef _MSC_VER
     // general: handle Ctrl+C
     struct sigaction action;
     memset(&action, 0, sizeof(action));
@@ -200,7 +219,7 @@ int main(int argc, char **argv) {
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGUSR1, &action, NULL);
     sigaction(SIGUSR2, &action, NULL);
-
+#endif
     char *usage = "\n\
 Usage : " PACKAGE " [options]\n\
 Visualize audio input in terminal. \n\
@@ -221,6 +240,7 @@ Keys:\n\
         q         Quit\n\
 \n\
 as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n";
+#ifndef _MSC_VER
 
     int c;
     while ((c = getopt(argc, argv, "p:vh")) != -1) {
@@ -241,6 +261,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             abort();
         }
     }
+#else
+    if (argc > 1)
+        snprintf(configPath, sizeof(configPath), "%s", argv[1]);
+#endif
 
     // general: main loop
     while (1) {
@@ -257,7 +281,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         int inAtty;
 
         output_mode = p.output;
-
+#ifndef _MSC_VER
         if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE) {
             // Check if we're running in a tty
             inAtty = 0;
@@ -295,7 +319,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             else
                 setlocale(LC_ALL, "");
         }
-
+#endif
         // input: init
 
         struct audio_data audio;
@@ -308,6 +332,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         audio.rate = 0;
         audio.samples_counter = 0;
         audio.channels = 2;
+        audio.IEEE_FLOAT = 0;
 
         audio.input_buffer_size = BUFFER_SIZE * audio.channels;
         audio.cava_buffer_size = audio.input_buffer_size * 8;
@@ -326,10 +351,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         struct timespec timeout_timer = {.tv_sec = 0, .tv_nsec = 1000000};
         int thr_id GCC_UNUSED;
 
+        pthread_mutex_init(&audio.lock, NULL);
+
         switch (p.input) {
+#ifndef _MSC_VER
+
 #ifdef ALSA
         case INPUT_ALSA:
-            // input_alsa: wait for the input to be ready
             if (is_loop_device_for_sure(audio.source)) {
                 if (directory_exists("/sys/")) {
                     if (!directory_exists("/sys/module/snd_aloop/")) {
@@ -342,72 +370,77 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
             }
 
-            thr_id = pthread_create(&p_thread, NULL, input_alsa,
-                                    (void *)&audio); // starting alsamusic listener
-
-            timeout_counter = 0;
-
-            while (audio.format == -1 || audio.rate == 0) {
-                nanosleep(&timeout_timer, NULL);
-                timeout_counter++;
-                if (timeout_counter > 2000) {
-                    cleanup();
-                    fprintf(stderr, "could not get rate and/or format, problems with audio thread? "
-                                    "quiting...\n");
-                    exit(EXIT_FAILURE);
-                }
-            }
-            debug("got format: %d and rate %d\n", audio.format, audio.rate);
+            thr_id = pthread_create(&p_thread, NULL, input_alsa, (void *)&audio);
             break;
 #endif
+
         case INPUT_FIFO:
-            // starting fifomusic listener
-            thr_id = pthread_create(&p_thread, NULL, input_fifo, (void *)&audio);
             audio.rate = p.fifoSample;
             audio.format = p.fifoSampleBits;
+            thr_id = pthread_create(&p_thread, NULL, input_fifo, (void *)&audio);
             break;
 #ifdef PULSE
         case INPUT_PULSE:
+            audio.format = 16;
+            audio.rate = 44100;
             if (strcmp(audio.source, "auto") == 0) {
                 getPulseDefaultSink((void *)&audio);
             }
-            // starting pulsemusic listener
             thr_id = pthread_create(&p_thread, NULL, input_pulse, (void *)&audio);
-            audio.rate = 44100;
             break;
 #endif
 #ifdef SNDIO
         case INPUT_SNDIO:
-            thr_id = pthread_create(&p_thread, NULL, input_sndio, (void *)&audio);
+            audio.format = 16;
             audio.rate = 44100;
+            thr_id = pthread_create(&p_thread, NULL, input_sndio, (void *)&audio);
             break;
 #endif
         case INPUT_SHMEM:
+            audio.format = 16;
             thr_id = pthread_create(&p_thread, NULL, input_shmem, (void *)&audio);
-
-            timeout_counter = 0;
-            while (audio.rate == 0) {
-                nanosleep(&timeout_timer, NULL);
-                timeout_counter++;
-                if (timeout_counter > 2000) {
-                    cleanup();
-                    fprintf(stderr, "could not get rate and/or format, problems with audio thread? "
-                                    "quiting...\n");
-                    exit(EXIT_FAILURE);
-                }
-            }
-            debug("got format: %d and rate %d\n", audio.format, audio.rate);
-            // audio.rate = 44100;
             break;
 #ifdef PORTAUDIO
         case INPUT_PORTAUDIO:
-            thr_id = pthread_create(&p_thread, NULL, input_portaudio, (void *)&audio);
+            audio.format = 16;
             audio.rate = 44100;
+            thr_id = pthread_create(&p_thread, NULL, input_portaudio, (void *)&audio);
+            break;
+#endif
+#endif
+#ifdef _MSC_VER
+        case INPUT_WINSCAP:
+            thr_id = pthread_create(&p_thread, NULL, input_winscap, (void *)&audio);
             break;
 #endif
         default:
             exit(EXIT_FAILURE); // Can't happen.
         }
+
+        timeout_counter = 0;
+        while (true) {
+#ifdef _MSC_VER
+            Sleep(1);
+#else
+            nanosleep(&timeout_timer, NULL);
+#endif
+            pthread_mutex_lock(&audio.lock);
+            if (audio.format != -1 && audio.rate != 0)
+                break;
+
+            pthread_mutex_unlock(&audio.lock);
+            timeout_counter++;
+            if (timeout_counter > 2000) {
+                cleanup();
+                fprintf(stderr, "could not get rate and/or format, problems with audio thread? "
+                                "quiting...\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+        pthread_mutex_unlock(&audio.lock);
+        debug("got format: %d and rate %d\n", audio.format, audio.rate);
+
+        int audio_channels = audio.channels;
 
         if (p.upper_cut_off > audio.rate / 2) {
             cleanup();
@@ -482,6 +515,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 init_sdl_glsl_surface(&width, &height, p.color, p.bcolor);
                 break;
 #endif
+#ifndef _MSC_VER
             case OUTPUT_NONCURSES:
                 get_terminal_dim_noncurses(&width, &lines);
 
@@ -497,6 +531,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             case OUTPUT_RAW:
             case OUTPUT_NORITAKE:
                 if (strcmp(p.raw_target, "/dev/stdout") != 0) {
+
                     int fptest;
                     // checking if file exists
                     if (access(p.raw_target, F_OK) != -1) {
@@ -524,6 +559,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     fprintf(stderr, "could not open file %s for writing\n", p.raw_target);
                     exit(1);
                 }
+
 #ifndef NDEBUG
                 debug("open file %s for writing raw output\n", p.raw_target);
 #endif
@@ -541,7 +577,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     height = p.ascii_range;
                 }
                 break;
-
+#endif
             default:
                 exit(EXIT_FAILURE); // Can't happen.
             }
@@ -605,12 +641,17 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 cava_init(number_of_bars / output_channels, audio.rate, audio.channels, p.autosens,
                           p.noise_reduction, p.lower_cut_off, p.upper_cut_off);
 
-            if (audio.channels == 2) {
-                bars_left = (float *)malloc(number_of_bars / output_channels * sizeof(float));
-                bars_right = (float *)malloc(number_of_bars / output_channels * sizeof(float));
-                memset(bars_left, 0, sizeof(float) * number_of_bars / output_channels);
-                memset(bars_right, 0, sizeof(float) * number_of_bars / output_channels);
+            if (plan->status == -1) {
+                cleanup();
+                fprintf(stderr, "Error initalizing cava . %s", plan->error_message);
+                exit(EXIT_FAILURE);
             }
+
+            bars_left = (float *)malloc(number_of_bars / output_channels * sizeof(float));
+            bars_right = (float *)malloc(number_of_bars / output_channels * sizeof(float));
+            memset(bars_left, 0, sizeof(float) * number_of_bars / output_channels);
+            memset(bars_right, 0, sizeof(float) * number_of_bars / output_channels);
+
             bars = (int *)malloc(number_of_bars * sizeof(int));
             bars_raw = (float *)malloc(number_of_bars * sizeof(float));
             previous_frame = (int *)malloc(number_of_bars * sizeof(int));
@@ -621,6 +662,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             memset(bars_raw, 0, sizeof(float) * number_of_bars);
             memset(previous_frame, 0, sizeof(int) * number_of_bars);
             memset(cava_out, 0, sizeof(double) * number_of_bars * audio.channels / output_channels);
+
+#ifndef _MSC_VER
 
             // process: calculate x axis values
             int x_axis_info = 0;
@@ -672,7 +715,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
                 printf("\r\033[%dA", lines + 1);
             }
-
+#endif // !_MSC_VER
             bool resizeTerminal = false;
 
             int frame_time_msec = (1 / (float)p.framerate) * 1000;
@@ -773,7 +816,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 #ifndef NDEBUG
                 // clear();
+#ifndef _MSC_VER
                 refresh();
+#endif
 #endif
 
                 // process: check if input is present
@@ -785,6 +830,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         break;
                     }
                 }
+#ifndef _MSC_VER
 
                 if (output_mode != OUTPUT_SDL) {
                     if (p.sleep_timer) {
@@ -803,6 +849,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     }
                 }
 
+#endif // !_MSC_VER
+
                 // process: execute cava
                 pthread_mutex_lock(&audio.lock);
                 cava_execute(audio.cava_in, audio.samples_counter, cava_out, plan);
@@ -811,7 +859,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
                 pthread_mutex_unlock(&audio.lock);
 
-                for (uint32_t n = 0; n < (number_of_bars / output_channels) * audio.channels; n++) {
+                for (int n = 0; n < (number_of_bars / output_channels) * audio_channels; n++) {
                     if (p.autosens) {
                         if (output_mode != OUTPUT_SDL_GLSL) {
                             cava_out[n] *= *dimension_value;
@@ -827,7 +875,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     }
                 }
 
-                if (audio.channels == 2) {
+                if (audio_channels == 2) {
                     for (int n = 0; n < number_of_bars / output_channels; n++) {
                         if (p.userEQ_enabled)
                             cava_out[n] *=
@@ -851,7 +899,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                 // process [filter]
                 if (p.monstercat) {
-                    if (audio.channels == 2) {
+                    if (audio_channels == 2) {
                         bars_left =
                             monstercat_filter(bars_left, number_of_bars / 2, p.waves, p.monstercat);
                         bars_right = monstercat_filter(bars_right, number_of_bars / 2, p.waves,
@@ -861,7 +909,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                             monstercat_filter(bars_raw, number_of_bars, p.waves, p.monstercat);
                     }
                 }
-                if (audio.channels == 2) {
+                if (audio_channels == 2) {
                     if (p.stereo) {
                         // mirroring stereo channels
                         for (int n = 0; n < number_of_bars; n++) {
@@ -949,7 +997,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                          minvalue); // checking maxvalue 10000
                 mvprintw(number_of_bars + 3, 0, "max value: %d\n",
                          maxvalue); // checking maxvalue 10000
+#ifndef _MSC_VER
                 (void)x_axis_info;
+#endif // !_MSC_VER
 #endif
 
 // output: draw processed input
@@ -960,14 +1010,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
                 int rc;
                 switch (output_mode) {
-                case OUTPUT_NCURSES:
-#ifdef NCURSES
-                    rc = draw_terminal_ncurses(inAtty, *dimension_value / 8, *dimension_bar,
-                                               number_of_bars, p.bar_width, p.bar_spacing,
-                                               remainder, bars, previous_frame, p.gradient,
-                                               x_axis_info, p.orientation);
-                    break;
-#endif
 #ifdef SDL
                 case OUTPUT_SDL:
                     rc = draw_sdl(number_of_bars, p.bar_width, p.bar_spacing, remainder,
@@ -980,6 +1022,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 case OUTPUT_SDL_GLSL:
                     rc = draw_sdl_glsl(number_of_bars, bars_raw, frame_time_msec, re_paint,
                                        p.continuous_rendering);
+                    break;
+#endif
+#ifndef _MSC_VER
+                case OUTPUT_NCURSES:
+#ifdef NCURSES
+                    rc = draw_terminal_ncurses(inAtty, *dimension_value / 8, *dimension_bar,
+                                               number_of_bars, p.bar_width, p.bar_spacing,
+                                               remainder, bars, previous_frame, p.gradient,
+                                               x_axis_info, p.orientation);
                     break;
 #endif
                 case OUTPUT_NONCURSES:
@@ -995,6 +1046,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     rc = print_ntk_out(number_of_bars, fp, p.bit_format, p.bar_width, p.bar_spacing,
                                        p.bar_height, bars);
                     break;
+
+#endif // !_MSC_VER
                 default:
                     exit(EXIT_FAILURE); // Can't happen.
                 }
@@ -1017,14 +1070,18 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 memcpy(previous_frame, bars, number_of_bars * sizeof(int));
 
                 // checking if audio thread has exited unexpectedly
+                pthread_mutex_lock(&audio.lock);
                 if (audio.terminate == 1) {
                     cleanup();
                     fprintf(stderr, "Audio thread exited unexpectedly. %s\n", audio.error_message);
                     exit(EXIT_FAILURE);
                 }
+                pthread_mutex_unlock(&audio.lock);
 
+#ifndef _MSC_VER
                 if (output_mode != OUTPUT_SDL)
                     nanosleep(&framerate_timer, NULL);
+#endif // !_MSC_VER
 
                 if (p.draw_and_quit > 0) {
                     total_frames++;
@@ -1045,17 +1102,20 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             } // resize terminal
             cava_destroy(plan);
             free(plan);
-            if (audio.channels == 2) {
+            if (audio_channels == 2) {
                 free(bars_left);
                 free(bars_right);
             }
             free(cava_out);
             free(bars);
+            free(bars_raw);
             free(previous_frame);
         } // reloading config
 
         //**telling audio thread to terminate**//
+        pthread_mutex_lock(&audio.lock);
         audio.terminate = 1;
+        pthread_mutex_unlock(&audio.lock);
         pthread_join(p_thread, NULL);
 
         if (p.userEQ_enabled)

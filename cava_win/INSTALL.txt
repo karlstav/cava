@@ -1,0 +1,11 @@
+You will need the following dlls:
+* fftw3.dll
+* glew.dll
+* libpthread.dll
+* SDL2.dll
+
+(should be added in the .zip bin package when/if I make one)
+
+Install Visual C++ Redistributable for Visual Studio 2012 (maybe also a newer one) was needed when I first ran it. Not sure why we need that old one.
+
+copy the config file and the shaders folder to `C:\Users\"username"\.config\cava`

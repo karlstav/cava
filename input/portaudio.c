@@ -20,7 +20,8 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
                           unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo *timeInfo,
                           PaStreamCallbackFlags statusFlags, void *userData) {
     paTestData *data = (paTestData *)userData;
-    SAMPLE *rptr = (SAMPLE *)inputBuffer;
+    unsigned char *rptr = (unsigned char *)inputBuffer;
+    unsigned char *silence_ptr = (unsigned char *)silence_buffer;
     long framesToCalc;
     int finished;
     unsigned long framesLeft = data->maxFrameIndex - data->frameIndex;
@@ -38,7 +39,7 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
     }
 
     if (inputBuffer == NULL)
-        write_to_cava_input_buffers(framesToCalc * 2, silence_buffer, audio);
+        write_to_cava_input_buffers(framesToCalc * 2, silence_ptr, audio);
     else
         write_to_cava_input_buffers(framesToCalc * 2, rptr, audio);
 

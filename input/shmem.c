@@ -74,11 +74,11 @@ void *input_shmem(void *data) {
                 for (int n = 0; n < fftw_frames * 2; n++) {
                     buf[n] = mmap_area->buffer[n + i];
                 }
-                write_to_cava_input_buffers(fftw_frames * 2, buf, audio);
+                write_to_cava_input_buffers(fftw_frames * 2, (unsigned char *)buf, audio);
             }
             nanosleep(&req, NULL);
         } else {
-            write_to_cava_input_buffers(fftw_frames * 2, silence_buffer, audio);
+            write_to_cava_input_buffers(fftw_frames * 2, (unsigned char *)silence_buffer, audio);
             nanosleep(&req, NULL);
         }
     }
