@@ -152,6 +152,7 @@
     <ClCompile Include="..\..\input\winscap.c" />
     <ClCompile Include="..\..\output\sdl_cava.c" />
     <ClCompile Include="..\..\output\sdl_glsl.c" />
+    <ClCompile Include="..\..\output\terminal_noncurses.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\cavacore.h" />
@@ -161,6 +162,7 @@
     <ClInclude Include="..\..\input\winscap.h" />
     <ClInclude Include="..\..\output\sdl_cava.h" />
     <ClInclude Include="..\..\output\sdl_glsl.h" />
+    <ClInclude Include="..\..\output\terminal_noncurses.h" />
     <ClInclude Include="..\..\util.h" />
   </ItemGroup>
   <ItemGroup>

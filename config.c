@@ -738,8 +738,10 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     GetPrivateProfileString("output", "orientation", "bottom", orientation, 16, configPath);
 
     p->fixedbars = GetPrivateProfileInt("general", "bars", 0, configPath);
-    p->bar_width = GetPrivateProfileInt("general", "bar_width", 20, configPath);
-    p->bar_spacing = GetPrivateProfileInt("general", "bar_spacing", 5, configPath);
+
+    p->bar_width = GetPrivateProfileInt("general", "bar_width", 2, configPath);
+    p->bar_spacing = GetPrivateProfileInt("general", "bar_spacing", 1, configPath);
+
     p->bar_height = GetPrivateProfileInt("general", "bar_height", 32, configPath);
     p->framerate = GetPrivateProfileInt("general", "framerate", 60, configPath);
     p->sens = GetPrivateProfileInt("general", "sensitivity", 100, configPath);
@@ -776,6 +778,10 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     }
     GetPrivateProfileString("input", "source", "auto", p->audio_source, 64, configPath);
 
+    if (strcmp(outputMethod, "sdl") == 0) {
+        p->bar_width = GetPrivateProfileInt("general", "bar_width", 20, configPath);
+        p->bar_spacing = GetPrivateProfileInt("general", "bar_spacing", 5, configPath);
+    }
     if (strcmp(outputMethod, "sdl_glsl") == 0) {
         p->bar_width = GetPrivateProfileInt("general", "bar_width", 1, configPath);
         p->bar_spacing = GetPrivateProfileInt("general", "bar_spacing", 0, configPath);

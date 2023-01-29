@@ -27,6 +27,7 @@
 
 #ifdef _MSC_VER
 #include "input/winscap.h"
+#include <windows.h>
 #define PATH_MAX 260
 #define PACKAGE "cava"
 #define _CRT_SECURE_NO_WARNINGS 1
@@ -204,8 +205,10 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
 // general: entry point
 int main(int argc, char **argv) {
 
+#ifndef _MSC_VER
     // general: console title
     printf("%c]0;%s%c", '\033', PACKAGE, '\007');
+#endif // !_MSC_VER
 
     // general: handle command-line arguments
     char configPath[PATH_MAX];
@@ -278,13 +281,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             exit(EXIT_FAILURE);
         }
 
-        int inAtty;
+        int inAtty = 0;
 
         output_mode = p.output;
 #ifndef _MSC_VER
         if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE) {
             // Check if we're running in a tty
-            inAtty = 0;
             if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0), "/dev/console") == 0)
                 inAtty = 1;
 
@@ -515,7 +517,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 init_sdl_glsl_surface(&width, &height, p.color, p.bcolor);
                 break;
 #endif
-#ifndef _MSC_VER
             case OUTPUT_NONCURSES:
                 get_terminal_dim_noncurses(&width, &lines);
 
@@ -527,7 +528,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                                         p.bar_width);
                 height = lines * 8;
                 break;
-
+#ifndef _MSC_VER
             case OUTPUT_RAW:
             case OUTPUT_NORITAKE:
                 if (strcmp(p.raw_target, "/dev/stdout") != 0) {
@@ -663,11 +664,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             memset(previous_frame, 0, sizeof(int) * number_of_bars);
             memset(cava_out, 0, sizeof(double) * number_of_bars * audio.channels / output_channels);
 
-#ifndef _MSC_VER
-
-            // process: calculate x axis values
             int x_axis_info = 0;
-
+#ifndef _MSC_VER
+            // process: calculate x axis values
             if (p.xaxis != NONE) {
                 x_axis_info = 1;
                 double cut_off_frequency;
@@ -726,6 +725,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 framerate_timer.tv_sec = 0;
                 framerate_timer.tv_nsec = frame_time_msec * 1e6;
             }
+#ifdef _MSC_VER
+            LARGE_INTEGER frequency; // ticks per second
+            LARGE_INTEGER t1, t2;    // ticks
+            double elapsedTime;
+            QueryPerformanceFrequency(&frequency);
+#endif // _MSC_VER
 
             int sleep_counter = 0;
             bool silence = false;
@@ -1009,6 +1014,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     fflush(stdout);
                 }
                 int rc;
+#ifdef _MSC_VER
+                QueryPerformanceCounter(&t1);
+#endif
                 switch (output_mode) {
 #ifdef SDL
                 case OUTPUT_SDL:
@@ -1024,6 +1032,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                                        p.continuous_rendering);
                     break;
 #endif
+                case OUTPUT_NONCURSES:
+                    rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars, p.bar_width,
+                                                 p.bar_spacing, remainder, bars, previous_frame,
+                                                 p.gradient, x_axis_info);
+                    break;
 #ifndef _MSC_VER
                 case OUTPUT_NCURSES:
 #ifdef NCURSES
@@ -1033,11 +1046,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                                                x_axis_info, p.orientation);
                     break;
 #endif
-                case OUTPUT_NONCURSES:
-                    rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars, p.bar_width,
-                                                 p.bar_spacing, remainder, bars, previous_frame,
-                                                 p.gradient, x_axis_info);
-                    break;
                 case OUTPUT_RAW:
                     rc = print_raw_out(number_of_bars, fp, p.raw_format, p.bit_format,
                                        p.ascii_range, p.bar_delim, p.frame_delim, bars);
@@ -1055,6 +1063,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     printf("\033P=2s\033\\");
                     fflush(stdout);
                 }
+
                 // terminal has been resized breaking to recalibrating values
                 if (rc == -1)
                     resizeTerminal = true;
@@ -1077,11 +1086,24 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     exit(EXIT_FAILURE);
                 }
                 pthread_mutex_unlock(&audio.lock);
-
-#ifndef _MSC_VER
-                if (output_mode != OUTPUT_SDL)
+#ifdef _MSC_VER
+                QueryPerformanceCounter(&t2);
+                elapsedTime = (t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart;
+                int fps_sync_time = frame_time_msec;
+                if (elapsedTime < 1.0)
+                    fps_sync_time = frame_time_msec;
+                else if ((int)elapsedTime > frame_time_msec)
+                    fps_sync_time = 0;
+                else
+                    fps_sync_time = (frame_time_msec - (int)elapsedTime) / 2;
+#endif
+                if (output_mode != OUTPUT_SDL) {
+#ifdef _MSC_VER
+                    Sleep(fps_sync_time);
+#else
                     nanosleep(&framerate_timer, NULL);
-#endif // !_MSC_VER
+#endif
+                }
 
                 if (p.draw_and_quit > 0) {
                     total_frames++;

@@ -3,10 +3,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _MSC_VER
+#include <fcntl.h>
+#include <io.h>
+#include <windows.h>
+#else
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
+#endif
 #include <wchar.h>
+
+#define MAX_GRADIENT_COLOR_DEFS 8
 
 wchar_t *frame_buffer;
 wchar_t *barstring[8];
@@ -19,6 +27,16 @@ int ttybuf_length;
 
 int setecho(int fd, int onoff) {
 
+#ifdef _MSC_VER
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    DWORD mode = 0;
+    GetConsoleMode(hStdin, &mode);
+    if (onoff == 0)
+        SetConsoleMode(hStdin, mode & (~ENABLE_ECHO_INPUT));
+    else
+        SetConsoleMode(hStdin, mode & (ENABLE_ECHO_INPUT));
+
+#else
     struct termios t;
 
     if (tcgetattr(fd, &t) == -1)
@@ -31,7 +49,7 @@ int setecho(int fd, int onoff) {
 
     if (tcsetattr(fd, TCSANOW, &t) == -1)
         return -1;
-
+#endif
     return 0;
 }
 
@@ -121,13 +139,25 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
     }
 
     col += 30;
+#ifdef _MSC_VER
+    HANDLE hStdOut = NULL;
+    CONSOLE_CURSOR_INFO curInfo;
 
+    hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    GetConsoleCursorInfo(hStdOut, &curInfo);
+    curInfo.bVisible = FALSE;
+    SetConsoleCursorInfo(hStdOut, &curInfo);
+
+    setlocale(LC_ALL, "en_US.utf8");
+    SetConsoleOutputCP(CP_UTF8);
+#else
     system("setterm -cursor off");
     system("setterm -blank 0");
+    system("clear");
+#endif
 
     // output: reset console
     printf("\033[0m\n");
-    system("clear");
 
     if (col == 38) {
         struct colors fg_color = parse_color(fg_color_string);
@@ -137,7 +167,7 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
     }
 
     if (gradient) {
-        struct colors gradient_color_defs[gradient_count];
+        struct colors gradient_color_defs[MAX_GRADIENT_COLOR_DEFS];
         for (int i = 0; i < gradient_count; i++) {
             gradient_color_defs[i] = parse_color(gradient_color_strings[i]);
         }
@@ -194,22 +224,32 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
         }
         printf("\033[%dA", lines); // moving cursor back up
     }
-
+#ifdef _MSC_VER
+    setecho(1, 0);
+#else
     setecho(STDIN_FILENO, 0);
-
+#endif
     return 0;
 }
 
 void get_terminal_dim_noncurses(int *width, int *lines) {
 
+#ifdef _MSC_VER
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    *width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    *lines = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+#else
     struct winsize dim;
 
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
 
     *lines = (int)dim.ws_row;
     *width = (int)dim.ws_col;
-
     system("clear"); // clearing in case of resieze
+
+#endif
 }
 
 int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, int bar_width,
@@ -218,21 +258,34 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
 
     int current_cell, prev_cell, same_line, new_line, cx;
 
-    struct winsize dim;
-
     same_line = 0;
     new_line = 0;
     cx = 0;
 
     if (!tty) {
         // output: check if terminal has been resized
-        ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
         if (x_axis_info)
             lines++;
-        if ((int)dim.ws_row != (lines) || (int)dim.ws_col != width)
-            return -1;
+
+        int new_lines;
+        int new_width;
+#ifdef _MSC_VER
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+        new_width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+        new_lines = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+#else
+        struct winsize dim;
+        ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
+
+        new_width = (int)dim.ws_col;
+        new_lines = (int)dim.ws_row;
+
+#endif
         if (x_axis_info)
             lines--;
+        if (new_lines != (lines) || new_width != width)
+            return -1;
     }
 
     if (tty)
@@ -359,11 +412,22 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
 }
 
 void cleanup_terminal_noncurses(void) {
+#ifdef _MSC_VER
+    setecho(1, 1);
+    HANDLE hStdOut = NULL;
+    CONSOLE_CURSOR_INFO curInfo;
+
+    hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    GetConsoleCursorInfo(hStdOut, &curInfo);
+    curInfo.bVisible = TRUE;
+    SetConsoleCursorInfo(hStdOut, &curInfo);
+#else
     setecho(STDIN_FILENO, 1);
-    printf("\033[0m\n");
     system("setfont  >/dev/null 2>&1");
     system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
     system("setterm -cursor on");
     system("setterm -blank 10");
     system("clear");
+#endif
+    printf("\033[0m\n");
 }
