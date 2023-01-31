@@ -150,6 +150,8 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
 
     setlocale(LC_ALL, "en_US.utf8");
     SetConsoleOutputCP(CP_UTF8);
+    system("cls");
+
 #else
     system("setterm -cursor off");
     system("setterm -blank 0");
@@ -247,8 +249,6 @@ void get_terminal_dim_noncurses(int *width, int *lines) {
 
     *lines = (int)dim.ws_row;
     *width = (int)dim.ws_col;
-    system("clear"); // clearing in case of resieze
-
 #endif
 }
 
@@ -421,6 +421,7 @@ void cleanup_terminal_noncurses(void) {
     GetConsoleCursorInfo(hStdOut, &curInfo);
     curInfo.bVisible = TRUE;
     SetConsoleCursorInfo(hStdOut, &curInfo);
+    system("cls");
 #else
     setecho(STDIN_FILENO, 1);
     system("setfont  >/dev/null 2>&1");

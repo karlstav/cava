@@ -106,9 +106,7 @@ void cleanup(void) {
         ;
 #endif
     } else if (output_mode == OUTPUT_NONCURSES) {
-#ifndef _MSC_VER
         cleanup_terminal_noncurses();
-#endif
     } else if (output_mode == OUTPUT_SDL) {
 #ifdef SDL
         cleanup_sdl();
@@ -137,14 +135,16 @@ void sig_handler(int sig_no) {
         reload_colors = 1;
         return;
     }
+#endif
 
     cleanup();
+
     if (sig_no == SIGINT) {
         printf("CTRL-C pressed -- goodbye\n");
     }
+
     signal(sig_no, SIG_DFL);
     raise(sig_no);
-#endif
 }
 
 #ifdef ALSA
@@ -213,7 +213,12 @@ int main(int argc, char **argv) {
     // general: handle command-line arguments
     char configPath[PATH_MAX];
     configPath[0] = '\0';
-#ifndef _MSC_VER
+#ifdef _MSC_VER
+    if (!SetConsoleCtrlHandler(sig_handler, TRUE)) {
+        fprintf(stderr, "ERROR: Could not set control handler");
+        exit(EXIT_FAILURE);
+    }
+#else
     // general: handle Ctrl+C
     struct sigaction action;
     memset(&action, 0, sizeof(action));
