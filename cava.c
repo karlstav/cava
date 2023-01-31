@@ -56,6 +56,8 @@
 
 #include "input/common.h"
 
+#include "output/terminal_noncurses.h"
+
 #ifndef _MSC_VER
 #ifdef NCURSES
 #include "output/terminal_bcircle.h"
@@ -65,7 +67,6 @@
 
 #include "output/noritake.h"
 #include "output/raw.h"
-#include "output/terminal_noncurses.h"
 
 #include "input/alsa.h"
 #include "input/fifo.h"
