@@ -670,7 +670,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             memset(cava_out, 0, sizeof(double) * number_of_bars * audio.channels / output_channels);
 
             int x_axis_info = 0;
-#ifndef _MSC_VER
             // process: calculate x axis values
             if (p.xaxis != NONE) {
                 x_axis_info = 1;
@@ -719,7 +718,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 }
                 printf("\r\033[%dA", lines + 1);
             }
-#endif // !_MSC_VER
+
             bool resizeTerminal = false;
 
             int frame_time_msec = (1 / (float)p.framerate) * 1000;

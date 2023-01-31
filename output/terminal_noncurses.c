@@ -269,23 +269,13 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
 
         int new_lines;
         int new_width;
-#ifdef _MSC_VER
-        CONSOLE_SCREEN_BUFFER_INFO csbi;
-        GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-        new_width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
-        new_lines = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
-#else
-        struct winsize dim;
-        ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
+        get_terminal_dim_noncurses(&new_width, &new_lines);
 
-        new_width = (int)dim.ws_col;
-        new_lines = (int)dim.ws_row;
-
-#endif
-        if (x_axis_info)
-            lines--;
         if (new_lines != (lines) || new_width != width)
             return -1;
+
+        if (x_axis_info)
+            lines--;
     }
 
     if (tty)
