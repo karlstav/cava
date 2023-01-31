@@ -165,7 +165,6 @@ static bool directory_exists(const char *path) {
 #endif
 
 float *monstercat_filter(float *bars, int number_of_bars, int waves, double monstercat) {
-#ifndef _MSC_VER
 
     int z;
 
@@ -190,15 +189,14 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
             // if (bars[z] < 1)bars[z] = 1;
             for (m_y = z - 1; m_y >= 0; m_y--) {
                 de = z - m_y;
-                bars[m_y] = max(bars[z] / pow(monstercat, de), bars[m_y]);
+                bars[m_y] = max(bars[z] / pow(monstercat * 1.5, de), bars[m_y]);
             }
             for (m_y = z + 1; m_y < number_of_bars; m_y++) {
                 de = m_y - z;
-                bars[m_y] = max(bars[z] / pow(monstercat, de), bars[m_y]);
+                bars[m_y] = max(bars[z] / pow(monstercat * 1.5, de), bars[m_y]);
             }
         }
     }
-#endif
     return bars;
 }
 

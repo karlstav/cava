@@ -575,7 +575,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     orientation = strdup(iniparser_getstring(ini, "output:orientation", "bottom"));
     xaxisScale = strdup(iniparser_getstring(ini, "output:xaxis", "none"));
-    p->monstercat = 1.5 * iniparser_getdouble(ini, "smoothing:monstercat", 0);
+    p->monstercat = iniparser_getdouble(ini, "smoothing:monstercat", 0);
     p->waves = iniparser_getint(ini, "smoothing:waves", 0);
     p->integral = iniparser_getdouble(ini, "smoothing:integral", 77);
     p->gravity = iniparser_getdouble(ini, "smoothing:gravity", 100);
@@ -730,9 +730,11 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     iniparser_freedict(ini);
 #else
 
-    GetPrivateProfileString("output", "method", "sdl", outputMethod, 16, configPath);
+    GetPrivateProfileString("output", "method", "noncurses", outputMethod, 16, configPath);
 
     p->waves = GetPrivateProfileInt("smoothing", "waves", 0, configPath);
+    p->monstercat = GetPrivateProfileInt("smoothing", "monstercat", 0, configPath);
+
     p->noise_reduction = GetPrivateProfileInt("smoothing", "noise_reduction", 77, configPath);
     GetPrivateProfileString("output", "xaxis", "none", xaxisScale, 16, configPath);
     GetPrivateProfileString("output", "orientation", "bottom", orientation, 16, configPath);
