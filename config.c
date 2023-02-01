@@ -793,7 +793,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         GetPrivateProfileString("color", "background", "#111111", p->bcolor, 9, configPath);
     }
 
-
     p->continuous_rendering = GetPrivateProfileInt("output", "continuous_rendering", 0, configPath);
 
     GetPrivateProfileString("output", "vertex_shader", "pass_through.vert", vertexShader, 64,
