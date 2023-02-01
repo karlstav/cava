@@ -538,8 +538,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     vertexShader = malloc(sizeof(char) * PATH_MAX / 2);
     fragmentShader = malloc(sizeof(char) * PATH_MAX / 2);
 
-    GetPrivateProfileString("color", "foreground", "#33cccc", p->color, 9, configPath);
-    GetPrivateProfileString("color", "background", "#111111", p->bcolor, 9, configPath);
+    GetPrivateProfileString("color", "foreground", "default", p->color, 9, configPath);
+    GetPrivateProfileString("color", "background", "default", p->bcolor, 9, configPath);
     p->gradient = GetPrivateProfileInt("color", "gradient", 0, configPath);
     p->gradient_count = GetPrivateProfileInt("color", "gradient_count", 8, configPath);
 
@@ -788,6 +788,11 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         p->bar_width = GetPrivateProfileInt("general", "bar_width", 1, configPath);
         p->bar_spacing = GetPrivateProfileInt("general", "bar_spacing", 0, configPath);
     }
+    if (strcmp(outputMethod, "sdl_glsl") == 0 || strcmp(outputMethod, "sdl") == 0) {
+        GetPrivateProfileString("color", "foreground", "#33cccc", p->color, 9, configPath);
+        GetPrivateProfileString("color", "background", "#111111", p->bcolor, 9, configPath);
+    }
+
 
     p->continuous_rendering = GetPrivateProfileInt("output", "continuous_rendering", 0, configPath);
 
