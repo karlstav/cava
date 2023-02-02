@@ -1040,7 +1040,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                                                  p.bar_spacing, remainder, bars, previous_frame,
                                                  p.gradient, x_axis_info);
                     break;
-#ifndef _MSC_VER
                 case OUTPUT_NCURSES:
 #ifdef NCURSES
                     rc = draw_terminal_ncurses(inAtty, *dimension_value / 8, *dimension_bar,
@@ -1049,6 +1048,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                                                x_axis_info, p.orientation);
                     break;
 #endif
+#ifndef _MSC_VER
                 case OUTPUT_RAW:
                     rc = print_raw_out(number_of_bars, fp, p.raw_format, p.bit_format,
                                        p.ascii_range, p.bar_delim, p.frame_delim, bars);
