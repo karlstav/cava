@@ -212,7 +212,11 @@ AC_CHECK_LIB(SDL2,SDL_Init, have_sdl=yes, have_sdl=no)
           [do not include support for output with sdl_glsl])
       )
       AS_IF([test "x$enable_output_sdl_glsl" != "xno"], [
-      AX_CHECK_GL(have_opengl=yes, have_opengl=no)
+             m4_ifdef([AX_CHECK_GL], [
+                       AX_CHECK_GL(have_opengl=yes, have_opengl=no)
+                       ], [
+                           AC_MSG_ERROR([You need to install the autoconf archives to check for opengl. Remember to re-run autogen.sh. To disable opengl output run configure with --disable-output-sdl-glsl])
+                           ])
       if [[ $have_opengl = "yes" ]] ; then
         LIBS="$LIBS $GL_LIBS"
         CPPFLAGS="$CPPFLAGS -DSDL_GLSL $GL_CFLAGS"
