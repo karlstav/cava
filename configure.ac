@@ -215,7 +215,8 @@ AC_CHECK_LIB(SDL2,SDL_Init, have_sdl=yes, have_sdl=no)
              m4_ifdef([AX_CHECK_GL], [
                        AX_CHECK_GL(have_opengl=yes, have_opengl=no)
                        ], [
-                           AC_MSG_ERROR([You need to install the autoconf archives to check for opengl. Remember to re-run autogen.sh. To disable opengl output run configure with --disable-output-sdl-glsl])
+                           AC_MSG_NOTICE([You need to install the autoconf archives to check for opengl. Remember to re-run autogen.sh.])
+                           have_opengl=no
                            ])
       if [[ $have_opengl = "yes" ]] ; then
         LIBS="$LIBS $GL_LIBS"
@@ -223,7 +224,7 @@ AC_CHECK_LIB(SDL2,SDL_Init, have_sdl=yes, have_sdl=no)
       fi
 
       if [[ $have_opengl = "no" ]] ; then
-        AC_MSG_NOTICE([INFO: building without sdl_glsl support])
+        AC_MSG_NOTICE([INFO: building without sdl_glsl (opengl) support])
       fi
       ],
         [have_opengl=no]
