@@ -113,7 +113,7 @@ First install homebrew if you have't already:
 
 Then install prerequisites:
 
-    brew install fftw ncurses libtool automake autoconf-archive portaudio
+    brew install fftw ncurses libtool automake autoconf-archive pkgconf portaudio iniparser
     
 Then fix macOS not finding libtool and ncursesw:
 
