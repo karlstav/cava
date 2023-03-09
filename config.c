@@ -4,7 +4,11 @@
 
 #include <ctype.h>
 #ifndef _MSC_VER
+#if __has_include(<iniparser.h>)
 #include <iniparser.h>
+#elif __has_include(<iniparser4/iniparser.h>)
+#include <iniparser4/iniparser.h>
+#endif
 #endif
 #include <math.h>
 

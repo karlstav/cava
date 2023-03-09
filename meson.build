@@ -50,8 +50,9 @@ endif
 # Checking for iniparser
 ########################
 iniparser_dep = compiler.find_library('iniparser', has_headers: 'iniparser.h', required: false)
+
 if not iniparser_dep.found()
-   iniparser_dep = compiler.find_library('iniparser4', has_headers: 'iniparser4/iniparser.h', required: false)
+  iniparser_dep = compiler.find_library('iniparser4', has_headers: 'iniparser4/iniparser.h', required: false)
 endif
 
 if not iniparser_dep.found()
