@@ -512,7 +512,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #ifdef SDL
             // output: get sdl window size
             case OUTPUT_SDL:
-                init_sdl_surface(&width, &height, p.color, p.bcolor);
+                init_sdl_surface(&width, &height, p.color, p.bcolor, p.gradient, p.gradient_count,
+                                 p.gradient_colors);
                 break;
 #endif
 #ifdef SDL_GLSL
@@ -1025,7 +1026,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 case OUTPUT_SDL:
                     rc = draw_sdl(number_of_bars, p.bar_width, p.bar_spacing, remainder,
                                   *dimension_value, bars, previous_frame, frame_time_msec,
-                                  p.orientation);
+                                  p.orientation, p.gradient);
 
                     break;
 #endif

@@ -12,6 +12,9 @@
 
 #include "util.h"
 
+#define MAX_GRADIENT_COLOR_DEFS 8
+
+
 SDL_Window *gWindow = NULL;
 
 SDL_Renderer *gRenderer = NULL;
@@ -19,17 +22,17 @@ SDL_Renderer *gRenderer = NULL;
 SDL_Event e;
 
 struct colors {
-    uint16_t R;
-    uint16_t G;
-    uint16_t B;
+    uint16_t RGB[3];
 };
+
+struct colors *gradient_colors;
 
 struct colors fg_color = {0};
 struct colors bg_color = {0};
 
 static void parse_color(char *color_string, struct colors *color) {
     if (color_string[0] == '#') {
-        sscanf(++color_string, "%02hx%02hx%02hx", &color->R, &color->G, &color->B);
+        sscanf(++color_string, "%02hx%02hx%02hx", &color->RGB[0], &color->RGB[1], &color->RGB[2]);
     }
 }
 
@@ -56,19 +59,55 @@ void init_sdl_window(int width, int height, int x, int y) {
     }
 }
 
-void init_sdl_surface(int *w, int *h, char *const fg_color_string, char *const bg_color_string) {
+void init_sdl_surface(int *w, int *h, char *const fg_color_string, char *const bg_color_string,
+                      int gradient, int gradient_count, char **gradient_color_strings) {
     SDL_GetWindowSize(gWindow, w, h);
 
     parse_color(bg_color_string, &bg_color);
-    SDL_SetRenderDrawColor(gRenderer, bg_color.R, bg_color.G, bg_color.B, 0xFF);
+    SDL_SetRenderDrawColor(gRenderer, fg_color.RGB[0], fg_color.RGB[1], fg_color.RGB[2], 0xFF);
     SDL_RenderClear(gRenderer);
 
     parse_color(fg_color_string, &fg_color);
-    SDL_SetRenderDrawColor(gRenderer, fg_color.R, fg_color.G, fg_color.B, 0xFF);
+    SDL_SetRenderDrawColor(gRenderer, fg_color.RGB[0], fg_color.RGB[1], fg_color.RGB[2], 0xFF);
+    if (gradient) {
+        struct colors gradient_color_defs[MAX_GRADIENT_COLOR_DEFS];
+        for (int i = 0; i < gradient_count; i++) {
+            parse_color(gradient_color_strings[i], &gradient_color_defs[i]);
+        }
+        int lines = *h;
+        gradient_colors = (struct colors *)malloc((lines * 2) * sizeof(struct colors));
+
+        int individual_size = lines / (gradient_count - 1);
+
+        float rest = lines / (float)(gradient_count - 1) - individual_size;
+
+        float rest_total = 0;
+        int gradient_lines = 0;
+
+        for (int i = 0; i < gradient_count - 1; i++) {
+            individual_size = lines / (gradient_count - 1);
+            if (rest_total > 1.0) {
+                individual_size++;
+                rest_total = rest_total - 1.0;
+            }
+            for (int n = 0; n < individual_size; n++) {
+                for (int c = 0; c < 3; c++) {
+                    float next_color =
+                        gradient_color_defs[i + 1].RGB[c] - gradient_color_defs[i].RGB[c];
+                    next_color *= n / (float)individual_size;
+                    gradient_colors[gradient_lines].RGB[c] =
+                        gradient_color_defs[i].RGB[c] + next_color;
+                }
+                gradient_lines++;
+            }
+            rest_total = rest_total + rest;
+        }
+        gradient_colors[lines - 1] = gradient_color_defs[gradient_count - 1];
+    }
 }
 
 int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int height,
-             const int bars[], int previous_frame[], int frame_time, enum orientation orientation) {
+             const int bars[], int previous_frame[], int frame_time, enum orientation orientation, int gradient) {
 
     bool update = false;
     int rc = 0;
@@ -82,38 +121,57 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
     }
 
     if (update) {
-        SDL_SetRenderDrawColor(gRenderer, bg_color.R, bg_color.G, bg_color.B, 0xFF);
+        SDL_SetRenderDrawColor(gRenderer, bg_color.RGB[0], bg_color.RGB[1], bg_color.RGB[2], 0xFF);
         SDL_RenderClear(gRenderer);
-        for (int bar = 0; bar < bars_count; bar++) {
-            switch (orientation) {
-            case ORIENT_LEFT:
-                fillRect.x = 0;
-                fillRect.y = bar * (bar_width + bar_spacing) + remainder;
-                fillRect.w = bars[bar];
-                fillRect.h = bar_width;
-                break;
-            case ORIENT_RIGHT:
-                fillRect.x = height - bars[bar];
-                fillRect.y = bar * (bar_width + bar_spacing) + remainder;
-                fillRect.w = bars[bar];
-                fillRect.h = bar_width;
-                break;
-            case ORIENT_TOP:
-                fillRect.x = bar * (bar_width + bar_spacing) + remainder;
-                fillRect.y = 0;
-                fillRect.w = bar_width;
-                fillRect.h = bars[bar];
-                break;
-            default:
-                fillRect.x = bar * (bar_width + bar_spacing) + remainder;
-                fillRect.y = height - bars[bar];
-                fillRect.w = bar_width;
-                fillRect.h = bars[bar];
-                break;
-            }
+        if (gradient) {
+            for (int line = 0; line < height; line++) {
 
-            SDL_SetRenderDrawColor(gRenderer, fg_color.R, fg_color.G, fg_color.B, 0xFF);
-            SDL_RenderFillRect(gRenderer, &fillRect);
+                SDL_SetRenderDrawColor(gRenderer, gradient_colors[line].RGB[0],
+                                       gradient_colors[line].RGB[1], gradient_colors[line].RGB[2],
+                                       0xFF);
+                for (int bar = 0; bar < bars_count; bar++) {
+                    if (bars[bar] > line) {
+                        int x1 = bar * (bar_width + bar_spacing);
+                        if (bar == 0)
+                            x1 = 0;
+                        int x2 = x1 + bar_width;
+                        SDL_RenderDrawLine(gRenderer, x1, height - line, x2, height - line);
+                    }
+                }
+            }
+        } else {
+            for (int bar = 0; bar < bars_count; bar++) {
+                switch (orientation) {
+                case ORIENT_LEFT:
+                    fillRect.x = 0;
+                    fillRect.y = bar * (bar_width + bar_spacing) + remainder;
+                    fillRect.w = bars[bar];
+                    fillRect.h = bar_width;
+                    break;
+                case ORIENT_RIGHT:
+                    fillRect.x = height - bars[bar];
+                    fillRect.y = bar * (bar_width + bar_spacing) + remainder;
+                    fillRect.w = bars[bar];
+                    fillRect.h = bar_width;
+                    break;
+                case ORIENT_TOP:
+                    fillRect.x = bar * (bar_width + bar_spacing) + remainder;
+                    fillRect.y = 0;
+                    fillRect.w = bar_width;
+                    fillRect.h = bars[bar];
+                    break;
+                default:
+                    fillRect.x = bar * (bar_width + bar_spacing) + remainder;
+                    fillRect.y = height - bars[bar];
+                    fillRect.w = bar_width;
+                    fillRect.h = bars[bar];
+                    break;
+                }
+
+                SDL_SetRenderDrawColor(gRenderer, fg_color.RGB[0], fg_color.RGB[1], fg_color.RGB[2],
+                                        0xFF);
+                SDL_RenderFillRect(gRenderer, &fillRect);
+            }
         }
         SDL_RenderPresent(gRenderer);
     }
