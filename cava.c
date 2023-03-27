@@ -1101,7 +1101,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 else
                     fps_sync_time = (frame_time_msec - (int)elapsedTime) / 2;
 #endif
-                if (output_mode != OUTPUT_SDL) {
+                if (output_mode != OUTPUT_SDL && output_mode != OUTPUT_SDL_GLSL) {
 #ifdef _MSC_VER
                     Sleep(fps_sync_time);
 #else
