@@ -519,7 +519,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #ifdef SDL_GLSL
             // output: get sdl window size
             case OUTPUT_SDL_GLSL:
-                init_sdl_glsl_surface(&width, &height, p.color, p.bcolor);
+                init_sdl_glsl_surface(&width, &height, p.color, p.bcolor, p.bar_width,
+                                      p.bar_spacing, p.gradient, p.gradient_count,
+                                      p.gradient_colors);
                 break;
 #endif
             case OUTPUT_NONCURSES:

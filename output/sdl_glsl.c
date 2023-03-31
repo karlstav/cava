@@ -140,8 +140,9 @@ void init_sdl_glsl_window(int width, int height, int x, int y, char *const verte
     }
 }
 
-void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string,
-                           char *const bg_color_string) {
+void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string, char *const bg_color_string,
+                           int bar_width, int bar_spacing, int gradient, int gradient_count,
+                           char **gradient_color_strings) {
     struct colors color = {0};
 
     GLint uniform_bg_col;
@@ -160,6 +161,31 @@ void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string,
     uniform_res = glGetUniformLocation(shading_program, "u_resolution");
     SDL_GetWindowSize(glWindow, w, h);
     glUniform3f(uniform_res, (float)*w, (float)*h, 0.0f);
+
+    GLint uniform_bar_width;
+    uniform_bar_width = glGetUniformLocation(shading_program, "bar_width");
+    glUniform1i(uniform_bar_width, bar_width);
+
+    GLint uniform_bar_spacing;
+    uniform_bar_spacing = glGetUniformLocation(shading_program, "bar_spacing");
+    glUniform1i(uniform_bar_spacing, bar_spacing);
+
+    GLint uniform_gradient_count;
+    uniform_gradient_count = glGetUniformLocation(shading_program, "gradient_count");
+    if (gradient == 0)
+        gradient_count = 0;
+    glUniform1i(uniform_gradient_count, gradient_count);
+
+    GLint uniform_gradient_colors;
+    uniform_gradient_colors = glGetUniformLocation(shading_program, "gradient_colors");
+    float gradient_colors[8][3];
+    for (int i = 0; i < gradient_count; i++) {
+        parse_color(gradient_color_strings[i], &color);
+        gradient_colors[i][0] = (float)color.R / 255.0;
+        gradient_colors[i][1] = (float)color.G / 255.0;
+        gradient_colors[i][2] = (float)color.B / 255.0;
+    }
+    glUniform3fv(uniform_gradient_colors, 8, (const GLfloat *)gradient_colors);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);

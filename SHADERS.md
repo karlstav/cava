@@ -11,7 +11,7 @@ under [output] set `method` to 'sdl_glsl'
 
 use the config options `vertex_shader` and `fragment_shader` to select file.
 
-look in the `normalized_bars.frag` shader for how the shaders interact with cava.
+look in the `bar_spectrum.frag` shader for how the shaders interact with cava.
 
 the custom shaders will use some of the same config parameters as the other output modes, like number of bars.
 

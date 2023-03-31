@@ -16,7 +16,7 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 
-#define NUMBER_OF_SHADERS 2
+#define NUMBER_OF_SHADERS 3
 
 #ifdef _MSC_VER
 #include "Windows.h"
@@ -30,15 +30,17 @@
 INCTXT(ConfigFile, "example_files/config");
 
 // add your custom shaders to be installed here
+INCTXT(bar_spectrum, "output/shaders/bar_spectrum.frag");
 INCTXT(normalized_barsfrag, "output/shaders/normalized_bars.frag");
 INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
 
 // INCTXT will create a char g<name>Data
 const char *default_shader_data[NUMBER_OF_SHADERS] = {gnormalized_barsfragData,
-                                                      gpass_throughvertData};
+                                                      gpass_throughvertData, gbar_spectrumData};
 #endif // _MSC_VER
 // name of the installed shader file, technically does not have to be the same as in the source
-const char *default_shader_name[NUMBER_OF_SHADERS] = {"normalized_bars.frag", "pass_through.vert"};
+const char *default_shader_name[NUMBER_OF_SHADERS] = {"normalized_bars.frag", "pass_through.vert",
+                                                      "bar_spectrum.frag"};
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
 
@@ -633,10 +635,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         p->bcolor = strdup(iniparser_getstring(ini, "color:background", "#111111"));
         p->bar_width = iniparser_getint(ini, "general:bar_width", 20);
         p->bar_spacing = iniparser_getint(ini, "general:bar_spacing", 5);
-    }
-    if (strcmp(outputMethod, "sdl_glsl") == 0) {
-        p->bar_width = iniparser_getint(ini, "general:bar_width", 1);
-        p->bar_spacing = iniparser_getint(ini, "general:bar_spacing", 0);
     }
 
     p->continuous_rendering = iniparser_getint(ini, "output:continuous_rendering", 0);
