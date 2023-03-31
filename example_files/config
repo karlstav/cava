@@ -216,7 +216,7 @@
 [eq]
 
 # This one is tricky. You can have as much keys as you want.
-# Remember to uncomment more then one key! More keys = more precision.
+# Remember to uncomment more than one key! More keys = more precision.
 # Look at readme.md on github for further explanations and examples.
 ; 1 = 1 # bass
 ; 2 = 1
