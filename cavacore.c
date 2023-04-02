@@ -523,7 +523,7 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
             p->sens_init = 0;
         } else {
             if (!silence) {
-                p->sens = p->sens * 1.001;
+                p->sens = p->sens * 1.01;
                 if (p->sens_init)
                     p->sens = p->sens * 1.1;
             }
