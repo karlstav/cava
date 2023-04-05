@@ -27,6 +27,10 @@ if PORTAUDIO
     cava_SOURCES += input/portaudio.c
 endif
 
+if PIPEWIRE
+    cava_SOURCES += input/pipewire.c
+endif
+
 if PULSE
     cava_SOURCES += input/pulse.c
 endif

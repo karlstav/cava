@@ -25,6 +25,12 @@
 #define HAS_PULSE false
 #endif
 
+#ifdef PIPEWIRE
+#define HAS_PIPEWIRE true
+#else
+#define HAS_PIPEWIRE false
+#endif
+
 #ifdef SNDIO
 #define HAS_SNDIO true
 #else
@@ -49,6 +55,7 @@
 enum input_method {
     INPUT_FIFO,
     INPUT_PORTAUDIO,
+    INPUT_PIPEWIRE,
     INPUT_ALSA,
     INPUT_PULSE,
     INPUT_SNDIO,

@@ -52,12 +52,12 @@ char *outputMethod, *orientation, *channels, *xaxisScale, *monoOption, *fragment
     *vertexShader;
 
 const char *input_method_names[] = {
-    "fifo", "portaudio", "alsa", "pulse", "sndio", "shmem", "winscap",
+    "fifo", "portaudio", "pipewire", "alsa", "pulse", "sndio", "shmem", "winscap",
 };
 
 const bool has_input_method[] = {
     HAS_FIFO, /** Always have at least FIFO and shmem input. */
-    HAS_PORTAUDIO, HAS_ALSA, HAS_PULSE, HAS_SNDIO, HAS_SHMEM, HAS_WINSCAP,
+    HAS_PORTAUDIO, HAS_PIPEWIRE, HAS_ALSA, HAS_PULSE, HAS_SNDIO, HAS_SHMEM, HAS_WINSCAP,
 };
 
 enum input_method input_method_by_name(const char *str) {
@@ -690,6 +690,11 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 #ifdef PULSE
     case INPUT_PULSE:
         p->audio_source = strdup(iniparser_getstring(ini, "input:source", "auto"));
+        break;
+#endif
+#ifdef PIPEWIRE
+    case INPUT_PIPEWIRE:
+        p->audio_source = strdup(iniparser_getstring(ini, "input:source", "default"));
         break;
 #endif
 #ifdef SNDIO

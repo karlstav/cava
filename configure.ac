@@ -96,6 +96,29 @@ AS_IF([test "x$enable_input_alsa" != "xno"], [
 
 AM_CONDITIONAL([ALSA], [test "x$have_alsa" = "xyes"])
 
+dnl ######################
+dnl checking for pipewire dev
+dnl ######################
+AC_ARG_ENABLE([input_pipewire],
+  AS_HELP_STRING([--disable-input-pipewire],
+    [do not include support for input from pipewire])
+)
+
+AS_IF([test "x$enable_input_pipewire" != "xno"], [
+  AC_CHECK_LIB(pipewire-0.3, pw_stream_connect, have_pipewire=yes, have_pipewire=no)
+  if [[ $have_pipewire = "yes" ]] ; then
+    LIBS="$LIBS -lpipewire-0.3"
+    CPPFLAGS="$CPPFLAGS -DPIPEWIRE -D_REENTRANT -I/usr/include/pipewire-0.3 -I/usr/include/spa-0.2"
+  fi
+
+  if [[ $have_pipewire = "no" ]] ; then
+    AC_MSG_NOTICE([WARNING: No pipewire dev files found building without pipewire support])
+  fi],
+  [have_pipewire=no]
+)
+
+AM_CONDITIONAL([PIPEWIRE], [test "x$have_pipewire" = "xyes"])
+
 
 dnl ######################
 dnl checking for pulse dev
