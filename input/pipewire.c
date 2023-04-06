@@ -5,14 +5,13 @@
 
 #include <pipewire/pipewire.h>
 
-static struct audio_data *audio;
-
 struct pw_data {
     struct pw_main_loop *loop;
     struct pw_stream *stream;
 
     struct spa_audio_info format;
     unsigned move : 1;
+    struct audio_data *cava_audio;
 };
 
 static void on_process(void *userdata) {
@@ -21,6 +20,9 @@ static void on_process(void *userdata) {
     struct spa_buffer *buf;
     float *samples;
     uint32_t n_samples;
+
+    if (data->cava_audio->terminate == 1)
+        pw_main_loop_quit(data->loop);
 
     if ((b = pw_stream_dequeue_buffer(data->stream)) == NULL) {
         pw_log_warn("out of buffers: %m");
@@ -33,7 +35,7 @@ static void on_process(void *userdata) {
 
     n_samples = buf->datas[0].chunk->size / sizeof(float);
 
-    write_to_cava_input_buffers(n_samples, buf->datas[0].data, audio);
+    write_to_cava_input_buffers(n_samples, buf->datas[0].data, data->cava_audio);
 
     pw_stream_queue_buffer(data->stream, b);
 }
@@ -67,12 +69,13 @@ static void do_quit(void *userdata, int signal_number) {
 }
 
 void *input_pipewire(void *audiodata) {
-    audio = (struct audio_data *)audiodata;
     struct pw_data data = {
         0,
     };
+
+    data.cava_audio = (struct audio_data *)audiodata;
     const struct spa_pod *params[1];
-    uint8_t buffer[audio->input_buffer_size];
+    uint8_t buffer[data.cava_audio->input_buffer_size];
     struct pw_properties *props;
     struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
     char **argv;
@@ -87,7 +90,7 @@ void *input_pipewire(void *audiodata) {
     props = pw_properties_new(PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY, "Capture",
                               PW_KEY_MEDIA_ROLE, "Music", NULL);
 
-    pw_properties_set(props, PW_KEY_TARGET_OBJECT, audio->source);
+    pw_properties_set(props, PW_KEY_TARGET_OBJECT, data.cava_audio->source);
     pw_properties_set(props, PW_KEY_STREAM_CAPTURE_SINK, "true");
 
     data.stream = pw_stream_new_simple(pw_main_loop_get_loop(data.loop), "cava", props,
