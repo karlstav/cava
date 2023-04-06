@@ -15,6 +15,7 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
   - [Package managers](#package-managers)
 - [Capturing audio](#capturing-audio)
   - [Pulseaudio](#pulseaudio)
+  - [Pipewire](#pipewire)
   - [ALSA](#alsa)
   - [MPD](#mpd)
   - [sndio](#sndio)
@@ -224,7 +225,7 @@ Set
     method = pipewire
 
 The default source is `default` and will most likely be your mic.
-If you run wireplubmer use `wpctl` to get the `object.path` or `object.serial` of the desired device to visualize.
+If you run wireplumber use `wpctl` to get the `object.path` or `object.serial` of the desired device to visualize.
 
 e.g.
 
