@@ -17,7 +17,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev portaudio19-dev libsndio-dev libsdl2-2.0-0 libsdl2-dev squeezelite pulseaudio
+        sudo apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev portaudio19-dev libsndio-dev libsdl2-2.0-0 libsdl2-dev squeezelite pulseaudio libpipewire-0.3-dev
     - name: Generate configure
       run: ./autogen.sh
     - name: Run ./configure
