@@ -18,8 +18,8 @@ static void on_process(void *userdata) {
     struct pw_data *data = userdata;
     struct pw_buffer *b;
     struct spa_buffer *buf;
-    float *samples;
     uint32_t n_samples;
+    int16_t *samples;
 
     if (data->cava_audio->terminate == 1)
         pw_main_loop_quit(data->loop);
@@ -33,7 +33,7 @@ static void on_process(void *userdata) {
     if ((samples = buf->datas[0].data) == NULL)
         return;
 
-    n_samples = buf->datas[0].chunk->size / sizeof(float);
+    n_samples = buf->datas[0].chunk->size / (data->cava_audio->format / 8);
 
     write_to_cava_input_buffers(n_samples, buf->datas[0].data, data->cava_audio);
 
