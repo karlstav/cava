@@ -1,5 +1,5 @@
 project(
-    'shared cava lib',
+    'cava',
     'c',
     version: '0.8.4',
     license: 'MIT',
@@ -18,6 +18,7 @@ c_args = ['-Wall',
           '-Wno-maybe-uninitialized',
           '-Wno-vla-parameter'
          ]
+
 src_files = files('src/cavacore.c',
                   'src/config.c',
                   'src/input/common.c',
@@ -224,6 +225,13 @@ cava_lib = shared_library('cava',
 cava_dep = declare_dependency(  link_with: cava_lib,
                                 dependencies: deps,
                                 include_directories: inc_dirs)
+
+executable('cava',
+           [src_files, 'src/cava.c'],
+           dependencies: deps,
+           include_directories: inc_dirs,
+           c_args: c_args,
+           install: true)
 
 install_headers(h_files, subdir: 'cava')
 install_headers(h_I_files, subdir: 'cava/input')
