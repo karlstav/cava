@@ -783,15 +783,9 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     }
     GetPrivateProfileString("input", "source", "auto", p->audio_source, 64, configPath);
 
-    if (strcmp(outputMethod, "sdl") == 0) {
+    if (strcmp(outputMethod, "sdl") == 0 || strcmp(outputMethod, "sdl_glsl") == 0) {
         p->bar_width = GetPrivateProfileInt("general", "bar_width", 20, configPath);
         p->bar_spacing = GetPrivateProfileInt("general", "bar_spacing", 5, configPath);
-    }
-    if (strcmp(outputMethod, "sdl_glsl") == 0) {
-        p->bar_width = GetPrivateProfileInt("general", "bar_width", 1, configPath);
-        p->bar_spacing = GetPrivateProfileInt("general", "bar_spacing", 0, configPath);
-    }
-    if (strcmp(outputMethod, "sdl_glsl") == 0 || strcmp(outputMethod, "sdl") == 0) {
         GetPrivateProfileString("color", "foreground", "#33cccc", p->color, 9, configPath);
         GetPrivateProfileString("color", "background", "#111111", p->bcolor, 9, configPath);
     }
