@@ -52,7 +52,7 @@
 [input]
 
 # Audio capturing method. Possible methods are: 'pulse', 'alsa', 'fifo', 'sndio' or 'shmem'
-# Defaults to 'pulse', 'alsa' or 'fifo', in that order, dependent on what support cava was built with.
+# Defaults to 'pulse', 'pipewire', 'alsa' or 'fifo', in that order, dependent on what support cava was built with.
 # On windows this is automatic and no input settings are needed.
 #
 # All input methods uses the same config variable 'source'
@@ -61,11 +61,16 @@
 # For pulseaudio 'source' will be the source. Default: 'auto', which uses the monitor source of the default sink
 # (all pulseaudio sinks(outputs) have 'monitor' sources(inputs) associated with them).
 #
+# For piepwire 'source' will be the object name or object.serial of the device to capture from. Both input and output devices are supported.
+#
 # For alsa 'source' will be the capture device.
 # For fifo 'source' will be the path to fifo-file.
 # For shmem 'source' will be /squeezelite-AA:BB:CC:DD:EE:FF where 'AA:BB:CC:DD:EE:FF' will be squeezelite's MAC address
 ; method = pulse
 ; source = auto
+
+; method = pipewire
+; source = default
 
 ; method = alsa
 ; source = hw:Loopback,1
@@ -216,7 +221,7 @@
 [eq]
 
 # This one is tricky. You can have as much keys as you want.
-# Remember to uncomment more then one key! More keys = more precision.
+# Remember to uncomment more than one key! More keys = more precision.
 # Look at readme.md on github for further explanations and examples.
 ; 1 = 1 # bass
 ; 2 = 1

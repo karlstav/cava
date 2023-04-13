@@ -15,6 +15,7 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
   - [Package managers](#package-managers)
 - [Capturing audio](#capturing-audio)
   - [Pulseaudio](#pulseaudio)
+  - [Pipewire](#pipewire)
   - [ALSA](#alsa)
   - [MPD](#mpd)
   - [sndio](#sndio)
@@ -65,9 +66,12 @@ Required components:
 
 Recomended components:
 * [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
-* [ALSA dev files](http://alsa-project.org/), or
-* [Pulseaudio dev files](http://freedesktop.org/software/pulseaudio/doxygen/), or
-* Portaudio, or
+
+The development lib of one of these audio frameworks, depending on your distro:
+* ALSA
+* Pulseaudio
+* Pipewire
+* Portaudio
 * Sndio
 
 Optional components:
@@ -80,14 +84,9 @@ For better a better visual experience ncurses is also recomended.
 
 All the requirements can be installed easily in all major distros:
 
-Debian Buster or higher/Ubuntu 18.04 or higher:
+Debian/Ubuntu:
 
-    apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev
-
-
-older Debian/Ubuntu:
-
-    apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake
+    apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev
 
 
 ArchLinux:
@@ -217,6 +216,20 @@ Just make sure you have installed pulseaudio dev files and that cava has been bu
 If you're lucky all you have to do is to run cava.
  
 If nothing happens you might have to use a different source than the default. The default might also be your microphone. Look at the [config](#configuration) file for help. 
+
+
+### Pipewire
+
+Set
+
+    method = pipewire
+
+The default source is `default` and will most likely be your mic.
+If you run wireplumber use `wpctl` to get the `object.path` or `object.serial` of the desired device to visualize.
+
+e.g.
+
+    source = alsa:pcm:3:front:3:playback
 
 
 ### ALSA
