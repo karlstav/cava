@@ -104,7 +104,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     p->eq = (double *)malloc((number_of_bars + 1) * sizeof(double));
     p->cut_off_frequency = (float *)malloc((number_of_bars + 1) * sizeof(float));
 
-    p->cava_fall = (int *)malloc(number_of_bars * channels * sizeof(int));
+    p->cava_fall = (double *)malloc(number_of_bars * channels * sizeof(double));
     p->cava_mem = (double *)malloc(number_of_bars * channels * sizeof(double));
     p->cava_peak = (double *)malloc(number_of_bars * channels * sizeof(double));
     p->prev_cava_out = (double *)malloc(number_of_bars * channels * sizeof(double));
@@ -233,8 +233,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         p->eq[n] = pow(p->cut_off_frequency[n], 1);
 
         // the numbers that come out of the FFT are verry high
-        // the EQ is used to "normalize" them by dividing with this verry huge number
-        p->eq[n] /= pow(2, 18);
+        // the EQ is used to "normalize" them by dividing with this very huge number
+        p->eq[n] /= pow(2, 29);
 
         p->eq[n] /= log2(p->FFTbassbufferSize);
 
@@ -484,17 +484,17 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     for (int n = 0; n < p->number_of_bars * p->audio_channels; n++) {
 
         // process [smoothing]: falloff
+
         if (cava_out[n] < p->prev_cava_out[n] && p->noise_reduction > 0.1) {
             cava_out[n] =
-                p->cava_peak[n] * (1000 - (p->cava_fall[n] * p->cava_fall[n] * gravity_mod)) / 1000;
+                p->cava_peak[n] * (1.0 - (p->cava_fall[n] * p->cava_fall[n] * gravity_mod));
 
-            //    p->cava_peak[n] / (gravity_mod * log10(p->cava_fall[n]));
-            if (cava_out[n] < 0)
-                cava_out[n] = 0;
-            p->cava_fall[n]++;
+            if (cava_out[n] < 0.0)
+                cava_out[n] = 0.0;
+            p->cava_fall[n] += 0.028;
         } else {
             p->cava_peak[n] = cava_out[n];
-            p->cava_fall[n] = 0;
+            p->cava_fall[n] = 0.0;
         }
         p->prev_cava_out[n] = cava_out[n];
 
@@ -502,17 +502,16 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
         cava_out[n] = p->cava_mem[n] * p->noise_reduction + cava_out[n];
         p->cava_mem[n] = cava_out[n];
         if (p->autosens) {
-            double diff = 1000 - cava_out[n];
+            double diff = 1 - cava_out[n];
             if (diff < 0)
                 diff = 0;
             double div = 1 / (diff + 1);
             p->cava_mem[n] = p->cava_mem[n] * (1 - div / 20);
 
             // check if we overshoot target height
-            if (cava_out[n] > 1000) {
+            if (cava_out[n] > 1.0) {
                 overshoot = 1;
             }
-            cava_out[n] /= 1000;
         }
     }
 

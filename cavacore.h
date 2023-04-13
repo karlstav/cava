@@ -79,7 +79,7 @@ struct cava_plan {
     float *cut_off_frequency;
     int *FFTbuffer_lower_cut_off;
     int *FFTbuffer_upper_cut_off;
-    int *cava_fall;
+    double *cava_fall;
 };
 
 // cava_init, initialize visualization, takes the following parameters:
