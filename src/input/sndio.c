@@ -1,5 +1,5 @@
-#include "input/sndio.h"
-#include "input/common.h"
+#include "cava/input/sndio.h"
+#include "cava/input/common.h"
 
 #include <sndio.h>
 

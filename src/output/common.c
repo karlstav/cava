@@ -1,6 +1,6 @@
-#include "common.h"
-#include "debug.h"
-#include "util.h"
+#include "cava/common.h"
+#include "cava/debug.h"
+#include "cava/util.h"
 #include <math.h>
 #include <sys/stat.h>
 

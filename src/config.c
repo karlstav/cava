@@ -1,6 +1,6 @@
-#include "config.h"
+#include "cava/config.h"
 
-#include "util.h"
+#include "cava/util.h"
 
 #include <ctype.h>
 #ifndef _MSC_VER

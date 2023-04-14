@@ -31,21 +31,21 @@ src_files = files('src/cavacore.c',
                   'src/output/noritake.c'
                   )
 
-h_files = files('include/cavacore.h',
-                'include/common.h',
-                'include/config.h',
-                'include/debug.h',
-                'include/util.h'
+h_files = files('include/cava/cavacore.h',
+                'include/cava/common.h',
+                'include/cava/config.h',
+                'include/cava/debug.h',
+                'include/cava/util.h'
                 )
-h_I_files = files('include/input/common.h',
-                  'include/input/fifo.h',
-                  'include/input/shmem.h'
+h_I_files = files('include/cava/input/common.h',
+                  'include/cava/input/fifo.h',
+                  'include/cava/input/shmem.h'
                   )
 
-h_O_files = files('include/output/common.h',
-                  'include/output/terminal_noncurses.h',
-                  'include/output/raw.h',
-                  'include/output/noritake.h'
+h_O_files = files('include/cava/output/common.h',
+                  'include/cava/output/terminal_noncurses.h',
+                  'include/cava/output/raw.h',
+                  'include/cava/output/noritake.h'
                   )
 
 deps = []
@@ -111,7 +111,7 @@ ncursesw_dep = dependency('ncursesw', required: get_option('output_ncurses'))
 if ncursesw_dep.found()
    if cc.has_function('initscr', dependencies: ncursesw_dep)
       src_files += 'src/output/terminal_ncurses.c'
-      h_O_files += 'include/output/terminal_ncurses.h'
+      h_O_files += 'include/cava/output/terminal_ncurses.h'
       deps += ncursesw_dep
       add_project_arguments('-DNCURSES', language: 'c')
    else
@@ -126,7 +126,7 @@ alsa_dep = cc.find_library('asound', required: get_option('input_alsa'))
 if alsa_dep.found()
    if cc.has_function('snd_pcm_open', dependencies: alsa_dep)
       src_files += 'src/input/alsa.c'
-      h_I_files += 'include/input/alsa.h'
+      h_I_files += 'include/cava/input/alsa.h'
       deps += alsa_dep
       add_project_arguments('-DALSA', language: 'c')
    else
@@ -141,7 +141,7 @@ port_dep = cc.find_library('portaudio', required: get_option('input_portaudio'))
 if port_dep.found()
    if cc.has_function('Pa_Initialize', dependencies: port_dep)
       src_files += 'src/input/portaudio.c'
-      h_I_files += 'include/input/portaudio.h'
+      h_I_files += 'include/cava/input/portaudio.h'
       deps += port_dep
       add_project_arguments('-DPORTAUDIO', language: 'c')
    else
@@ -157,7 +157,7 @@ pulse_simple_dep = cc.find_library('pulse-simple', required: get_option('input_p
 if pulse_dep.found() and pulse_simple_dep.found()
    if cc.has_function('pa_simple_new', dependencies: [pulse_dep, pulse_simple_dep])
       src_files += 'src/input/pulse.c'
-      h_I_files += 'include/input/pulse.h'
+      h_I_files += 'include/cava/input/pulse.h'
       deps += [pulse_dep, pulse_simple_dep]
       add_project_arguments('-DPULSE', language: 'c')
    else
@@ -172,7 +172,7 @@ sndio_dep = cc.find_library('sndio', required: get_option('input_sndio'))
 if sndio_dep.found()
    if cc.has_function('sio_open', dependencies: sndio_dep)
       src_files += 'src/input/sndio.c'
-      h_I_files += 'include/input/sndio.h'
+      h_I_files += 'include/cava/input/sndio.h'
       deps += sndio_dep
       add_project_arguments('-DSNDIO', language: 'c')
    else
@@ -187,7 +187,7 @@ pipewire_dep = dependency('libpipewire-0.3', required: get_option('input_pipewir
 if pipewire_dep.found()
    if cc.has_function('pw_stream_connect', dependencies: pipewire_dep)
       src_files += 'src/input/pipewire.c'
-      h_I_files += 'include/input/pipewire.h'
+      h_I_files += 'include/cava/input/pipewire.h'
       deps += pipewire_dep
       add_project_arguments('-DPIPEWIRE', language: 'c')
    else
@@ -201,13 +201,13 @@ opengl_dep = dependency('gl', required: get_option('output_sdl_glsl'), not_found
 if sdl2_dep.found()
    if cc.has_function('SDL_Init', dependencies: sdl2_dep)
       src_files += 'src/output/sdl_cava.c'
-      h_O_files += 'include/output/sdl_cava.h'
+      h_O_files += 'include/cava/output/sdl_cava.h'
       deps += sdl2_dep
       add_project_arguments('-DSDL', language: 'c')
 
       if opengl_dep.found()
          src_files += 'src/output/sdl_glsl.c'
-         h_O_files += 'include/output/sdl_glsl.h'
+         h_O_files += 'include/cava/output/sdl_glsl.h'
          deps += opengl_dep
          add_project_arguments('-DSDL_GLSL', language: 'c')
       endif

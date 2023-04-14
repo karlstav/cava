@@ -1,16 +1,16 @@
-#include "common.h"
+#include "cava/common.h"
 #ifdef _MSC_VER
 #include "winscap.h"
 #else
-#include "input/alsa.h"
-#include "input/fifo.h"
-#include "input/pipewire.h"
-#include "input/portaudio.h"
-#include "input/pulse.h"
-#include "input/shmem.h"
-#include "input/sndio.h"
+#include "cava/input/alsa.h"
+#include "cava/input/fifo.h"
+#include "cava/input/pipewire.h"
+#include "cava/input/portaudio.h"
+#include "cava/input/pulse.h"
+#include "cava/input/shmem.h"
+#include "cava/input/sndio.h"
 #endif
-#include "debug.h"
+#include "cava/debug.h"
 #include <dirent.h>
 #include <limits.h>
 #include <math.h>

@@ -1,4 +1,4 @@
-#include "common.h"
+#include "cava/common.h"
 
 // general: cleanup
 void cleanup(int output_mode) {

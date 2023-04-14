@@ -2,7 +2,7 @@
 // gcc -c -g cavacore_test.c
 // gcc -o cavacore_test cavacore_test.o cava-cavacore.o -lm -lfftw3
 
-#include "include/cavacore.h"
+#include "include/cava/cavacore.h"
 #include <math.h>
 #include <stdio.h>
 

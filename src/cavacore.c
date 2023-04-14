@@ -1,9 +1,9 @@
-#include "cavacore.h"
-#include "config.h"
-#include "output/sdl_cava.h"
-#include "output/sdl_glsl.h"
-#include "output/terminal_ncurses.h"
-#include "output/terminal_noncurses.h"
+#include "cava/cavacore.h"
+#include "cava/config.h"
+#include "cava/output/sdl_cava.h"
+#include "cava/output/sdl_glsl.h"
+#include "cava/output/terminal_ncurses.h"
+#include "cava/output/terminal_noncurses.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
