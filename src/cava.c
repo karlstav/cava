@@ -17,9 +17,9 @@
 
 #include <signal.h>
 
-#include "common.h"
+#include "cava/common.h"
 
-#include "debug.h"
+#include "cava/debug.h"
 
 #ifdef __GNUC__
 // curses.h or other sources may already define

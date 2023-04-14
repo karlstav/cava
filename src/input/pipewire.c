@@ -1,5 +1,5 @@
-#include "input/pipewire.h"
-#include "input/common.h"
+#include "cava/input/pipewire.h"
+#include "cava/input/common.h"
 
 #include <spa/param/audio/format-utils.h>
 
