@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../config.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -31,10 +32,15 @@ struct audio_data {
     int samples_counter;
     int IEEE_FLOAT;
     pthread_mutex_t lock;
+    pthread_cond_t resumeCond;
+    bool suspendFlag;
 };
 
 void reset_output_buffers(struct audio_data *data);
 
 int write_to_cava_input_buffers(int16_t size, unsigned char *buf, void *data);
+
+typedef void *(*ptr)(void *);
+ptr get_input(struct audio_data *audio, struct config_params *prm);
 
 extern pthread_mutex_t lock;

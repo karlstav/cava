@@ -1,8 +1,9 @@
 #include "cavacore.h"
-#ifndef M_PI
-#define M_PI 3.1415926535897932385
-#endif
-#include <fftw3.h>
+#include "config.h"
+#include "output/sdl_cava.h"
+#include "output/sdl_glsl.h"
+#include "output/terminal_ncurses.h"
+#include "output/terminal_noncurses.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -232,7 +233,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
         p->eq[n] = pow(p->cut_off_frequency[n], 1);
 
-        // the numbers that come out of the FFT are verry high
+        // the numbers that come out of the FFT are very high
         // the EQ is used to "normalize" them by dividing with this very huge number
         p->eq[n] /= pow(2, 29);
 
@@ -484,7 +485,6 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     for (int n = 0; n < p->number_of_bars * p->audio_channels; n++) {
 
         // process [smoothing]: falloff
-
         if (cava_out[n] < p->prev_cava_out[n] && p->noise_reduction > 0.1) {
             cava_out[n] =
                 p->cava_peak[n] * (1.0 - (p->cava_fall[n] * p->cava_fall[n] * gravity_mod));
