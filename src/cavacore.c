@@ -1,8 +1,9 @@
 #include "cavacore.h"
-#ifndef M_PI
-#define M_PI 3.1415926535897932385
-#endif
-#include <fftw3.h>
+#include "config.h"
+#include "output/sdl_cava.h"
+#include "output/sdl_glsl.h"
+#include "output/terminal_ncurses.h"
+#include "output/terminal_noncurses.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>

@@ -26,7 +26,6 @@ extern "C" {
 #include <stdint.h>
 
 #include <fftw3.h>
-
 // cava_plan, parameters used internally by cavacore, do not modify these directly
 // only the cut off frequencies is of any potential interest to read out,
 // the rest should most likley be hidden somehow

@@ -4,7 +4,11 @@
 
 #include <ctype.h>
 #ifndef _MSC_VER
+#if __has_include(<iniparser.h>)
 #include <iniparser.h>
+#elif __has_include(<iniparser4/iniparser.h>)
+#include <iniparser4/iniparser.h>
+#endif
 #endif
 #include <math.h>
 
@@ -30,9 +34,9 @@
 INCTXT(ConfigFile, "example_files/config");
 
 // add your custom shaders to be installed here
-INCTXT(bar_spectrum, "output/shaders/bar_spectrum.frag");
-INCTXT(normalized_barsfrag, "output/shaders/normalized_bars.frag");
-INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
+INCTXT(bar_spectrum, "src/output/shaders/bar_spectrum.frag");
+INCTXT(normalized_barsfrag, "src/output/shaders/normalized_bars.frag");
+INCTXT(pass_throughvert, "src/output/shaders/pass_through.vert");
 
 // INCTXT will create a char g<name>Data
 const char *default_shader_data[NUMBER_OF_SHADERS] = {gnormalized_barsfragData,
@@ -798,7 +802,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
                             configPath);
 
 #endif
-
     sprintf(p->vertex_shader, "%s/shaders/%s", cava_config_home, vertexShader);
     sprintf(p->fragment_shader, "%s/shaders/%s", cava_config_home, fragmentShader);
 

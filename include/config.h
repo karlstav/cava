@@ -99,13 +99,13 @@ struct config_params {
         bit_format, gradient, gradient_count, fixedbars, framerate, bar_width, bar_spacing,
         bar_height, autosens, overshoot, waves, fifoSample, fifoSampleBits, sleep_timer, sdl_width,
         sdl_height, sdl_x, sdl_y, draw_and_quit, zero_test, non_zero_test, reverse, sync_updates,
-        continuous_rendering;
+        continuous_rendering, inAtty, fp, x_axis_info;
 };
 
 struct error_s {
     char message[MAX_ERROR_LEN];
     int length;
 };
-
 bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colorsOnly,
                  struct error_s *error);
+enum input_method input_method_by_name(const char *str);
