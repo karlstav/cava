@@ -1,5 +1,5 @@
 This is a CAVA fork the main purpose of is to build cava as a shared library.
-IN the same time cava application is provided as well
+In the same time cava application is provided as well
 ====================
 CAVA [![Build Status](https://github.com/karlstav/cava/workflows/build-and-test/badge.svg)](https://github.com/karlstav/cava/actions)
 ====================
