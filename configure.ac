@@ -306,7 +306,6 @@ AM_CONDITIONAL([NCURSES], [test "x$have_ncurses" = "xyes"])
 dnl ######################
 dnl checking for iniparser
 dnl ######################
-
 AC_CHECK_LIB(iniparser,iniparser_load, have_iniparser=yes, have_iniparser=no)
     if [[ $have_iniparser = "yes" ]] ; then
     LIBS="$LIBS -liniparser"
@@ -317,8 +316,22 @@ AC_CHECK_LIB(iniparser,iniparser_load, have_iniparser=yes, have_iniparser=no)
       iniparser_getseckeys(ini, "eq", keys);]])],
       [AC_MSG_RESULT(iniparser > 3.2 test OK)],
       [AC_MSG_RESULT(iniparser > 3.2 test failed falling back to legacy iniparser mode)
-      CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"])
+      CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"]) ; else
+      have_iniparser = ""
+AC_CHECK_LIB(iniparser4,iniparser_load, have_iniparser=yes, have_iniparser=no)
+        if [[ $have_iniparser = "yes" ]] ; then
+        LIBS="$LIBS -liniparser4"
+          CPPFLAGS="$CPPFLAGS -I/usr/include/iniparser4"
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <iniparser4/iniparser.h>]],
+          [[dictionary* ini;
+          const char *keys[3];
+          iniparser_getseckeys(ini, "eq", keys);]])],
+          [AC_MSG_RESULT(iniparser > 3.2 test OK)],
+          [AC_MSG_RESULT(iniparser > 3.2 test failed falling back to legacy iniparser mode)
+          CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"])
+        fi
     fi
+
     if [[ $have_iniparser = "no" ]] ; then
       AC_MSG_ERROR([iniparser library is required!])
     fi

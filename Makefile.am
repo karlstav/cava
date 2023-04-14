@@ -3,11 +3,13 @@ AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = cava
-cava_SOURCES = cava.c cavacore.c config.c input/common.c input/fifo.c input/shmem.c \
-               output/terminal_noncurses.c output/raw.c output/noritake.c
+cava_SOURCES = src/cava.c src/cavacore.c src/common.c src/config.c src/input/common.c src/input/fifo.c src/input/shmem.c \
+               src/output/terminal_noncurses.c src/output/raw.c src/output/noritake.c src/output/common.c
+
 cava_CPPFLAGS = -DPACKAGE=\"$(PACKAGE)\" -DVERSION=\"$(VERSION)\" \
            -D_POSIX_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE_EXTENDED \
-	   -DFONTDIR=\"@FONT_DIR@\"
+	   -DFONTDIR=\"@FONT_DIR@\" \
+       -I$(top_builddir) -I$(top_builddir)/include
 cava_CFLAGS = -std=c99 -Wall -Wextra -Wno-unused-result -Wno-unknown-warning-option -Wno-maybe-uninitialized -Wno-vla-parameter
 
 if OSX
@@ -20,33 +22,33 @@ else
 endif
 
 if ALSA
-    cava_SOURCES += input/alsa.c
+    cava_SOURCES += src/input/alsa.c
 endif
 
 if PORTAUDIO
-    cava_SOURCES += input/portaudio.c
+    cava_SOURCES += src/input/portaudio.c
 endif
 
 if PIPEWIRE
-    cava_SOURCES += input/pipewire.c
+    cava_SOURCES += src/input/pipewire.c
 endif
 
 if PULSE
-    cava_SOURCES += input/pulse.c
+    cava_SOURCES += src/input/pulse.c
 endif
 
 if SNDIO
-    cava_SOURCES += input/sndio.c
+    cava_SOURCES += src/input/sndio.c
 endif
 
 if NCURSES
-    cava_SOURCES += output/terminal_ncurses.c
+    cava_SOURCES += src/output/terminal_ncurses.c
 endif
 
 if SDL
-    cava_SOURCES += output/sdl_cava.c
+    cava_SOURCES += src/output/sdl_cava.c
 endif
 
 if SDL_GLSL
-    cava_SOURCES += output/sdl_glsl.c
+    cava_SOURCES += src/output/sdl_glsl.c
 endif
