@@ -20,8 +20,8 @@ void main() {
     double noise_reduction = 0.77;
     int low_cut_off = 50;
     int high_cut_off = 10000;
-    double blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 0.524, 0.474, 0, 0};
-    double blueprint_200MHz[10] = {0, 0, 0.998, 0.009, 0, 0.001, 0, 0, 0, 0};
+    double blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 0.494, 0.449, 0, 0};
+    double blueprint_200MHz[10] = {0, 0, 0.939, 0.008, 0, 0.001, 0, 0, 0, 0};
 
     printf("planning visualization with %d bars per channel, %d rate, %d channels, autosens, "
            "%.2f noise reduction, %d - %d MHz bandwith.\n",
