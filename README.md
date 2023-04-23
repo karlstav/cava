@@ -86,7 +86,7 @@ All the requirements can be installed easily in all major distros:
 
 Debian/Ubuntu:
 
-    apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev
+    sudo apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev
 
 
 ArchLinux:
@@ -188,7 +188,7 @@ Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
 
 ##### Ubuntu 20.10 or more recent / Debian (unstable)
 
-    apt install cava
+    sudo apt install cava
     
 ##### Older Ubuntu
 
