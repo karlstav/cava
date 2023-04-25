@@ -224,8 +224,8 @@ Set
 
     method = pipewire
 
-The default source is `default` and will most likely be your mic.
-If you run wireplumber use `wpctl` to get the `object.path` or `object.serial` of the desired device to visualize.
+The default source is `auto` and will most likely be your currently selected output.
+If you run wireplumber you can use `wpctl` to get the `object.path` or `object.serial` of the desired device to visualize.
 
 e.g.
 

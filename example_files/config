@@ -58,10 +58,11 @@
 # All input methods uses the same config variable 'source'
 # to define where it should get the audio.
 #
-# For pulseaudio 'source' will be the source. Default: 'auto', which uses the monitor source of the default sink
+# For pulseaudio and pipewire 'source' will be the source. Default: 'auto', which uses the monitor source of the default sink
 # (all pulseaudio sinks(outputs) have 'monitor' sources(inputs) associated with them).
 #
-# For piepwire 'source' will be the object name or object.serial of the device to capture from. Both input and output devices are supported.
+# For piepwire 'source' will be the object name or object.serial of the device to capture from.
+# Both input and output devices are supported.
 #
 # For alsa 'source' will be the capture device.
 # For fifo 'source' will be the path to fifo-file.
@@ -70,7 +71,7 @@
 ; source = auto
 
 ; method = pipewire
-; source = default
+; source = auto
 
 ; method = alsa
 ; source = hw:Loopback,1
