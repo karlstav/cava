@@ -48,7 +48,6 @@ struct cava_plan {
     char error_message[1024];
 
     double sens;
-    double g;
     double framerate;
     double average_max;
     double noise_reduction;
