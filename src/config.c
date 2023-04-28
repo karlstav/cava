@@ -698,7 +698,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 #endif
 #ifdef PIPEWIRE
     case INPUT_PIPEWIRE:
-        p->audio_source = strdup(iniparser_getstring(ini, "input:source", "default"));
+        p->audio_source = strdup(iniparser_getstring(ini, "input:source", "auto"));
         break;
 #endif
 #ifdef SNDIO

@@ -39,7 +39,6 @@ struct cava_plan {
     int rate;
     int bass_cut_off_bar;
     int treble_cut_off_bar;
-    int height;
     int sens_init;
     int autosens;
     int frame_skip;
@@ -47,7 +46,6 @@ struct cava_plan {
     char error_message[1024];
 
     double sens;
-    double g;
     double framerate;
     double average_max;
     double noise_reduction;

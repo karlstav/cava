@@ -89,7 +89,7 @@ All the requirements can be installed easily in all major distros:
 
 Debian/Ubuntu:
 
-    apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev
+    sudo apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev
 
 
 ArchLinux:
@@ -191,7 +191,7 @@ Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
 
 ##### Ubuntu 20.10 or more recent / Debian (unstable)
 
-    apt install cava
+    sudo apt install cava
     
 ##### Older Ubuntu
 
@@ -227,8 +227,8 @@ Set
 
     method = pipewire
 
-The default source is `default` and will most likely be your mic.
-If you run wireplumber use `wpctl` to get the `object.path` or `object.serial` of the desired device to visualize.
+The default source is `auto` and will most likely be your currently selected output.
+If you run wireplumber you can use `wpctl` to get the `object.path` or `object.serial` of the desired device to visualize.
 
 e.g.
 

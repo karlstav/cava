@@ -90,8 +90,6 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     p->average_max = 0;
     p->noise_reduction = noise_reduction;
 
-    p->g = log10((float)p->height) * 0.05;
-
     p->FFTbassbufferSize = treble_buffer_size * 8;
     p->FFTmidbufferSize = treble_buffer_size * 4;
     p->FFTtreblebufferSize = treble_buffer_size;
