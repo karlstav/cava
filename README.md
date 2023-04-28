@@ -466,7 +466,7 @@ Using cava in other applications
     ```
     meson setup build
     meson compile -C build
-    ninja -C build install
+    meson install -C build
     ```
 
 ### Raw Output
