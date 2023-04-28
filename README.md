@@ -461,7 +461,7 @@ Using cava in other applications
 ### cavacore library
 
 * The core processing engine in cava has been split into a separate library `cavacore`. See CAVACORE.md for details.
-* cava can be built as a standalone libcava library. Practice example can be found [waybar cava module](https://github.com/LukashonakV/Waybar/blob/Cava/src/modules/cava.cpp) :
+* cava can be built as a standalone libcava library. Practice example can be found [waybar cava module](https://github.com/Alexays/Waybar/blob/master/src/modules/cava.cpp) :
 
     ```
     meson setup build
