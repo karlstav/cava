@@ -1,7 +1,7 @@
 project(
     'cava',
     'c',
-    version: '0.8.4',
+    version: '0.8.3',
     license: 'MIT',
     meson_version: '>=0.50.0',
     default_options : [
@@ -217,23 +217,36 @@ if sdl2_dep.found()
 endif
 
 cava_lib = shared_library('cava',
-                    sources: src_files,
-                    dependencies: deps,
-                    include_directories: inc_dirs,
-                    c_args: c_args,
-                    install: true)
+                          sources: src_files,
+                          dependencies: deps,
+                          include_directories: inc_dirs,
+                          c_args: c_args,
+                          install: true)
 
-cava_dep = declare_dependency(  link_with: cava_lib,
-                                dependencies: deps,
-                                include_directories: inc_dirs)
+cava_dep = declare_dependency(link_with: cava_lib,
+                              dependencies: deps,
+                              include_directories: inc_dirs)
 
-executable('cava',
-           [src_files, 'src/cava.c'],
-           dependencies: deps,
-           include_directories: inc_dirs,
-           c_args: c_args,
-           install: true)
+foreach p : get_option('build_target')
+    if p != 'lib'
+       executable('cava',
+                  [src_files, 'src/cava.c'],
+                  dependencies: deps,
+                  include_directories: inc_dirs,
+                  c_args: c_args,
+                  install: true)
+       break
+    endif
+endforeach
 
 install_headers(h_files, subdir: 'cava')
 install_headers(h_I_files, subdir: 'cava/input')
 install_headers(h_O_files, subdir: 'cava/output')
+
+pkg = import('pkgconfig')
+pkg.generate(libraries: cava_lib,
+             subdirs: ['cava', 'cava/input', 'cava/output'],
+             version: '0.8.3',
+             name: 'libcava',
+             filebase: 'cava',
+             description: 'A cava library')
