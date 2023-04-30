@@ -879,13 +879,13 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 pthread_mutex_unlock(&audio.lock);
 
                 for (int n = 0; n < (number_of_bars / output_channels) * audio_channels; n++) {
-                    if (p.autosens) {
-                        if (output_mode != OUTPUT_SDL_GLSL) {
-                            cava_out[n] *= *dimension_value;
-                        }
-                    } else {
-                        // cava_out[n] *= p.sens;
+
+                    if (output_mode != OUTPUT_SDL_GLSL) {
+                        cava_out[n] *= *dimension_value;
                     }
+
+                    cava_out[n] *= p.sens;
+
                     if (output_mode == OUTPUT_SDL_GLSL) {
                         if (cava_out[n] > 1.0)
                             cava_out[n] = 1.0;
