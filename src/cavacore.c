@@ -83,11 +83,10 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     p->rate = rate;
     p->autosens = 1;
     p->sens_init = 1;
-    p->sens = 1;
+    p->sens = 1.0;
     p->autosens = autosens;
     p->framerate = 75;
     p->frame_skip = 1;
-    p->average_max = 0;
     p->noise_reduction = noise_reduction;
 
     p->FFTbassbufferSize = treble_buffer_size * 8;
@@ -463,14 +462,9 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     }
 
     // applying sens or getting max value
-    for (int n = 0; n < p->number_of_bars * p->audio_channels; n++) {
-        if (p->autosens) {
+    if (p->autosens) {
+        for (int n = 0; n < p->number_of_bars * p->audio_channels; n++) {
             cava_out[n] *= p->sens;
-        } else {
-            if (cava_out[n] > p->average_max) {
-                p->average_max -= p->average_max / 64;
-                p->average_max += cava_out[n] / 64;
-            }
         }
     }
     // process [smoothing]

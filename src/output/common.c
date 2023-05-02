@@ -304,13 +304,12 @@ int audio_raw_init(struct audio_data *audio, struct audio_raw *audio_raw, struct
 int audio_raw_fetch(struct audio_raw *audio_raw, struct config_params *prm, int *re_paint) {
     for (int n = 0;
          n < (audio_raw->number_of_bars / audio_raw->output_channels) * audio_raw->channels; n++) {
-        if (prm->autosens) {
-            if (prm->output != OUTPUT_SDL_GLSL) {
-                audio_raw->cava_out[n] *= *audio_raw->dimension_value;
-            }
-        } else {
-            // cava_out[n] *= p.sens;
+        if (prm->output != OUTPUT_SDL_GLSL) {
+            audio_raw->cava_out[n] *= *audio_raw->dimension_value;
         }
+
+        audio_raw->cava_out[n] *= prm->sens;
+
         if (prm->output == OUTPUT_SDL_GLSL) {
             if (audio_raw->cava_out[n] > 1.0)
                 audio_raw->cava_out[n] = 1.0;

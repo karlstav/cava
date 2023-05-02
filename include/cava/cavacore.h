@@ -47,7 +47,6 @@ struct cava_plan {
 
     double sens;
     double framerate;
-    double average_max;
     double noise_reduction;
 
     fftw_plan p_bass_l, p_bass_r;
