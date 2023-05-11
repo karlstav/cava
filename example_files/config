@@ -157,7 +157,7 @@
 
 # Shaders for sdl_glsl, located in $HOME/.config/cava/shaders
 ; vertex_shader = pass_through.vert
-; fragment_shader = normalized_bars.frag
+; fragment_shader = bar_spectrum.frag
 
 ; for glsl output mode, keep rendering even if no audio
 ; continuous_rendering = 0

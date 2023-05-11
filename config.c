@@ -643,7 +643,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     vertexShader = strdup(iniparser_getstring(ini, "output:vertex_shader", "pass_through.vert"));
     fragmentShader =
-        strdup(iniparser_getstring(ini, "output:fragment_shader", "normalized_bars.frag"));
+        strdup(iniparser_getstring(ini, "output:fragment_shader", "bar_spectrum.frag"));
 
     // read & validate: eq
     p->userEQ_keys = iniparser_getsecnkeys(ini, "eq");
@@ -794,7 +794,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     GetPrivateProfileString("output", "vertex_shader", "pass_through.vert", vertexShader, 64,
                             configPath);
-    GetPrivateProfileString("output", "fragment_shader", "normalized_bars.frag", fragmentShader, 64,
+    GetPrivateProfileString("output", "fragment_shader", "bar_spectrum.frag", fragmentShader, 64,
                             configPath);
 
 #endif
