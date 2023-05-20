@@ -919,10 +919,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 // process [filter]
                 if (p.monstercat) {
                     if (audio_channels == 2) {
-                        bars_left =
-                            monstercat_filter(bars_left, number_of_bars / 2, p.waves, p.monstercat);
-                        bars_right = monstercat_filter(bars_right, number_of_bars / 2, p.waves,
-                                                       p.monstercat);
+                        bars_left = monstercat_filter(bars_left, number_of_bars / output_channels,
+                                                      p.waves, p.monstercat);
+                        bars_right = monstercat_filter(bars_right, number_of_bars / output_channels,
+                                                       p.waves, p.monstercat);
                     } else {
                         bars_raw =
                             monstercat_filter(bars_raw, number_of_bars, p.waves, p.monstercat);
