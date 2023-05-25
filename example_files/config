@@ -151,7 +151,7 @@
 ; xaxis = none
 
 # enable alacritty synchronized updates. 1 = on, 0 = off
-# removes flickering in alacritty terminal emeulator.
+# removes flickering in alacritty terminal emulator.
 # defaults to off since the behaviour in other terminal emulators is unknown
 ; alacritty_sync = 0
 
