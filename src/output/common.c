@@ -345,9 +345,9 @@ int audio_raw_fetch(struct audio_raw *audio_raw, struct config_params *prm, int 
     if (prm->monstercat) {
         if (audio_raw->channels == 2) {
             audio_raw->bars_left = monstercat_filter(
-                audio_raw->bars_left, audio_raw->number_of_bars / 2, prm->waves, prm->monstercat);
+                audio_raw->bars_left, audio_raw->number_of_bars / audio_raw->output_channels, prm->waves, prm->monstercat);
             audio_raw->bars_right = monstercat_filter(
-                audio_raw->bars_right, audio_raw->number_of_bars / 2, prm->waves, prm->monstercat);
+                audio_raw->bars_right, audio_raw->number_of_bars / audio_raw->output_channels, prm->waves, prm->monstercat);
         } else {
             audio_raw->bars_raw = monstercat_filter(audio_raw->bars_raw, audio_raw->number_of_bars,
                                                     prm->waves, prm->monstercat);
