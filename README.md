@@ -89,7 +89,7 @@ All the requirements can be installed easily in all major distros:
 
 Debian/Ubuntu:
 
-    sudo apt install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev
+    sudo apt install build-essential libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev
 
 
 ArchLinux:
@@ -104,7 +104,7 @@ openSUSE:
 
 Fedora:
 
-    dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool autoconf-archive
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool autoconf-archive iniparser-devel
 
     
 macOS:

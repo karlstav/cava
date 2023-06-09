@@ -151,13 +151,13 @@
 ; xaxis = none
 
 # enable alacritty synchronized updates. 1 = on, 0 = off
-# removes flickering in alacritty terminal emeulator.
+# removes flickering in alacritty terminal emulator.
 # defaults to off since the behaviour in other terminal emulators is unknown
 ; alacritty_sync = 0
 
 # Shaders for sdl_glsl, located in $HOME/.config/cava/shaders
 ; vertex_shader = pass_through.vert
-; fragment_shader = normalized_bars.frag
+; fragment_shader = bar_spectrum.frag
 
 ; for glsl output mode, keep rendering even if no audio
 ; continuous_rendering = 0
