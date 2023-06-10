@@ -1,4 +1,5 @@
-## Configuration file for CAVA. Default values are commented out. Use either ';' or '#' for commenting.
+## Configuration file for CAVA.
+# Remove the ; to change parameters.
 
 
 [general]
