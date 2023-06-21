@@ -413,8 +413,13 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             sprintf(cava_config_home, "%s/%s/%s/", configHome, ".config", PACKAGE);
             mkdir(cava_config_home, 0777);
         } else {
+#ifndef _MSC_VER
+            sprintf(cava_config_home, "/tmp/%s/", PACKAGE);
+            mkdir(cava_config_home, 0777);
+#else
             write_errorf(error, "No HOME found (ERR_HOMELESS), exiting...");
             return false;
+#endif
         }
     }
     if (configPath[0] == '\0') {
@@ -472,21 +477,24 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         sprintf(shaderFile, "%s/%s", shaderPath, default_shader_name[i]);
 
         fp = fopen(shaderFile, "ab+");
-        fseek(fp, 0, SEEK_END);
-        if (ftell(fp) == 0) {
+        if (fp) {
+            fseek(fp, 0, SEEK_END);
+            if (ftell(fp) == 0) {
 #ifndef _MSC_VER
-            printf("shader file is empty, creating default shader file\n");
-            fwrite(default_shader_data[i], strlen(default_shader_data[i]), sizeof(char), fp);
+                printf("shader file is empty, creating default shader file\n");
+                fwrite(default_shader_data[i], strlen(default_shader_data[i]), sizeof(char), fp);
 #else
-            printf(
-                "WARNING: shader file is empty, windows does not support automatic default shader "
-                "generation.\n In order to use the shader copy the file %s from the source to "
-                "%s\n\n",
-                default_shader_name[i], shaderPath);
+                printf(
+                    "WARNING: shader file is empty, windows does not support automatic default "
+                    "shader "
+                    "generation.\n In order to use the shader copy the file %s from the source to "
+                    "%s\n\n",
+                    default_shader_name[i], shaderPath);
 #endif
+            }
+            fclose(fp);
+            free(shaderFile);
         }
-        fclose(fp);
-        free(shaderFile);
     }
     free(shaderPath);
 
