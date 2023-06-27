@@ -31,15 +31,15 @@ INCTXT(ConfigFile, "example_files/config");
 
 // add your custom shaders to be installed here
 INCTXT(bar_spectrum, "output/shaders/bar_spectrum.frag");
-INCTXT(normalized_barsfrag, "output/shaders/normalized_bars.frag");
+INCTXT(northern_lightsfrag, "output/shaders/northern_lights.frag");
 INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
 
 // INCTXT will create a char g<name>Data
-const char *default_shader_data[NUMBER_OF_SHADERS] = {gnormalized_barsfragData,
+const char *default_shader_data[NUMBER_OF_SHADERS] = {gnorthern_lightsfragData,
                                                       gpass_throughvertData, gbar_spectrumData};
 #endif // _MSC_VER
 // name of the installed shader file, technically does not have to be the same as in the source
-const char *default_shader_name[NUMBER_OF_SHADERS] = {"normalized_bars.frag", "pass_through.vert",
+const char *default_shader_name[NUMBER_OF_SHADERS] = {"northern_lights.frag", "pass_through.vert",
                                                       "bar_spectrum.frag"};
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
