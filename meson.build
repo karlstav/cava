@@ -37,10 +37,7 @@ h_files = files('include/cava/cavacore.h',
                 'include/cava/debug.h',
                 'include/cava/util.h'
                 )
-h_I_files = files('include/cava/input/common.h',
-                  'include/cava/input/fifo.h',
-                  'include/cava/input/shmem.h'
-                  )
+h_I_files = files('include/cava/input/common.h')
 
 h_O_files = files('include/cava/output/common.h',
                   'include/cava/output/terminal_noncurses.h',
@@ -126,7 +123,6 @@ alsa_dep = cc.find_library('asound', required: get_option('input_alsa'))
 if alsa_dep.found()
    if cc.has_function('snd_pcm_open', dependencies: alsa_dep)
       src_files += 'src/input/alsa.c'
-      h_I_files += 'include/cava/input/alsa.h'
       deps += alsa_dep
       add_project_arguments('-DALSA', language: 'c')
    else
@@ -141,7 +137,6 @@ port_dep = cc.find_library('portaudio', required: get_option('input_portaudio'))
 if port_dep.found()
    if cc.has_function('Pa_Initialize', dependencies: port_dep)
       src_files += 'src/input/portaudio.c'
-      h_I_files += 'include/cava/input/portaudio.h'
       deps += port_dep
       add_project_arguments('-DPORTAUDIO', language: 'c')
    else
@@ -157,7 +152,6 @@ pulse_simple_dep = cc.find_library('pulse-simple', required: get_option('input_p
 if pulse_dep.found() and pulse_simple_dep.found()
    if cc.has_function('pa_simple_new', dependencies: [pulse_dep, pulse_simple_dep])
       src_files += 'src/input/pulse.c'
-      h_I_files += 'include/cava/input/pulse.h'
       deps += [pulse_dep, pulse_simple_dep]
       add_project_arguments('-DPULSE', language: 'c')
    else
@@ -172,7 +166,6 @@ sndio_dep = cc.find_library('sndio', required: get_option('input_sndio'))
 if sndio_dep.found()
    if cc.has_function('sio_open', dependencies: sndio_dep)
       src_files += 'src/input/sndio.c'
-      h_I_files += 'include/cava/input/sndio.h'
       deps += sndio_dep
       add_project_arguments('-DSNDIO', language: 'c')
    else
@@ -187,7 +180,6 @@ pipewire_dep = dependency('libpipewire-0.3', required: get_option('input_pipewir
 if pipewire_dep.found()
    if cc.has_function('pw_stream_connect', dependencies: pipewire_dep)
       src_files += 'src/input/pipewire.c'
-      h_I_files += 'include/cava/input/pipewire.h'
       deps += pipewire_dep
       add_project_arguments('-DPIPEWIRE', language: 'c')
    else
