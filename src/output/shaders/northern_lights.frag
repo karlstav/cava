@@ -14,25 +14,21 @@ uniform vec3 u_resolution; // window resolution, not used here
 uniform vec3 bg_color; // background color(r,g,b) (0.0 - 1.0), not used here
 uniform vec3 fg_color; // foreground color, not used here
 
-float normalize_C(float x, float x_min, float x_max, float r_min, float r_max )
-{
-	float xr;
-	xr = (r_max-r_min) * (x - x_min) / (x_max - x_min) + r_min;
-	return xr;
-}
-
 void main()
 {
     // find which bar to use based on where we are on the x axis
     int bar = int(bars_count * fragCoord.x);
 
-    // create a normal along the y axis based on the bar height
-    float x = normalize_C(fragCoord.y, 1.0, 0.0, 0.0, bars[bar]);
+    float bar_y = 1.0 - abs((fragCoord.y - 0.5)) * 2.0;
+    float y = (bars[bar]) * bar_y;
+
+    float bar_x = (fragCoord.x - float(bar) / float(bars_count)) * bars_count;
+    float bar_r = 1.0 - abs((bar_x - 0.5)) * 2;
+
+    bar_r = bar_r * bar_r * 2;
 
     // set color
-    fragColor.r=fg_color.x*x;
-    fragColor.g=fg_color.y*x;
-    fragColor.b=fg_color.z*x;
-    fragColor.a=1.0;
-
+    fragColor.r = fg_color.x * y * bar_r;
+    fragColor.g = fg_color.y * y * bar_r;
+    fragColor.b = fg_color.z * y * bar_r;
 }

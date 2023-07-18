@@ -117,14 +117,34 @@ Then install prerequisites:
 
     brew install fftw ncurses libtool automake autoconf-archive pkgconf portaudio iniparser
     
-Then fix macOS not finding libtool and ncursesw:
+The installation location for Homebrew packages is different between Intel Macs and Apple Silicon Macs.
+As such, the commands will be a little bit different.
+You can find out which type you have [here](https://support.apple.com/en-us/HT211814#:~:text=To%20open%20About%20This%20Mac,as%20an%20Intel%2Dbased%20Mac.)
+
+For both machines, run these commands to fix macOS not finding libtool and ncursesw:
 
     export LIBTOOL=`which glibtool`
     export LIBTOOLIZE=`which glibtoolize`
     ln -s `which glibtoolize` /usr/local/bin/libtoolize
+
+On an Intel Mac, run the following command as well:
+
     ln -s /usr/lib/libncurses.dylib /usr/local/lib/libncursesw.dylib
 
-Tested on macOS Big Sur
+On an Apple Silicon Mac, run this command instead:
+
+    ln -s /opt/homebrew/lib/lib/libncursesw.6.dylib /usr/local/lib/libncursesw.dylib
+
+Note that the file name may be a little bit different depending on the versions, but the directory should be the same.
+
+Additionally, run these commands on Apple Silicon Macs so that ./configure can find the Homebrew packages:
+
+    export LDFLAGS="-L/opt/homebrew/lib"
+    export CPPFLAGS="-I/opt/homebrew/include"
+
+Intel Mac instructions tested on macOS Big Sur.
+
+Apple Silicon instructions tested on macOS Ventura.
 
 
 Windows:

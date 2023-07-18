@@ -35,15 +35,15 @@ INCTXT(ConfigFile, "example_files/config");
 
 // add your custom shaders to be installed here
 INCTXT(bar_spectrum, "src/output/shaders/bar_spectrum.frag");
-INCTXT(normalized_barsfrag, "src/output/shaders/normalized_bars.frag");
+INCTXT(northern_lightsfrag, "src/output/shaders/northern_lights.frag");
 INCTXT(pass_throughvert, "src/output/shaders/pass_through.vert");
 
 // INCTXT will create a char g<name>Data
-const char *default_shader_data[NUMBER_OF_SHADERS] = {gnormalized_barsfragData,
+const char *default_shader_data[NUMBER_OF_SHADERS] = {gnorthern_lightsfragData,
                                                       gpass_throughvertData, gbar_spectrumData};
 #endif // _MSC_VER
 // name of the installed shader file, technically does not have to be the same as in the source
-const char *default_shader_name[NUMBER_OF_SHADERS] = {"normalized_bars.frag", "pass_through.vert",
+const char *default_shader_name[NUMBER_OF_SHADERS] = {"northern_lights.frag", "pass_through.vert",
                                                       "bar_spectrum.frag"};
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
@@ -417,8 +417,13 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             sprintf(cava_config_home, "%s/%s/%s/", configHome, ".config", PACKAGE);
             mkdir(cava_config_home, 0777);
         } else {
+#ifndef _MSC_VER
+            sprintf(cava_config_home, "/tmp/%s/", PACKAGE);
+            mkdir(cava_config_home, 0777);
+#else
             write_errorf(error, "No HOME found (ERR_HOMELESS), exiting...");
             return false;
+#endif
         }
     }
     if (configPath[0] == '\0') {
@@ -476,21 +481,24 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         sprintf(shaderFile, "%s/%s", shaderPath, default_shader_name[i]);
 
         fp = fopen(shaderFile, "ab+");
-        fseek(fp, 0, SEEK_END);
-        if (ftell(fp) == 0) {
+        if (fp) {
+            fseek(fp, 0, SEEK_END);
+            if (ftell(fp) == 0) {
 #ifndef _MSC_VER
-            printf("shader file is empty, creating default shader file\n");
-            fwrite(default_shader_data[i], strlen(default_shader_data[i]), sizeof(char), fp);
+                printf("shader file is empty, creating default shader file\n");
+                fwrite(default_shader_data[i], strlen(default_shader_data[i]), sizeof(char), fp);
 #else
-            printf(
-                "WARNING: shader file is empty, windows does not support automatic default shader "
-                "generation.\n In order to use the shader copy the file %s from the source to "
-                "%s\n\n",
-                default_shader_name[i], shaderPath);
+                printf(
+                    "WARNING: shader file is empty, windows does not support automatic default "
+                    "shader "
+                    "generation.\n In order to use the shader copy the file %s from the source to "
+                    "%s\n\n",
+                    default_shader_name[i], shaderPath);
 #endif
+            }
+            fclose(fp);
+            free(shaderFile);
         }
-        fclose(fp);
-        free(shaderFile);
     }
     free(shaderPath);
 
