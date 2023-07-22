@@ -178,15 +178,16 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
 
     SDL_Delay(frame_time);
 
-    SDL_PollEvent(&e);
-    if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-        rc = -1;
-        if (gradient) {
-            free(gradient_colors_sdl);
+    while (SDL_PollEvent(&e)) {
+        if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+            rc = -1;
+            if (gradient) {
+                free(gradient_colors_sdl);
+            }
         }
+        if (e.type == SDL_QUIT)
+            rc = -2;
     }
-    if (e.type == SDL_QUIT)
-        rc = -2;
 
     return rc;
 }
