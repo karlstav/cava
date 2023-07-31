@@ -403,6 +403,9 @@ So in `cava.psf`, the characters 1-7 are actually replaced by Unicode characters
 
 Actually, `setfont` is supposed to return the default font, but this usually isn't set. I haven't found another way to get the current font. So cava sets the font to "Lat2-Fixed16" when interrupted. All major distros should have it. It will revert to your default font at reboot.
 
+### Gradient not working in Konsole
+
+Konsole simply does not support this. #194
 
 Usage
 -----
