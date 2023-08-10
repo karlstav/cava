@@ -45,7 +45,7 @@ const char *default_shader_name[NUMBER_OF_SHADERS] = {"northern_lights.frag", "p
 double smoothDef[5] = {1, 1, 1, 1, 1};
 
 enum input_method default_methods[] = {
-    INPUT_FIFO, INPUT_PORTAUDIO, INPUT_ALSA, INPUT_PULSE, INPUT_WINSCAP,
+    INPUT_FIFO, INPUT_PORTAUDIO, INPUT_ALSA, INPUT_PIPEWIRE, INPUT_PULSE, INPUT_WINSCAP,
 };
 
 char *outputMethod, *orientation, *channels, *xaxisScale, *monoOption, *fragmentShader,
@@ -674,11 +674,11 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     free(p->audio_source);
 
-    int default_input = -1;
+    enum input_method default_input = INPUT_FIFO;
     for (size_t i = 0; i < ARRAY_SIZE(default_methods); i++) {
         enum input_method method = default_methods[i];
         if (has_input_method[method]) {
-            default_input++;
+            default_input = default_methods[i];
         }
     }
     char *input_method_name =
