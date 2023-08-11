@@ -60,6 +60,7 @@ Required components:
 * libtool
 * automake
 * autoconf-archive (needed for setting up OpenGL)
+* pkgconf
 * build-essentials
 * [iniparser](https://github.com/ndevilla/iniparser)
 
@@ -86,22 +87,22 @@ All the requirements can be installed easily in all major distros:
 
 Debian/Ubuntu:
 
-    sudo apt install build-essential libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev
+    sudo apt install build-essential libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev pkgconf
 
 
 ArchLinux:
 
-    pacman -S base-devel fftw ncurses alsa-lib iniparser pulseaudio autoconf-archive
+    pacman -S base-devel fftw ncurses alsa-lib iniparser pulseaudio autoconf-archive pkgconf
 
 
 openSUSE:
 
-    zypper install alsa-devel ncurses-devel fftw3-devel libpulse-devel libtool autoconf-archive
+    zypper install alsa-devel ncurses-devel fftw3-devel libpulse-devel libtool autoconf-archive pkgconf
 
 
 Fedora:
 
-    dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool autoconf-archive iniparser-devel
+    dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool autoconf-archive iniparser-devel pkgconf
 
     
 macOS:
