@@ -1,7 +1,9 @@
 #include "input/pipewire.h"
 #include "input/common.h"
+#include <math.h>
 
 #include <spa/param/audio/format-utils.h>
+#include <spa/param/latency-utils.h>
 
 #include <pipewire/pipewire.h>
 
@@ -73,6 +75,8 @@ void *input_pipewire(void *audiodata) {
     struct pw_properties *props;
     struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
     char **argv;
+    uint32_t nom;
+    nom = nearbyint((10000 * data.cava_audio->rate) / 1000000.0);
 
     pw_init(0, &argv);
 
@@ -83,13 +87,14 @@ void *input_pipewire(void *audiodata) {
 
     pw_properties_set(props, PW_KEY_TARGET_OBJECT, data.cava_audio->source);
     pw_properties_set(props, PW_KEY_STREAM_CAPTURE_SINK, "true");
+    pw_properties_setf(props, PW_KEY_NODE_LATENCY, "%u/%u", nom, data.cava_audio->rate);
 
     data.stream = pw_stream_new_simple(pw_main_loop_get_loop(data.loop), "cava", props,
                                        &stream_events, &data);
 
     params[0] = spa_format_audio_raw_build(
         &b, SPA_PARAM_EnumFormat,
-        &SPA_AUDIO_INFO_RAW_INIT(.format = SPA_AUDIO_FORMAT_S16, .rate = 44100));
+        &SPA_AUDIO_INFO_RAW_INIT(.format = SPA_AUDIO_FORMAT_S16, .rate = data.cava_audio->rate));
 
     pw_stream_connect(data.stream, PW_DIRECTION_INPUT, PW_ID_ANY,
                       PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS |
