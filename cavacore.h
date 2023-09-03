@@ -31,9 +31,8 @@ extern "C" {
 // only the cut off frequencies is of any potential interest to read out,
 // the rest should most likley be hidden somehow
 struct cava_plan {
-    int FFTbassbufferSize;
-    int FFTmidbufferSize;
-    int FFTtreblebufferSize;
+
+    int FFTbufferSize;
     int number_of_bars;
     int audio_channels;
     int input_buffer_size;
@@ -50,24 +49,17 @@ struct cava_plan {
     double framerate;
     double noise_reduction;
 
-    fftw_plan p_bass_l, p_bass_r;
-    fftw_plan p_mid_l, p_mid_r;
-    fftw_plan p_treble_l, p_treble_r;
 
-    fftw_complex *out_bass_l, *out_bass_r;
-    fftw_complex *out_mid_l, *out_mid_r;
-    fftw_complex *out_treble_l, *out_treble_r;
+    fftw_plan plan_l, plan_r;
 
-    double *bass_multiplier;
-    double *mid_multiplier;
-    double *treble_multiplier;
 
-    double *in_bass_r_raw, *in_bass_l_raw;
-    double *in_mid_r_raw, *in_mid_l_raw;
-    double *in_treble_r_raw, *in_treble_l_raw;
-    double *in_bass_r, *in_bass_l;
-    double *in_mid_r, *in_mid_l;
-    double *in_treble_r, *in_treble_l;
+    fftw_complex *out_l, *out_r;
+
+    double *hann_multiplier;
+
+    double *in_r_raw, *in_l_raw;
+
+    double *in_r, *in_l;
     double *prev_cava_out, *cava_mem;
     double *input_buffer, *cava_peak;
 
