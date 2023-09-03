@@ -28,7 +28,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         return p;
     }
 
-    int buffer_size = 3072;
+    int buffer_size = 2048+512;
 
     if (rate > 8125 && rate <= 16250)
         buffer_size *= 2;
@@ -213,9 +213,6 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                     p->cut_off_frequency[n] = relative_cut_off[n] * ((float)p->rate / 2);
                 }
             }
-        } else {
-            if (p->FFTbuffer_upper_cut_off[n - 1] <= p->FFTbuffer_lower_cut_off[n - 1])
-                p->FFTbuffer_upper_cut_off[n - 1] = p->FFTbuffer_lower_cut_off[n - 1] + 1;
         }
     }
     free(bar_buffer);
