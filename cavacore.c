@@ -28,7 +28,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         return p;
     }
 
-    int buffer_size = 4096;
+    int buffer_size = 3072;
 
     if (rate > 8125 && rate <= 16250)
         buffer_size *= 2;
@@ -143,8 +143,6 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     // process: calculate cutoff frequencies and eq
     int lower_cut_off = low_cut_off;
     int upper_cut_off = high_cut_off;
-    int bass_cut_off = 100;
-    int treble_cut_off = 500;
 
     // calculate frequency constant (used to distribute bars across the frequency band)
     double frequency_constant = log10((float)lower_cut_off / (float)upper_cut_off) /
@@ -154,7 +152,6 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
     p->bass_cut_off_bar = -1;
     p->treble_cut_off_bar = -1;
-    int first_treble_bar = 0;
     int *bar_buffer = (int *)malloc((p->number_of_bars + 1) * sizeof(int));
 
     for (int n = 0; n < p->number_of_bars + 1; n++) {
