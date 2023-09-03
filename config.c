@@ -384,6 +384,10 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     }
 
     // setting sens
+    if (p->sens < 1) {
+        write_errorf(error, "Sensitivity needs to be at least 1%%\n");
+        return false;
+    }
     p->sens = p->sens / 100;
 
     return validate_colors(p, error);
