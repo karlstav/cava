@@ -220,7 +220,7 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     if (strcmp(outputMethod, "sdl_glsl") == 0) {
         p->output = OUTPUT_SDL_GLSL;
 #ifndef SDL_GLSL
-        write_errorf(error, "cava was built without sdl support, install sdl dev files "
+        write_errorf(error, "cava was built without opengl support, install opengl dev files "
                             "and run make clean && ./configure && make again\n");
         return false;
 #endif
