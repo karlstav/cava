@@ -494,12 +494,6 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
         cava_out[n] = p->cava_mem[n] * p->noise_reduction + cava_out[n];
         p->cava_mem[n] = cava_out[n];
         if (p->autosens) {
-            double diff = 1 - cava_out[n];
-            if (diff < 0)
-                diff = 0;
-            double div = 1 / (diff + 1);
-            p->cava_mem[n] = p->cava_mem[n] * (1 - div / 20);
-
             // check if we overshoot target height
             if (cava_out[n] > 1.0) {
                 overshoot = 1;
