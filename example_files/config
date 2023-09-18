@@ -63,7 +63,7 @@
 # For pulseaudio and pipewire 'source' will be the source. Default: 'auto', which uses the monitor source of the default sink
 # (all pulseaudio sinks(outputs) have 'monitor' sources(inputs) associated with them).
 #
-# For piepwire 'source' will be the object name or object.serial of the device to capture from.
+# For pipewire 'source' will be the object name or object.serial of the device to capture from.
 # Both input and output devices are supported.
 #
 # For alsa 'source' will be the capture device.
