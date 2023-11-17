@@ -98,8 +98,8 @@ struct config_params {
     int userEQ_keys, userEQ_enabled, col, bgcol, autobars, stereo, raw_format, ascii_range,
         bit_format, gradient, gradient_count, fixedbars, framerate, bar_width, bar_spacing,
         bar_height, autosens, overshoot, waves, fifoSample, fifoSampleBits, sleep_timer, sdl_width,
-        sdl_height, sdl_x, sdl_y, draw_and_quit, zero_test, non_zero_test, reverse, sync_updates,
-        continuous_rendering;
+        sdl_height, sdl_x, sdl_y, sdl_full_screen, draw_and_quit, zero_test, non_zero_test, reverse,
+        sync_updates, continuous_rendering;
 };
 
 struct error_s {

@@ -1,6 +1,6 @@
 #include "../config.h"
 
-void init_sdl_window(int width, int height, int x, int y);
+void init_sdl_window(int width, int height, int x, int y, int full_screen);
 void init_sdl_surface(int *width, int *height, char *const fg_color_string,
                       char *const bg_color_string, int gradient, int gradient_count,
                       char **gradient_color_strings);

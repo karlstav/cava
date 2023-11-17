@@ -41,8 +41,8 @@ const char *read_file(const char *);
 GLuint compile_shader(GLenum type, const char **);
 GLuint program_check(GLuint);
 
-void init_sdl_glsl_window(int width, int height, int x, int y, char *const vertex_shader,
-                          char *const fragmnet_shader) {
+void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
+                          char *const vertex_shader, char *const fragmnet_shader) {
     if (x == -1)
         x = SDL_WINDOWPOS_UNDEFINED;
 
@@ -60,8 +60,12 @@ void init_sdl_glsl_window(int width, int height, int x, int y, char *const verte
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 #endif
 
-    glWindow = SDL_CreateWindow("cava", x, y, width, height,
-                                SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    Uint32 sdl_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
+
+    if (full_screen == 1)
+        sdl_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+
+    glWindow = SDL_CreateWindow("cava", x, y, width, height, sdl_flags);
     if (glWindow == NULL) {
         fprintf(stderr, "Window could not be created! SDL_Error: %s\n", SDL_GetError());
         exit(1);
@@ -212,6 +216,10 @@ int draw_sdl_glsl(int bars_count, const float bars[], int frame_time, int re_pai
     if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
         glViewport(0, 0, event.window.data1, event.window.data2);
         rc = -1;
+    }
+    if (event.type == SDL_KEYDOWN) {
+        if (event.key.keysym.sym == SDLK_q || event.key.keysym.sym == SDLK_ESCAPE)
+            rc = -2;
     }
     if (event.type == SDL_QUIT)
         rc = -2;

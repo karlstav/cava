@@ -146,6 +146,7 @@
 ; sdl_height = 500
 ; sdl_x = -1
 ; sdl_y= -1
+; sdl_full_screen = 0
 
 # set label on bars on the x-axis. Can be 'frequency' or 'none'. Default: 'none'
 # 'frequency' displays the lower cut off frequency of the bar above.

@@ -639,6 +639,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->sdl_height = iniparser_getint(ini, "output:sdl_height", 500);
     p->sdl_x = iniparser_getint(ini, "output:sdl_x", -1);
     p->sdl_y = iniparser_getint(ini, "output:sdl_y", -1);
+    p->sdl_full_screen = iniparser_getint(ini, "output:sdl_full_screen", 0);
 
     if (strcmp(outputMethod, "sdl") == 0 || strcmp(outputMethod, "sdl_glsl") == 0) {
         free(p->color);

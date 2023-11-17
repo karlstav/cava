@@ -483,15 +483,15 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #ifdef SDL
         // output: start sdl mode
         if (output_mode == OUTPUT_SDL) {
-            init_sdl_window(p.sdl_width, p.sdl_height, p.sdl_x, p.sdl_y);
+            init_sdl_window(p.sdl_width, p.sdl_height, p.sdl_x, p.sdl_y, p.sdl_full_screen);
             height = p.sdl_height;
             width = p.sdl_width;
         }
 #endif
 #ifdef SDL_GLSL
         if (output_mode == OUTPUT_SDL_GLSL) {
-            init_sdl_glsl_window(p.sdl_width, p.sdl_height, p.sdl_x, p.sdl_y, p.vertex_shader,
-                                 p.fragment_shader);
+            init_sdl_glsl_window(p.sdl_width, p.sdl_height, p.sdl_x, p.sdl_y, p.sdl_full_screen,
+                                 p.vertex_shader, p.fragment_shader);
             height = p.sdl_height;
             width = p.sdl_width;
         }

@@ -35,7 +35,7 @@ static void parse_color(char *color_string, struct colors *color) {
     }
 }
 
-void init_sdl_window(int width, int height, int x, int y) {
+void init_sdl_window(int width, int height, int x, int y, int full_screen) {
     if (x == -1)
         x = SDL_WINDOWPOS_UNDEFINED;
 
@@ -45,8 +45,12 @@ void init_sdl_window(int width, int height, int x, int y) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
     } else {
-        gWindow =
-            SDL_CreateWindow("cava", x, y, width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+        Uint32 sdl_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
+
+        if (full_screen == 1)
+            sdl_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+
+        gWindow = SDL_CreateWindow("cava", x, y, width, height, sdl_flags);
         if (gWindow == NULL) {
             printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         } else {
@@ -184,6 +188,10 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
             if (gradient) {
                 free(gradient_colors_sdl);
             }
+        }
+        if (e.type == SDL_KEYDOWN) {
+            if (e.key.keysym.sym == SDLK_q || e.key.keysym.sym == SDLK_ESCAPE)
+                rc = -2;
         }
         if (e.type == SDL_QUIT)
             rc = -2;
