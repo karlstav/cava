@@ -165,6 +165,9 @@
 ; for glsl output mode, keep rendering even if no audio
 ; continuous_rendering = 0
 
+# disable console blank (screen saver) in tty
+; disable_blanking = 0
+
 [color]
 
 # Colors can be one of seven predefined: black, blue, cyan, green, magenta, red, white, yellow.

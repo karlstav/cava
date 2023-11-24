@@ -313,7 +313,7 @@ void cleanup_terminal_ncurses(void) {
     echo();
     system("setfont  >/dev/null 2>&1");
     system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
-    system("setterm -blank 10  >/dev/null 2>&1");
+
     /*for(int i = 0; i < gradient_size; ++i) {
             if(the_color_redefinitions[i].color) {
                     init_color(the_color_redefinitions[i].color,

@@ -290,7 +290,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         output_mode = p.output;
 #ifndef _MSC_VER
-        if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE) {
+        if (output_mode != OUTPUT_NCURSES || output_mode != OUTPUT_NONCURSES) {
             // Check if we're running in a tty
             if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0), "/dev/console") == 0)
                 inAtty = 1;
@@ -309,7 +309,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     // if not it might still be available, we dont know, must try
                     system("setfont cava.psf  >/dev/null 2>&1");
                 }
-                system("setterm -blank 0");
+                if (p.disable_blanking)
+                    system("setterm -blank 0");
             }
 
             // We use unicode block characters to draw the bars and

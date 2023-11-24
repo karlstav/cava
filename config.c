@@ -652,6 +652,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     p->continuous_rendering = iniparser_getint(ini, "output:continuous_rendering", 0);
 
+    p->disable_blanking = iniparser_getint(ini, "output:disable_blanking", 0);
+
     p->sync_updates = iniparser_getint(ini, "output:alacritty_sync", 0);
 
     vertexShader = strdup(iniparser_getstring(ini, "output:vertex_shader", "pass_through.vert"));
