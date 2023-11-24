@@ -154,7 +154,6 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
 
 #else
     system("setterm -cursor off");
-    system("setterm -blank 0");
     system("clear");
 #endif
 
@@ -417,7 +416,6 @@ void cleanup_terminal_noncurses(void) {
     system("setfont  >/dev/null 2>&1");
     system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
     system("setterm -cursor on");
-    system("setterm -blank 10");
     system("clear");
 #endif
     printf("\033[0m\n");

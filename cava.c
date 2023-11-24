@@ -290,7 +290,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         output_mode = p.output;
 #ifndef _MSC_VER
-        if (output_mode != OUTPUT_NCURSES || output_mode != OUTPUT_NONCURSES) {
+        if (output_mode == OUTPUT_NCURSES || output_mode == OUTPUT_NONCURSES) {
             // Check if we're running in a tty
             if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0), "/dev/console") == 0)
                 inAtty = 1;
