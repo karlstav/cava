@@ -275,7 +275,7 @@ To make it persistent across boot add the line `snd-aloop` to "/etc/modules". To
 
 Playing the audio through your Loopback interface makes it possible for cava to capture it, but there will be no sound in your speakers. In order to play audio on the loopback interface and your actual interface you must make use of the ALSA multi channel.
 
-Look at the included example file `example_files/etc/asound.conf` on how to use the multi channel. I was able to make this work on my laptop (an Asus UX31 running Ubuntu), but I had no luck with the ALSA method on my Raspberry Pi (Rasbian) with an USB DAC. The PulseAudio method however works perfectly on my Pi. 
+Look at the included example file `example_files/etc/asound.conf` on how to use the multi channel. I was able to make this work with a HDA Intel PCH sound card, but I had no luck with the an USB DAC.
 
 Read more about the ALSA method [here](http://stackoverflow.com/questions/12984089/capture-playback-on-play-only-sound-card-with-alsa).
 
@@ -284,6 +284,12 @@ If you are having problems with the alsa method on Rasberry PI, try enabling `mm
 ```
 dtoverlay=i2s-mmap
 ```
+
+#### dmix
+
+@reluekiss, was able to make cava work with dmix. Check out the example config in `example_files/etc/asound_dmix.conf` and issue [534](https://github.com/karlstav/cava/issues/534).
+
+
 
 ### mpd
 
