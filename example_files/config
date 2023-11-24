@@ -94,8 +94,9 @@
 
 # Output method. Can be 'ncurses', 'noncurses', 'raw', 'noritake', 'sdl'
 # or 'sdl_glsl'.
-# 'noncurses' uses a custom framebuffer technique and prints only changes
-# from frame to frame in the terminal. 'ncurses' is default if supported.
+# 'noncurses' (default) uses a buffer and cursor movements to only print
+# changes from frame to frame in the terminal. Uses less resources and is less
+# prone to tearing (vsync issues) than 'ncurses'.
 #
 # 'raw' is an 8 or 16 bit (configurable via the 'bit_format' option) data
 # stream of the bar heights that can be used to send to other applications.
@@ -107,7 +108,7 @@
 # 'sdl' uses the Simple DirectMedia Layer to render in a graphical context.
 # 'sdl_glsl' uses SDL to create an OpenGL context. Write your own shaders or
 # use one of the predefined ones.
-; method = ncurses
+; method = noncurses
 
 # Orientation of the visualization. Can be 'bottom', 'top', 'left' or 'right'.
 # Default is 'bottom'. Other orientations are only supported on sdl and ncruses

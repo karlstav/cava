@@ -580,12 +580,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     }
 #ifndef _MSC_VER
 
-#ifdef NCURSES
-    outputMethod = strdup(iniparser_getstring(ini, "output:method", "ncurses"));
-#endif
-#ifndef NCURSES
     outputMethod = strdup(iniparser_getstring(ini, "output:method", "noncurses"));
-#endif
 
     orientation = strdup(iniparser_getstring(ini, "output:orientation", "bottom"));
     xaxisScale = strdup(iniparser_getstring(ini, "output:xaxis", "none"));
