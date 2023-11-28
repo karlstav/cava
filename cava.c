@@ -767,11 +767,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 if (output_mode == OUTPUT_NCURSES)
                     ch = getch();
 #endif
-                /*
-                // disabled key controls in non-curses mode, caused garbage on screen
+
+#ifndef _MSC_VER
                 if (output_mode == OUTPUT_NONCURSES)
-                    ch = fgetc(stdin);
-                */
+                    read(0, &ch, sizeof(ch));
+#endif
 
                 switch (ch) {
                 case 65: // key up
@@ -814,6 +814,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     should_reload = 1;
                     should_quit = 1;
                 }
+
+                ch = 0;
 
                 if (should_reload) {
 

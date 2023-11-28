@@ -42,10 +42,15 @@ int setecho(int fd, int onoff) {
     if (tcgetattr(fd, &t) == -1)
         return -1;
 
-    if (onoff == 0)
+    if (onoff == 0) {
         t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL | ICANON);
-    else
+        t.c_cc[VTIME] = 0;
+        t.c_cc[VMIN] = 0;
+    } else {
         t.c_lflag |= (ECHO | ECHOE | ECHOK | ECHONL | ICANON);
+        t.c_cc[VTIME] = 0;
+        t.c_cc[VMIN] = 1;
+    }
 
     if (tcsetattr(fd, TCSANOW, &t) == -1)
         return -1;
