@@ -676,6 +676,9 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     free(p->audio_source);
 
+    p->samplerate = iniparser_getint(ini, "input:sample_rate", 44100);
+    p->samplebits = iniparser_getint(ini, "input:sample_bits", 16);
+
     enum input_method default_input = INPUT_FIFO;
     for (size_t i = 0; i < ARRAY_SIZE(default_methods); i++) {
         enum input_method method = default_methods[i];
@@ -694,8 +697,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 #endif
     case INPUT_FIFO:
         p->audio_source = strdup(iniparser_getstring(ini, "input:source", "/tmp/mpd.fifo"));
-        p->fifoSample = iniparser_getint(ini, "input:sample_rate", 44100);
-        p->fifoSampleBits = iniparser_getint(ini, "input:sample_bits", 16);
         break;
 #ifdef PULSE
     case INPUT_PULSE:

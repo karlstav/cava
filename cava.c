@@ -383,8 +383,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
 
         case INPUT_FIFO:
-            audio.rate = p.fifoSample;
-            audio.format = p.fifoSampleBits;
+            audio.rate = p.samplerate;
+            audio.format = p.samplebits;
             thr_id = pthread_create(&p_thread, NULL, input_fifo, (void *)&audio);
             break;
 #ifdef PULSE
@@ -417,8 +417,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
 #ifdef PIPEWIRE
         case INPUT_PIPEWIRE:
-            audio.format = 16;
-            audio.rate = 44100;
+            audio.format = p.samplebits;
+            audio.rate = p.samplerate;
             thr_id = pthread_create(&p_thread, NULL, input_pipewire, (void *)&audio);
             break;
 #endif

@@ -92,9 +92,26 @@ void *input_pipewire(void *audiodata) {
     data.stream = pw_stream_new_simple(pw_main_loop_get_loop(data.loop), "cava", props,
                                        &stream_events, &data);
 
+    enum spa_audio_format audio_format = SPA_AUDIO_FORMAT_S16;
+
+    switch (data.cava_audio->format) {
+    case 8:
+        audio_format = SPA_AUDIO_FORMAT_S8;
+        break;
+    case 16:
+        audio_format = SPA_AUDIO_FORMAT_S16;
+        break;
+    case 24:
+        audio_format = SPA_AUDIO_FORMAT_S24;
+        break;
+    case 32:
+        audio_format = SPA_AUDIO_FORMAT_S32;
+        break;
+    };
+
     params[0] = spa_format_audio_raw_build(
         &b, SPA_PARAM_EnumFormat,
-        &SPA_AUDIO_INFO_RAW_INIT(.format = SPA_AUDIO_FORMAT_S16, .rate = data.cava_audio->rate));
+        &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data.cava_audio->rate));
 
     pw_stream_connect(data.stream, PW_DIRECTION_INPUT, PW_ID_ANY,
                       PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS |
