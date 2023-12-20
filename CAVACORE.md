@@ -40,6 +40,17 @@ This feature can be adjusted.
 The range of an input signal can vary a lot. cavacore can keep the output signal within range in real-time. This feature can be disabled.
 
 
+# Building
+
+use the root CMakeLists.txt to build it:
+
+```
+mkdir build
+cd build
+cmake ..
+cmake --build .
+```
+
 # Usage
 
 See cavacore.h for documentation and the cavacore_test.c application for how to use.

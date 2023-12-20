@@ -1,6 +1,6 @@
-// cavacore standalone test app, build cava first and compile with:
+// cavacore standalone test app, build cavacore lib first and compile with:
 // gcc -c -g cavacore_test.c
-// gcc -o cavacore_test cavacore_test.o cava-cavacore.o -lm -lfftw3
+// gcc -o cavacore_test cavacore_test.o build/libcavacore.a -lm -lfftw3
 
 #include "cavacore.h"
 #include <math.h>
