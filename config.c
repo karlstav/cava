@@ -129,6 +129,15 @@ bool validate_colors(void *params, void *err) {
     }
 
     if (p->gradient) {
+        if (p->gradient_count < 2) {
+            write_errorf(error, "\nAtleast two colors must be given as gradient!\n");
+            return false;
+        }
+        if (p->gradient_count > 8) {
+            write_errorf(error, "\nMaximum 8 colors can be specified as gradient!\n");
+            return false;
+        }
+
         for (int i = 0; i < p->gradient_count; i++) {
             if (!validate_color(p->gradient_colors[i], p, error)) {
                 write_errorf(
@@ -182,17 +191,6 @@ bool validate_colors(void *params, void *err) {
     if (p->bcolor[0] == '#')
         p->bgcol = 8;
     // default if invalid
-    if (p->gradient) {
-
-        if (p->gradient_count < 2) {
-            write_errorf(error, "\nAtleast two colors must be given as gradient!\n");
-            return false;
-        }
-        if (p->gradient_count > 8) {
-            write_errorf(error, "\nMaximum 8 colors can be specified as gradient!\n");
-            return false;
-        }
-    }
 
     return true;
 }
