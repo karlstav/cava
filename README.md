@@ -21,6 +21,7 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
   - [ALSA](#alsa)
   - [MPD](#mpd)
   - [sndio](#sndio)
+  - [OSS](#oss)
   - [squeezelite](#squeezelite)
   - [macOS](#macos-1)
   - [Windows](#windows)
@@ -86,6 +87,10 @@ Only FFTW and the other build tools are actually required for CAVA to compile, b
 For better a better visual experience ncurses is also recomended.
 
 All the requirements can be installed easily in all major distros:
+
+FreeBSD
+
+    pkg install autoconf-archive autotools fftw3 iniparser pkgconf psftools sdl2 sndio
 
 Debian/Ubuntu:
 
@@ -181,6 +186,10 @@ Or you can change `PREFIX`, for example:
 
 All distro specific instalation sources might be out of date. Please check version before reporting any issues here.
 
+
+#### FreeBSD
+
+    pkg install cava
 
 #### openSUSE
 
@@ -328,6 +337,72 @@ $ sndiod -dd -s default -m mon -s monitor
 # sndio device and run cava
 $ AUDIODEVICE=snd/0.monitor cava
 ```
+
+### OSS
+
+The audio system used on FreeBSD is the Open Sound System (OSS).
+The following example demonstrates how to setup CAVA for OSS on FreeBSD:
+
+```sh
+$ cat /dev/sndstat
+Installed devices:
+pcm0: <Realtek ALC1220 (Rear Analog)> (play/rec) default
+pcm1: <Realtek ALC1220 (Front Analog Mic)> (rec)
+pcm2: <USB audio> (play/rec)
+No devices installed from userspace.
+```
+
+The system has three `pcm` sound devices, `pcm0`, `pcm1` and `pcm2`. `pcm0` corresponds to the analog
+output jack on the rear, in which external stereo speakers are plugged in, and the analog input jack,
+in which one could plug in a microphone. Because it encapsulates both, output and input, it is marked
+as `play/rec`. It is also set as the `default` sound device. `pcm1` corresponds to another analog input
+jack for a mic on the front side and is marked `rec`. A USB headset which an integrated mic is plugged
+in an USB port and the system has created the `pcm2` sound device with `play/rec` capabilities for
+it.
+
+In general for every `pcmX` device there is a corresponding `/dev/dspX` audio device. In this example
+there are `/dev/dsp0`, `/dev/dsp1` and `/dev/dsp2` (the system creates them when needed, they are not
+listet via `ls /dev` if they are currently not in use). The system also creates an implicit `/dev/dsp`,
+which acts like a symlink to the `default` audio device, in this example to `/dev/dsp0`.
+
+Now in order to visualize the mic input in CAVA, the `source` value in the configuration file must
+be set to the corresponding audio device, i.e.
+```sh
+[input]
+source = /dev/dsp    # or /dev/dsp0 for which /dev/dsp is a symlink in this example
+```
+(which is already the default for CAVA) for the `pcm0` mic on the rear, or
+```sh
+[input]
+source = /dev/dsp1
+```
+for the `pcm1` mic on the front, or
+```sh
+[input]
+source = /dev/dsp2
+```
+for the `pcm2` mic on the USB headset.
+
+OSS can't record the outgoing audio on its own, i.e. the sounds from a music player or a browser which
+play on the external stereo speakers through `/dev/dsp0` are not visualized in CAVA. A solution is
+to use Virtual OSS. It can create virtual audio devices from existing audio devices and from which
+the played back audio can be fed into CAVA:
+```sh
+$ doas pkg install virtual_oss
+$ doas virtual_oss -Q0 -C2 -c2 -r48000 -b16 -s2048 -P /dev/dsp0 -R /dev/null -w vdsp.wav -t vdsp.ctl -T /dev/sndstat -l dsp
+
+$ cat /dev/sndstat
+Installed devices:
+pcm0: <Realtek ALC1220 (Rear Analog)> (play/rec) default
+pcm1: <Realtek ALC1220 (Front Analog Mic)> (rec)
+pcm2: <USB audio> (play/rec)
+Installed devices from userspace:
+dsp: <Virtual OSS> (play/rec)
+```
+It created a virtual device `dsp` from `/dev/dsp0`. Now the audio is visualized in CAVA with the default
+`source = /dev/dsp` in the configuration file. Virtual OSS can be configured and started as a service
+on FreeBSD.
+
 
 ### squeezelite
 [squeezelite](https://en.wikipedia.org/wiki/Squeezelite) is one of several software clients available for the Logitech Media Server. Squeezelite can export its audio data as shared memory, which is what this input module uses.

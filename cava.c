@@ -70,6 +70,7 @@
 
 #include "input/alsa.h"
 #include "input/fifo.h"
+#include "input/oss.h"
 #include "input/pipewire.h"
 #include "input/portaudio.h"
 #include "input/pulse.h"
@@ -299,18 +300,30 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             if (strncmp(ttyname(0), "/dev/ttys", 9) == 0)
                 inAtty = 0;
             if (inAtty) {
+#ifdef CAVAFONT
                 // checking if cava psf font is installed in FONTDIR
                 FILE *font_file;
-                font_file = fopen(FONTDIR "/cava.psf", "r");
+                font_file = fopen(FONTDIR "/" FONTFILE, "r");
                 if (font_file) {
                     fclose(font_file);
-                    system("setfont " FONTDIR "/cava.psf  >/dev/null 2>&1");
+#ifdef __FreeBSD__
+                    system("vidcontrol -f " FONTDIR "/" FONTFILE " >/dev/null 2>&1");
+#else
+                    system("setfont " FONTDIR "/" FONTFILE " >/dev/null 2>&1");
+#endif
                 } else {
                     // if not it might still be available, we dont know, must try
-                    system("setfont cava.psf  >/dev/null 2>&1");
+#ifdef __FreeBSD__
+                    system("vidcontrol -f " FONTFILE " >/dev/null 2>&1");
+#else
+                    system("setfont " FONTFILE " >/dev/null 2>&1");
+#endif
                 }
+#endif // CAVAFONT
+#ifndef __FreeBSD__
                 if (p.disable_blanking)
                     system("setterm -blank 0");
+#endif
             }
 
             // We use unicode block characters to draw the bars and
@@ -348,6 +361,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         audio.cava_in = (double *)malloc(audio.cava_buffer_size * sizeof(double));
         memset(audio.cava_in, 0, sizeof(int) * audio.cava_buffer_size);
 
+        audio.threadparams = 0; // most input threads don't adjust the parameters
         audio.terminate = 0;
 
         debug("starting audio thread\n");
@@ -404,6 +418,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             thr_id = pthread_create(&p_thread, NULL, input_sndio, (void *)&audio);
             break;
 #endif
+#ifdef OSS
+        case INPUT_OSS:
+            audio.format = p.samplebits;
+            audio.rate = p.samplerate;
+            audio.threadparams = 1; // OSS can adjust parameters
+            thr_id = pthread_create(&p_thread, NULL, input_oss, (void *)&audio);
+            break;
+#endif
         case INPUT_SHMEM:
             audio.format = 16;
             thr_id = pthread_create(&p_thread, NULL, input_shmem, (void *)&audio);
@@ -440,7 +462,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             nanosleep(&timeout_timer, NULL);
 #endif
             pthread_mutex_lock(&audio.lock);
-            if (audio.format != -1 && audio.rate != 0)
+            if ((audio.threadparams == 0) && (audio.format != -1) && (audio.rate != 0))
                 break;
 
             pthread_mutex_unlock(&audio.lock);

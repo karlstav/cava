@@ -311,8 +311,12 @@ int draw_terminal_ncurses(int is_tty, int dimension_value, int dimension_bar, in
 // general: cleanup
 void cleanup_terminal_ncurses(void) {
     echo();
+#ifdef __FreeBSD__
+    system("vidcontrol -f >/dev/null 2>&1");
+#else
     system("setfont  >/dev/null 2>&1");
     system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
+#endif
 
     /*for(int i = 0; i < gradient_size; ++i) {
             if(the_color_redefinitions[i].color) {

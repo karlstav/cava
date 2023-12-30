@@ -52,8 +52,8 @@
 
 [input]
 
-# Audio capturing method. Possible methods are: 'pulse', 'alsa', 'fifo', 'sndio' or 'shmem'
-# Defaults to 'pulse', 'pipewire', 'alsa' or 'fifo', in that order, dependent on what support cava was built with.
+# Audio capturing method. Possible methods are: 'fifo', 'portaudio', 'pipewire', 'alsa', 'pulse', 'sndio', 'oss' or 'shmem'
+# Defaults to 'oss', 'sndio', 'pipewire', 'pulse', 'alsa', 'portaudio' or 'fifo', in that order, dependent on what support cava was built with.
 # On Mac it defaults to 'portaudio' or 'fifo'
 # On windows this is automatic and no input settings are needed.
 #
@@ -69,6 +69,13 @@
 # For alsa 'source' will be the capture device.
 # For fifo 'source' will be the path to fifo-file.
 # For shmem 'source' will be /squeezelite-AA:BB:CC:DD:EE:FF where 'AA:BB:CC:DD:EE:FF' will be squeezelite's MAC address
+#
+# For sndio 'source' will be a monitor sub-device, e.g. 'snd/0.monitor'. Default: 'default', in which case a device
+# should be specified with the environment variable AUDIODEVICE, e.g. on the commandline: AUDIODEVICE=snd/0.monitor cava.
+#
+# For oss 'source' will be the path to a audio device, e.g. '/dev/dsp2'. Default: '/dev/dsp', i.e. the default audio device.
+# README.md contains further information on how to setup CAVA for OSS on FreeBSD.
+#
 ; method = pulse
 ; source = auto
 
@@ -87,6 +94,21 @@
 ; method = portaudio
 ; source = auto
 
+; method = sndio
+; source = default
+
+; method = oss
+; source = /dev/dsp
+
+# The sample rate and format can be configured for some input methods. Currently
+# the following methods support such a configuration: 'fifo', 'pipewire' and 'oss'.
+# Other methods ignore these settings.
+#
+# For 'oss' they are only preferred values, i.e. if the values are not supported
+# by the chosen audio device, the device will use other supported values instead.
+# Example: 48000 and 32, but the device only supports 44100 and 16, then it will
+# use 44100 and 16.
+#
 ; sample_rate = 44100
 ; sample_bits = 16
 
@@ -168,6 +190,7 @@
 ; continuous_rendering = 0
 
 # disable console blank (screen saver) in tty
+# (Not supported on FreeBSD)
 ; disable_blanking = 0
 
 [color]

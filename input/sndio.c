@@ -15,7 +15,7 @@ void *input_sndio(void *data) {
     par.le = 1;
     par.rate = audio->rate;
     ;
-    par.rchan = 2;
+    par.rchan = audio->channels;
     par.appbufsz = sizeof(buf) / par.rchan;
 
     if ((hdl = sio_open(audio->source, SIO_REC, 0)) == NULL) {

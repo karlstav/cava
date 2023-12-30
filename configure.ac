@@ -9,6 +9,39 @@ AC_PROG_CC_STDC
 AM_PROG_LIBTOOL
 
 
+AC_CANONICAL_HOST
+
+build_linux=no
+build_windows=no
+build_mac=no
+build_freebsd=no
+
+AC_MSG_NOTICE([Checking OS])
+# Detect the target system
+case "${host_os}" in
+    linux*)
+        AC_MSG_NOTICE([Linux detected])
+        build_linux=yes
+        ;;
+    darwin*)
+        AC_MSG_NOTICE([OSX detected])
+        build_mac=yes
+        ;;
+    freebsd*)
+        AC_MSG_NOTICE([FreeBSD detected])
+        build_freebsd=yes
+        ;;
+    *)
+        AC_MSG_ERROR(["OS $host_os is not supported"])
+        ;;
+esac
+
+# Pass the conditionals to automake
+AM_CONDITIONAL([LINUX], [test "$build_linux" = "yes"])
+AM_CONDITIONAL([OSX], [test "$build_mac" = "yes"])
+AM_CONDITIONAL([FREEBSD], [test "$build_freebsd" = "yes"])
+
+
 dnl ############################
 dnl checking if debug is enabled
 dnl ############################
@@ -184,10 +217,32 @@ AS_IF([test "x$enable_input_sndio" != "xno"], [
   if [[ $have_sndio = "no" ]] ; then
     AC_MSG_NOTICE([WARNING: No sndio dev files found building without sndio support])
   fi],
-  [have_portaudio=no]
+  [have_sndio=no]
 )
 
 AM_CONDITIONAL([SNDIO], [test "x$have_sndio" = "xyes"])
+
+dnl ######################
+dnl checking for oss dev
+dnl ######################
+AC_ARG_ENABLE([input_oss],
+  AS_HELP_STRING([--disable-input-oss],
+    [do not include support for input from oss])
+)
+
+AS_IF([test "x$enable_input_oss" != "xno"], [
+  AC_CHECK_HEADERS(sys/soundcard.h, have_oss=yes, have_oss=no)
+  if [[ $have_oss = "yes" ]] ; then
+    CPPFLAGS="$CPPFLAGS -DOSS -D__BSD_VISIBLE"
+  fi
+
+  if [[ $have_oss = "no" ]] ; then
+    AC_MSG_NOTICE([WARNING: No oss dev files found building without oss support])
+  fi],
+  [have_oss=no]
+)
+
+AM_CONDITIONAL([OSS], [test "x$have_oss" = "xyes"])
 
 dnl ######################
 dnl checking for math lib
@@ -304,6 +359,39 @@ AM_CONDITIONAL([NCURSES], [test "x$have_ncurses" = "xyes"])
 
 
 dnl ######################
+dnl checking for cava font
+dnl ######################
+AC_ARG_ENABLE([cava_font],
+  AS_HELP_STRING([--disable-cava-font],
+    [do not include support for the console cava font])
+)
+
+AS_IF([test "x$enable_cava_font" != "xno"], [
+  have_cava_font=yes
+
+  if [[ $build_freebsd = "yes" ]] ; then
+    AC_PATH_PROG(VTFONTCVT, vtfontcvt)
+    if [[ -z "$VTFONTCVT" ]] ; then
+      AC_MSG_NOTICE([WARNING: vtfontcvt not found])
+      have_cava_font=no
+    fi
+    AC_PATH_PROG(PSF2BDF, psf2bdf)
+    if [[ -z "$PSF2BDF" ]] ; then
+      AC_MSG_NOTICE([WARNING: psf2bdf not found])
+      have_cava_font=no
+    fi
+    if [[ $have_cava_font = "no" ]] ; then
+      AC_MSG_NOTICE([WARNING: Font conversion tool missing. Building without cava font supported!])
+    fi
+  fi],
+  [have_cava_font=no]
+)
+
+AS_IF([test "x$have_cava_font" = "xyes"], [CPPFLAGS="$CPPFLAGS -DCAVAFONT"], [])
+AM_CONDITIONAL([CAVAFONT], [test "x$have_cava_font" = "xyes"])
+
+
+dnl ######################
 dnl checking for iniparser
 dnl ######################
 
@@ -326,41 +414,25 @@ AC_CHECK_LIB(iniparser,iniparser_load, have_iniparser=yes, have_iniparser=no)
 dnl ############################
 dnl Set font directory
 dnl ############################
-DEFAULT_FONT_DIR="${datarootdir}/consolefonts"
 AC_ARG_VAR(FONT_DIR, [Directory where the font will be installed.])
+AC_SUBST([FONT_FILE])
+
+AS_IF([test "x$have_cava_font" = "xyes"], [
+  if [[ "$build_freebsd" = "yes" ]] ; then
+    DEFAULT_FONT_DIR="${datarootdir}/cava"
+    FONT_FILE="cava.fnt"
+  else
+    DEFAULT_FONT_DIR="${datarootdir}/consolefonts"
+    FONT_FILE="cava.psf"
+  fi], [
+    DEFAULT_FONT_DIR=
+    FONT_FILE=]
+)
+
 if test -z "$FONT_DIR" ; then
   FONT_DIR="$DEFAULT_FONT_DIR"
 fi
 
-AC_CANONICAL_HOST
-
-build_linux=no
-build_windows=no
-build_mac=no
-
-AC_MSG_NOTICE([Checking OS])
-# Detect the target system
-case "${host_os}" in
-    linux*)
-        AC_MSG_NOTICE([Linux detected])
-        build_linux=yes
-        ;;
-    darwin*)
-        AC_MSG_NOTICE([OSX detected])
-        build_mac=yes
-        ;;
-    freebsd*)
-        AC_MSG_NOTICE([FreeBSD detected])
-        build_linux=yes
-        ;;
-    *)
-        AC_MSG_ERROR(["OS $host_os is not supported"])
-        ;;
-esac
-
-# Pass the conditionals to automake
-AM_CONDITIONAL([LINUX], [test "$build_linux" = "yes"])
-AM_CONDITIONAL([OSX], [test "$build_mac" = "yes"])
 
 
 AC_CONFIG_FILES([Makefile])

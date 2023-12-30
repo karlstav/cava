@@ -45,19 +45,20 @@ const char *default_shader_name[NUMBER_OF_SHADERS] = {"northern_lights.frag", "p
 double smoothDef[5] = {1, 1, 1, 1, 1};
 
 enum input_method default_methods[] = {
-    INPUT_FIFO, INPUT_PORTAUDIO, INPUT_ALSA, INPUT_PULSE, INPUT_PIPEWIRE, INPUT_WINSCAP,
+    INPUT_FIFO,     INPUT_PORTAUDIO, INPUT_ALSA,  INPUT_PULSE,
+    INPUT_PIPEWIRE, INPUT_WINSCAP,   INPUT_SNDIO, INPUT_OSS,
 };
 
 char *outputMethod, *orientation, *channels, *xaxisScale, *monoOption, *fragmentShader,
     *vertexShader;
 
 const char *input_method_names[] = {
-    "fifo", "portaudio", "pipewire", "alsa", "pulse", "sndio", "shmem", "winscap",
+    "fifo", "portaudio", "pipewire", "alsa", "pulse", "sndio", "oss", "shmem", "winscap",
 };
 
 const bool has_input_method[] = {
     HAS_FIFO, /** Always have at least FIFO and shmem input. */
-    HAS_PORTAUDIO, HAS_PIPEWIRE, HAS_ALSA, HAS_PULSE, HAS_SNDIO, HAS_SHMEM, HAS_WINSCAP,
+    HAS_PORTAUDIO, HAS_PIPEWIRE, HAS_ALSA, HAS_PULSE, HAS_SNDIO, HAS_OSS, HAS_SHMEM, HAS_WINSCAP,
 };
 
 enum input_method input_method_by_name(const char *str) {
@@ -709,6 +710,11 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 #ifdef SNDIO
     case INPUT_SNDIO:
         p->audio_source = strdup(iniparser_getstring(ini, "input:source", SIO_DEVANY));
+        break;
+#endif
+#ifdef OSS
+    case INPUT_OSS:
+        p->audio_source = strdup(iniparser_getstring(ini, "input:source", "/dev/dsp"));
         break;
 #endif
     case INPUT_SHMEM:
