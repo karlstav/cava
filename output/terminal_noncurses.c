@@ -158,7 +158,9 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
     system("cls");
 
 #else
+#ifndef __FreeBSD__
     system("setterm -cursor off");
+#endif
     system("clear");
 #endif
 
@@ -418,9 +420,13 @@ void cleanup_terminal_noncurses(void) {
     system("cls");
 #else
     setecho(STDIN_FILENO, 1);
+#ifdef __FreeBSD__
+    system("vidcontrol -f >/dev/null 2>&1");
+#else
     system("setfont  >/dev/null 2>&1");
     system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
     system("setterm -cursor on");
+#endif
     system("clear");
 #endif
     printf("\033[0m\n");

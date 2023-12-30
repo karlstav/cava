@@ -77,9 +77,13 @@ int draw_terminal_bcircle(int tty, int h, int w, int f[]) {
 // general: cleanup
 void cleanup_terminal_bcircle(void) {
     echo();
+#ifdef __FreeBSD__
+    system("vidcontrol -f >/dev/null 2>&1");
+#else
     system("setfont >/dev/null 2>&1");
     system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
     system("setterm -blank 10");
+#endif
     endwin();
     system("clear");
 }

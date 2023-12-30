@@ -37,6 +37,12 @@
 #define HAS_SNDIO false
 #endif
 
+#ifdef OSS
+#define HAS_OSS true
+#else
+#define HAS_OSS false
+#endif
+
 #ifdef _MSC_VER
 #define HAS_WINSCAP true
 #define SDL true
@@ -59,6 +65,7 @@ enum input_method {
     INPUT_ALSA,
     INPUT_PULSE,
     INPUT_SNDIO,
+    INPUT_OSS,
     INPUT_SHMEM,
     INPUT_WINSCAP,
     INPUT_MAX,
