@@ -231,13 +231,17 @@ AC_ARG_ENABLE([input_oss],
 )
 
 AS_IF([test "x$enable_input_oss" != "xno"], [
-  AC_CHECK_HEADERS(sys/soundcard.h, have_oss=yes, have_oss=no)
-  if [[ $have_oss = "yes" ]] ; then
-    CPPFLAGS="$CPPFLAGS -DOSS -D__BSD_VISIBLE"
-  fi
+  have_oss=no
 
-  if [[ $have_oss = "no" ]] ; then
-    AC_MSG_NOTICE([WARNING: No oss dev files found building without oss support])
+  if [[ $build_freebsd = "yes" ]] ; then
+    AC_CHECK_HEADERS(sys/soundcard.h, have_oss=yes, have_oss=no)
+    if [[ $have_oss = "yes" ]] ; then
+      CPPFLAGS="$CPPFLAGS -DOSS -D__BSD_VISIBLE"
+    fi
+
+    if [[ $have_oss = "no" ]] ; then
+      AC_MSG_NOTICE([WARNING: No oss dev files found building without oss support])
+    fi
   fi],
   [have_oss=no]
 )
