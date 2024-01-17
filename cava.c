@@ -70,6 +70,7 @@
 
 #include "input/alsa.h"
 #include "input/fifo.h"
+#include "input/jack.h"
 #include "input/oss.h"
 #include "input/pipewire.h"
 #include "input/portaudio.h"
@@ -422,8 +423,16 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         case INPUT_OSS:
             audio.format = p.samplebits;
             audio.rate = p.samplerate;
+            audio.channels = p.channels;
             audio.threadparams = 1; // OSS can adjust parameters
             thr_id = pthread_create(&p_thread, NULL, input_oss, (void *)&audio);
+            break;
+#endif
+#ifdef JACK
+        case INPUT_JACK:
+            audio.channels = p.channels;
+            audio.threadparams = 1; // JACK server provides parameters
+            thr_id = pthread_create(&p_thread, NULL, input_jack, (void *)&audio);
             break;
 #endif
         case INPUT_SHMEM:

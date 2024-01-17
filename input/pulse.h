@@ -3,4 +3,4 @@
 #pragma once
 
 void *input_pulse(void *data);
-void getPulseDefaultSink();
+void getPulseDefaultSink(void *data);

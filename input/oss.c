@@ -31,14 +31,23 @@ static bool set_format(int fd, struct audio_data *audio) {
     }
 
     // Determine the sle format for the requested bitlength.
-    if (audio->format <= 8)
+    switch (audio->format) {
+    case 8:
         fmt = AFMT_S8;
-    else if (audio->format <= 16)
+        break;
+    case 16:
         fmt = AFMT_S16_LE;
-    else if (audio->format <= 24)
+        break;
+    case 24:
         fmt = AFMT_S24_LE;
-    else
+        break;
+    case 32:
         fmt = AFMT_S32_LE;
+        break;
+    default:
+        fprintf(stderr, __FILE__ ": Invalid format: %d\n", audio->format);
+        return false;
+    }
 
     // If the requested format is not available then test for the other sle formats.
     if (!(fmts & fmt)) {
@@ -104,25 +113,12 @@ static bool set_rate(int fd, struct audio_data *audio) {
     return true;
 }
 
-static void signal_threadparams(struct audio_data *audio) {
-    pthread_mutex_lock(&audio->lock);
-    audio->threadparams = 0;
-    pthread_mutex_unlock(&audio->lock);
-}
-
-static void signal_terminate(struct audio_data *audio) {
-    pthread_mutex_lock(&audio->lock);
-    audio->terminate = 1;
-    pthread_mutex_unlock(&audio->lock);
-}
-
 void *input_oss(void *data) {
     static const int flags = O_RDONLY;
 
-    struct audio_data *audio = (struct audio_data *)data;
+    struct audio_data *audio = data;
     int bytes;
     size_t buf_size;
-    ssize_t rd;
 
     int fd = -1;
     void *buf = NULL;
@@ -136,7 +132,7 @@ void *input_oss(void *data) {
     }
 
     // For OSS it's adviced to determine format, channels and rate in this order.
-    if (!(set_format(fd, audio) && set_channels(fd, audio) && set_rate(fd, audio)))
+    if (!set_format(fd, audio) || !set_channels(fd, audio) || !set_rate(fd, audio))
         goto cleanup;
 
     // Parameters finalized. Signal main thread.
@@ -156,7 +152,9 @@ void *input_oss(void *data) {
     }
 
     while (audio->terminate != 1) {
-        if ((rd = read(fd, buf, buf_size)) == -1) {
+        ssize_t rd;
+
+        if ((rd = read(fd, buf, buf_size)) < 0) {
             fprintf(stderr, __FILE__ ": read() failed: %s\n", strerror(errno));
             goto cleanup;
         } else if (rd == 0)

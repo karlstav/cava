@@ -53,6 +53,10 @@ if OSS
     cava_SOURCES += input/oss.c
 endif
 
+if JACK
+    cava_SOURCES += input/jack.c
+endif
+
 if NCURSES
     cava_SOURCES += output/terminal_ncurses.c
 endif

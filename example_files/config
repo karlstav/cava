@@ -52,8 +52,8 @@
 
 [input]
 
-# Audio capturing method. Possible methods are: 'fifo', 'portaudio', 'pipewire', 'alsa', 'pulse', 'sndio', 'oss' or 'shmem'
-# Defaults to 'oss', 'sndio', 'pipewire', 'pulse', 'alsa', 'portaudio' or 'fifo', in that order, dependent on what support cava was built with.
+# Audio capturing method. Possible methods are: 'fifo', 'portaudio', 'pipewire', 'alsa', 'pulse', 'sndio', 'oss', 'jack' or 'shmem'
+# Defaults to 'oss', 'pipewire', 'sndio', 'jack', 'pulse', 'alsa', 'portaudio' or 'fifo', in that order, dependent on what support cava was built with.
 # On Mac it defaults to 'portaudio' or 'fifo'
 # On windows this is automatic and no input settings are needed.
 #
@@ -75,6 +75,9 @@
 #
 # For oss 'source' will be the path to a audio device, e.g. '/dev/dsp2'. Default: '/dev/dsp', i.e. the default audio device.
 # README.md contains further information on how to setup CAVA for OSS on FreeBSD.
+#
+# For jack 'source' will be the name of the JACK server to connect to, e.g. 'foobar'. Default: 'default'.
+# README.md contains further information on how to setup CAVA for JACK.
 #
 ; method = pulse
 ; source = auto
@@ -100,17 +103,25 @@
 ; method = oss
 ; source = /dev/dsp
 
+; method = jack
+; source = default
+
 # The sample rate and format can be configured for some input methods. Currently
 # the following methods support such a configuration: 'fifo', 'pipewire' and 'oss'.
 # Other methods ignore these settings.
 #
+# The channels can be configured for some input methods. Currently the following
+# methods support such a configuration: 'oss' and 'jack'.
+# Other methods ignore these settings.
+#
 # For 'oss' they are only preferred values, i.e. if the values are not supported
 # by the chosen audio device, the device will use other supported values instead.
-# Example: 48000 and 32, but the device only supports 44100 and 16, then it will
-# use 44100 and 16.
+# Example: 48000, 32 and 2, but the device only supports 44100, 16 and 1, then it
+# will use 44100, 16 and 1.
 #
 ; sample_rate = 44100
 ; sample_bits = 16
+; channels = 2
 
 
 [output]

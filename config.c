@@ -45,20 +45,21 @@ const char *default_shader_name[NUMBER_OF_SHADERS] = {"northern_lights.frag", "p
 double smoothDef[5] = {1, 1, 1, 1, 1};
 
 enum input_method default_methods[] = {
-    INPUT_FIFO,     INPUT_PORTAUDIO, INPUT_ALSA,  INPUT_PULSE,
-    INPUT_PIPEWIRE, INPUT_WINSCAP,   INPUT_SNDIO, INPUT_OSS,
+    INPUT_FIFO,  INPUT_PORTAUDIO, INPUT_ALSA,    INPUT_PULSE, INPUT_JACK,
+    INPUT_SNDIO, INPUT_PIPEWIRE,  INPUT_WINSCAP, INPUT_OSS,
 };
 
 char *outputMethod, *orientation, *channels, *xaxisScale, *monoOption, *fragmentShader,
     *vertexShader;
 
 const char *input_method_names[] = {
-    "fifo", "portaudio", "pipewire", "alsa", "pulse", "sndio", "oss", "shmem", "winscap",
+    "fifo", "portaudio", "pipewire", "alsa", "pulse", "sndio", "oss", "jack", "shmem", "winscap",
 };
 
 const bool has_input_method[] = {
     HAS_FIFO, /** Always have at least FIFO and shmem input. */
-    HAS_PORTAUDIO, HAS_PIPEWIRE, HAS_ALSA, HAS_PULSE, HAS_SNDIO, HAS_OSS, HAS_SHMEM, HAS_WINSCAP,
+    HAS_PORTAUDIO, HAS_PIPEWIRE, HAS_ALSA,  HAS_PULSE,   HAS_SNDIO,
+    HAS_OSS,       HAS_JACK,     HAS_SHMEM, HAS_WINSCAP,
 };
 
 enum input_method input_method_by_name(const char *str) {
@@ -328,7 +329,7 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     if (p->stereo == -1) {
         write_errorf(
             error,
-            "output channels %s is not supported, supported channelss are: 'mono' and 'stereo'\n",
+            "output channels %s is not supported, supported channels are: 'mono' and 'stereo'\n",
             channels);
         return false;
     }
@@ -388,6 +389,12 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         return false;
     }
     p->sens = p->sens / 100;
+
+    // validate: channels
+    if (p->channels <= 1)
+        p->channels = 1;
+    else
+        p->channels = 2;
 
     return validate_colors(p, error);
 }
@@ -546,7 +553,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     monoOption = malloc(sizeof(char) * 32);
     p->raw_target = malloc(sizeof(char) * 129);
     p->data_format = malloc(sizeof(char) * 32);
-    channels = malloc(sizeof(char) * 32);
     orientation = malloc(sizeof(char) * 32);
     vertexShader = malloc(sizeof(char) * PATH_MAX / 2);
     fragmentShader = malloc(sizeof(char) * PATH_MAX / 2);
@@ -677,6 +683,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     p->samplerate = iniparser_getint(ini, "input:sample_rate", 44100);
     p->samplebits = iniparser_getint(ini, "input:sample_bits", 16);
+    p->channels = iniparser_getint(ini, "input:channels", 2);
 
     enum input_method default_input = INPUT_FIFO;
     for (size_t i = 0; i < ARRAY_SIZE(default_methods); i++) {
@@ -715,6 +722,11 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 #ifdef OSS
     case INPUT_OSS:
         p->audio_source = strdup(iniparser_getstring(ini, "input:source", "/dev/dsp"));
+        break;
+#endif
+#ifdef JACK
+    case INPUT_JACK:
+        p->audio_source = strdup(iniparser_getstring(ini, "input:source", "default"));
         break;
 #endif
     case INPUT_SHMEM:
