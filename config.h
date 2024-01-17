@@ -43,6 +43,12 @@
 #define HAS_OSS false
 #endif
 
+#ifdef JACK
+#define HAS_JACK true
+#else
+#define HAS_JACK false
+#endif
+
 #ifdef _MSC_VER
 #define HAS_WINSCAP true
 #define SDL true
@@ -66,6 +72,7 @@ enum input_method {
     INPUT_PULSE,
     INPUT_SNDIO,
     INPUT_OSS,
+    INPUT_JACK,
     INPUT_SHMEM,
     INPUT_WINSCAP,
     INPUT_MAX,
@@ -104,9 +111,9 @@ struct config_params {
     enum orientation orientation;
     int userEQ_keys, userEQ_enabled, col, bgcol, autobars, stereo, raw_format, ascii_range,
         bit_format, gradient, gradient_count, fixedbars, framerate, bar_width, bar_spacing,
-        bar_height, autosens, overshoot, waves, samplerate, samplebits, sleep_timer, sdl_width,
-        sdl_height, sdl_x, sdl_y, sdl_full_screen, draw_and_quit, zero_test, non_zero_test, reverse,
-        sync_updates, continuous_rendering, disable_blanking;
+        bar_height, autosens, overshoot, waves, samplerate, samplebits, channels, sleep_timer,
+        sdl_width, sdl_height, sdl_x, sdl_y, sdl_full_screen, draw_and_quit, zero_test,
+        non_zero_test, reverse, sync_updates, continuous_rendering, disable_blanking;
 };
 
 struct error_s {

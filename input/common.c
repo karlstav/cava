@@ -53,3 +53,15 @@ void reset_output_buffers(struct audio_data *data) {
     }
     pthread_mutex_unlock(&audio->lock);
 }
+
+void signal_threadparams(struct audio_data *audio) {
+    pthread_mutex_lock(&audio->lock);
+    audio->threadparams = 0;
+    pthread_mutex_unlock(&audio->lock);
+}
+
+void signal_terminate(struct audio_data *audio) {
+    pthread_mutex_lock(&audio->lock);
+    audio->terminate = 1;
+    pthread_mutex_unlock(&audio->lock);
+}

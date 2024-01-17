@@ -249,6 +249,29 @@ AS_IF([test "x$enable_input_oss" != "xno"], [
 AM_CONDITIONAL([OSS], [test "x$have_oss" = "xyes"])
 
 dnl ######################
+dnl checking for jack dev
+dnl ######################
+AC_ARG_ENABLE([input_jack],
+  AS_HELP_STRING([--disable-input-jack],
+    [do not include support for input from jack])
+)
+
+AS_IF([test "x$enable_input_jack" != "xno"], [
+  PKG_CHECK_MODULES(JACK, jack, have_jack=yes, have_jack=no)
+  if [[ $have_jack = "yes" ]] ; then
+    LIBS="$LIBS $JACK_LIBS"
+    CPPFLAGS="$CPPFLAGS -DJACK $JACK_CFLAGS"
+  fi
+
+  if [[ $have_jack = "no" ]] ; then
+    AC_MSG_NOTICE([WARNING: No jack dev files found building without jack support])
+  fi],
+  [have_jack=no]
+)
+
+AM_CONDITIONAL([JACK], [test "x$have_jack" = "xyes"])
+
+dnl ######################
 dnl checking for math lib
 dnl ######################
 AC_CHECK_LIB(m, sqrt, have_m=yes, have_m=no)
