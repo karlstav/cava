@@ -19,7 +19,8 @@ struct jack_data {
     jack_nframes_t nframes;          // number of samples per port
     sample_t *buf;                   // samples buffer
 
-    int shutdown; // JACK shutdown signal (0=keep, 1=shutdown)
+    int graphorder; // JACK graph ordering signal (0=unchanged, 1=changed)
+    int shutdown;   // JACK shutdown signal (0=keep, 1=shutdown)
 };
 
 static bool set_rate(struct jack_data *jack) {
@@ -119,6 +120,11 @@ static int on_buffer_size(jack_nframes_t nframes, void *arg) {
     return 0;
 }
 
+static int on_graph_order(void *arg) {
+    ((struct jack_data *)arg)->graphorder = 1;
+    return 0;
+}
+
 static int on_process(jack_nframes_t nframes, void *arg) {
     // Interleave samples from separate ports and feed them to CAVA.
     struct jack_data *jack = arg;
@@ -185,6 +191,68 @@ static int on_sample_rate(jack_nframes_t nframes, void *arg) {
 
 static void on_shutdown(void *arg) { ((struct jack_data *)arg)->shutdown = 1; }
 
+static bool auto_connect(struct jack_data *jack) {
+    // Get all physical terminal input-ports and mirror their connections to CAVA.
+    static const char type_name_pattern[] = JACK_DEFAULT_AUDIO_TYPE;
+    static const unsigned long flags = JackPortIsInput | JackPortIsPhysical | JackPortIsTerminal;
+
+    unsigned int channels;
+
+    const char **ports = NULL;
+
+    bool success = false;
+
+    if ((jack->shutdown == 1) || (jack->audio->terminate == 1))
+        return true;
+
+    if ((ports = jack_get_ports(jack->client, NULL, type_name_pattern, flags)) == NULL) {
+        fprintf(stderr,
+                __FILE__ ": jack_get_ports() failed: No physical terminal input-ports found!\n");
+        goto cleanup;
+    }
+
+    // If CAVA is configured for mono, then we connect everything to the one mono port. If we have
+    // more channels, then we limit the number of connection ports to the number of channels.
+    for (channels = 0; ports[channels] != NULL; ++channels)
+        ;
+
+    if ((jack->audio->channels > 1) && (channels > jack->audio->channels))
+        channels = jack->audio->channels;
+
+    // Visit the physical terminal input-ports, get their connections and apply them to CAVA's
+    // input-ports.
+    for (unsigned int i = 0; i < channels; ++i) {
+        const char **connections;
+        jack_port_t *port;
+
+        if ((connections = jack_port_get_all_connections(
+                 jack->client, jack_port_by_name(jack->client, ports[i]))) == NULL)
+            continue;
+
+        if (jack->audio->channels == 1)
+            port = jack->port[0];
+        else
+            port = jack->port[i];
+
+        for (int j = 0; connections[j] != NULL; ++j) {
+            if (jack_port_connected_to(port, connections[j]) == 0)
+                jack_connect(jack->client, connections[j], jack_port_name(port));
+        }
+
+        jack_free(connections);
+    }
+
+    success = true;
+
+cleanup:
+    if (!success)
+        jack->shutdown = 1;
+
+    jack_free(ports);
+
+    return success;
+}
+
 void *input_jack(void *data) {
     static const char client_name[] = "cava";
     static const jack_options_t options = JackNullOption | JackServerName;
@@ -244,6 +312,17 @@ void *input_jack(void *data) {
         goto cleanup;
     }
 
+    if (audio->autoconnect > 0) {
+        if (audio->autoconnect == 1)
+            jack.graphorder = 1;
+        else {
+            if ((err = jack_set_graph_order_callback(jack.client, on_graph_order, &jack)) != 0) {
+                fprintf(stderr, __FILE__ ": jack_set_graph_order_callback() failed: 0x%x\n", err);
+                goto cleanup;
+            }
+        }
+    }
+
     if ((err = jack_set_process_callback(jack.client, on_process, &jack)) != 0) {
         fprintf(stderr, __FILE__ ": jack_set_process_callback() failed: 0x%x\n", err);
         goto cleanup;
@@ -266,6 +345,12 @@ void *input_jack(void *data) {
     while (audio->terminate != 1) {
         if (jack.shutdown == 1)
             signal_terminate(audio);
+        else if (jack.graphorder == 1) {
+            if (!auto_connect(&jack))
+                goto cleanup;
+
+            jack.graphorder = 0;
+        }
 
         nanosleep(&rqtp, NULL);
     }

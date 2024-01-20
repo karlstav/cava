@@ -447,20 +447,25 @@ of input ports can be controlled via the `channels` option in the input section 
 file:
 
     channels = 1    # one input port, mono
-
-or
-
-    channels = 2    # two input ports, stereo
+    channels = 2    # two input ports, stereo (default)
 
 The port's short name is simply `M` for mono, and `L` and `R` for stereo. The full name of the input
 port according to the base client name is `cava:M` for mono, and `cava:L` and `cava:R` for stereo.
 
-Currently CAVA doesn't connect its ports to other client's ports automatically, i.e. on program start
-CAVA isn't connected to any other program and won't connect during execution on its own. There are
-connection management programs in order to control and manage the connection between ports of the different
-client programs. Some well known connection managers with a graphical user interface include QjackCtl
-and Cadence. The JACK package itself often comes with CLI tools. Depending on the operating system
-they might need to get installed separately, e.g. on FreeBSD
+The option `autoconnect` controls the connection strategy for CAVA's ports to other client's ports:
+
+    autoconnect = 0    # don't connect to other ports automatically
+    autoconnect = 1    # only connect to other ports during startup
+    autoconnect = 2    # reconnect to new ports regularly (default)
+
+The automatic connection strategies scan the physical terminal input-ports, i.e. the real audio device
+which actually outputs the sound, and applies the same connections to CAVA's ports. In this way CAVA
+visualizes the played audio of JACK clients by default.
+
+In order to control and manage the connection between CAVA's ports and ports of other client programs,
+there are connection management programs for JACK. Some well known connection managers with a graphical
+user interface are QjackCtl and Cadence. The JACK package itself often comes with CLI tools. Depending
+on the operating system it could be necessary to install them separately, e.g. on FreeBSD:
 ```sh
 $ doas pkg install jack-example-tools
 ```
@@ -479,9 +484,9 @@ moc:output1
 cava:R
 ```
 This listing shows all full port names that are currently available. These correspond to two external
-JACK clients (cava and moc) and one internal JACK client (system). There are also `-p` and `-c` switches
-for `jack_lsp`, with which the types and current connections between the ports are listed. Connect
-the ports of cava and moc:
+JACK clients, `cava` and `moc`, and one internal JACK client `system`. The types and current active
+connections between the ports can be listed With the `-p` and `-c` switches for `jack_lsp`. In order
+to connect the ports of CAVA and MOC, `jack_connect` is used:
 ```sh
 $ jack_connect cava:L moc:output0
 $ jack_connect cava:R moc:output1

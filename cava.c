@@ -355,6 +355,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         audio.samples_counter = 0;
         audio.channels = 2;
         audio.IEEE_FLOAT = 0;
+        audio.autoconnect = 0;
 
         audio.input_buffer_size = BUFFER_SIZE * audio.channels;
         audio.cava_buffer_size = audio.input_buffer_size * 8;
@@ -431,6 +432,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #ifdef JACK
         case INPUT_JACK:
             audio.channels = p.channels;
+            audio.autoconnect = p.autoconnect;
             audio.threadparams = 1; // JACK server provides parameters
             thr_id = pthread_create(&p_thread, NULL, input_jack, (void *)&audio);
             break;

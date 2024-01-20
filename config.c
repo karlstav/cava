@@ -684,6 +684,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->samplerate = iniparser_getint(ini, "input:sample_rate", 44100);
     p->samplebits = iniparser_getint(ini, "input:sample_bits", 16);
     p->channels = iniparser_getint(ini, "input:channels", 2);
+    p->autoconnect = iniparser_getint(ini, "input:autoconnect", 2);
 
     enum input_method default_input = INPUT_FIFO;
     for (size_t i = 0; i < ARRAY_SIZE(default_methods); i++) {
