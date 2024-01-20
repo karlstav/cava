@@ -106,12 +106,11 @@
 ; method = jack
 ; source = default
 
-# The sample rate and format can be configured for some input methods. Currently
-# the following methods support such a configuration: 'fifo', 'pipewire' and 'oss'.
-# Other methods ignore these settings.
-#
-# The channels can be configured for some input methods. Currently the following
-# methods support such a configuration: 'oss' and 'jack'.
+# The options 'sample rate', 'format', 'channels' and 'autoconnect' can be configured for some input methods:
+#   sample rate: 'fifo', 'pipewire', 'oss'
+#   format:      'fifo', 'pipewire', 'oss'
+#   channels:    'oss', 'jack'
+#   autoconnect: 'jack'
 # Other methods ignore these settings.
 #
 # For 'oss' they are only preferred values, i.e. if the values are not supported
@@ -122,6 +121,7 @@
 ; sample_rate = 44100
 ; sample_bits = 16
 ; channels = 2
+; autoconnect = 2
 
 
 [output]
