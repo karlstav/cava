@@ -20,7 +20,7 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
   - [Pipewire](#pipewire)
   - [ALSA](#alsa)
   - [MPD](#mpd)
-  - [sndio](#sndio)
+  - [Sndio](#sndio)
   - [OSS](#oss)
   - [JACK](#jack)
   - [squeezelite](#squeezelite)
@@ -331,20 +331,69 @@ I had some trouble with sync (the visualizer was ahead of the sound). Reducing t
             buffer_time     "50000"   # (50ms); default is 500000 microseconds (0.5s)
     }
 
-### sndio
+### Sndio
 
-sndio is the audio framework used on OpenBSD, but it's also available on
-FreeBSD and Linux. So far this is only tested on FreeBSD.
+Set
 
-To test it
-```bash
-# Start sndiod with a monitor sub-device
-$ sndiod -dd -s default -m mon -s monitor
+    method = sndio
 
-# Set the AUDIODEVICE environment variable to override the default
-# sndio device and run cava
-$ AUDIODEVICE=snd/0.monitor cava
+Sndio is the audio framework used on OpenBSD, but it's also available on FreeBSD, NetBSD and Linux.
+So far this is only tested on FreeBSD, but it's probably very similar on other operating systems. The
+following example demonstrates how to setup CAVA for sndio on FreeBSD (please consult the [OSS](#oss)
+section for a deeper explanation of the various `pcmX` sound devices and the corresponding `/dev/dspX`
+audio devices in this example).
+```sh
+$ cat /dev/sndstat
+Installed devices:
+pcm0: <Realtek ALC1220 (Rear Analog)> (play/rec) default
+pcm1: <Realtek ALC1220 (Front Analog Mic)> (rec)
+pcm2: <USB audio> (play/rec)
+No devices installed from userspace.
 ```
+Sndio operates on device descriptors. In general for every `/dev/dspX` audio device there is a corresponding
+`rsnd/X` sndio raw device descriptor. In this example there are `rsnd/0`, `rsnd/1` and `rsnd/2` (they
+are not listed in `/dev`, sndio uses these descriptors to access the corresponding audio devices internally).
+Sndio also handles the implicit `default` device descriptor, which acts like a symlink to the raw device
+descriptor corresponding to the default audio device `/dev/dsp`. In this example it acts like a symlink
+to `rsnd/0` because the default audio device `/dev/dsp` symlinks to `/dev/dsp0`. Sndio also evaluates
+the environment variables `AUDIODEVICE` and `AUDIORECDEVICE`. If one of these is set (`AUDIORECDEVICE`
+overrides `AUDIODEVICE` if both are set) and a sndio-aware program tries to open the `default` device
+descriptor or an unspecified device descriptor, then the program will use the device descriptor specified
+in the environment variable.
+
+Now in order to visualize the mic input in CAVA, the `source` value in the configuration file must
+be set to the corresponding audio descriptor:
+
+    source = default    # default; symlink to rsnd/0 in this example; AUDIORECDEVICE and AUDIODEVICE evaluation
+    source =            # unspecified device descriptor; same as default above
+    source = rsnd/0     # for the pcm0 mic on the rear
+    source = rsnd/1     # for the pcm1 mic on the front
+    source = rsnd/2     # for the pcm2 mic on the USB headset
+
+With `source = default` one can switch the visualization on the commandline without changing the configuration
+file again:
+```sh
+$ AUDIODEVICE=rsnd/0 cava
+$ AUDIODEVICE=rsnd/1 cava
+$ AUDIODEVICE=rsnd/2 cava
+```
+Sndio can't record the played back audio with just the raw device descriptors, i.e. the sounds from
+a music player or a browser which play on the external stereo speakers through `rsnd/0` are not visualized
+in CAVA. For this to work the sndio server has to be started and a monitoring sub-device has to be
+created. The following example shows how to start the server and create a monitoring sub-device `snd/0`
+from `rsnd/0` and then start CAVA with `AUDIODEVICE` pointing to the new monitoring sub-device:
+```sh
+$ sndiod -f rsnd/0 -m play,mon
+$ AUDIODEVICE=snd/0 cava
+```
+Switch between the speakers and the USB headset:
+```sh
+$ sndiod -f rsnd/1 -m play,mon -s usb -f rsnd/0 -m play,mon -s speakers
+$ AUDIODEVICE=snd/usb cava
+$ AUDIODEVICE=snd/speakers cava
+```
+Consult the manpage `sndiod(8)` for further information regarding configuration and startup of a sndio
+server.
 
 ### OSS
 
@@ -372,31 +421,25 @@ it.
 
 In general for every `pcmX` device there is a corresponding `/dev/dspX` audio device. In this example
 there are `/dev/dsp0`, `/dev/dsp1` and `/dev/dsp2` (the system creates them when needed, they are not
-listet via `ls /dev` if they are currently not in use). The system also creates an implicit `/dev/dsp`,
+listed via `ls /dev` if they are currently not in use). The system also creates an implicit `/dev/dsp`,
 which acts like a symlink to the `default` audio device, in this example to `/dev/dsp0`.
 
 Now in order to visualize the mic input in CAVA, the `source` value in the configuration file must
-be set to the corresponding audio device, i.e.
+be set to the corresponding audio device:
 
-    source = /dev/dsp    # or /dev/dsp0 for which /dev/dsp is a symlink in this example
-
-(which is already the default for CAVA) for the `pcm0` mic on the rear, or
-
-    source = /dev/dsp1
-
-for the `pcm1` mic on the front, or
-
-    source = /dev/dsp2
-
-for the `pcm2` mic on the USB headset.
+    source = /dev/dsp     # default; symlink to /dev/dsp0 in this example
+    source = /dev/dsp0    # for the pcm0 mic on the rear
+    source = /dev/dsp1    # for the pcm1 mic on the front
+    source = /dev/dsp2    # for the pcm2 mic on the USB headset
 
 OSS can't record the outgoing audio on its own, i.e. the sounds from a music player or a browser which
 play on the external stereo speakers through `/dev/dsp0` are not visualized in CAVA. A solution is
-to use Virtual OSS. It can create virtual audio devices from existing audio devices and from which
-the played back audio can be fed into CAVA:
+to use Virtual OSS. It can create virtual audio devices from existing audio devices, in particular
+it can create a loopback audio device from `/dev/dsp0` and from which the played back audio can be
+fed into CAVA:
 ```sh
 $ doas pkg install virtual_oss
-$ doas virtual_oss -Q0 -C2 -c2 -r48000 -b16 -s2048 -P /dev/dsp0 -R /dev/null -w vdsp.wav -t vdsp.ctl -T /dev/sndstat -l dsp
+$ doas virtual_oss -r44100 -b16 -c2 -s4ms -O /dev/dsp0 -R /dev/null -T /dev/sndstat -l dsp.cava
 
 $ cat /dev/sndstat
 Installed devices:
@@ -404,11 +447,12 @@ pcm0: <Realtek ALC1220 (Rear Analog)> (play/rec) default
 pcm1: <Realtek ALC1220 (Front Analog Mic)> (rec)
 pcm2: <USB audio> (play/rec)
 Installed devices from userspace:
-dsp: <Virtual OSS> (play/rec)
+dsp.cava: <Virtual OSS> (play/rec)
 ```
-It created a virtual device `dsp` from `/dev/dsp0`. Now the audio is visualized in CAVA with the default
-`source = /dev/dsp` in the configuration file. Virtual OSS can be configured and started as a service
-on FreeBSD.
+It created a virtual loopback device `/dev/dsp.cava` from `/dev/dsp0`. Now the audio is visualized
+in CAVA with `source = /dev/dsp.cava` in the configuration file. The playback program must have a configuration
+to use the `/dev/dsp.cava` device. For programs where this is not possible, e.g. which always use `/dev/dsp`,
+replace `-l dsp.cava` with `-l dsp`. Virtual OSS can be configured and started as a service on FreeBSD.
 
 ### JACK
 
@@ -460,7 +504,7 @@ The option `autoconnect` controls the connection strategy for CAVA's ports to ot
 
 The automatic connection strategies scan the physical terminal input-ports, i.e. the real audio device
 which actually outputs the sound, and applies the same connections to CAVA's ports. In this way CAVA
-visualizes the played audio of JACK clients by default.
+visualizes the played back audio from JACK clients by default.
 
 In order to control and manage the connection between CAVA's ports and ports of other client programs,
 there are connection management programs for JACK. Some well known connection managers with a graphical
@@ -485,7 +529,7 @@ cava:R
 ```
 This listing shows all full port names that are currently available. These correspond to two external
 JACK clients, `cava` and `moc`, and one internal JACK client `system`. The types and current active
-connections between the ports can be listed With the `-p` and `-c` switches for `jack_lsp`. In order
+connections between the ports can be listed with the `-p` and `-c` switches for `jack_lsp`. In order
 to connect the ports of CAVA and MOC, `jack_connect` is used:
 ```sh
 $ jack_connect cava:L moc:output0

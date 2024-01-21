@@ -1,50 +1,117 @@
-#include "input/sndio.h"
-#include "input/common.h"
+#include <stdbool.h>
+#include <stddef.h>
 
 #include <sndio.h>
 
+#include "input/common.h"
+#include "input/sndio.h"
+
 void *input_sndio(void *data) {
-    struct audio_data *audio = (struct audio_data *)data;
+    static const unsigned int mode = SIO_REC;
+
+    struct audio_data *audio = data;
     struct sio_par par;
-    struct sio_hdl *hdl;
-    unsigned char buf[audio->input_buffer_size * audio->format / 8];
+    int bytes;
+    size_t buf_size;
 
+    struct sio_hdl *hdl = NULL;
+    void *buf = NULL;
+
+    bool is_sio_started = false;
+    bool success = false;
+
+    if ((hdl = sio_open(audio->source, mode, 0)) == NULL) {
+        fprintf(stderr, __FILE__ ": Could not open sndio source '%s'.\n", audio->source);
+        goto cleanup;
+    }
+
+    // The recommended approach to negotiate device parameters is to try to set them with preferred
+    // values and check what sndio returns for actual supported values. If CAVA doesn't support the
+    // final values for rate and channels then it will complain later. We test the resulting format
+    // explicitly here.
     sio_initpar(&par);
-    par.sig = 1;
     par.bits = audio->format;
+    par.sig = 1;
     par.le = 1;
-    par.rate = audio->rate;
-    ;
     par.rchan = audio->channels;
-    par.appbufsz = sizeof(buf) / par.rchan;
+    par.rate = audio->rate;
+    par.appbufsz = audio->input_buffer_size * SIO_BPS(audio->format) / audio->channels;
 
-    if ((hdl = sio_open(audio->source, SIO_REC, 0)) == NULL) {
-        fprintf(stderr, __FILE__ ": Could not open sndio source: %s\n", audio->source);
-        exit(EXIT_FAILURE);
+    if (sio_setpar(hdl, &par) == 0) {
+        fprintf(stderr, __FILE__ ": sio_setpar() failed.\n");
+        goto cleanup;
     }
 
-    if (!sio_setpar(hdl, &par) || !sio_getpar(hdl, &par) || par.sig != 1 || par.le != 1 ||
-        par.rate != 44100 || par.rchan != audio->channels) {
-        fprintf(stderr, __FILE__ ": Could not set required audio parameters\n");
-        exit(EXIT_FAILURE);
+    if (sio_getpar(hdl, &par) == 0) {
+        fprintf(stderr, __FILE__ ": sio_getpar() failed.\n");
+        goto cleanup;
     }
 
-    if (!sio_start(hdl)) {
-        fprintf(stderr, __FILE__ ": sio_start() failed\n");
-        exit(EXIT_FAILURE);
+    switch (par.bits) {
+    case 8:
+    case 16:
+    case 24:
+    case 32:
+        audio->format = par.bits;
+        break;
+    default:
+        fprintf(stderr, __FILE__ ": No support for 8, 16, 24 or 32 bits in sndio source '%s'.\n",
+                audio->source);
+        goto cleanup;
     }
+
+    audio->channels = par.rchan;
+    audio->rate = par.rate;
+
+    // Parameters finalized. Signal main thread.
+    signal_threadparams(audio);
+
+    // Get the correct number of bytes per sample. Sndio uses 32 bits for 24bit, thankfully SIO_BPS
+    // handles this.
+    bytes = SIO_BPS(audio->format);
+    buf_size = audio->input_buffer_size * bytes;
+
+    if ((buf = malloc(buf_size)) == NULL) {
+        fprintf(stderr, __FILE__ ": malloc() failed: %s\n", strerror(errno));
+        goto cleanup;
+    }
+
+    if (sio_start(hdl) == 0) {
+        fprintf(stderr, __FILE__ ": sio_start() failed.\n");
+        goto cleanup;
+    }
+
+    is_sio_started = true;
 
     while (audio->terminate != 1) {
-        if (sio_read(hdl, buf, sizeof(buf)) == 0) {
-            fprintf(stderr, __FILE__ ": sio_read() failed: %s\n", strerror(errno));
-            exit(EXIT_FAILURE);
+        size_t rd;
+
+        if ((rd = sio_read(hdl, buf, buf_size)) == 0) {
+            fprintf(stderr, __FILE__ ": sio_read() failed.\n");
+            goto cleanup;
         }
 
-        write_to_cava_input_buffers(audio->input_buffer_size, buf, audio);
+        write_to_cava_input_buffers(rd / bytes, buf, audio);
     }
 
-    sio_stop(hdl);
-    sio_close(hdl);
+    success = true;
 
-    return 0;
+cleanup:
+    if (is_sio_started && (sio_stop(hdl) == 0)) {
+        fprintf(stderr, __FILE__ ": sio_stop() failed.\n");
+        success = false;
+    }
+
+    free(buf);
+
+    if (hdl != NULL)
+        sio_close(hdl);
+
+    signal_threadparams(audio);
+    signal_terminate(audio);
+
+    if (!success)
+        exit(EXIT_FAILURE);
+
+    return NULL;
 }
