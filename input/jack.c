@@ -224,6 +224,7 @@ static bool auto_connect(struct jack_data *jack) {
     for (unsigned int i = 0; i < channels; ++i) {
         const char **connections;
         jack_port_t *port;
+        const char *port_name;
 
         if ((connections = jack_port_get_all_connections(
                  jack->client, jack_port_by_name(jack->client, ports[i]))) == NULL)
@@ -234,9 +235,11 @@ static bool auto_connect(struct jack_data *jack) {
         else
             port = jack->port[i];
 
+        port_name = jack_port_name(port);
+
         for (int j = 0; connections[j] != NULL; ++j) {
             if (jack_port_connected_to(port, connections[j]) == 0)
-                jack_connect(jack->client, connections[j], jack_port_name(port));
+                jack_connect(jack->client, connections[j], port_name);
         }
 
         jack_free(connections);

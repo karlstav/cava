@@ -415,8 +415,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
 #ifdef SNDIO
         case INPUT_SNDIO:
-            audio.format = 16;
-            audio.rate = 44100;
+            audio.format = p.samplebits;
+            audio.rate = p.samplerate;
+            audio.channels = p.channels;
+            audio.threadparams = 1; // Sndio can adjust parameters
             thr_id = pthread_create(&p_thread, NULL, input_sndio, (void *)&audio);
             break;
 #endif
@@ -492,7 +494,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         if (p.upper_cut_off > audio.rate / 2) {
             cleanup();
-            fprintf(stderr, "higher cuttoff frequency can't be higher than sample rate / 2");
+            fprintf(stderr, "higher cutoff frequency can't be higher than sample rate / 2");
             exit(EXIT_FAILURE);
         }
 

@@ -70,8 +70,8 @@
 # For fifo 'source' will be the path to fifo-file.
 # For shmem 'source' will be /squeezelite-AA:BB:CC:DD:EE:FF where 'AA:BB:CC:DD:EE:FF' will be squeezelite's MAC address
 #
-# For sndio 'source' will be a monitor sub-device, e.g. 'snd/0.monitor'. Default: 'default', in which case a device
-# should be specified with the environment variable AUDIODEVICE, e.g. on the commandline: AUDIODEVICE=snd/0.monitor cava.
+# For sndio 'source' will be a raw recording audio descriptor or a monitoring sub-device, e.g. 'rsnd/2' or 'snd/1'. Default: 'default'.
+# README.md contains further information on how to setup CAVA for sndio.
 #
 # For oss 'source' will be the path to a audio device, e.g. '/dev/dsp2'. Default: '/dev/dsp', i.e. the default audio device.
 # README.md contains further information on how to setup CAVA for OSS on FreeBSD.
@@ -106,14 +106,14 @@
 ; method = jack
 ; source = default
 
-# The options 'sample rate', 'format', 'channels' and 'autoconnect' can be configured for some input methods:
-#   sample rate: 'fifo', 'pipewire', 'oss'
-#   format:      'fifo', 'pipewire', 'oss'
-#   channels:    'oss', 'jack'
-#   autoconnect: 'jack'
+# The options 'sample_rate', 'sample_bits', 'channels' and 'autoconnect' can be configured for some input methods:
+#   sample_rate: fifo, pipewire, sndio, oss
+#   sample_bits: fifo, pipewire, sndio, oss
+#   channels:    sndio, oss, jack
+#   autoconnect: jack
 # Other methods ignore these settings.
 #
-# For 'oss' they are only preferred values, i.e. if the values are not supported
+# For 'sndio' and 'oss' they are only preferred values, i.e. if the values are not supported
 # by the chosen audio device, the device will use other supported values instead.
 # Example: 48000, 32 and 2, but the device only supports 44100, 16 and 1, then it
 # will use 44100, 16 and 1.
