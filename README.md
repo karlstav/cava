@@ -388,7 +388,7 @@ $ AUDIODEVICE=snd/0 cava
 ```
 Switch between the speakers and the USB headset:
 ```sh
-$ sndiod -f rsnd/1 -m play,mon -s usb -f rsnd/0 -m play,mon -s speakers
+$ sndiod -f rsnd/2 -m play,mon -s usb -f rsnd/0 -m play,mon -s speakers
 $ AUDIODEVICE=snd/usb cava
 $ AUDIODEVICE=snd/speakers cava
 ```
