@@ -45,7 +45,7 @@ const char *default_shader_name[NUMBER_OF_SHADERS] = {"northern_lights.frag", "p
 double smoothDef[5] = {1, 1, 1, 1, 1};
 
 enum input_method default_methods[] = {
-    INPUT_FIFO,  INPUT_PORTAUDIO, INPUT_ALSA, INPUT_SNDIO, INPUT_JACK,
+    INPUT_FIFO,  INPUT_PORTAUDIO, INPUT_ALSA,    INPUT_SNDIO, INPUT_JACK,
     INPUT_PULSE, INPUT_PIPEWIRE,  INPUT_WINSCAP, INPUT_OSS,
 };
 
