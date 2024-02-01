@@ -70,7 +70,6 @@ Required components:
 
 
 Recomended components:
-* [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
 
 The development lib of one of these audio frameworks, depending on your distro:
 * ALSA
@@ -80,13 +79,14 @@ The development lib of one of these audio frameworks, depending on your distro:
 * Sndio
 * JACK
 
+
 Optional components:
 * SDL2 dev files
+* [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
 
-Only FFTW and the other build tools are actually required for CAVA to compile, but this will only give you the ability to read from fifo files. To more easly grab audio from your system pulseaudio, alsa, sndio, jack or portaudio dev files are recommended (depending on what audio system you are using). Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
+Only FFTW, iniparser and the build tools are actually required for CAVA to compile, but this will only give you the ability to read from fifo files. To capture audio directlty from your system pipewire, pulseaudio, alsa, sndio, jack or portaudio dev files are required (depending on what audio system you are using).
 
-
-For better a better visual experience ncurses is also recomended.
+Ncurses can be used as an alternative output method if you have issues with the default one. But it is not required.
 
 All the requirements can be installed easily in all major distros:
 
