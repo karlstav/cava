@@ -86,7 +86,7 @@ Optional components:
 Only FFTW and the other build tools are actually required for CAVA to compile, but this will only give you the ability to read from fifo files. To more easly grab audio from your system pulseaudio, alsa, sndio, jack or portaudio dev files are recommended (depending on what audio system you are using). Not sure how to get the pulseaudio dev files for other distros than debian/ubuntu or if they are bundled in pulseaudio.
 
 
-For better a better visual experience ncurses is also recomended.
+For a better visual experience ncurses is also recomended.
 
 All the requirements can be installed easily in all major distros:
 
