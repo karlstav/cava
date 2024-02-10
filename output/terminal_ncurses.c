@@ -77,24 +77,24 @@ static NCURSES_COLOR_T change_color_definition(NCURSES_COLOR_T color_number,
     return return_color_number;
 }
 
-static void get_screen_coords(int val, int col, int max_value, enum orientation orientation, int *x,
-                              int *y) {
+static void get_screen_coords(int line, int col, int max_value, enum orientation orientation,
+                              int *x, int *y) {
     switch (orientation) {
     case ORIENT_LEFT:
-        *x = val;
+        *x = line;
         *y = col;
         break;
     case ORIENT_RIGHT:
-        *x = max_value - val;
+        *x = max_value - line;
         *y = col;
         break;
     case ORIENT_TOP:
         *x = col;
-        *y = val;
+        *y = line;
         break;
     default:
         *x = col;
-        *y = max_value - val;
+        *y = max_value - line;
         break;
     }
 }
@@ -254,9 +254,9 @@ int draw_terminal_ncurses(int is_tty, int dimension_value, int dimension_bar, in
 
     max_update_value = (max_update_value + num_bar_heights) / num_bar_heights;
 
-    for (int val = 0; val < max_update_value; val++) {
+    for (int line = 0; line < max_update_value; line++) {
         if (gradient) {
-            change_colors(val, max_value);
+            change_colors(line, max_value);
         }
 
         for (int bar = 0; bar < bars_count; bar++) {
@@ -265,17 +265,17 @@ int draw_terminal_ncurses(int is_tty, int dimension_value, int dimension_bar, in
             }
 
             int cur_col = bar * bar_width + bar * bar_spacing + rest;
-            int f_cell = (bars[bar] - 1) / num_bar_heights;
-            int f_last_cell = (previous_frame[bar] - 1) / num_bar_heights;
+            int bar_line_height = bars[bar] / num_bar_heights;
+            int previous_bar_line_heigh = previous_frame[bar] / num_bar_heights;
 
-            if (f_cell >= val) {
+            if (bars[bar] >= line * num_bar_heights + 1) {
                 int bar_step;
 
-                if (f_cell == val) {
-                    // The "cap" of the bar occurs at this [val].
-                    bar_step = (bars[bar] - 1) % num_bar_heights;
-                } else if (f_last_cell <= val) {
-                    // The bar is full at this [val].
+                if (bar_line_height == line) {
+                    // The "cap" of the bar occurs at this [line].
+                    bar_step = bars[bar] % num_bar_heights - 1;
+                } else if (previous_bar_line_heigh <= line) {
+                    // The bar is full at this line and wasn't before.
                     bar_step = num_bar_heights - 1;
                 } else {
                     // No update necessary since last frame.
@@ -284,7 +284,7 @@ int draw_terminal_ncurses(int is_tty, int dimension_value, int dimension_bar, in
 
                 for (int col = cur_col, i = 0; i < bar_width; i++, col++) {
                     int x, y;
-                    get_screen_coords(val, col, max_value, orientation, &x, &y);
+                    get_screen_coords(line, col, max_value, orientation, &x, &y);
 
                     if (is_tty) {
                         mvaddch(y, x, 0x41 + bar_step);
@@ -292,12 +292,12 @@ int draw_terminal_ncurses(int is_tty, int dimension_value, int dimension_bar, in
                         mvaddwstr(y, x, bar_heights[orientation][bar_step]);
                     }
                 }
-            } else if (f_last_cell >= val) {
+            } else if (previous_bar_line_heigh >= line) {
                 // This bar was taller during the last frame than during this frame, so
                 // clear the excess characters.
                 for (int col = cur_col, i = 0; i < bar_width; i++, col++) {
                     int x, y;
-                    get_screen_coords(val, col, max_value, orientation, &x, &y);
+                    get_screen_coords(line, col, max_value, orientation, &x, &y);
                     mvaddch(y, x, ' ');
                 }
             }

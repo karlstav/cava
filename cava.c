@@ -1013,8 +1013,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
                 for (int n = 0; n < number_of_bars; n++) {
                     bars[n] = bars_raw[n];
-                    // zero values causes divided by zero segfault (if not raw)
-                    if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE && bars[n] < 1)
+                    // show idle bar heads
+                    if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE &&
+                        bars[n] < 1 && p.show_idle_bar_heads == 1)
                         bars[n] = 1;
 #ifdef SDL_GLSL
 

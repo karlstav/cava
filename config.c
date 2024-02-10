@@ -654,6 +654,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     p->disable_blanking = iniparser_getint(ini, "output:disable_blanking", 0);
 
+    p->show_idle_bar_heads = iniparser_getint(ini, "output:show_idle_bar_heads", 1);
+
     p->sync_updates = iniparser_getint(ini, "output:alacritty_sync", 0);
 
     vertexShader = strdup(iniparser_getstring(ini, "output:vertex_shader", "pass_through.vert"));
@@ -800,6 +802,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->sdl_y = GetPrivateProfileInt("output", "sdl_y", -1, configPath);
 
     p->sync_updates = GetPrivateProfileInt("output", "alacritty_sync", 0, configPath);
+    p->show_idle_bar_heads = GetPrivateProfileInt("output", "show_idle_bar_heads", 1, configPath);
 
     p->userEQ_enabled = 0;
 
