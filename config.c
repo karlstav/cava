@@ -658,8 +658,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     p->waveform = iniparser_getint(ini, "output:waveform", 0);
 
-    p->waveform_smoothing_factor = iniparser_getdouble(ini, "output:waveform_smoothing_factor", 2);
-
     p->sync_updates = iniparser_getint(ini, "output:alacritty_sync", 0);
 
     vertexShader = strdup(iniparser_getstring(ini, "output:vertex_shader", "pass_through.vert"));
