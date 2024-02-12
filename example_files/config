@@ -207,6 +207,9 @@
 # show a flat bar at the bottom of the screen when idle, 1 = on, 0 = off
 ; show_idle_bar_heads = 1
 
+# show waveform instead of frequency spectrum, 1 = on, 0 = off
+; waveform = 0
+
 [color]
 
 # Colors can be one of seven predefined: black, blue, cyan, green, magenta, red, white, yellow.

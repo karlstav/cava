@@ -114,7 +114,7 @@ struct config_params {
         bar_height, autosens, overshoot, waves, samplerate, samplebits, channels, autoconnect,
         sleep_timer, sdl_width, sdl_height, sdl_x, sdl_y, sdl_full_screen, draw_and_quit, zero_test,
         non_zero_test, reverse, sync_updates, continuous_rendering, disable_blanking,
-        show_idle_bar_heads;
+        show_idle_bar_heads, waveform;
 };
 
 struct error_s {

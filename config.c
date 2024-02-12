@@ -656,6 +656,10 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     p->show_idle_bar_heads = iniparser_getint(ini, "output:show_idle_bar_heads", 1);
 
+    p->waveform = iniparser_getint(ini, "output:waveform", 0);
+
+    p->waveform_smoothing_factor = iniparser_getdouble(ini, "output:waveform_smoothing_factor", 2);
+
     p->sync_updates = iniparser_getint(ini, "output:alacritty_sync", 0);
 
     vertexShader = strdup(iniparser_getstring(ini, "output:vertex_shader", "pass_through.vert"));
@@ -803,6 +807,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     p->sync_updates = GetPrivateProfileInt("output", "alacritty_sync", 0, configPath);
     p->show_idle_bar_heads = GetPrivateProfileInt("output", "show_idle_bar_heads", 1, configPath);
+    p->waveform = GetPrivateProfileInt("output", "waveform", 0, configPath);
 
     p->userEQ_enabled = 0;
 
