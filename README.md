@@ -1,3 +1,6 @@
+This is a CAVA fork the main purpose of is to build cava as a shared library.
+In the same time cava application is provided as well
+====================
 CAVA [![Build Status](https://github.com/karlstav/cava/workflows/build-and-test/badge.svg)](https://github.com/karlstav/cava/actions)
 ====================
 
@@ -697,7 +700,14 @@ Using cava in other applications
 
 ### cavacore library
 
-The core processing engine in cava has been split into a separate library `cavacore`. See CAVACORE.md for details.
+* The core processing engine in cava has been split into a separate library `cavacore`. See CAVACORE.md for details.
+* cava can be built as a standalone libcava library. Practice example can be found [waybar cava module](https://github.com/Alexays/Waybar/blob/master/src/modules/cava.cpp) :
+
+    ```
+    meson setup build
+    meson compile -C build
+    meson install -C build
+    ```
 
 ### Raw Output
 

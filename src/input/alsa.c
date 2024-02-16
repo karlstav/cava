@@ -1,7 +1,7 @@
 // input: ALSA
-#include "input/alsa.h"
-#include "debug.h"
-#include "input/common.h"
+#include "cava/input/alsa.h"
+#include "cava/debug.h"
+#include "cava/input/common.h"
 
 #include <alloca.h>
 #include <alsa/asoundlib.h>

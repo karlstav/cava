@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../config.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -34,6 +35,8 @@ struct audio_data {
     int IEEE_FLOAT;  // format for 32bit (0=int, 1=float)
     int autoconnect; // auto connect to audio source (0=off, 1=once at startup, 2=regularly)
     pthread_mutex_t lock;
+    pthread_cond_t resumeCond;
+    bool suspendFlag;
 };
 
 void reset_output_buffers(struct audio_data *data);
@@ -41,5 +44,8 @@ void signal_threadparams(struct audio_data *data);
 void signal_terminate(struct audio_data *data);
 
 int write_to_cava_input_buffers(int16_t size, unsigned char *buf, void *data);
+
+typedef void *(*ptr)(void *);
+ptr get_input(struct audio_data *audio, struct config_params *prm);
 
 extern pthread_mutex_t lock;

@@ -114,13 +114,13 @@ struct config_params {
         bar_height, autosens, overshoot, waves, samplerate, samplebits, channels, autoconnect,
         sleep_timer, sdl_width, sdl_height, sdl_x, sdl_y, sdl_full_screen, draw_and_quit, zero_test,
         non_zero_test, reverse, sync_updates, continuous_rendering, disable_blanking,
-        show_idle_bar_heads, waveform;
+        show_idle_bar_heads, waveform, inAtty, fp, x_axis_info;
 };
 
 struct error_s {
     char message[MAX_ERROR_LEN];
     int length;
 };
-
 bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colorsOnly,
                  struct error_s *error);
+enum input_method input_method_by_name(const char *str);
