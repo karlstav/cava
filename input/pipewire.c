@@ -85,8 +85,12 @@ void *input_pipewire(void *audiodata) {
     props = pw_properties_new(PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY, "Capture",
                               PW_KEY_MEDIA_ROLE, "Music", NULL);
 
-    pw_properties_set(props, PW_KEY_TARGET_OBJECT, data.cava_audio->source);
-    pw_properties_set(props, PW_KEY_STREAM_CAPTURE_SINK, "true");
+    const char *source = data.cava_audio->source;
+    if (strcmp(source, "auto") == 0) {
+        pw_properties_set(props, PW_KEY_STREAM_CAPTURE_SINK, "true");
+    } else {
+        pw_properties_set(props, PW_KEY_TARGET_OBJECT, source);
+    }
     pw_properties_setf(props, PW_KEY_NODE_LATENCY, "%u/%u", nom, data.cava_audio->rate);
 
     data.stream = pw_stream_new_simple(pw_main_loop_get_loop(data.loop), "cava", props,
