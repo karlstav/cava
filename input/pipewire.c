@@ -92,6 +92,7 @@ void *input_pipewire(void *audiodata) {
         pw_properties_set(props, PW_KEY_TARGET_OBJECT, source);
     }
     pw_properties_setf(props, PW_KEY_NODE_LATENCY, "%u/%u", nom, data.cava_audio->rate);
+    pw_properties_set(props, PW_KEY_NODE_ALWAYS_PROCESS, "true");
 
     data.stream = pw_stream_new_simple(pw_main_loop_get_loop(data.loop), "cava", props,
                                        &stream_events, &data);
