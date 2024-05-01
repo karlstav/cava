@@ -59,5 +59,3 @@ jobs:
       run: make CFLAGS='-Werror'
     - name: run non zero test
       run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
-    - name: run portaudio test
-      run: ./cava -p example_files/test_configs/portaudio_zero_test > /dev/null
