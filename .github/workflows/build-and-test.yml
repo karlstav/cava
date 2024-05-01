@@ -52,7 +52,7 @@ jobs:
         brew install fftw ncurses libtool automake autoconf-archive portaudio iniparser sdl2
         ln -s /usr/local/bin/glibtoolize /usr/local/bin/libtoolize
     - name: Generate configure
-      run: ./autogen.sh
+      run: PATH="/opt/homebrew/opt/libtool/libexec/gnubin:$PATH" ./autogen.sh
     - name: Run ./configure
       run: LDFLAGS="-L/usr/local/opt/ncurses/lib" CPPFLAGS="-I/usr/local/opt/ncurses/include" ./configure
     - name: Run make
