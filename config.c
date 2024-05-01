@@ -14,6 +14,8 @@
 
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdlib.h>
+
 #include <sys/stat.h>
 
 #define NUMBER_OF_SHADERS 3
