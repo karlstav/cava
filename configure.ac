@@ -46,13 +46,13 @@ dnl ############################
 dnl checking if debug is enabled
 dnl ############################
 
-AC_ARG_ENABLE([debug],
-  AS_HELP_STRING([--enable-debug],
+AC_ARG_ENABLE([debug-output],
+  AS_HELP_STRING([--enable-debug-output],
     [enable debug messages and frequency table output])
 )
 
-AS_IF([test "x$enable_debug" != "xyes"], [
-  dnl enabling debug mode
+AS_IF([test "x$enable_debug_output" != "xyes"], [
+  dnl enabling debug output mode
   CPPFLAGS="$CPPFLAGS -DNDEBUG"
 ])
 
