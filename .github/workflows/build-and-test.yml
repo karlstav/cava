@@ -54,7 +54,7 @@ jobs:
     - name: Generate configure
       run: PATH="/opt/homebrew/opt/libtool/libexec/gnubin:$PATH" ./autogen.sh
     - name: Run ./configure
-      run: LDFLAGS="-L/usr/local/opt/ncurses/lib" CPPFLAGS="-I/usr/local/opt/ncurses/include" ./configure
+      run: LDFLAGS="-L/opt/homebrew/lib" CPPFLAGS="-I/opt/homebrew/include" ./configure
     - name: Run make
       run: make CFLAGS='-Werror'
     - name: run non zero test
