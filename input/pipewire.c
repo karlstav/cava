@@ -64,6 +64,13 @@ static const struct pw_stream_events stream_events = {
     .process = on_process,
 };
 
+static void do_quit(void *userdata, int signal_number) {
+    struct pw_data *data = userdata;
+    data->cava_audio->terminate = 1;
+    pw_log_warn("pw quit signal %d received, terminating...", signal_number);
+    pw_main_loop_quit(data->loop);
+}
+
 void *input_pipewire(void *audiodata) {
     struct pw_data data = {
         0,
@@ -81,6 +88,9 @@ void *input_pipewire(void *audiodata) {
     pw_init(0, &argv);
 
     data.loop = pw_main_loop_new(NULL);
+
+    pw_loop_add_signal(pw_main_loop_get_loop(data.loop), SIGINT, do_quit, &data);
+    pw_loop_add_signal(pw_main_loop_get_loop(data.loop), SIGTERM, do_quit, &data);
 
     props = pw_properties_new(PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY, "Capture",
                               PW_KEY_MEDIA_ROLE, "Music", NULL);
