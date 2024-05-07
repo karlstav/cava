@@ -81,11 +81,10 @@ void *input_pipewire(void *audiodata) {
     uint8_t buffer[data.cava_audio->input_buffer_size];
     struct pw_properties *props;
     struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
-    char **argv;
     uint32_t nom;
     nom = nearbyint((10000 * data.cava_audio->rate) / 1000000.0);
 
-    pw_init(0, &argv);
+    pw_init(0, 0);
 
     data.loop = pw_main_loop_new(NULL);
 
