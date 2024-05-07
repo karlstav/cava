@@ -87,6 +87,11 @@ void *input_pipewire(void *audiodata) {
     pw_init(0, 0);
 
     data.loop = pw_main_loop_new(NULL);
+    if (data.loop == NULL) {
+        data.cava_audio->terminate = 1;
+        sprintf(data.cava_audio->error_message, __FILE__ ": Could not create main loop");
+        return 0;
+    }
 
     pw_loop_add_signal(pw_main_loop_get_loop(data.loop), SIGINT, do_quit, &data);
     pw_loop_add_signal(pw_main_loop_get_loop(data.loop), SIGTERM, do_quit, &data);
