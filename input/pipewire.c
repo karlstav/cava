@@ -89,7 +89,9 @@ void *input_pipewire(void *audiodata) {
     data.loop = pw_main_loop_new(NULL);
     if (data.loop == NULL) {
         data.cava_audio->terminate = 1;
-        sprintf(data.cava_audio->error_message, __FILE__ ": Could not create main loop");
+        sprintf(data.cava_audio->error_message,
+                __FILE__ ": Could not create main loop. Is your system running pipewire? Maybe try "
+                         "pulse input method instead.");
         return 0;
     }
 
