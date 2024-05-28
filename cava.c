@@ -483,7 +483,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             if (timeout_counter > 2000) {
                 cleanup();
                 fprintf(stderr, "could not get rate and/or format, problems with audio thread? "
-                                "quiting...\n");
+                                "quitting...\n");
                 exit(EXIT_FAILURE);
             }
         }
