@@ -698,7 +698,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
             if (plan->status == -1) {
                 cleanup();
-                fprintf(stderr, "Error initalizing cava . %s", plan->error_message);
+                fprintf(stderr, "Error initializing cava . %s", plan->error_message);
                 exit(EXIT_FAILURE);
             }
 
