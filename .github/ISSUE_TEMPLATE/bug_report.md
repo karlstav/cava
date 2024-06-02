@@ -13,9 +13,11 @@ Are you using cava from a package repository, like AUR?
 
 If so, clone the master branch from here, build and run. Is your issue already resolved?
 
-Don't know how to clone or compile source code? File report to package maintainer instead!
+Don't know how to clone or compile source code? Learn before posting issues here.
 
+**ALWAYS TRY TO BUILD AND RUN FROM THE SOURCE CODE ON GITLAB BEFORE POSTING ISSUES**
 
+If the issue is resolved when building from source, do not post issues here.
 
 **Describe the bug**
 
