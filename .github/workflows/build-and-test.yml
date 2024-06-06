@@ -54,8 +54,8 @@ jobs:
     - name: Generate configure
       run: PATH="/opt/homebrew/opt/libtool/libexec/gnubin:$PATH" ./autogen.sh
     - name: Run ./configure
-      run: LDFLAGS="-L/opt/homebrew/opt/ncurses/lib" CPPFLAGS="-I/opt/homebrew/opt/ncurses/include -I/opt/homebrew/opt/ncurses/include" ./configure
+      run: LDFLAGS="-L/opt/homebrew/lib -L/opt/homebrew/opt/ncurses/lib" CPPFLAGS="-I/opt/homebrew/include -I/opt/homebrew/opt/ncurses/include -I/opt/homebrew/opt/ncurses/include" ./configure
     - name: Run make
-      run:  LDFLAGS="-L/opt/homebrew/opt/ncurses/lib" CPPFLAGS="-I/opt/homebrew/opt/ncurses/include -I/opt/homebrew/opt/ncurses/include" make CFLAGS='-Werror'
+      run:  LDFLAGS="-L/opt/homebrew/opt/ncurses/lib" CPPFLAGS="-I/opt/homebrew/include -I/opt/homebrew/opt/ncurses/include -I/opt/homebrew/opt/ncurses/include" make CFLAGS='-Werror'
     - name: run non zero test
       run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
