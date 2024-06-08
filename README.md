@@ -41,7 +41,7 @@ by [Karl Stavestrand](mailto:karl@stavestrand.no)
 What it is
 ----------
 
-Cava is a bar spectrum audio visualizer for terminal (ncurses) or desktop (SDL).
+Cava is a bar spectrum audio visualizer for terminal or desktop (SDL).
 
 works on:
 * Linux
@@ -102,22 +102,22 @@ Additionally, run these commands on FreeBSD before building:
 
 Debian/Ubuntu:
 
-    sudo apt install build-essential libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev libjack-jackd2-dev pkgconf
+    sudo apt install build-essential libfftw3-dev libasound2-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev libjack-jackd2-dev pkgconf
 
 
 ArchLinux:
 
-    pacman -S base-devel fftw ncurses alsa-lib iniparser pulseaudio autoconf-archive pkgconf
+    pacman -S base-devel fftw alsa-lib iniparser pulseaudio autoconf-archive pkgconf
 
 
 openSUSE:
 
-    zypper install alsa-devel ncurses-devel fftw3-devel libpulse-devel libtool autoconf-archive pkgconf
+    zypper install alsa-devel fftw3-devel libpulse-devel libtool autoconf-archive pkgconf
 
 
 Fedora:
 
-    dnf install alsa-lib-devel ncurses-devel fftw3-devel pulseaudio-libs-devel libtool autoconf-archive iniparser-devel pkgconf
+    dnf install alsa-lib-devel fftw3-devel pulseaudio-libs-devel libtool autoconf-archive iniparser-devel pkgconf
 
     
 macOS:
@@ -128,25 +128,17 @@ First install homebrew if you have't already:
 
 Then install prerequisites:
 
-    brew install fftw ncurses libtool automake autoconf-archive pkgconf portaudio iniparser
+    brew install fftw libtool automake autoconf-archive pkgconf portaudio iniparser
     
 The installation location for Homebrew packages is different between Intel Macs and Apple Silicon Macs.
 As such, the commands will be a little bit different.
 You can find out which type you have [here](https://support.apple.com/en-us/HT211814#:~:text=To%20open%20About%20This%20Mac,as%20an%20Intel%2Dbased%20Mac.)
 
-For both machines, run these commands to fix macOS not finding libtool and ncursesw:
+For both machines, run these commands to fix macOS not finding libtool:
 
     export LIBTOOL=`which glibtool`
     export LIBTOOLIZE=`which glibtoolize`
     ln -s `which glibtoolize` /usr/local/bin/libtoolize
-
-On an Intel Mac, run the following command as well:
-
-    ln -s /usr/lib/libncurses.dylib /usr/local/lib/libncursesw.dylib
-
-On an Apple Silicon Mac, run this command instead:
-
-    ln -s /opt/homebrew/lib/lib/libncursesw.6.dylib /usr/local/lib/libncursesw.dylib
 
 Note that the file name may be a little bit different depending on the versions, but the directory should be the same.
 
@@ -641,8 +633,6 @@ Exit with ctrl+c or q.
 If cava quits unexpectedly or is force killed, echo must be turned on manually with `stty -echo`.
 
 ### Controls
-
-NOTE: only works in ncurses output mode.
 
 | Key | Description |
 | --- | ----------- |
