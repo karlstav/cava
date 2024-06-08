@@ -425,7 +425,12 @@ dnl ######################
 AC_CHECK_LIB(iniparser,iniparser_load, have_iniparser=yes, have_iniparser=no)
     if [[ $have_iniparser = "yes" ]] ; then
     LIBS="$LIBS -liniparser"
-      CPPFLAGS="$CPPFLAGS -I/usr/include/iniparser"
+    if [[ $build_mac = "yes" ]] ; then
+        CPPFLAGS="$CPPFLAGS -I/usr/local/include/iniparser/"
+        CPPFLAGS="$CPPFLAGS -I/opt/homebrew/include/iniparser/"
+    else
+        CPPFLAGS="$CPPFLAGS -I/usr/include/iniparser"
+    fi
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <iniparser.h>]],
       [[dictionary* ini;
       const char *keys[3];
