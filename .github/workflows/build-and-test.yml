@@ -51,10 +51,10 @@ jobs:
       run: |
         brew install fftw libtool automake autoconf-archive portaudio iniparser sdl2
         ln -s /usr/local/bin/glibtoolize /usr/local/bin/libtoolize
-    - name: Generate configure
+    - name: Generate configuresdl2
       run: PATH="/opt/homebrew/opt/libtool/libexec/gnubin:$PATH" ./autogen.sh
     - name: Run ./configure
-      run: ./configure
+      run: LDFLAGS="-L/opt/homebrew/lib" CPPFLAGS="-I/opt/homebrew/include" ./configure
     - name: Run make
       run:  make CFLAGS='-Werror'
     - name: run non zero test
