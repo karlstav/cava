@@ -176,21 +176,21 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
     // process [smoothing]: monstercat-style "average"
 
     int m_y, de;
-    int height_normalizer = 1;
+    float height_normalizer = 1.0;
     if (height > 1000) {
-        height_normalizer = height / 1000;
+        height_normalizer = height / 912.76;
     }
     if (waves > 0) {
         for (z = 0; z < number_of_bars; z++) { // waves
             bars[z] = bars[z] / 1.25;
             // if (bars[z] < 1) bars[z] = 1;
             for (m_y = z - 1; m_y >= 0; m_y--) {
-                de = (z - m_y) * height_normalizer;
-                bars[m_y] = max(bars[z] - pow(de, 2), bars[m_y]);
+                de = z - m_y;
+                bars[m_y] = max(bars[z] - height_normalizer * pow(de, 2), bars[m_y]);
             }
             for (m_y = z + 1; m_y < number_of_bars; m_y++) {
-                de = (m_y - z) * height_normalizer;
-                bars[m_y] = max(bars[z] - pow(de, 2), bars[m_y]);
+                de = m_y - z;
+                bars[m_y] = max(bars[z] - height_normalizer * pow(de, 2), bars[m_y]);
             }
         }
     } else if (monstercat > 0) {
