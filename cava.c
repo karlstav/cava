@@ -1098,9 +1098,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 // output: draw processed input
 #ifdef NDEBUG
-                printf("\033P[2026;2$y\033[0m");
+                printf("\033P[2026h;2$y\033[0m");
                 fflush(stdout);
-
+                
                 int rc;
 #ifdef _MSC_VER
                 QueryPerformanceCounter(&t1);
