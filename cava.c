@@ -1098,7 +1098,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
 // output: draw processed input
 #ifdef NDEBUG
-                printf("\033P[2026;2$y");
+                printf("\033P[2026;2$y\033[0m");
                 fflush(stdout);
 
                 int rc;
@@ -1147,9 +1147,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 default:
                     exit(EXIT_FAILURE); // Can't happen.
                 }
-
-                printf("\033P[2026;2$y");
-                fflush(stdout);
                 
                 // terminal has been resized breaking to recalibrating values
                 if (rc == -1)
