@@ -1099,7 +1099,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 // output: draw processed input
 #ifdef NDEBUG
                 if (p.sync_updates) {
-                    printf("\033P=1s\033\\");
+                    printf("\033Ptmux;\033\033[?2026h");
                     fflush(stdout);
                 }
                 int rc;
@@ -1149,7 +1149,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     exit(EXIT_FAILURE); // Can't happen.
                 }
                 if (p.sync_updates) {
-                    printf("\033P=2s\033\\");
+                    printf("\033Ptmux;\033\033[?2026h");
                     fflush(stdout);
                 }
 
