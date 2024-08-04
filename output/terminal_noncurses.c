@@ -89,7 +89,8 @@ void free_terminal_noncurses(void) {
 
 int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg_color_string,
                             int col, int bgcol, int gradient, int gradient_count,
-                            char **gradient_color_strings, int width, int lines, int bar_width) {
+                            char **gradient_color_strings, int width, int lines, int bar_width,
+                            enum orientation orientation) {
 
     free_terminal_noncurses();
 
@@ -188,7 +189,33 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
         printf("\033[%dm", col); // setting color
     }
 
+    if (bgcol != 0) {
+
+        bgcol += 40;
+
+        if (bgcol == 48) {
+            struct colors bg_color = parse_color(bg_color_string);
+            printf("\033[48;2;%d;%d;%dm", bg_color.rgb[0], bg_color.rgb[1], bg_color.rgb[2]);
+        } else {
+            printf("\033[%dm", bgcol);
+        }
+
+        for (int n = lines; n >= 0; n--) {
+            for (int i = 0; i < width; i++) {
+                printf(" "); // setting backround color
+            }
+            if (n != 0)
+                printf("\n");
+            else
+                printf("\r");
+        }
+        printf("\033[%dA", lines); // moving cursor back up
+    }
+
     if (gradient) {
+        if (orientation == ORIENT_SPLIT_H || orientation == ORIENT_SPLIT_V) {
+            lines = lines / 2;
+        }
         struct colors gradient_color_defs[MAX_GRADIENT_COLOR_DEFS];
         for (int i = 0; i < gradient_count; i++) {
             gradient_color_defs[i] = parse_color(gradient_color_strings[i]);
@@ -224,28 +251,6 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
         gradient_colors[lines - 1] = gradient_color_defs[gradient_count - 1];
     }
 
-    if (bgcol != 0) {
-
-        bgcol += 40;
-
-        if (bgcol == 48) {
-            struct colors bg_color = parse_color(bg_color_string);
-            printf("\033[48;2;%d;%d;%dm", bg_color.rgb[0], bg_color.rgb[1], bg_color.rgb[2]);
-        } else {
-            printf("\033[%dm", bgcol);
-        }
-
-        for (int n = lines; n >= 0; n--) {
-            for (int i = 0; i < width; i++) {
-                printf(" "); // setting backround color
-            }
-            if (n != 0)
-                printf("\n");
-            else
-                printf("\r");
-        }
-        printf("\033[%dA", lines); // moving cursor back up
-    }
 #ifdef _MSC_VER
     setecho(1, 0);
 #else
@@ -274,7 +279,8 @@ void get_terminal_dim_noncurses(int *width, int *lines) {
 
 int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, int bar_width,
                             int bar_spacing, int rest, int bars[], int previous_frame[],
-                            int gradient, int x_axis_info, enum orientation orientation) {
+                            int gradient, int x_axis_info, enum orientation orientation,
+                            int offset) {
 
     int current_cell, prev_cell, same_line, new_line, cx;
 
@@ -291,7 +297,7 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
         int new_width;
         get_terminal_dim_noncurses(&new_width, &new_lines);
 
-        if (new_lines != (lines) || new_width != width)
+        if (new_lines != lines || new_width != width)
             return -1;
 
         if (x_axis_info)
@@ -302,6 +308,14 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
         ttyframe_buffer[0] = '\0';
     else if (!tty)
         frame_buffer[0] = '\0';
+
+    if (offset)
+        lines /= 2;
+
+    if (orientation == ORIENT_TOP && offset) {
+        cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dB",
+                       lines); // move down
+    }
 
     for (int current_line = lines - 1; current_line >= 0; current_line--) {
 
@@ -439,6 +453,10 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
         } else {
             same_line++;
         }
+    }
+    if (orientation == ORIENT_TOP && offset) {
+        cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dA",
+                       lines); // move up
     }
     if (same_line != lines) {
         if (tty)

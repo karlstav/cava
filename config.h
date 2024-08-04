@@ -93,7 +93,14 @@ enum data_format { FORMAT_ASCII = 0, FORMAT_BINARY = 1, FORMAT_NTK3000 = 2 };
 
 enum xaxis_scale { NONE, FREQUENCY, NOTE };
 
-enum orientation { ORIENT_BOTTOM, ORIENT_TOP, ORIENT_LEFT, ORIENT_RIGHT };
+enum orientation {
+    ORIENT_BOTTOM,
+    ORIENT_TOP,
+    ORIENT_LEFT,
+    ORIENT_RIGHT,
+    ORIENT_SPLIT_H,
+    ORIENT_SPLIT_V
+};
 
 struct config_params {
     char *color, *bcolor, *raw_target, *audio_source,

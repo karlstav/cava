@@ -144,10 +144,12 @@
 # use one of the predefined ones.
 ; method = noncurses
 
-# Orientation of the visualization. Can be 'bottom', 'top', 'left' or 'right'.
-# Default is 'bottom'. Other orientations are only supported on sdl and ncruses
-# output. Note: many fonts have weird glyphs for 'top' and 'right' characters,
-# which can make ncurses not look right.
+# Orientation of the visualization. Can be 'bottom', 'top', 'left', 'right' or
+# 'horizontal'. Default is 'bottom'. 'left and 'right' are only supported on sdl
+# and ncruses output. 'horizontal' (bars go up and down from center) is only supported
+# on noncurses output.
+# Note: many fonts have weird or missing glyphs for characters used in orientations
+# other than 'bottom', which can make output not look right.
 ; orientation = bottom
 
 # Visual channels. Can be 'stereo' or 'mono'.
