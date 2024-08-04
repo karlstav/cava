@@ -1124,7 +1124,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 case OUTPUT_NONCURSES:
                     rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars, p.bar_width,
                                                  p.bar_spacing, remainder, bars, previous_frame,
-                                                 p.gradient, x_axis_info);
+                                                 p.gradient, x_axis_info, p.orientation);
                     break;
                 case OUTPUT_NCURSES:
 #ifdef NCURSES

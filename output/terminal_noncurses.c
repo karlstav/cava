@@ -1,3 +1,5 @@
+#include "output/terminal_noncurses.h"
+
 #include <locale.h>
 #include <math.h>
 #include <stdio.h>
@@ -18,6 +20,7 @@
 
 wchar_t *frame_buffer;
 wchar_t *barstring[8];
+wchar_t *top_barstring[8];
 wchar_t *spacestring;
 int buf_length;
 char *ttyframe_buffer;
@@ -78,6 +81,7 @@ void free_terminal_noncurses(void) {
     free(ttyspacestring);
     for (int i = 0; i < 8; i++) {
         free(barstring[i]);
+        free(top_barstring[i]);
         free(ttybarstring[i]);
     }
     free(gradient_colors);
@@ -125,6 +129,8 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
         for (int n = 0; n < 8; n++) {
             barstring[n] = (wchar_t *)malloc(sizeof(wchar_t) * (bar_width + 1));
             barstring[n][0] = '\0';
+            top_barstring[n] = (wchar_t *)malloc(sizeof(wchar_t) * (bar_width + 1));
+            top_barstring[n][0] = '\0';
         }
         spacestring[0] = '\0';
         frame_buffer[0] = '\0';
@@ -139,6 +145,14 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
             wcscat(barstring[5], L"\u2585");
             wcscat(barstring[6], L"\u2586");
             wcscat(barstring[7], L"\u2587");
+            wcscat(top_barstring[0], L"\u2588");
+            wcscat(top_barstring[1], L"\u2594");
+            wcscat(top_barstring[2], L"\U0001FB82");
+            wcscat(top_barstring[3], L"\U0001FB83");
+            wcscat(top_barstring[4], L"\u2580");
+            wcscat(top_barstring[5], L"\U0001FB84");
+            wcscat(top_barstring[6], L"\U0001FB85");
+            wcscat(top_barstring[7], L"\U0001FB86");
             wcscat(spacestring, L" ");
         }
     }
@@ -260,7 +274,7 @@ void get_terminal_dim_noncurses(int *width, int *lines) {
 
 int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, int bar_width,
                             int bar_spacing, int rest, int bars[], int previous_frame[],
-                            int gradient, int x_axis_info) {
+                            int gradient, int x_axis_info, enum orientation orientation) {
 
     int current_cell, prev_cell, same_line, new_line, cx;
 
@@ -291,17 +305,33 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
 
     for (int current_line = lines - 1; current_line >= 0; current_line--) {
 
-        if (gradient) {
-            if (tty) {
-                cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[38;2;%d;%d;%dm",
-                               gradient_colors[current_line].rgb[0],
-                               gradient_colors[current_line].rgb[1],
-                               gradient_colors[current_line].rgb[2]);
-            } else if (!tty) {
-                cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[38;2;%d;%d;%dm",
-                               gradient_colors[current_line].rgb[0],
-                               gradient_colors[current_line].rgb[1],
-                               gradient_colors[current_line].rgb[2]);
+        if (orientation == ORIENT_BOTTOM) {
+            if (gradient) {
+                if (tty) {
+                    cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[38;2;%d;%d;%dm",
+                                   gradient_colors[current_line].rgb[0],
+                                   gradient_colors[current_line].rgb[1],
+                                   gradient_colors[current_line].rgb[2]);
+                } else if (!tty) {
+                    cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[38;2;%d;%d;%dm",
+                                   gradient_colors[current_line].rgb[0],
+                                   gradient_colors[current_line].rgb[1],
+                                   gradient_colors[current_line].rgb[2]);
+                }
+            }
+        } else if (orientation == ORIENT_TOP) {
+            if (gradient) {
+                if (tty) {
+                    cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[38;2;%d;%d;%dm",
+                                   gradient_colors[lines - current_line - 1].rgb[0],
+                                   gradient_colors[lines - current_line - 1].rgb[1],
+                                   gradient_colors[lines - current_line - 1].rgb[2]);
+                } else if (!tty) {
+                    cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[38;2;%d;%d;%dm",
+                                   gradient_colors[lines - current_line - 1].rgb[0],
+                                   gradient_colors[lines - current_line - 1].rgb[1],
+                                   gradient_colors[lines - current_line - 1].rgb[2]);
+                }
             }
         }
 
@@ -310,8 +340,13 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
 
         for (int i = 0; i < number_of_bars; i++) {
 
-            current_cell = bars[i] - current_line * 8;
-            prev_cell = previous_frame[i] - current_line * 8;
+            if (orientation == ORIENT_BOTTOM) {
+                current_cell = bars[i] - current_line * 8;
+                prev_cell = previous_frame[i] - current_line * 8;
+            } else if (orientation == ORIENT_TOP) {
+                current_cell = bars[i] - (lines - current_line - 1) * 8;
+                prev_cell = previous_frame[i] - (lines - current_line - 1) * 8;
+            }
 
             // same as last frame
             if ((current_cell < 1 && prev_cell < 1) || (current_cell > 7 && prev_cell > 7) ||
@@ -369,12 +404,21 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
                         center_adjusted = 1;
                     }
 
-                    if (current_cell < 1)
+                    if (current_cell < 1) {
                         cx += swprintf(frame_buffer + cx, buf_length - cx, spacestring);
-                    else if (current_cell > 7)
-                        cx += swprintf(frame_buffer + cx, buf_length - cx, barstring[0]);
-                    else
-                        cx += swprintf(frame_buffer + cx, buf_length - cx, barstring[current_cell]);
+                    } else if (current_cell > 7) {
+                        if (orientation == ORIENT_BOTTOM)
+                            cx += swprintf(frame_buffer + cx, buf_length - cx, barstring[0]);
+                        else if (orientation == ORIENT_TOP)
+                            cx += swprintf(frame_buffer + cx, buf_length - cx, top_barstring[0]);
+                    } else {
+                        if (orientation == ORIENT_BOTTOM)
+                            cx += swprintf(frame_buffer + cx, buf_length - cx,
+                                           barstring[current_cell]);
+                        else if (orientation == ORIENT_TOP)
+                            cx += swprintf(frame_buffer + cx, buf_length - cx,
+                                           top_barstring[current_cell]);
+                    }
 
                     if (bar_spacing)
                         cx +=
