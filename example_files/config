@@ -190,7 +190,7 @@
 # Only supported on ncurses and noncurses output.
 ; xaxis = none
  
-# enable synchronized synchronized updates. 1 = on, 0 = off
+# enable synchronized sync. 1 = on, 0 = off
 # removes flickering in alacritty terminal emulator.
 # defaults to off since the behaviour in other terminal emulators is unknown
 ; synchronized_sync = 0
