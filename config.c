@@ -285,18 +285,39 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     }
 
     p->orientation = ORIENT_BOTTOM;
-    if (p->output == OUTPUT_SDL || p->output == OUTPUT_NCURSES) {
-        if (strcmp(orientation, "top") == 0) {
-            p->orientation = ORIENT_TOP;
+    if (strcmp(orientation, "top") == 0) {
+        p->orientation = ORIENT_TOP;
+    }
+    if (strcmp(orientation, "left") == 0) {
+        p->orientation = ORIENT_LEFT;
+    }
+    if (strcmp(orientation, "right") == 0) {
+        p->orientation = ORIENT_RIGHT;
+    }
+    if (strcmp(orientation, "horizontal") == 0) {
+        if (p->output != OUTPUT_NONCURSES) {
+            write_errorf(error, "only noncurses output suports horizontal orientation\n");
+            return false;
         }
-        if (strcmp(orientation, "left") == 0) {
-            p->orientation = ORIENT_LEFT;
-        }
-        if (strcmp(orientation, "right") == 0) {
-            p->orientation = ORIENT_RIGHT;
-        }
+        p->orientation = ORIENT_SPLIT_H;
+    }
+    if ((p->orientation == ORIENT_LEFT || p->orientation == ORIENT_RIGHT) &&
+        !(p->output == OUTPUT_SDL || p->output == OUTPUT_NCURSES)) {
+        write_errorf(error, "only ncurses and sdl supports left/right orientation\n");
+        return false;
+    }
+    if ((p->orientation == ORIENT_TOP) &&
+        !(p->output == OUTPUT_SDL || p->output == OUTPUT_NCURSES ||
+          p->output == OUTPUT_NONCURSES)) {
+        write_errorf(error, "only noncurses, ncurses and sdl supports top orientation\n");
+        return false;
     }
 
+    if ((p->orientation != ORIENT_BOTTOM && p->output == OUTPUT_SDL && p->gradient != 0)) {
+        write_errorf(error,
+                     "gradient in sdl is not supported with top, left or right orientation\n");
+        return false;
+    }
     p->xaxis = NONE;
     if (strcmp(xaxisScale, "none") == 0) {
         p->xaxis = NONE;

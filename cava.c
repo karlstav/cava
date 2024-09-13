@@ -330,6 +330,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 if (p.disable_blanking)
                     system("setterm -blank 0");
 #endif
+                if (p.orientation != ORIENT_BOTTOM) {
+                    cleanup();
+                    fprintf(stderr, "only default bottom orientation is supported in tty\n");
+                    exit(EXIT_FAILURE);
+                }
             }
 
             // We use unicode block characters to draw the bars and
@@ -581,7 +586,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
                 init_terminal_noncurses(inAtty, p.color, p.bcolor, p.col, p.bgcol, p.gradient,
                                         p.gradient_count, p.gradient_colors, width, lines,
-                                        p.bar_width);
+                                        p.bar_width, p.orientation);
                 height = lines * 8;
                 break;
 #ifndef _MSC_VER
@@ -949,7 +954,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                             p.sens *= 0.999;
                         else
                             p.sens *= 1.00001;
-                        cava_out[n] = (cava_out[n] + 1.0) / 2.0;
+
+                        if (p.orientation != ORIENT_SPLIT_H)
+                            cava_out[n] = (cava_out[n] + 1.0) / 2.0;
                     }
 
                     if (output_mode == OUTPUT_SDL_GLSL) {
@@ -959,6 +966,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                             cava_out[n] = 0.0;
                     } else {
                         cava_out[n] *= *dimension_value;
+                        if (p.orientation == ORIENT_SPLIT_H || p.orientation == ORIENT_SPLIT_V) {
+                            cava_out[n] /= 2;
+                        }
                     }
                     if (p.waveform) {
                         bars_raw[n] = cava_out[n];
@@ -1122,9 +1132,21 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     break;
 #endif
                 case OUTPUT_NONCURSES:
-                    rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars, p.bar_width,
-                                                 p.bar_spacing, remainder, bars, previous_frame,
-                                                 p.gradient, x_axis_info);
+                    if (p.orientation == ORIENT_SPLIT_H) {
+                        rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars,
+                                                     p.bar_width, p.bar_spacing, remainder, bars,
+                                                     previous_frame, p.gradient, x_axis_info,
+                                                     ORIENT_BOTTOM, 1);
+                        rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars,
+                                                     p.bar_width, p.bar_spacing, remainder, bars,
+                                                     previous_frame, p.gradient, x_axis_info,
+                                                     ORIENT_TOP, 1);
+                    } else {
+                        rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars,
+                                                     p.bar_width, p.bar_spacing, remainder, bars,
+                                                     previous_frame, p.gradient, x_axis_info,
+                                                     p.orientation, 0);
+                    }
                     break;
                 case OUTPUT_NCURSES:
 #ifdef NCURSES
