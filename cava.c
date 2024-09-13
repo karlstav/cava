@@ -1171,9 +1171,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     exit(EXIT_FAILURE); // Can't happen.
                 }
 
-                printf("\033[2026h\033\\");
-                fflush(stdout);
-                printf("\033[2026l\033\\");
+                if (p.sync_updates) {
+                    printf("\033[2026h\033\\");
+                    fflush(stdout);
+                    printf("\033[2026l\033\\");
+                }
                 
                 // terminal has been resized breaking to recalibrating values
                 if (rc == -1)

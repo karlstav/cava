@@ -189,12 +189,11 @@
 # 'frequency' displays the lower cut off frequency of the bar above.
 # Only supported on ncurses and noncurses output.
 ; xaxis = none
-
-# Deprecated
-# enable alacritty synchronized updates. 1 = on, 0 = off
+ 
+# enable synchronized synchronized updates. 1 = on, 0 = off
 # removes flickering in alacritty terminal emulator.
 # defaults to off since the behaviour in other terminal emulators is unknown
-; alacritty_sync = 0
+; synchronized_sync = 0
 
 # Shaders for sdl_glsl, located in $HOME/.config/cava/shaders
 ; vertex_shader = pass_through.vert

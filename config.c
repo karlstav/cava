@@ -687,6 +687,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     p->waveform = iniparser_getint(ini, "output:waveform", 0);
 
+    p->sync_updates = iniparser_getint(ini, "output:synchronized_sync", 0);
+
     vertexShader = strdup(iniparser_getstring(ini, "output:vertex_shader", "pass_through.vert"));
     fragmentShader =
         strdup(iniparser_getstring(ini, "output:fragment_shader", "bar_spectrum.frag"));
@@ -830,6 +832,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->sdl_x = GetPrivateProfileInt("output", "sdl_x", -1, configPath);
     p->sdl_y = GetPrivateProfileInt("output", "sdl_y", -1, configPath);
 
+    p->sync_updates = GetPrivateProfileInt("output", "synchronized_sync", 0, configPath);
     p->show_idle_bar_heads = GetPrivateProfileInt("output", "show_idle_bar_heads", 1, configPath);
     p->waveform = GetPrivateProfileInt("output", "waveform", 0, configPath);
 
