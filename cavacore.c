@@ -6,6 +6,12 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef __ANDROID__
+#include <jni.h>
+struct cava_plan *plan;
+double *cava_in;
+double *cava_out;
+#endif
 
 struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels, int autosens,
                             double noise_reduction, int low_cut_off, int high_cut_off) {
@@ -88,6 +94,11 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     p->frame_skip = 1;
     p->noise_reduction = noise_reduction;
 
+    int fftw_flag = FFTW_MEASURE;
+#ifdef __ANDROID__
+    fftw_flag = FFTW_ESTIMATE;
+#endif
+
     p->FFTbassbufferSize = treble_buffer_size * 8;
     p->FFTmidbufferSize = treble_buffer_size * 4;
     p->FFTtreblebufferSize = treble_buffer_size;
@@ -125,20 +136,20 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     p->in_bass_l_raw = fftw_alloc_real(p->FFTbassbufferSize);
     p->out_bass_l = fftw_alloc_complex(p->FFTbassbufferSize / 2 + 1);
     p->p_bass_l =
-        fftw_plan_dft_r2c_1d(p->FFTbassbufferSize, p->in_bass_l, p->out_bass_l, FFTW_MEASURE);
+        fftw_plan_dft_r2c_1d(p->FFTbassbufferSize, p->in_bass_l, p->out_bass_l, fftw_flag);
 
     // MID
     p->in_mid_l = fftw_alloc_real(p->FFTmidbufferSize);
     p->in_mid_l_raw = fftw_alloc_real(p->FFTmidbufferSize);
     p->out_mid_l = fftw_alloc_complex(p->FFTmidbufferSize / 2 + 1);
-    p->p_mid_l = fftw_plan_dft_r2c_1d(p->FFTmidbufferSize, p->in_mid_l, p->out_mid_l, FFTW_MEASURE);
+    p->p_mid_l = fftw_plan_dft_r2c_1d(p->FFTmidbufferSize, p->in_mid_l, p->out_mid_l, fftw_flag);
 
     // TREBLE
     p->in_treble_l = fftw_alloc_real(p->FFTtreblebufferSize);
     p->in_treble_l_raw = fftw_alloc_real(p->FFTtreblebufferSize);
     p->out_treble_l = fftw_alloc_complex(p->FFTtreblebufferSize / 2 + 1);
     p->p_treble_l =
-        fftw_plan_dft_r2c_1d(p->FFTtreblebufferSize, p->in_treble_l, p->out_treble_l, FFTW_MEASURE);
+        fftw_plan_dft_r2c_1d(p->FFTtreblebufferSize, p->in_treble_l, p->out_treble_l, fftw_flag);
 
     memset(p->in_bass_l, 0, sizeof(double) * p->FFTbassbufferSize);
     memset(p->in_mid_l, 0, sizeof(double) * p->FFTmidbufferSize);
@@ -155,14 +166,14 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         p->in_bass_r_raw = fftw_alloc_real(p->FFTbassbufferSize);
         p->out_bass_r = fftw_alloc_complex(p->FFTbassbufferSize / 2 + 1);
         p->p_bass_r =
-            fftw_plan_dft_r2c_1d(p->FFTbassbufferSize, p->in_bass_r, p->out_bass_r, FFTW_MEASURE);
+            fftw_plan_dft_r2c_1d(p->FFTbassbufferSize, p->in_bass_r, p->out_bass_r, fftw_flag);
 
         // MID
         p->in_mid_r = fftw_alloc_real(p->FFTmidbufferSize);
         p->in_mid_r_raw = fftw_alloc_real(p->FFTmidbufferSize);
         p->out_mid_r = fftw_alloc_complex(p->FFTmidbufferSize / 2 + 1);
         p->p_mid_r =
-            fftw_plan_dft_r2c_1d(p->FFTmidbufferSize, p->in_mid_r, p->out_mid_r, FFTW_MEASURE);
+            fftw_plan_dft_r2c_1d(p->FFTmidbufferSize, p->in_mid_r, p->out_mid_r, fftw_flag);
 
         // TREBLE
         p->in_treble_r = fftw_alloc_real(p->FFTtreblebufferSize);
@@ -170,7 +181,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         p->out_treble_r = fftw_alloc_complex(p->FFTtreblebufferSize / 2 + 1);
 
         p->p_treble_r = fftw_plan_dft_r2c_1d(p->FFTtreblebufferSize, p->in_treble_r,
-                                             p->out_treble_r, FFTW_MEASURE);
+                                             p->out_treble_r, fftw_flag);
 
         memset(p->in_bass_r, 0, sizeof(double) * p->FFTbassbufferSize);
         memset(p->in_mid_r, 0, sizeof(double) * p->FFTmidbufferSize);
@@ -563,3 +574,62 @@ void cava_destroy(struct cava_plan *p) {
         fftw_destroy_plan(p->p_treble_r);
     }
 }
+
+#ifdef __ANDROID__
+JNIEXPORT jfloatArray JNICALL Java_com_karlstav_cava_MyGLRenderer_InitCava(
+    JNIEnv *env, jobject thiz, jint number_of_bars_set, jint refresh_rate, jint lower_cut_off,
+    jint higher_cut_off) {
+    jfloatArray cuttOffFreq = (*env)->NewFloatArray(env, number_of_bars_set + 1);
+    float noise_reduction = pow((float)refresh_rate / 130, 0.75);
+
+    plan =
+        cava_init(number_of_bars_set, 44100, 1, 1, noise_reduction, lower_cut_off, higher_cut_off);
+    cava_in = (double *)malloc(plan->FFTbassbufferSize * sizeof(double));
+    cava_out = (double *)malloc(plan->number_of_bars * sizeof(double));
+    (*env)->SetFloatArrayRegion(env, cuttOffFreq, 0, plan->number_of_bars + 1,
+                                plan->cut_off_frequency);
+    return cuttOffFreq;
+}
+
+JNIEXPORT jdoubleArray JNICALL Java_com_karlstav_cava_MyGLRenderer_ExecCava(JNIEnv *env,
+                                                                            jobject thiz,
+                                                                            jdoubleArray cava_input,
+                                                                            jint new_samples) {
+
+    jdoubleArray cavaReturn = (*env)->NewDoubleArray(env, plan->number_of_bars);
+
+    cava_in = (*env)->GetDoubleArrayElements(env, cava_input, NULL);
+
+    cava_execute(cava_in, new_samples, cava_out, plan);
+    (*env)->SetDoubleArrayRegion(env, cavaReturn, 0, plan->number_of_bars, cava_out);
+    (*env)->ReleaseDoubleArrayElements(env, cava_input, cava_in, JNI_ABORT);
+
+    return cavaReturn;
+}
+
+JNIEXPORT int JNICALL Java_com_karlstav_cava_CavaCoreTest_InitCava(JNIEnv *env, jobject thiz,
+                                                                   jint number_of_bars_set) {
+
+    plan = cava_init(number_of_bars_set, 44100, 1, 1, 0.7, 50, 10000);
+    return 1;
+}
+
+JNIEXPORT jdoubleArray JNICALL Java_com_karlstav_cava_CavaCoreTest_ExecCava(JNIEnv *env,
+                                                                            jobject thiz,
+                                                                            jdoubleArray cava_input,
+                                                                            jint new_samples) {
+
+    jdoubleArray cavaReturn = (*env)->NewDoubleArray(env, plan->number_of_bars);
+
+    cava_in = (*env)->GetDoubleArrayElements(env, cava_input, NULL);
+
+    cava_execute(cava_in, new_samples, cava_out, plan);
+    (*env)->SetDoubleArrayRegion(env, cavaReturn, 0, plan->number_of_bars, cava_out);
+    (*env)->ReleaseDoubleArrayElements(env, cava_input, cava_in, JNI_ABORT);
+
+    return cavaReturn;
+}
+JNIEXPORT void JNICALL Java_com_karlstav_cava_MyGLRenderer_DestroyCava(JNIEnv *env, jobject thiz) {
+    cava_destroy(plan);
+}
+#endif

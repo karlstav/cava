@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:theme="@style/PreferenceThemeOverlay"
+>
+
+    <SeekBarPreference app:key="number_of_bars_preference_key"
+    app:title="Number Of Bars"
+    app:useSimpleSummaryProvider="true"
+    app:defaultValue="40"
+    app:min="10"
+    android:max="256"
+    app:showSeekBarValue="true"
+    android:icon="@drawable/baseline_bar_chart_24"
+ />
+    <ListPreference
+        android:key="color_presets"
+        android:title="Color Preset"
+        android:entries="@array/ColorPresets"
+        android:entryValues="@array/ColorPresetsData"
+        android:defaultValue="#000000#00AAFF#FF0000"
+        android:summary="%s"/>
+
+    <PreferenceCategory
+        android:title="Bandwidth"
+        android:summary="auto adjusted to at least total value of low">
+    <SeekBarPreference app:key="low_cut_off_frequency"
+        app:title="Lower Cutoff Frequency (Hz)"
+        app:useSimpleSummaryProvider="true"
+        app:defaultValue="50"
+        app:min="20"
+        android:max="10000"
+        app:seekBarIncrement="10"
+        app:showSeekBarValue="true"
+        />
+
+    <SeekBarPreference app:key="high_cut_off_frequency"
+        app:title="Upper Cutoff Frequency (Hz)"
+        app:useSimpleSummaryProvider="true"
+        app:defaultValue="10000"
+        app:min="100"
+        android:max="20000"
+        app:seekBarIncrement="10"
+        app:showSeekBarValue="true"
+        />
+        <Preference
+            app:key="bandwidth_default"
+            app:title="Set Default Values"
+            />
+    </PreferenceCategory>
+
+    <CheckBoxPreference
+        app:key="show_frequency"
+        app:title="Show Frequency Labels (Hz)"
+        app:defaultValue="false"
+        />
+
+
+
+    <PreferenceCategory
+        android:title="Custom Color"
+        android:summary="Only used when preset is set to custom">
+        <PreferenceCategory
+        android:title="Top Bar"
+        app:key="top_col_preference_key">
+    <SeekBarPreference app:key="fg_col_2_r_preference_key"
+        app:useSimpleSummaryProvider="true"
+        app:defaultValue="255"
+        app:min="0"
+        android:max="255"
+        android:icon="@drawable/red"
+        app:showSeekBarValue="true"
+        app:updatesContinuously="true"
+        />
+    <SeekBarPreference app:key="fg_col_2_g_preference_key"
+        app:useSimpleSummaryProvider="true"
+        app:defaultValue="0"
+        app:min="0"
+        android:max="255"
+        android:icon="@drawable/green"
+        app:showSeekBarValue="true"
+        app:updatesContinuously="true"
+        />
+    <SeekBarPreference app:key="fg_col_2_b_preference_key"
+        app:useSimpleSummaryProvider="true"
+        app:defaultValue="0"
+        app:min="0"
+        android:max="255"
+        android:icon="@drawable/blue"
+        app:showSeekBarValue="true"
+        app:updatesContinuously="true"
+        />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="Bottom Bar"
+        app:key="bottom_col_preference_key">
+    <SeekBarPreference app:key="fg_col_1_r_preference_key"
+        app:useSimpleSummaryProvider="true"
+        app:defaultValue="0"
+        app:min="0"
+        android:max="255"
+        android:icon="@drawable/red"
+        app:showSeekBarValue="true"
+        app:updatesContinuously="true"
+        />
+    <SeekBarPreference app:key="fg_col_1_g_preference_key"
+        app:useSimpleSummaryProvider="true"
+        app:defaultValue="127"
+        app:min="0"
+        android:max="255"
+        android:icon="@drawable/green"
+        app:updatesContinuously="true"
+        app:showSeekBarValue="true"
+        />
+    <SeekBarPreference app:key="fg_col_1_b_preference_key"
+        app:useSimpleSummaryProvider="true"
+        app:defaultValue="255"
+        app:min="0"
+        android:max="255"
+        android:icon="@drawable/blue"
+        app:updatesContinuously="true"
+        app:showSeekBarValue="true"
+        />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="Background"
+        app:key="back_col_preference_key">
+    <SeekBarPreference app:key="bg_col_r_preference_key"
+        app:useSimpleSummaryProvider="true"
+        app:defaultValue="0"
+        app:min="0"
+        android:max="255"
+        android:icon="@drawable/red"
+        app:updatesContinuously="true"
+        app:showSeekBarValue="true"
+        />
+    <SeekBarPreference app:key="bg_col_g_preference_key"
+        app:useSimpleSummaryProvider="true"
+        app:defaultValue="0"
+        app:min="0"
+        android:max="255"
+        android:icon="@drawable/green"
+        app:updatesContinuously="true"
+        app:showSeekBarValue="true"
+        />
+    <SeekBarPreference app:key="bg_col_b_preference_key"
+        app:useSimpleSummaryProvider="true"
+        app:defaultValue="0"
+        app:min="0"
+        android:max="255"
+        android:icon="@drawable/blue"
+        app:updatesContinuously="true"
+        app:showSeekBarValue="true"
+        />
+    </PreferenceCategory>
+</PreferenceCategory>
+    <Preference
+        app:key="info"
+        app:title="@string/app_name"
+        app:summary="@string/app_ver"
+        android:icon="@drawable/baseline_info_24"
+        />
+    <Preference android:title="Privacy Policy" >
+        <intent android:action="android.intent.action.VIEW"
+            android:data="https://stavestrand.no/karl/cava/privacy_policy.html" />
+    </Preference>
+</PreferenceScreen>

@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">cava</string>
+    <string name="app_ver" translatable="false">1.3.3</string>
+</resources>

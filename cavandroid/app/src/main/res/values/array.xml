@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="ColorPresets">
+        <item>Neon Sunrise</item>
+        <item>Wild Fire</item>
+        <item>Beige Delight</item>
+        <item>Amaranth Spirit</item>
+        <item>Solarized Sunset</item>
+        <item>Dark Forest</item>
+        <item>Custom</item>
+    </string-array>
+    <string-array name="ColorPresetsData">
+        <item>#000000#00AAFF#FF0000</item>
+        <item>#000000#ff8c00#ad2007</item>
+        <item>#e8d5a7#91742c#e6c983</item>
+        <item>#cccccc#E52B50#F19CBB</item>
+        <item>#073642#268bd2#d33682</item>
+        <item>#002b36#2aa198#073642</item>
+        <item>1</item>
+    </string-array>
+</resources>
