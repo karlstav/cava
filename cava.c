@@ -143,6 +143,13 @@ void sig_handler(int sig_no) {
 
     cleanup();
 
+#ifdef _MSC_VER
+    if (sig_no == CTRL_C_EVENT || sig_no == CTRL_CLOSE_EVENT) {
+        sig_no = SIGINT;
+    } else {
+        return;
+    }
+#endif
     if (sig_no == SIGINT) {
         printf("CTRL-C pressed -- goodbye\n");
     }
