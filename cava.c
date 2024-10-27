@@ -464,7 +464,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         case INPUT_PORTAUDIO:
             audio.format = 16;
             audio.rate = 44100;
-            thr_id = pthread_create(&p_thread, NULL, input_portaudio, (void *)&audio);
+            if (!strcmp(audio.source, "list")) {
+                input_portaudio((void *)&audio);
+            } else {
+                thr_id = pthread_create(&p_thread, NULL, input_portaudio, (void *)&audio);
+            }
             break;
 #endif
 #ifdef PIPEWIRE
