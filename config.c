@@ -333,19 +333,19 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     p->stereo = -1;
     if (strcmp(channels, "mono") == 0) {
         p->stereo = 0;
-        if (strcmp(monoOption, "average") == 0) {
-            p->mono_opt = AVERAGE;
-        } else if (strcmp(monoOption, "left") == 0) {
-            p->mono_opt = LEFT;
-        } else if (strcmp(monoOption, "right") == 0) {
-            p->mono_opt = RIGHT;
-        } else {
-            write_errorf(error,
-                         "mono option %s is not supported, supported options are: 'average', "
-                         "'left' or 'right'\n",
-                         monoOption);
-            return false;
-        }
+    }
+    if (strcmp(monoOption, "average") == 0) {
+        p->mono_opt = AVERAGE;
+    } else if (strcmp(monoOption, "left") == 0) {
+        p->mono_opt = LEFT;
+    } else if (strcmp(monoOption, "right") == 0) {
+        p->mono_opt = RIGHT;
+    } else {
+        write_errorf(error,
+                     "mono option %s is not supported, supported options are: 'average', "
+                     "'left' or 'right'\n",
+                     monoOption);
+        return false;
     }
     if (strcmp(channels, "stereo") == 0)
         p->stereo = 1;

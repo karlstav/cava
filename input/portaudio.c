@@ -4,7 +4,6 @@
 #include <portaudio.h>
 
 #define SAMPLE_SILENCE -32767
-#define PA_SAMPLE_TYPE paInt16
 typedef short SAMPLE;
 
 typedef struct {
@@ -39,9 +38,9 @@ static int recordCallback(const void *inputBuffer, void *outputBuffer,
     }
 
     if (inputBuffer == NULL)
-        write_to_cava_input_buffers(framesToCalc * 2, silence_ptr, audio);
+        write_to_cava_input_buffers(framesToCalc * audio->channels, silence_ptr, audio);
     else
-        write_to_cava_input_buffers(framesToCalc * 2, rptr, audio);
+        write_to_cava_input_buffers(framesToCalc * audio->channels, rptr, audio);
 
     data->frameIndex += framesToCalc;
     if (finished == paComplete) {
@@ -92,6 +91,7 @@ void *input_portaudio(void *audiodata) {
                    i + 1, deviceInfo->name, deviceInfo->maxInputChannels,
                    deviceInfo->maxOutputChannels, deviceInfo->defaultSampleRate);
         }
+        printf("See cava readme for more information on how to capture audio.\n");
         exit(EXIT_SUCCESS);
     } else if (!strcmp(audio->source, "auto")) {
         deviceNum = Pa_GetDefaultInputDevice();
@@ -120,9 +120,20 @@ void *input_portaudio(void *audiodata) {
         }
     }
     inputParameters.device = deviceNum;
+    const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(deviceNum);
+    if (deviceInfo->maxInputChannels == 0) {
+        fprintf(stderr, "Error: selected device has no input channels!\n Use \"list\" as source to "
+                        "get a list of available sources.\n");
+        exit(EXIT_FAILURE);
+    }
 
     // set parameters
-    data.maxFrameIndex = audio->input_buffer_size * 1024 / 2;
+    inputParameters.channelCount = deviceInfo->maxInputChannels;
+    audio->channels = deviceInfo->maxInputChannels;
+    if (audio->channels > 2)
+        audio->channels = 2;
+
+    data.maxFrameIndex = audio->input_buffer_size * 1024 / audio->channels;
     data.recordedSamples = (SAMPLE *)malloc(2 * data.maxFrameIndex * sizeof(SAMPLE));
     if (data.recordedSamples == NULL) {
         fprintf(stderr, "Error: failure in memory allocation!\n");
@@ -130,19 +141,44 @@ void *input_portaudio(void *audiodata) {
     } else
         memset(data.recordedSamples, 0x00, 2 * data.maxFrameIndex);
 
-    inputParameters.channelCount = 2;
-    inputParameters.sampleFormat = PA_SAMPLE_TYPE;
+    double sampleRate = deviceInfo->defaultSampleRate;
+    audio->rate = sampleRate;
+
+    PaSampleFormat sampleFormats[] = {paInt16, paInt24, paInt32, paFloat32,
+                                      paInt8,  paUInt8, paInt16};
+    int sampleBits[] = {
+        16, 24, 32, 32, 8, 8,
+    };
+
+    for (int i = 0; i < 7; i++) {
+        inputParameters.sampleFormat = sampleFormats[i];
+        PaError err = Pa_IsFormatSupported(&inputParameters, NULL, sampleRate);
+        if (err == paFormatIsSupported) {
+            audio->format = sampleBits[i];
+            if (i == 3)
+                audio->IEEE_FLOAT = 1;
+            break;
+        }
+    }
+
     inputParameters.suggestedLatency =
         Pa_GetDeviceInfo(inputParameters.device)->defaultLowInputLatency;
     inputParameters.hostApiSpecificStreamInfo = NULL;
 
     // set it to work
-    err = Pa_OpenStream(&stream, &inputParameters, NULL, audio->rate, audio->input_buffer_size / 2,
-                        paClipOff, recordCallback, &data);
+    err =
+        Pa_OpenStream(&stream, &inputParameters, NULL, sampleRate,
+                      audio->input_buffer_size / audio->channels, paClipOff, recordCallback, &data);
     if (err != paNoError) {
-        fprintf(stderr, "Error: failure in opening stream (%s)\n", Pa_GetErrorText(err));
+        fprintf(stderr,
+                "Error: failure in opening stream (device: %d), (error: %s). Use \"list\" as souce "
+                "to get a list of "
+                "available sources.\n",
+                deviceNum + 1, Pa_GetErrorText(err));
         exit(EXIT_FAILURE);
     }
+
+    audio->threadparams = 0;
 
     // main loop
     while (1) {

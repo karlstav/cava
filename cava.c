@@ -464,6 +464,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         case INPUT_PORTAUDIO:
             audio.format = 16;
             audio.rate = 44100;
+            audio.threadparams = 1;
             if (!strcmp(audio.source, "list")) {
                 input_portaudio((void *)&audio);
             } else {
@@ -501,7 +502,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
             pthread_mutex_unlock(&audio.lock);
             timeout_counter++;
-            if (timeout_counter > 2000) {
+            if (timeout_counter > 5000) {
                 cleanup();
                 fprintf(stderr, "could not get rate and/or format, problems with audio thread? "
                                 "quitting...\n");
@@ -655,6 +656,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 exit(EXIT_FAILURE); // Can't happen.
             }
 
+            // force stereo if only one channel is available
+            if (p.stereo && audio_channels == 1)
+                p.stereo = 0;
+
             // handle for user setting too many bars
             if (p.fixedbars) {
                 p.autobars = 0;
@@ -679,11 +684,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
             int output_channels = 1;
             if (p.stereo) { // stereo must have even numbers of bars
-                if (audio.channels == 1) {
-                    fprintf(stderr,
-                            "stereo output configured, but only one channel in audio input.\n");
-                    exit(1);
-                }
                 output_channels = 2;
                 if (number_of_bars % 2 != 0)
                     number_of_bars--;
