@@ -48,7 +48,6 @@ jobs:
     - name: Install dependencies
       run: |
         brew install fftw make portaudio iniparser sdl2
-    - name: Generate configuresdl2
     - name: Run ./configure
       run: LDFLAGS="-L/opt/homebrew/lib" CPPFLAGS="-I/opt/homebrew/include" ./configure
     - name: Run make
