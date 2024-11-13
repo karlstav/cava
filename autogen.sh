@@ -1,12 +1,5 @@
 #!/bin/sh
+echo "o-hoy there! the functionality of this script has been removed"
+echo "you no longer need to generate the configure script yourself"
+echo "it is checked into the source repo, just run ./configure"
 
-if [ -d .git ]; then
-  git describe --always --tags --dirty > version # get version from git
-else
-  echo 0.10.2 > version # hard coded versions
-fi
-
-libtoolize
-aclocal
-autoconf
-automake --add-missing

@@ -17,9 +17,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev portaudio19-dev libsndio-dev libsdl2-2.0-0 libsdl2-dev squeezelite pulseaudio libpipewire-0.3-dev
-    - name: Generate configure
-      run: ./autogen.sh
+        sudo apt-get install build-essential libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libiniparser-dev portaudio19-dev libsndio-dev libsdl2-2.0-0 libsdl2-dev squeezelite pulseaudio libpipewire-0.3-dev
     - name: Run ./configure
       run: ./configure
     - name: Run make
@@ -49,10 +47,8 @@ jobs:
     - uses: actions/checkout@v1
     - name: Install dependencies
       run: |
-        brew install fftw libtool automake autoconf-archive portaudio iniparser sdl2
-        ln -s /usr/local/bin/glibtoolize /usr/local/bin/libtoolize
+        brew install fftw make portaudio iniparser sdl2
     - name: Generate configuresdl2
-      run: PATH="/opt/homebrew/opt/libtool/libexec/gnubin:$PATH" ./autogen.sh
     - name: Run ./configure
       run: LDFLAGS="-L/opt/homebrew/lib" CPPFLAGS="-I/opt/homebrew/include" ./configure
     - name: Run make

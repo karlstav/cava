@@ -60,12 +60,8 @@ Installing
 #### Installing Build Requirements
 
 Required components:
+* make
 * [FFTW](http://www.fftw.org/)
-* libtool
-* automake
-* autoconf-archive (needed for setting up OpenGL)
-* pkgconf
-* build-essentials
 * [iniparser](https://github.com/ndevilla/iniparser)
 
 
@@ -92,7 +88,7 @@ All the requirements can be installed easily in all major distros:
 
 FreeBSD
 
-    pkg install autoconf autoconf-archive automake fftw3 iniparser jackit libglvnd libtool pkgconf psftools sdl2 sndio
+    pkg install automake fftw3 iniparser jackit libglvnd psftools sdl2 sndio
 
 Additionally, run these commands on FreeBSD before building:
 
@@ -102,22 +98,22 @@ Additionally, run these commands on FreeBSD before building:
 
 Debian/Ubuntu:
 
-    sudo apt install build-essential libfftw3-dev libasound2-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev libjack-jackd2-dev pkgconf
+    sudo apt install build-essential libfftw3-dev libasound2-dev libpulse-dev libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev libjack-jackd2-dev
 
 
 ArchLinux:
 
-    pacman -S base-devel fftw alsa-lib iniparser pulseaudio autoconf-archive pkgconf
+    pacman -S base-devel fftw alsa-lib iniparser pulseaudio
 
 
 openSUSE:
 
-    zypper install alsa-devel fftw3-devel libpulse-devel libtool autoconf-archive pkgconf
+    zypper install alsa-devel fftw3-devel libpulse-devel
 
 
 Fedora:
 
-    dnf install alsa-lib-devel fftw3-devel pulseaudio-libs-devel libtool autoconf-archive iniparser-devel pkgconf
+    dnf install alsa-lib-devel fftw3-devel pulseaudio-libs-devel iniparser-devel
 
     
 macOS:
@@ -159,7 +155,6 @@ see separate readme in `cava_win` folder.
 #### Building
  First of all clone this repo and cd in to it, then run:
  
-    ./autogen.sh
     ./configure
     make
 
