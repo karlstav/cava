@@ -296,7 +296,7 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     }
     if (strcmp(orientation, "horizontal") == 0) {
         if (p->output != OUTPUT_NONCURSES) {
-            write_errorf(error, "only noncurses output suports horizontal orientation\n");
+            write_errorf(error, "only noncurses output supports horizontal orientation\n");
             return false;
         }
         p->orientation = ORIENT_SPLIT_H;
