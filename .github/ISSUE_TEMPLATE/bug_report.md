@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-**READ THIS BEFORE CREATING NEW ISSUE**
+**READ CAREFULLY AND DELETE THIS TEXT BEFORE CREATING NEW ISSUE**
 
 Are you using cava from a package repository, like AUR?
 
@@ -15,9 +15,13 @@ If so, clone the master branch from here, build and run. Is your issue already r
 
 Don't know how to clone or compile source code? Learn before posting issues here.
 
-**ALWAYS TRY TO BUILD AND RUN FROM THE SOURCE CODE ON GITLAB BEFORE POSTING ISSUES**
+**ALWAYS TRY TO BUILD AND RUN FROM THE SOURCE CODE ON GITHUB BEFORE POSTING ISSUES**
 
 If the issue is resolved when building from source, do not post issues here.
+
+If the issue is still not resolved you can proceed with the bug report.
+
+Make sure the bug report contains the following:
 
 **Describe the bug**
 
@@ -53,4 +57,4 @@ If applicable, add screenshots to help explain your problem.
 - version
 
 **Additional context**
-Add any other context about the problem here.
+Add any other context about the problem if relevant.
