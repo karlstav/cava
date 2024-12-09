@@ -186,7 +186,7 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
     if (col == 38) {
         struct colors fg_color = parse_color(fg_color_string);
         printf("\033[38;2;%d;%d;%dm", fg_color.rgb[0], fg_color.rgb[1], fg_color.rgb[2]);
-    } else {
+    } else if (col < 38 && col >= 30) {
         printf("\033[%dm", col); // setting color
     }
 
