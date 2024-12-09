@@ -63,7 +63,6 @@ Required components:
 * [FFTW](http://www.fftw.org/)
 * libtool
 * automake
-* autoconf-archive (needed for setting up OpenGL)
 * pkgconf
 * build-essentials
 * [iniparser](https://github.com/ndevilla/iniparser)
@@ -82,6 +81,7 @@ The development lib of one of these audio frameworks, depending on your distro:
 
 Optional components:
 * SDL2 dev files
+* autoconf-archive (needed for setting up OpenGL)
 * [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
 
 Only FFTW, iniparser and the build tools are actually required for CAVA to compile, but this will only give you the ability to read from fifo files. To capture audio directlty from your system pipewire, pulseaudio, alsa, sndio, jack or portaudio dev files are required (depending on what audio system you are using).
@@ -92,7 +92,7 @@ All the requirements can be installed easily in all major distros:
 
 FreeBSD
 
-    pkg install autoconf autoconf-archive automake fftw3 iniparser jackit libglvnd libtool pkgconf psftools sdl2 sndio
+    pkg install autoconf automake fftw3 iniparser jackit libglvnd libtool pkgconf psftools sdl2 sndio
 
 Additionally, run these commands on FreeBSD before building:
 
@@ -102,22 +102,22 @@ Additionally, run these commands on FreeBSD before building:
 
 Debian/Ubuntu:
 
-    sudo apt install build-essential libfftw3-dev libasound2-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev libjack-jackd2-dev pkgconf
+    sudo apt install build-essential libfftw3-dev libasound2-dev libpulse-dev libtool automake libiniparser-dev libsdl2-2.0-0 libsdl2-dev libpipewire-0.3-dev libjack-jackd2-dev pkgconf
 
 
 ArchLinux:
 
-    pacman -S base-devel fftw alsa-lib iniparser pulseaudio autoconf-archive pkgconf
+    pacman -S base-devel fftw alsa-lib iniparser pulseaudio pkgconf
 
 
 openSUSE:
 
-    zypper install alsa-devel fftw3-devel libpulse-devel libtool autoconf-archive pkgconf
+    zypper install alsa-devel fftw3-devel libpulse-devel libtool pkgconf
 
 
 Fedora:
 
-    dnf install alsa-lib-devel fftw3-devel pulseaudio-libs-devel libtool autoconf-archive iniparser-devel pkgconf
+    dnf install alsa-lib-devel fftw3-devel pulseaudio-libs-devel libtool iniparser-devel pkgconf
 
     
 macOS:
@@ -128,7 +128,7 @@ First install homebrew if you have't already:
 
 Then install prerequisites:
 
-    brew install fftw libtool automake autoconf-archive pkgconf portaudio iniparser
+    brew install fftw libtool automake pkgconf portaudio iniparser
     
 The installation location for Homebrew packages is different between Intel Macs and Apple Silicon Macs.
 As such, the commands will be a little bit different.
