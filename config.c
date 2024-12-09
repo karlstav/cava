@@ -425,6 +425,17 @@ bool validate_config(struct config_params *p, struct error_s *error) {
 bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colorsOnly,
                  struct error_s *error) {
     FILE *fp;
+#ifdef _MSC_VER
+    DWORD path_size = 1024;
+    char *cava_config_home = malloc(1024);
+
+    memset(cava_config_home, 0, path_size);
+    GetCurrentDirectory(path_size - 1, cava_config_home);
+
+    strcat(configPath, cava_config_home);
+    strcat(configPath, "\\config");
+
+#else
     char cava_config_home[PATH_MAX / 2];
 
     // config: creating path to default config file
@@ -433,12 +444,9 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         sprintf(cava_config_home, "%s/%s/", configHome, PACKAGE);
         mkdir(cava_config_home, 0777);
     } else {
-#ifndef _MSC_VER
         configHome = getenv("HOME");
 
-#else
-        configHome = getenv("userprofile");
-#endif
+
         if (configHome != NULL) {
             sprintf(cava_config_home, "%s/%s/", configHome, ".config");
             mkdir(cava_config_home, 0777);
@@ -446,13 +454,11 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             sprintf(cava_config_home, "%s/%s/%s/", configHome, ".config", PACKAGE);
             mkdir(cava_config_home, 0777);
         } else {
-#ifndef _MSC_VER
             sprintf(cava_config_home, "/tmp/%s/", PACKAGE);
             mkdir(cava_config_home, 0777);
-#else
             write_errorf(error, "No HOME found (ERR_HOMELESS), exiting...");
             return false;
-#endif
+
         }
     }
     if (configPath[0] == '\0') {
@@ -465,17 +471,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         if (fp) {
             fseek(fp, 0, SEEK_END);
             if (ftell(fp) == 0) {
-#ifndef _MSC_VER
                 printf("config file is empty, creating default config file\n");
                 fwrite(gConfigFileData, gConfigFileSize - 1, sizeof(char), fp);
-#else
-                printf(
-                    "WARNING: config file is empty, windows does not support automatic default "
-                    "config "
-                    "generation.\n An empty file was created at %s, overwrite with the default "
-                    "config from the source to get a complete and documented list of options.\n\n",
-                    configPath);
-#endif
             }
             fclose(fp);
         } else {
@@ -513,24 +510,16 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         if (fp) {
             fseek(fp, 0, SEEK_END);
             if (ftell(fp) == 0) {
-#ifndef _MSC_VER
                 printf("shader file is empty, creating default shader file\n");
                 fwrite(default_shader_data[i], strlen(default_shader_data[i]), sizeof(char), fp);
-#else
-                printf(
-                    "WARNING: shader file is empty, windows does not support automatic default "
-                    "shader "
-                    "generation.\n In order to use the shader copy the file %s from the source to "
-                    "%s\n\n",
-                    default_shader_name[i], shaderPath);
-#endif
+
             }
             fclose(fp);
             free(shaderFile);
         }
     }
     free(shaderPath);
-
+#endif
     p->gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
     for (int i = 0; i < 8; ++i) {
         p->gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);

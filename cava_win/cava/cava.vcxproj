@@ -77,10 +77,12 @@
     </Linkage-pthreads>
     <Linkage-glew>
     </Linkage-glew>
+    <OutDir>$(SolutionDir)\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Linkage-pthreads>
     </Linkage-pthreads>
+    <OutDir>$(SolutionDir)\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -124,6 +126,20 @@
       <AdditionalDependencies>opengl32.lib;$(SolutionDir)\packages\glew.1.9.0.1\build\native\lib\v110\x64\Debug\dynamic\glew.lib;$(SolutionDir)\packages\pthreads.2.9.1.4\build\native\lib\v110\x64\Debug\dynamic\cdecl\libpthread.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>xcopy /Y /D $(SolutionDir)\..\example_files\config $(ProjectDir)</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>add config file</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -143,6 +159,18 @@
       <AdditionalDependencies>opengl32.lib;$(SolutionDir)\packages\glew.1.9.0.1\build\native\lib\v110\x64\Release\dynamic\glew.lib;$(SolutionDir)\packages\pthreads.2.9.1.4\build\native\lib\v110\x64\Release\dynamic\cdecl\libpthread.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>xcopy /Y /D $(SolutionDir)\..\example_files\config $(ProjectDir)</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>add config file</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\cava.c" />
@@ -166,6 +194,7 @@
     <ClInclude Include="..\..\util.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="config" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
