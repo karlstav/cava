@@ -446,7 +446,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     } else {
         configHome = getenv("HOME");
 
-
         if (configHome != NULL) {
             sprintf(cava_config_home, "%s/%s/", configHome, ".config");
             mkdir(cava_config_home, 0777);
@@ -458,7 +457,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             mkdir(cava_config_home, 0777);
             write_errorf(error, "No HOME found (ERR_HOMELESS), exiting...");
             return false;
-
         }
     }
     if (configPath[0] == '\0') {
@@ -512,7 +510,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             if (ftell(fp) == 0) {
                 printf("shader file is empty, creating default shader file\n");
                 fwrite(default_shader_data[i], strlen(default_shader_data[i]), sizeof(char), fp);
-
             }
             fclose(fp);
             free(shaderFile);
