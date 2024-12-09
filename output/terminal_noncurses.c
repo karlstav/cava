@@ -17,6 +17,7 @@
 #include <wchar.h>
 
 #define MAX_GRADIENT_COLOR_DEFS 8
+#define WCHAR_SIZE 4 // wchar is 4 bytes on linux but only 2 on windows, we need at least 3
 
 wchar_t *frame_buffer;
 wchar_t *barstring[8];
@@ -122,15 +123,15 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
         }
     } else if (!tty) {
 
-        buf_length = sizeof(wchar_t) * width * lines * 10;
+        buf_length = WCHAR_SIZE * width * lines * 10;
         frame_buffer = (wchar_t *)malloc(buf_length);
-        spacestring = (wchar_t *)malloc(sizeof(wchar_t) * (bar_width + 1));
+        spacestring = (wchar_t *)malloc(WCHAR_SIZE * (bar_width + 1));
 
         // clearing barstrings
         for (int n = 0; n < 8; n++) {
-            barstring[n] = (wchar_t *)malloc(sizeof(wchar_t) * (bar_width + 1));
+            barstring[n] = (wchar_t *)malloc(WCHAR_SIZE * (bar_width + 1));
             barstring[n][0] = '\0';
-            top_barstring[n] = (wchar_t *)malloc(sizeof(wchar_t) * (bar_width + 1));
+            top_barstring[n] = (wchar_t *)malloc(WCHAR_SIZE * (bar_width + 1));
             top_barstring[n][0] = '\0';
         }
         spacestring[0] = '\0';
