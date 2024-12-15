@@ -9,13 +9,15 @@ assignees: ''
 
 **READ CAREFULLY AND DELETE THIS TEXT BEFORE CREATING NEW ISSUE**
 
+Go through the [troubleshooting](https://github.com/karlstav/cava/blob/master/README.md#troubleshooting) guide in the readme first.
+
 Are you using cava from a package repository, like AUR?
 
 If so, clone the master branch from here, build and run. Is your issue already resolved?
 
 Don't know how to clone or compile source code? Learn before posting issues here.
 
-**ALWAYS TRY TO BUILD AND RUN FROM THE SOURCE CODE ON GITHUB BEFORE POSTING ISSUES**
+**ALWAYS TRY TO BUILD AND RUN FROM THE SOURCE BEFORE POSTING ISSUES**
 
 If the issue is resolved when building from source, do not post issues here.
 
