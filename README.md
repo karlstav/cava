@@ -586,6 +586,10 @@ exit with ctrl+z then run 'bg' to keep it running after you log out.
 
 Most likley issue [#399](https://github.com/karlstav/cava/issues/399). Locale settings need to be set correctly in order for cava to work.
 
+### Bars not moving
+
+Read the chapter on [capturing audio](#capturing-audio). Depending on your system this might not work automatically. For example if you have pipewire dev files on your system, but are still using pulseaudio, you will have to specify `pulse` as your input method in the cava config file.
+
 ### Visualizer reacts to microphone instead of output
 
 This is a known issue with pipewire. Try the workaround described [here](https://github.com/karlstav/cava/issues/422#issuecomment-994270910)
