@@ -616,7 +616,7 @@ Actually, `setfont` is supposed to return the default font, but this usually isn
 
 ### Gradient not working in Konsole
 
-Konsole simply does not support this. #194
+Konsole simply does not support this. [#194](https://github.com/karlstav/cava/issues/194)
 
 Usage
 -----
