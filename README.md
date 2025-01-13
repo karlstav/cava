@@ -218,7 +218,7 @@ Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
 
 #### Ubuntu/Debian
 
-##### Ubuntu 20.10 or more recent / Debian (unstable)
+##### Ubuntu 20.10 or more recent / Debian 12 (Bookworm)
 
     sudo apt install cava
     
