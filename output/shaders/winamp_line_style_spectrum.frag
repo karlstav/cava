@@ -1,5 +1,33 @@
 #version 330
 
+// Emulate the "line style" spectrum analyzer from Winamp 2.
+// Try this config for a demonstration:
+
+/*
+[general]
+bar_width = 2
+bar_spacing = 0
+higher_cutoff_freq = 22000
+
+[output]
+method = sdl_glsl
+channels = mono
+fragment_shader = winamp_line_style_spectrum.frag
+
+[color]
+background = '#000000'
+gradient = 1
+gradient_color_1 = '#319C08'
+gradient_color_2 = '#29CE10'
+gradient_color_3 = '#BDDE29'
+gradient_color_4 = '#DEA518'
+gradient_color_5 = '#D66600'
+gradient_color_6 = '#CE2910'
+
+[smoothing]
+noise_reduction = 10
+*/
+
 in vec2 fragCoord;
 out vec4 fragColor;
 
@@ -35,8 +63,8 @@ void main()
     //calculate a bar size
     float bar_size = u_resolution.x / bars_count;
 
-    //the y coordinate and bar values are the same
-    float y =  bars[bar];
+    //the y coordinate is stretched by 4X to resemble Winamp
+    float y =  min(bars[bar] * 4.0, 1.0);
 
     // make sure there is a thin line at bottom
     if (y * u_resolution.y < 1.0)
@@ -44,32 +72,37 @@ void main()
       y = 1.0 / u_resolution.y;
     }
 
+    vec4 bar_color;
+
+    if (gradient_count == 0)
+    {
+        bar_color = vec4(fg_color,1.0);
+    }
+    else
+    {
+        //find color in the configured gradient for the top of the bar
+        int color = int((gradient_count - 1) * y);
+
+        //find where on y this and next color is supposed to be
+        float y_min = float(color) / (gradient_count - 1.0);
+        float y_max = float(color + 1) / (gradient_count - 1.0);
+
+        //make a solid color for the entire bar
+        bar_color = vec4(normalize_C(y, gradient_colors[color], gradient_colors[color + 1], y_min, y_max), 1.0);
+    }
+
+
     //draw the bar up to current height
     if (y > fragCoord.y)
     {
-        //make some space between bars basen on settings
+        //make some space between bars based on settings
         if (x > (bar + 1) * (bar_size) - bar_spacing)
         {
             fragColor = vec4(bg_color,1.0);
         }
         else
         {
-            if (gradient_count == 0)
-            {
-                fragColor = vec4(fg_color,1.0);
-            }
-            else
-            {
-                //find which color in the configured gradient we are at
-                int color = int((gradient_count - 1) * fragCoord.y);
-
-                //find where on y this and next color is supposed to be
-                float y_min = color / (gradient_count - 1.0);
-                float y_max = (color + 1.0) / (gradient_count - 1.0);
-
-                //make color
-                fragColor = vec4(normalize_C(fragCoord.y, gradient_colors[color], gradient_colors[color + 1], y_min, y_max), 1.0);
-            }
+            fragColor = bar_color;
         }
     }
     else
