@@ -18,7 +18,7 @@
 
 #include <sys/stat.h>
 
-#define NUMBER_OF_SHADERS 3
+#define NUMBER_OF_SHADERS 5
 
 #ifdef _MSC_VER
 #include "Windows.h"
@@ -34,15 +34,20 @@ INCTXT(ConfigFile, "example_files/config");
 // add your custom shaders to be installed here
 INCTXT(bar_spectrum, "output/shaders/bar_spectrum.frag");
 INCTXT(northern_lightsfrag, "output/shaders/northern_lights.frag");
+INCTXT(winamp_line_style_spectrum, "output/shaders/winamp_line_style_spectrum.frag");
+INCTXT(spectrogram, "output/shaders/spectrogram.frag");
+
 INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
 
 // INCTXT will create a char g<name>Data
-const char *default_shader_data[NUMBER_OF_SHADERS] = {gnorthern_lightsfragData,
-                                                      gpass_throughvertData, gbar_spectrumData};
+const char *default_shader_data[NUMBER_OF_SHADERS] = {
+    gnorthern_lightsfragData, gpass_throughvertData, gbar_spectrumData,
+    gwinamp_line_style_spectrumData, gspectrogramData};
 #endif // _MSC_VER
 // name of the installed shader file, technically does not have to be the same as in the source
-const char *default_shader_name[NUMBER_OF_SHADERS] = {"northern_lights.frag", "pass_through.vert",
-                                                      "bar_spectrum.frag"};
+const char *default_shader_name[NUMBER_OF_SHADERS] = {
+    "northern_lights.frag", "pass_through.vert", "bar_spectrum.frag",
+    "winamp_line_style_spectrum.frag", "spectrogram.frag"};
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
 

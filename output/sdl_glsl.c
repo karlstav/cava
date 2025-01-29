@@ -16,7 +16,10 @@
 SDL_Window *glWindow = NULL;
 GLuint shading_program;
 GLint uniform_bars;
+GLint uniform_previous_bars;
 GLint uniform_bars_count;
+GLuint fbo;
+GLuint texture;
 
 SDL_GLContext *glContext = NULL;
 
@@ -134,7 +137,28 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
 
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    // Create a texture to attach to the framebuffer
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+
+    // Check if the framebuffer is complete
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        fprintf(stderr, "Framebuffer not complete!\n");
+        exit(1);
+    }
+
+    // Unbind the framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     uniform_bars = glGetUniformLocation(shading_program, "bars");
+    uniform_previous_bars = glGetUniformLocation(shading_program, "previous_bars");
     uniform_bars_count = glGetUniformLocation(shading_program, "bars_count");
 
     int error = glGetError();
@@ -196,25 +220,39 @@ void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string, char *co
     SDL_GL_SwapWindow(glWindow);
 }
 
-int draw_sdl_glsl(int bars_count, const float bars[], int frame_time, int re_paint,
-                  int continuous_rendering) {
+int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[], int frame_time,
+                  int re_paint, int continuous_rendering) {
 
     int rc = 0;
     SDL_Event event;
 
     if (re_paint || continuous_rendering) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glUniform1i(glGetUniformLocation(shading_program, "inputTexture"), 0);
         glUniform1fv(uniform_bars, bars_count, bars);
+        glUniform1fv(uniform_previous_bars, bars_count, previous_bars);
         glUniform1i(uniform_bars_count, bars_count);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
         SDL_GL_SwapWindow(glWindow);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
     SDL_Delay(frame_time);
 
     SDL_PollEvent(&event);
     if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
         glViewport(0, 0, event.window.data1, event.window.data2);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glViewport(0, 0, event.window.data1, event.window.data2);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, event.window.data1, event.window.data2, 0, GL_RGBA,
+                     GL_UNSIGNED_BYTE, NULL);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         rc = -1;
     }
     if (event.type == SDL_KEYDOWN) {

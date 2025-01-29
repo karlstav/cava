@@ -526,6 +526,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         float *bars_left, *bars_right;
         double *cava_out;
         float *bars_raw;
+        float *previous_bars_raw;
 
         int height, lines, width, remainder, fp;
         int *dimension_bar, *dimension_value;
@@ -730,12 +731,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
             bars = (int *)malloc(number_of_bars * sizeof(int));
             bars_raw = (float *)malloc(number_of_bars * sizeof(float));
+            previous_bars_raw = (float *)malloc(number_of_bars * sizeof(float));
             previous_frame = (int *)malloc(number_of_bars * sizeof(int));
             cava_out = (double *)malloc(number_of_bars * audio.channels / output_channels *
                                         sizeof(double));
 
             memset(bars, 0, sizeof(int) * number_of_bars);
             memset(bars_raw, 0, sizeof(float) * number_of_bars);
+            memset(previous_bars_raw, 0, sizeof(float) * number_of_bars);
             memset(previous_frame, 0, sizeof(int) * number_of_bars);
             memset(cava_out, 0, sizeof(double) * number_of_bars * audio.channels / output_channels);
 
@@ -1139,8 +1142,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
 #ifdef SDL_GLSL
                 case OUTPUT_SDL_GLSL:
-                    rc = draw_sdl_glsl(number_of_bars, bars_raw, frame_time_msec, re_paint,
-                                       p.continuous_rendering);
+                    rc = draw_sdl_glsl(number_of_bars, bars_raw, previous_bars_raw, frame_time_msec,
+                                       re_paint, p.continuous_rendering);
                     break;
 #endif
                 case OUTPUT_NONCURSES:
@@ -1201,6 +1204,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
 
                 memcpy(previous_frame, bars, number_of_bars * sizeof(int));
+                if (p.output == OUTPUT_SDL_GLSL) {
+                    memcpy(previous_bars_raw, bars_raw, number_of_bars * sizeof(float));
+                }
 
                 // checking if audio thread has exited unexpectedly
                 pthread_mutex_lock(&audio.lock);
