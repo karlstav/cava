@@ -637,6 +637,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     strcat(pipePath, p.raw_target);
                     DWORD pipeMode = strcmp(p.data_format, "ascii") ? PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE : PIPE_TYPE_BYTE | PIPE_READMODE_BYTE;
                     hFile = CreateNamedPipeA(pipePath, PIPE_ACCESS_OUTBOUND | FILE_FLAG_OVERLAPPED, pipeMode | PIPE_NOWAIT, PIPE_UNLIMITED_INSTANCES, 0, 0, NMPWAIT_USE_DEFAULT_WAIT, NULL);
+                    free(pipePath);
 #endif
                 } else {
 #ifndef _MSC_VER
