@@ -161,7 +161,9 @@
 ; mono_option = average
 ; reverse = 0
 
-# Raw output target. A fifo will be created if target does not exist.
+# Raw output target.
+# On Linux, a fifo will be created if target does not exist.
+# On Windows, a named pipe will be created if target does not exist.
 ; raw_target = /dev/stdout
 
 # Raw data format. Can be 'binary' or 'ascii'.
