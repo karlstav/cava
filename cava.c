@@ -530,6 +530,9 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         int height, lines, width, remainder, fp;
         int *dimension_bar, *dimension_value;
+#ifdef _MSC_VER
+        HANDLE hFile;
+#endif
 
         if (p.orientation == ORIENT_LEFT || p.orientation == ORIENT_RIGHT) {
             dimension_bar = &height;
@@ -602,11 +605,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                                         p.bar_width, p.orientation);
                 height = lines * 8;
                 break;
-#ifndef _MSC_VER
             case OUTPUT_RAW:
             case OUTPUT_NORITAKE:
                 if (strcmp(p.raw_target, "/dev/stdout") != 0) {
-
+#ifndef _MSC_VER
                     int fptest;
                     // checking if file exists
                     if (access(p.raw_target, F_OK) != -1) {
@@ -627,10 +629,27 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         fptest = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644);
                     }
                     fp = open(p.raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
+#else
+                    int pipeLength = strlen("\\\\.\\pipe\\") + strlen(p.raw_target) + 1;
+                    char *pipePath = malloc(pipeLength);
+                    pipePath[pipeLength - 1] = '\0';
+                    strcat(pipePath, "\\\\.\\pipe\\");
+                    strcat(pipePath, p.raw_target);
+                    DWORD pipeMode = strcmp(p.data_format, "ascii") ? PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE : PIPE_TYPE_BYTE | PIPE_READMODE_BYTE;
+                    hFile = CreateNamedPipeA(pipePath, PIPE_ACCESS_OUTBOUND | FILE_FLAG_OVERLAPPED, pipeMode | PIPE_NOWAIT, PIPE_UNLIMITED_INSTANCES, 0, 0, NMPWAIT_USE_DEFAULT_WAIT, NULL);
+#endif
                 } else {
+#ifndef _MSC_VER
                     fp = fileno(stdout);
+#else
+                    hFile = GetStdHandle(STD_OUTPUT_HANDLE);
+#endif
                 }
+#ifndef _MSC_VER
                 if (fp == -1) {
+#else
+                if(hFile == INVALID_HANDLE_VALUE) {
+#endif
                     fprintf(stderr, "could not open file %s for writing\n", p.raw_target);
                     exit(1);
                 }
@@ -652,7 +671,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     height = p.ascii_range;
                 }
                 break;
-#endif
             default:
                 exit(EXIT_FAILURE); // Can't happen.
             }
@@ -1171,17 +1189,24 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                                                x_axis_info, p.orientation);
                     break;
 #endif
-#ifndef _MSC_VER
                 case OUTPUT_RAW:
+#ifndef _MSC_VER
                     rc = print_raw_out(number_of_bars, fp, p.raw_format, p.bit_format,
                                        p.ascii_range, p.bar_delim, p.frame_delim, bars);
+#else
+                    rc = print_raw_out(number_of_bars, hFile, p.raw_format, p.bit_format,
+                                       p.ascii_range, p.bar_delim, p.frame_delim, bars);
+#endif
                     break;
                 case OUTPUT_NORITAKE:
+#ifndef _MSC_VER
                     rc = print_ntk_out(number_of_bars, fp, p.bit_format, p.bar_width, p.bar_spacing,
                                        p.bar_height, bars);
+#else
+                    rc = print_ntk_out(number_of_bars, hFile, p.bit_format, p.bar_width, p.bar_spacing,
+                                       p.bar_height, bars);
+#endif
                     break;
-
-#endif // !_MSC_VER
                 default:
                     exit(EXIT_FAILURE); // Can't happen.
                 }
@@ -1291,5 +1316,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             }
         }
         // fclose(fp);
+        // CloseHandle(hFile);
     }
 }
