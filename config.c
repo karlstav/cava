@@ -25,6 +25,11 @@
 #include "Windows.h"
 #define TEXTFILE 256
 #define IDR_CONFIG_FILE 101
+#define IDR_BAR_SPECTRUM_SHADER 102
+#define IDR_NORTHERN_LIGHTS_SHADER 103
+#define IDR_PASS_THROUGH_SHADER 104
+#define IDR_SPECTROGRAM_SHADER 105
+#define IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER 106
 #define PATH_MAX 260
 #define PACKAGE "cava"
 #define _CRT_SECURE_NO_WARNINGS 1
@@ -40,6 +45,10 @@ static void LoadFileInResource(int name, int type, DWORD *size, const char **dat
         *data = (const char *)(LockResource(rcData));
     }
 }
+
+int default_shader_data[NUMBER_OF_SHADERS] = {
+    IDR_BAR_SPECTRUM_SHADER, IDR_NORTHERN_LIGHTS_SHADER, IDR_PASS_THROUGH_SHADER,
+    IDR_SPECTROGRAM_SHADER, IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER};
 #else
 #define INCBIN_SILENCE_BITCODE_WARNING
 #include "third_party/incbin.h"
@@ -531,11 +540,14 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             return false;
         }
     }
-#ifndef _MSC_VER
     // create default shader files if they do not exist
     char *shaderPath = malloc(sizeof(char) * PATH_MAX);
     sprintf(shaderPath, "%s/shaders", cava_config_home);
+#ifndef _MSC_VER
     mkdir(shaderPath, 0777);
+#else
+    CreateDirectoryA(shaderPath, NULL);
+#endif
 
     for (int i = 0; i < NUMBER_OF_SHADERS; i++) {
         char *shaderFile = malloc(sizeof(char) * PATH_MAX);
@@ -546,14 +558,20 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             fseek(fp, 0, SEEK_END);
             if (ftell(fp) == 0) {
                 printf("shader file is empty, creating default shader file\n");
+#ifndef _MSC_VER
                 fwrite(default_shader_data[i], strlen(default_shader_data[i]), sizeof(char), fp);
+#else
+                DWORD shaderDataSize = 0;
+                const char *shaderData = NULL;
+                LoadFileInResource(default_shader_data[i], TEXTFILE, &shaderDataSize, &shaderData);
+                fwrite(shaderData, shaderDataSize, sizeof(char), fp);
+#endif
             }
             fclose(fp);
             free(shaderFile);
         }
     }
     free(shaderPath);
-#endif
     p->gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
     for (int i = 0; i < 8; ++i) {
         p->gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);

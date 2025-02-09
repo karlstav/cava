@@ -1,0 +1,14 @@
+#define TEXTFILE 256
+#define IDR_CONFIG_FILE 101
+#define IDR_BAR_SPECTRUM_SHADER 102
+#define IDR_NORTHERN_LIGHTS_SHADER 103
+#define IDR_PASS_THROUGH_SHADER 104
+#define IDR_SPECTROGRAM_SHADER 105
+#define IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER 106
+
+IDR_CONFIG_FILE TEXTFILE "../../example_files/config"
+IDR_BAR_SPECTRUM_SHADER TEXTFILE "../../output/shaders/bar_spectrum.frag"
+IDR_NORTHERN_LIGHTS_SHADER TEXTFILE "../../output/shaders/northern_lights.frag"
+IDR_PASS_THROUGH_SHADER TEXTFILE "../../output/shaders/pass_through.vert"
+IDR_SPECTROGRAM_SHADER TEXTFILE "../../output/shaders/spectrogram.frag"
+IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER TEXTFILE "../../output/shaders/winamp_line_style_spectrum.frag"
