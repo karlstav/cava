@@ -34,16 +34,16 @@ int print_ntk_out(int bars_count, HANDLE hFile, int bit_format, int bar_width, i
 #ifndef _MSC_VER
                 write(fd, &buf_8, sizeof(int8_t));
 #else
-                WriteFile(hFile, &buf_8, sizeof(int8_t), NULL, NULL));
+                WriteFile(hFile, &buf_8, sizeof(int8_t), NULL, NULL);
 #endif
             }
         }
         buf_8 = 0;
         for (j = 0; j < bar_height / 8 * bar_spacing; j++) {
-#ifndef
+#ifndef _MSC_VER
             write(fd, &buf_8, sizeof(int8_t));
 #else
-            WriteFile(hFile, &buf_8, sizeof(int8_t), NULL, NULL));
+            WriteFile(hFile, &buf_8, sizeof(int8_t), NULL, NULL);
 #endif
         }
     }

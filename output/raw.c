@@ -27,7 +27,7 @@ int print_raw_out(int bars_count, HANDLE hFile, int is_binary, int bit_format, i
 #ifndef _MSC_VER
                 write(fd, &buf_16, sizeof(int16_t));
 #else
-                WriteFile(hFile, &buf_16, sizeof(int16_t), NULL, NULL));
+                WriteFile(hFile, &buf_16, sizeof(int16_t), NULL, NULL);
 #endif
                 break;
             case 8:
@@ -35,7 +35,7 @@ int print_raw_out(int bars_count, HANDLE hFile, int is_binary, int bit_format, i
 #ifndef _MSC_VER
                 write(fd, &buf_8, sizeof(int8_t));
 #else
-                WriteFile(hFile, &buf_8, sizeof(int8_t), NULL, NULL));
+                WriteFile(hFile, &buf_8, sizeof(int8_t), NULL, NULL);
 #endif
                 break;
             }
@@ -51,20 +51,21 @@ int print_raw_out(int bars_count, HANDLE hFile, int is_binary, int bit_format, i
             if (f_ranged != 0)
                 bar_height_size += floor(log10(f_ranged));
 
-            char bar_height[bar_height_size];
+            char *bar_height = malloc(bar_height_size);
             snprintf(bar_height, bar_height_size, "%d", f_ranged);
 #ifndef _MSC_VER
                 write(fd, bar_height, bar_height_size - 1);
                 write(fd, &bar_delim, sizeof(bar_delim));
 #else
-                WriteFile(hFile, bar_height, bar_height_size - 1, NULL, NULL));
-                WriteFile(hFile, &bar_delim, sizeof(bar_delim), NULL, NULL));
+                WriteFile(hFile, bar_height, bar_height_size - 1, NULL, NULL);
+                WriteFile(hFile, &bar_delim, sizeof(bar_delim), NULL, NULL);
 #endif
+                free(bar_height);
         }
 #ifndef _MSC_VER
         write(fd, &frame_delim, sizeof(frame_delim));
 #else
-        WriteFile(hFile, &frame_delim, sizeof(frame_delim), NULL, NULL));
+        WriteFile(hFile, &frame_delim, sizeof(frame_delim), NULL, NULL);
 #endif
     }
     return 0;
