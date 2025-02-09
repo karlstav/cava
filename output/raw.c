@@ -55,13 +55,13 @@ int print_raw_out(int bars_count, HANDLE hFile, int is_binary, int bit_format, i
             char *bar_height = malloc(bar_height_size);
             snprintf(bar_height, bar_height_size, "%d", f_ranged);
 #ifndef _MSC_VER
-                write(fd, bar_height, bar_height_size - 1);
-                write(fd, &bar_delim, sizeof(bar_delim));
+            write(fd, bar_height, bar_height_size - 1);
+            write(fd, &bar_delim, sizeof(bar_delim));
 #else
-                WriteFile(hFile, bar_height, bar_height_size - 1, NULL, NULL);
-                WriteFile(hFile, &bar_delim, sizeof(bar_delim), NULL, NULL);
+            WriteFile(hFile, bar_height, bar_height_size - 1, NULL, NULL);
+            WriteFile(hFile, &bar_delim, sizeof(bar_delim), NULL, NULL);
 #endif
-                free(bar_height);
+            free(bar_height);
         }
 #ifndef _MSC_VER
         write(fd, &frame_delim, sizeof(frame_delim));
