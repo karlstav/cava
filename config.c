@@ -21,8 +21,8 @@
 #define NUMBER_OF_SHADERS 5
 
 #ifdef _MSC_VER
-#include "Windows.h"
 #include "Shlwapi.h"
+#include "Windows.h"
 #define TEXTFILE 256
 #define IDR_CONFIG_FILE 101
 #define PATH_MAX 260
@@ -503,16 +503,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             }
             fclose(fp);
         } else {
-#ifdef _MSC_VER
-            if (PathIsRelativeA(configPath) == TRUE)
-            {
-                char newPath[PATH_MAX];
-                GetCurrentDirectoryA(PATH_MAX - 1 - strlen(configPath), newPath);
-                strcat(newPath, "\\");
-                strcat(newPath, configPath);
-                configPath = newPath;
-            }
-#endif
             // try to open file read only
             fp = fopen(configPath, "rb");
             if (fp) {
@@ -523,6 +513,16 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             }
         }
     } else { // opening specified file
+#ifdef _MSC_VER
+        if (PathIsRelativeA(configPath) == TRUE) { //GetPrivateProfileString does not accept relative paths
+            char newPath[PATH_MAX];
+            GetCurrentDirectoryA(PATH_MAX - 1 - strlen(configPath), newPath);
+            strcat(newPath, "\\");
+            strcat(newPath, configPath);
+            memset(configPath, 0, sizeof(configPath));
+            strcpy(configPath, newPath);
+        }
+#endif
         fp = fopen(configPath, "rb");
         if (fp) {
             fclose(fp);

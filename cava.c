@@ -292,7 +292,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
     int c;
     while ((c = getopt(argc, argv, "p:vh")) != -1) {
         switch (c) {
-        case 'p': // argument: fifo path
+        case 'p': // argument: config path
             snprintf(configPath, sizeof(configPath), "%s", optarg);
             break;
         case 'h': // argument: print usage
@@ -660,8 +660,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                                          ? PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE
                                          : PIPE_TYPE_BYTE | PIPE_READMODE_BYTE;
                     hFile = CreateNamedPipeA(pipePath, PIPE_ACCESS_OUTBOUND | FILE_FLAG_OVERLAPPED,
-                                             pipeMode | PIPE_NOWAIT, PIPE_UNLIMITED_INSTANCES, 0,
-                                             0, +NMPWAIT_USE_DEFAULT_WAIT, NULL);
+                                             pipeMode | PIPE_NOWAIT, PIPE_UNLIMITED_INSTANCES, 0, 0, 
+                                             NMPWAIT_USE_DEFAULT_WAIT, NULL);
                     free(pipePath);
 #endif
                 } else {
