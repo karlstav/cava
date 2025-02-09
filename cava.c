@@ -30,6 +30,7 @@
 #include <windows.h>
 #define PATH_MAX 260
 #define PACKAGE "cava"
+#define VERSION "0.10.3"
 #define _CRT_SECURE_NO_WARNINGS 1
 #endif // _MSC_VER
 
@@ -56,9 +57,9 @@
 
 #include "input/common.h"
 
-#include "output/terminal_noncurses.h"
 #include "output/noritake.h"
 #include "output/raw.h"
+#include "output/terminal_noncurses.h"
 
 #ifndef _MSC_VER
 #ifdef NCURSES
@@ -84,6 +85,33 @@
 #define GCC_UNUSED __attribute__((unused))
 #else
 #define GCC_UNUSED /* nothing */
+#endif
+
+#ifdef _MSC_VER
+char *optarg = NULL;
+int optind = 1;
+
+static int getopt(int argc, char *const argv[], const char *optstring) {
+    if ((optind >= argc) || (argv[optind][0] != '-') || (argv[optind][0] == 0)) {
+        return -1;
+    }
+
+    int opt = argv[optind][1];
+    const char *p = strchr(optstring, opt);
+
+    if (p == NULL) {
+        return '?';
+    }
+    if (p[1] == ':') {
+        optind++;
+        if (optind >= argc) {
+            return '?';
+        }
+        optarg = argv[optind];
+        optind++;
+    }
+    return opt;
+}
 #endif
 
 // used by sig handler
@@ -261,8 +289,6 @@ Keys:\n\
         q         Quit\n\
 \n\
 as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n";
-#ifndef _MSC_VER
-
     int c;
     while ((c = getopt(argc, argv, "p:vh")) != -1) {
         switch (c) {
@@ -282,10 +308,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             abort();
         }
     }
-#else
-    if (argc > 1)
-        snprintf(configPath, sizeof(configPath), "%s", argv[1]);
-#endif
 
     // general: main loop
     while (1) {
@@ -634,8 +656,12 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     pipePath[pipeLength - 1] = '\0';
                     strcat(pipePath, "\\\\.\\pipe\\");
                     strcat(pipePath, p.raw_target);
-                    DWORD pipeMode = strcmp(p.data_format, "ascii") ? PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE : PIPE_TYPE_BYTE | PIPE_READMODE_BYTE;
-                    hFile = CreateNamedPipeA(pipePath, PIPE_ACCESS_OUTBOUND | FILE_FLAG_OVERLAPPED, pipeMode | PIPE_NOWAIT, PIPE_UNLIMITED_INSTANCES, 0, 0, NMPWAIT_USE_DEFAULT_WAIT, NULL);
+                    DWORD pipeMode = strcmp(p.data_format, "ascii")
+                                         ? PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE
+                                         : PIPE_TYPE_BYTE | PIPE_READMODE_BYTE;
+                    hFile = CreateNamedPipeA(pipePath, PIPE_ACCESS_OUTBOUND | FILE_FLAG_OVERLAPPED,
+                                             pipeMode | PIPE_NOWAIT, PIPE_UNLIMITED_INSTANCES, 0,
+                                             0, +NMPWAIT_USE_DEFAULT_WAIT, NULL);
                     free(pipePath);
 #endif
                 } else {
@@ -648,7 +674,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #ifndef _MSC_VER
                 if (fp == -1) {
 #else
-                if(hFile == INVALID_HANDLE_VALUE) {
+                if (hFile == INVALID_HANDLE_VALUE) {
 #endif
                     fprintf(stderr, "could not open file %s for writing\n", p.raw_target);
                     exit(1);
@@ -1203,8 +1229,8 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     rc = print_ntk_out(number_of_bars, fp, p.bit_format, p.bar_width, p.bar_spacing,
                                        p.bar_height, bars);
 #else
-                    rc = print_ntk_out(number_of_bars, hFile, p.bit_format, p.bar_width, p.bar_spacing,
-                                       p.bar_height, bars);
+                    rc = print_ntk_out(number_of_bars, hFile, p.bit_format, p.bar_width,
+                                       p.bar_spacing, p.bar_height, bars);
 #endif
                     break;
                 default:
