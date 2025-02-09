@@ -46,9 +46,9 @@ static void LoadFileInResource(int name, int type, DWORD *size, const char **dat
     }
 }
 
-int default_shader_data[NUMBER_OF_SHADERS] = {
-    IDR_BAR_SPECTRUM_SHADER, IDR_NORTHERN_LIGHTS_SHADER, IDR_PASS_THROUGH_SHADER,
-    IDR_SPECTROGRAM_SHADER, IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER};
+int default_shader_data[NUMBER_OF_SHADERS] = {IDR_BAR_SPECTRUM_SHADER, IDR_NORTHERN_LIGHTS_SHADER,
+                                              IDR_PASS_THROUGH_SHADER, IDR_SPECTROGRAM_SHADER,
+                                              IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER};
 #else
 #define INCBIN_SILENCE_BITCODE_WARNING
 #include "third_party/incbin.h"
@@ -523,7 +523,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         }
     } else { // opening specified file
 #ifdef _MSC_VER
-        if (PathIsRelativeA(configPath) == TRUE) { //GetPrivateProfileString does not accept relative paths
+        // GetPrivateProfileString does not accept relative paths
+        if (PathIsRelativeA(configPath) == TRUE) {
             char newPath[PATH_MAX];
             GetCurrentDirectoryA(PATH_MAX - 1 - strlen(configPath), newPath);
             strcat(newPath, "\\");
