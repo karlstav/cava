@@ -181,6 +181,8 @@
     <ClCompile Include="..\..\output\sdl_cava.c" />
     <ClCompile Include="..\..\output\sdl_glsl.c" />
     <ClCompile Include="..\..\output\terminal_noncurses.c" />
+    <ClCompile Include="..\..\output\raw.c" />
+    <ClCompile Include="..\..\output\noritake.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\cavacore.h" />
@@ -191,6 +193,8 @@
     <ClInclude Include="..\..\output\sdl_cava.h" />
     <ClInclude Include="..\..\output\sdl_glsl.h" />
     <ClInclude Include="..\..\output\terminal_noncurses.h" />
+    <ClInclude Include="..\..\output\raw.h" />
+    <ClInclude Include="..\..\output\noritake.h" />
     <ClInclude Include="..\..\util.h" />
   </ItemGroup>
   <ItemGroup>
