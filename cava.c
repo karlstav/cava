@@ -57,6 +57,8 @@
 #include "input/common.h"
 
 #include "output/terminal_noncurses.h"
+#include "output/noritake.h"
+#include "output/raw.h"
 
 #ifndef _MSC_VER
 #ifdef NCURSES
@@ -64,9 +66,6 @@
 #include "output/terminal_ncurses.h"
 #include <curses.h>
 #endif
-
-#include "output/noritake.h"
-#include "output/raw.h"
 
 #include "input/alsa.h"
 #include "input/fifo.h"
@@ -531,7 +530,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         int height, lines, width, remainder, fp;
         int *dimension_bar, *dimension_value;
 #ifdef _MSC_VER
-        HANDLE hFile;
+        HANDLE hFile = NULL;
 #endif
 
         if (p.orientation == ORIENT_LEFT || p.orientation == ORIENT_RIGHT) {
