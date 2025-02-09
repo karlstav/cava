@@ -22,9 +22,24 @@
 
 #ifdef _MSC_VER
 #include "Windows.h"
+#include "Shlwapi.h"
+#define TEXTFILE 256
+#define IDR_CONFIG_FILE 101
 #define PATH_MAX 260
 #define PACKAGE "cava"
 #define _CRT_SECURE_NO_WARNINGS 1
+
+static void LoadFileInResource(int name, int type, DWORD *size, const char **data) {
+    HMODULE handle = GetModuleHandle(NULL);
+    HRSRC rc = FindResource(handle, MAKEINTRESOURCE(name), MAKEINTRESOURCE(type));
+    HGLOBAL rcData = LoadResource(handle, rc);
+    if (size) {
+        *size = SizeofResource(handle, rc);
+    }
+    if (data) {
+        *data = (const char *)(LockResource(rcData));
+    }
+}
 #else
 #define INCBIN_SILENCE_BITCODE_WARNING
 #include "third_party/incbin.h"
@@ -430,36 +445,39 @@ bool validate_config(struct config_params *p, struct error_s *error) {
 bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colorsOnly,
                  struct error_s *error) {
     FILE *fp;
-#ifdef _MSC_VER
-    DWORD path_size = 1024;
-    char *cava_config_home = malloc(1024);
-
-    memset(cava_config_home, 0, path_size);
-    GetCurrentDirectory(path_size - 1, cava_config_home);
-
-    strcat(configPath, cava_config_home);
-    strcat(configPath, "\\config");
-
-#else
-    char cava_config_home[PATH_MAX / 2];
+    char *cava_config_home = malloc(PATH_MAX / 2);
 
     // config: creating path to default config file
     char *configHome = getenv("XDG_CONFIG_HOME");
     if (configHome != NULL) {
         sprintf(cava_config_home, "%s/%s/", configHome, PACKAGE);
+#ifndef _MSC_VER
         mkdir(cava_config_home, 0777);
+#else
+        CreateDirectoryA(cava_config_home, NULL);
+#endif
     } else {
+#ifndef _MSC_VER
         configHome = getenv("HOME");
+#else
+        configHome = getenv("USERPROFILE");
+#endif
 
         if (configHome != NULL) {
             sprintf(cava_config_home, "%s/%s/", configHome, ".config");
+#ifndef _MSC_VER
             mkdir(cava_config_home, 0777);
+#else
+            CreateDirectoryA(cava_config_home, NULL);
+#endif
 
             sprintf(cava_config_home, "%s/%s/%s/", configHome, ".config", PACKAGE);
+#ifndef _MSC_VER
             mkdir(cava_config_home, 0777);
+#else
+            CreateDirectoryA(cava_config_home, NULL);
+#endif
         } else {
-            sprintf(cava_config_home, "/tmp/%s/", PACKAGE);
-            mkdir(cava_config_home, 0777);
             write_errorf(error, "No HOME found (ERR_HOMELESS), exiting...");
             return false;
         }
@@ -475,10 +493,26 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             fseek(fp, 0, SEEK_END);
             if (ftell(fp) == 0) {
                 printf("config file is empty, creating default config file\n");
+#ifdef _MSC_VER
+                DWORD gConfigFileSize = 0;
+                const char *gConfigFileData = NULL;
+                LoadFileInResource(IDR_CONFIG_FILE, TEXTFILE, &gConfigFileSize, &gConfigFileData);
+                gConfigFileSize += 1;
+#endif
                 fwrite(gConfigFileData, gConfigFileSize - 1, sizeof(char), fp);
             }
             fclose(fp);
         } else {
+#ifdef _MSC_VER
+            if (PathIsRelativeA(configPath) == TRUE)
+            {
+                char newPath[PATH_MAX];
+                GetCurrentDirectoryA(PATH_MAX - 1 - strlen(configPath), newPath);
+                strcat(newPath, "\\");
+                strcat(newPath, configPath);
+                configPath = newPath;
+            }
+#endif
             // try to open file read only
             fp = fopen(configPath, "rb");
             if (fp) {
@@ -488,9 +522,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
                 return false;
             }
         }
-
     } else { // opening specified file
-
         fp = fopen(configPath, "rb");
         if (fp) {
             fclose(fp);
@@ -499,7 +531,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             return false;
         }
     }
-
+#ifndef _MSC_VER
     // create default shader files if they do not exist
     char *shaderPath = malloc(sizeof(char) * PATH_MAX);
     sprintf(shaderPath, "%s/shaders", cava_config_home);
@@ -811,9 +843,9 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     GetPrivateProfileString("output", "channels", "stereo", channels, 16, configPath);
     GetPrivateProfileString("output", "mono_option", "average", monoOption, 16, configPath);
     p->reverse = GetPrivateProfileInt("output", "reverse", 0, configPath);
-    GetPrivateProfileString("output", "raw_target", "stdout", p->raw_target, 64, configPath);
+    GetPrivateProfileString("output", "raw_target", "/dev/stdout", p->raw_target, 64, configPath);
     GetPrivateProfileString("output", "data_format", "binary", p->data_format, 16, configPath);
-    p->bar_delim = (char)GetPrivateProfileInt("output", "bar_delimiter", 50, configPath);
+    p->bar_delim = (char)GetPrivateProfileInt("output", "bar_delimiter", 59, configPath);
     p->frame_delim = (char)GetPrivateProfileInt("output", "frame_delimiter", 10, configPath);
     p->ascii_range = GetPrivateProfileInt("output", "ascii_max_range", 1000, configPath);
     p->bit_format = GetPrivateProfileInt("output", "bit_format", 16, configPath);
@@ -857,6 +889,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     sprintf(p->fragment_shader, "%s/shaders/%s", cava_config_home, fragmentShader);
 
     bool result = validate_config(p, error);
+
+    free(cava_config_home);
 
     return result;
 }

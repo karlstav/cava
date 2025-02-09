@@ -123,7 +123,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opengl32.lib;$(SolutionDir)\packages\glew.1.9.0.1\build\native\lib\v110\x64\Debug\dynamic\glew.lib;$(SolutionDir)\packages\pthreads.2.9.1.4\build\native\lib\v110\x64\Debug\dynamic\cdecl\libpthread.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;Shlwapi.lib;$(SolutionDir)\packages\glew.1.9.0.1\build\native\lib\v110\x64\Debug\dynamic\glew.lib;$(SolutionDir)\packages\pthreads.2.9.1.4\build\native\lib\v110\x64\Debug\dynamic\cdecl\libpthread.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
@@ -135,10 +135,12 @@
       </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>xcopy /Y /D $(SolutionDir)\..\example_files\config $(ProjectDir)</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>add config file</Message>
+      <Message>
+      </Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -156,7 +158,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opengl32.lib;$(SolutionDir)\packages\glew.1.9.0.1\build\native\lib\v110\x64\Release\dynamic\glew.lib;$(SolutionDir)\packages\pthreads.2.9.1.4\build\native\lib\v110\x64\Release\dynamic\cdecl\libpthread.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;Shlwapi.lib;$(SolutionDir)\packages\glew.1.9.0.1\build\native\lib\v110\x64\Release\dynamic\glew.lib;$(SolutionDir)\packages\pthreads.2.9.1.4\build\native\lib\v110\x64\Release\dynamic\cdecl\libpthread.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
@@ -166,10 +168,12 @@
       </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>xcopy /Y /D $(SolutionDir)\..\example_files\config $(ProjectDir)</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>add config file</Message>
+      <Message>
+      </Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -198,8 +202,10 @@
     <ClInclude Include="..\..\util.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="config" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="cava.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
