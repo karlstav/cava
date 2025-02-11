@@ -18,6 +18,8 @@ EXTRA_DIST = \
     output/shaders/pass_through.vert \
     output/shaders/bar_spectrum.frag \
     output/shaders/northern_lights.frag \
+    output/shaders/winamp_line_style_spectrum.frag \
+    output/shaders/spectrogram.frag \
     example_files/config \
     cava.psf \
     LICENSE \
