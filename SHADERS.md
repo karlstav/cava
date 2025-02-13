@@ -5,7 +5,7 @@ Write your own shaders for cava!
 
 cava can use SDL/OpenGL to render custom glsl shaders.
 
-The shader files must be placed in $HOME/.config/cava/shaders
+The shader files are loaded from the folder `$HOME/.config/cava/shaders`
 
 under [output] set `method` to 'sdl_glsl'
 
@@ -17,6 +17,16 @@ the custom shaders will use some of the same config parameters as the other outp
 
 feel free to commit your own shaders (or improvements to the sdl_glsl output mode) and create pull request.
 
-To add a shader to the cava repo put it under output/shaders here, and add it to the INCTXT at the top of the config.c file.
+To add a shader to the cava repo do the following:
+
+1. Copy or create your shader in the `$HOME/.config/cava/shaders` folder and load it via the config file.
+2. When done writing the shader copy it to the `output/shaders` folder in the cava source code
+3. In `config.c`:
+    1. Increment `NUMBER_OF_SHADERS` define
+    2. Add it to the `INCTXT`, `IDR` lists as well as the `default_shader_data` and the `default_shader_name` arrays at the top of the `config.c`. The orders of the arrays is important! There are two `default_shader_data` arrays one for windows and one for linux.
+4. Add it to `cava_win/cava/cava.rc`
+
+
+The shader will then be compiled into the bionary and written to the `$HOME/.config/cava/shaders` folder on runtime (if it is not already there).
 
 

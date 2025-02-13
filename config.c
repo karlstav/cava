@@ -18,7 +18,7 @@
 
 #include <sys/stat.h>
 
-#define NUMBER_OF_SHADERS 5
+#define NUMBER_OF_SHADERS 6
 
 #ifdef _MSC_VER
 #include "Shlwapi.h"
@@ -30,6 +30,7 @@
 #define IDR_PASS_THROUGH_SHADER 104
 #define IDR_SPECTROGRAM_SHADER 105
 #define IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER 106
+#define IDR_EYE_OF_PHI_SHADER 107
 #define PATH_MAX 260
 #define PACKAGE "cava"
 #define _CRT_SECURE_NO_WARNINGS 1
@@ -47,8 +48,9 @@ static void LoadFileInResource(int name, int type, DWORD *size, const char **dat
 }
 
 int default_shader_data[NUMBER_OF_SHADERS] = {
-    IDR_NORTHERN_LIGHTS_SHADER, IDR_PASS_THROUGH_SHADER, IDR_BAR_SPECTRUM_SHADER,
-    IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER, IDR_SPECTROGRAM_SHADER};
+    IDR_NORTHERN_LIGHTS_SHADER, IDR_PASS_THROUGH_SHADER,
+    IDR_BAR_SPECTRUM_SHADER,    IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER,
+    IDR_SPECTROGRAM_SHADER,     IDR_EYE_OF_PHI_SHADER};
 #else
 #define INCBIN_SILENCE_BITCODE_WARNING
 #include "third_party/incbin.h"
@@ -60,18 +62,20 @@ INCTXT(bar_spectrum, "output/shaders/bar_spectrum.frag");
 INCTXT(northern_lightsfrag, "output/shaders/northern_lights.frag");
 INCTXT(winamp_line_style_spectrum, "output/shaders/winamp_line_style_spectrum.frag");
 INCTXT(spectrogram, "output/shaders/spectrogram.frag");
+INCTXT(eye_of_phi, "output/shaders/eye_of_phi.frag");
 
 INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
 
 // INCTXT will create a char g<name>Data
 const char *default_shader_data[NUMBER_OF_SHADERS] = {
-    gnorthern_lightsfragData, gpass_throughvertData, gbar_spectrumData,
-    gwinamp_line_style_spectrumData, gspectrogramData};
+    gnorthern_lightsfragData,        gpass_throughvertData, gbar_spectrumData,
+    gwinamp_line_style_spectrumData, gspectrogramData,      geye_of_phiData};
 #endif // _MSC_VER
 // name of the installed shader file, technically does not have to be the same as in the source
 const char *default_shader_name[NUMBER_OF_SHADERS] = {
-    "northern_lights.frag", "pass_through.vert", "bar_spectrum.frag",
-    "winamp_line_style_spectrum.frag", "spectrogram.frag"};
+    "northern_lights.frag", "pass_through.vert",
+    "bar_spectrum.frag",    "winamp_line_style_spectrum.frag",
+    "spectrogram.frag",     "eye_of_phi.frag"};
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
 
@@ -347,6 +351,12 @@ bool validate_config(struct config_params *p, struct error_s *error) {
                      "gradient in sdl is not supported with top, left or right orientation\n");
         return false;
     }
+
+    if (strcmp(fragmentShader, "eye_of_phi.frag") == 0) {
+        p->fixedbars = 8;
+        p->stereo = 0;
+    }
+
     p->xaxis = NONE;
     if (strcmp(xaxisScale, "none") == 0) {
         p->xaxis = NONE;
