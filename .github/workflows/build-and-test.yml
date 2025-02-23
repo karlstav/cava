@@ -4,7 +4,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
     - uses: DoozyX/clang-format-lint-action@v0.5
       with:
         source: '.'
@@ -13,7 +13,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
     - name: Install dependencies
       run: |
         sudo apt-get update
@@ -46,7 +46,7 @@ jobs:
   build-macos:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
     - name: Install dependencies
       run: |
         brew install fftw libtool automake portaudio iniparser sdl2
