@@ -422,26 +422,36 @@ dnl ######################
 dnl checking for iniparser
 dnl ######################
 
-AC_CHECK_LIB(iniparser,iniparser_load, have_iniparser=yes, have_iniparser=no)
+  PKG_CHECK_MODULES(INIPARSER, libiniparser, have_iniparser_pkg=yes, have_iniparser_pkg=no)
+  if [[ $have_iniparser_pkg = "yes" ]] ; then
+    LIBS="$LIBS $INIPARSER_LIBS"
+    CPPFLAGS="$CPPFLAGS $INIPARSER_CFLAGS"
+  fi
+
+  if [[ $have_iniparser_pkg = "no" ]] ; then
+    AC_CHECK_LIB(iniparser,iniparser_load, have_iniparser=yes, have_iniparser=no)
     if [[ $have_iniparser = "yes" ]] ; then
-    LIBS="$LIBS -liniparser"
-    if [[ $build_mac = "yes" ]] ; then
+      LIBS="$LIBS -liniparser"
+      if [[ $build_mac = "yes" ]] ; then
         CPPFLAGS="$CPPFLAGS -I/usr/local/include/iniparser/"
         CPPFLAGS="$CPPFLAGS -I/opt/homebrew/include/iniparser/"
-    else
+      else
         CPPFLAGS="$CPPFLAGS -I/usr/include/iniparser"
-    fi
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <iniparser.h>]],
-      [[dictionary* ini;
-      const char *keys[3];
-      iniparser_getseckeys(ini, "eq", keys);]])],
-      [AC_MSG_RESULT(iniparser > 3.2 test OK)],
-      [AC_MSG_RESULT(iniparser > 3.2 test failed falling back to legacy iniparser mode)
-      CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"])
+      fi
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <iniparser.h>]],
+        [[dictionary* ini;
+        const char *keys[3];
+        iniparser_getseckeys(ini, "eq", keys);]])],
+        [AC_MSG_RESULT(iniparser > 3.2 test OK)],
+        [AC_MSG_RESULT(iniparser > 3.2 test failed falling back to legacy iniparser mode)
+        CPPFLAGS="$CPPFLAGS -DLEGACYINIPARSER"])
     fi
     if [[ $have_iniparser = "no" ]] ; then
       AC_MSG_ERROR([iniparser library is required!])
     fi
+  fi
+
+
 
 dnl ############################
 dnl Set font directory
