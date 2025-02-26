@@ -59,3 +59,14 @@ jobs:
       run:  make CFLAGS='-Werror'
     - name: run non zero test
       run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v2
+    - name: Install dependencies
+      run: nuget restore cava_win\cava_win.sln
+    - name: Run msbuild
+      run: msbuild /p:Configuration=Debug cava_win\cava_win.sln
