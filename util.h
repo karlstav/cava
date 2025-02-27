@@ -1,6 +1,6 @@
 #pragma once
 
-#ifndef _MSC_VER
+#ifndef _WIN32
 #define max(a, b)                                                                                  \
     ({                                                                                             \
         __typeof__(a) _a = (a);                                                                    \

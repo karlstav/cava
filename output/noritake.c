@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
-#ifndef _MSC_VER
+#ifndef _WIN32
 #include <unistd.h>
 
 int print_ntk_out(int bars_count, int fd, int bit_format, int bar_width, int bar_spacing,
@@ -31,7 +31,7 @@ int print_ntk_out(int bars_count, HANDLE hFile, int bit_format, int bar_width, i
         for (k = 0; k < bar_width; k++) {
             for (j = 0; j < bar_height / 8; j++) {
                 buf_8 = bits >> (8 * (bar_height / 8 - 1 - j)) & 0xff;
-#ifndef _MSC_VER
+#ifndef _WIN32
                 write(fd, &buf_8, sizeof(int8_t));
 #else
                 WriteFile(hFile, &buf_8, sizeof(int8_t), NULL, NULL);
@@ -40,7 +40,7 @@ int print_ntk_out(int bars_count, HANDLE hFile, int bit_format, int bar_width, i
         }
         buf_8 = 0;
         for (j = 0; j < bar_height / 8 * bar_spacing; j++) {
-#ifndef _MSC_VER
+#ifndef _WIN32
             write(fd, &buf_8, sizeof(int8_t));
 #else
             WriteFile(hFile, &buf_8, sizeof(int8_t), NULL, NULL);

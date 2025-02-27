@@ -3,7 +3,7 @@
 #include "util.h"
 
 #include <ctype.h>
-#ifndef _MSC_VER
+#ifndef _WIN32
 #include <iniparser.h>
 #endif
 #include <math.h>
@@ -20,7 +20,7 @@
 
 #define NUMBER_OF_SHADERS 6
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include "Shlwapi.h"
 #include "Windows.h"
 #define TEXTFILE 256
@@ -70,7 +70,7 @@ INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
 const char *default_shader_data[NUMBER_OF_SHADERS] = {
     gnorthern_lightsfragData,        gpass_throughvertData, gbar_spectrumData,
     gwinamp_line_style_spectrumData, gspectrogramData,      geye_of_phiData};
-#endif // _MSC_VER
+#endif // _WIN32
 // name of the installed shader file, technically does not have to be the same as in the source
 const char *default_shader_name[NUMBER_OF_SHADERS] = {
     "northern_lights.frag", "pass_through.vert",
@@ -470,13 +470,13 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     char *configHome = getenv("XDG_CONFIG_HOME");
     if (configHome != NULL) {
         sprintf(cava_config_home, "%s/%s/", configHome, PACKAGE);
-#ifndef _MSC_VER
+#ifndef _WIN32
         mkdir(cava_config_home, 0777);
 #else
         CreateDirectoryA(cava_config_home, NULL);
 #endif
     } else {
-#ifndef _MSC_VER
+#ifndef _WIN32
         configHome = getenv("HOME");
 #else
         configHome = getenv("USERPROFILE");
@@ -484,14 +484,14 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
         if (configHome != NULL) {
             sprintf(cava_config_home, "%s/%s/", configHome, ".config");
-#ifndef _MSC_VER
+#ifndef _WIN32
             mkdir(cava_config_home, 0777);
 #else
             CreateDirectoryA(cava_config_home, NULL);
 #endif
 
             sprintf(cava_config_home, "%s/%s/%s/", configHome, ".config", PACKAGE);
-#ifndef _MSC_VER
+#ifndef _WIN32
             mkdir(cava_config_home, 0777);
 #else
             CreateDirectoryA(cava_config_home, NULL);
@@ -512,7 +512,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             fseek(fp, 0, SEEK_END);
             if (ftell(fp) == 0) {
                 printf("config file is empty, creating default config file\n");
-#ifdef _MSC_VER
+#ifdef _WIN32
                 DWORD gConfigFileSize = 0;
                 const char *gConfigFileData = NULL;
                 LoadFileInResource(IDR_CONFIG_FILE, TEXTFILE, &gConfigFileSize, &gConfigFileData);
@@ -532,7 +532,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             }
         }
     } else { // opening specified file
-#ifdef _MSC_VER
+#ifdef _WIN32
         // GetPrivateProfileString does not accept relative paths
         if (PathIsRelativeA(configPath) == TRUE) {
             char newPath[PATH_MAX];
@@ -554,7 +554,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     // create default shader files if they do not exist
     char *shaderPath = malloc(sizeof(char) * PATH_MAX);
     sprintf(shaderPath, "%s/shaders", cava_config_home);
-#ifndef _MSC_VER
+#ifndef _WIN32
     mkdir(shaderPath, 0777);
 #else
     CreateDirectoryA(shaderPath, NULL);
@@ -569,7 +569,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             fseek(fp, 0, SEEK_END);
             if (ftell(fp) == 0) {
                 printf("shader file is empty, creating default shader file\n");
-#ifndef _MSC_VER
+#ifndef _WIN32
                 fwrite(default_shader_data[i], strlen(default_shader_data[i]), sizeof(char), fp);
 #else
                 DWORD shaderDataSize = 0;
@@ -590,7 +590,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->vertex_shader = malloc(sizeof(char) * PATH_MAX);
     p->fragment_shader = malloc(sizeof(char) * PATH_MAX);
 
-#ifndef _MSC_VER
+#ifndef _WIN32
     // config: parse ini
     dictionary *ini;
     ini = iniparser_load(configPath);
@@ -664,7 +664,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     if (colorsOnly) {
         return validate_colors(p, error);
     }
-#ifndef _MSC_VER
+#ifndef _WIN32
 
     outputMethod = strdup(iniparser_getstring(ini, "output:method", "noncurses"));
 
