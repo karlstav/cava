@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifndef _MSC_VER
+#ifndef _WIN32
 #include <unistd.h>
 
 int print_raw_out(int bars_count, int fd, int is_binary, int bit_format, int ascii_range,
@@ -25,7 +25,7 @@ int print_raw_out(int bars_count, HANDLE hFile, int is_binary, int bit_format, i
             switch (bit_format) {
             case 16:
                 buf_16 = f_limited;
-#ifndef _MSC_VER
+#ifndef _WIN32
                 write(fd, &buf_16, sizeof(int16_t));
 #else
                 WriteFile(hFile, &buf_16, sizeof(int16_t), NULL, NULL);
@@ -33,7 +33,7 @@ int print_raw_out(int bars_count, HANDLE hFile, int is_binary, int bit_format, i
                 break;
             case 8:
                 buf_8 = f_limited;
-#ifndef _MSC_VER
+#ifndef _WIN32
                 write(fd, &buf_8, sizeof(int8_t));
 #else
                 WriteFile(hFile, &buf_8, sizeof(int8_t), NULL, NULL);
@@ -54,7 +54,7 @@ int print_raw_out(int bars_count, HANDLE hFile, int is_binary, int bit_format, i
 
             char *bar_height = malloc(bar_height_size);
             snprintf(bar_height, bar_height_size, "%d", f_ranged);
-#ifndef _MSC_VER
+#ifndef _WIN32
             write(fd, bar_height, bar_height_size - 1);
             write(fd, &bar_delim, sizeof(bar_delim));
 #else
@@ -63,7 +63,7 @@ int print_raw_out(int bars_count, HANDLE hFile, int is_binary, int bit_format, i
 #endif
             free(bar_height);
         }
-#ifndef _MSC_VER
+#ifndef _WIN32
         write(fd, &frame_delim, sizeof(frame_delim));
 #else
         WriteFile(hFile, &frame_delim, sizeof(frame_delim), NULL, NULL);

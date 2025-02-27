@@ -1,16 +1,16 @@
-#ifdef _MSC_VER
+#ifdef _WIN32
 #define _CRT_SECURE_NO_WARNINGS 1
 #include <SDL.h>
 #else
 #include <SDL2/SDL.h>
 #endif
 
-#include "output/sdl_cava.h"
+#include "sdl_cava.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "util.h"
+#include "../util.h"
 
 #define MAX_GRADIENT_COLOR_DEFS 8
 

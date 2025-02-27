@@ -49,7 +49,7 @@
 #define HAS_JACK false
 #endif
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #define HAS_WINSCAP true
 #define SDL true
 #define HAS_FIFO false
