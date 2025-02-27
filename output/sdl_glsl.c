@@ -1,5 +1,5 @@
 #define GL_GLEXT_PROTOTYPES 0
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <GL/glew.h>
 #include <SDL.h>
 #else
@@ -81,7 +81,7 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
         exit(1);
     }
 
-#ifdef _MSC_VER
+#ifdef _WIN32
     // Initialize GLEW
     glewExperimental = GL_TRUE;
     GLenum glewError = glewInit();

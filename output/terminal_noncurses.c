@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
 #include <windows.h>
@@ -31,7 +31,7 @@ int ttybuf_length;
 
 int setecho(int fd, int onoff) {
 
-#ifdef _MSC_VER
+#ifdef _WIN32
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
     DWORD mode = 0;
     GetConsoleMode(hStdin, &mode);
@@ -160,7 +160,7 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
     }
 
     col += 30;
-#ifdef _MSC_VER
+#ifdef _WIN32
     HANDLE hStdOut = NULL;
     CONSOLE_CURSOR_INFO curInfo;
 
@@ -252,7 +252,7 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
         gradient_colors[lines - 1] = gradient_color_defs[gradient_count - 1];
     }
 
-#ifdef _MSC_VER
+#ifdef _WIN32
     setecho(1, 0);
 #else
     setecho(STDIN_FILENO, 0);
@@ -262,7 +262,7 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
 
 void get_terminal_dim_noncurses(int *width, int *lines) {
 
-#ifdef _MSC_VER
+#ifdef _WIN32
     CONSOLE_SCREEN_BUFFER_INFO csbi;
 
     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
@@ -471,7 +471,7 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
 }
 
 void cleanup_terminal_noncurses(void) {
-#ifdef _MSC_VER
+#ifdef _WIN32
     setecho(1, 1);
     HANDLE hStdOut = NULL;
     CONSOLE_CURSOR_INFO curInfo;

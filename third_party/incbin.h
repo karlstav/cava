@@ -82,7 +82,7 @@
 #  define INCBIN_MACRO ".incbin"
 #endif
 
-#ifndef _MSC_VER
+#ifndef _WIN32
 #  define INCBIN_ALIGN \
     __attribute__((aligned(INCBIN_ALIGNMENT)))
 #else
@@ -396,7 +396,7 @@
  * To externally reference the data included by this in another translation unit
  * please @see INCBIN_EXTERN.
  */
-#ifdef _MSC_VER
+#ifdef _WIN32
 #  define INCBIN(NAME, FILENAME) \
       INCBIN_EXTERN(NAME)
 #else
@@ -465,7 +465,7 @@
  * To externally reference the data included by this in another translation unit
  * please @see INCBIN_EXTERN.
  */
-#if defined(_MSC_VER)
+#if defined(_WIN32)
 #  define INCTXT(NAME, FILENAME) \
      INCBIN_EXTERN(NAME)
 #else
