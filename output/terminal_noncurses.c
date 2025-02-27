@@ -1,4 +1,4 @@
-#include "output/terminal_noncurses.h"
+#include "terminal_noncurses.h"
 
 #include <locale.h>
 #include <math.h>
