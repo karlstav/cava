@@ -20,6 +20,29 @@ if (ANDROID)
 	target_include_directories(cavacore PRIVATE "${FFTW_DIR}/jni/fftw3/api/")
 	target_link_directories(cavacore PRIVATE "${FFTW_DIR}/obj/local/${CMAKE_ANDROID_ARCH_ABI}/")
 	target_link_libraries(cavacore fftw3)
+elseif(WIN32)
+	find_package(FFTW3)
+	find_package(GLEW)
+	find_package(SDL2)
+	find_package(Threads)
+
+	add_executable(cava
+		cava.c
+		cavacore.c
+		config.c
+		input/common.c
+		input/winscap.c
+		output/sdl_cava.c
+		output/sdl_glsl.c
+		output/terminal_noncurses.c
+		output/raw.c
+		output/noritake.c
+		cava_win/cava/cava.rc
+	)
+
+	target_compile_definitions(cava PRIVATE SDL SDL_GSL NDEBUG)
+	target_include_directories(cava PRIVATE ${GLEW_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS})
+	target_link_libraries(cava PRIVATE pthread shlwapi fftw3 GLEW::GLEW SDL2::SDL2)
 else()
 	add_library(cavacore STATIC cavacore.c)
 endif()
