@@ -154,7 +154,11 @@ void cleanup(void) {
 }
 
 // general: handle signals
+#ifdef _WIN32
+int sig_handler(DWORD sig_no) {
+#else
 void sig_handler(int sig_no) {
+#endif
 #ifndef _WIN32
 
     if (sig_no == SIGUSR1) {
@@ -174,7 +178,7 @@ void sig_handler(int sig_no) {
     if (sig_no == CTRL_C_EVENT || sig_no == CTRL_CLOSE_EVENT) {
         sig_no = SIGINT;
     } else {
-        return;
+        return TRUE;
     }
 #endif
     if (sig_no == SIGINT) {
@@ -183,6 +187,9 @@ void sig_handler(int sig_no) {
 
     signal(sig_no, SIG_DFL);
     raise(sig_no);
+#ifdef _WIN32
+    return TRUE;
+#endif
 }
 
 #ifdef ALSA
