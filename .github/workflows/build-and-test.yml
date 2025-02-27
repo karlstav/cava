@@ -70,3 +70,22 @@ jobs:
       run: nuget restore cava_win\cava_win.sln
     - name: Run msbuild
       run: msbuild /p:Configuration=Debug cava_win\cava_win.sln
+
+  build-mingw:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        msystem: [ucrt64, clang64]
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{matrix.msystem}}
+        pacboy: cc cmake fftw glew ninja SDL2
+    - name: Run cmake build
+      run: |
+        cmake -B bin
+        cmake --build bin
