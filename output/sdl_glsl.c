@@ -86,7 +86,7 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
     glewExperimental = GL_TRUE;
     GLenum glewError = glewInit();
     if (glewError != GLEW_OK) {
-        printf(stderr, "Error initializing GLEW! %s\n", glewGetErrorString(glewError));
+        fprintf(stderr, "Error initializing GLEW! %s\n", glewGetErrorString(glewError));
         exit(1);
     }
 #endif
