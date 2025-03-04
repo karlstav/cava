@@ -631,9 +631,6 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 if (p.xaxis != NONE)
                     lines--;
 
-                init_terminal_noncurses(inAtty, p.color, p.bcolor, p.col, p.bgcol, p.gradient,
-                                        p.gradient_count, p.gradient_colors, width, lines,
-                                        p.bar_width, p.orientation);
                 height = lines * 8;
                 break;
             case OUTPUT_RAW:
@@ -753,6 +750,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         2;
             if (remainder < 0)
                 remainder = 0;
+
+            if (output_mode == OUTPUT_NONCURSES) {
+                init_terminal_noncurses(inAtty, p.color, p.bcolor, p.col, p.bgcol, p.gradient,
+                                        p.gradient_count, p.gradient_colors, p.horizontal_gradient,
+                                        p.horizontal_gradient_count, p.horizontal_gradient_colors,
+                                        number_of_bars, width, lines, p.bar_width, p.orientation,
+                                        p.blendDirection);
+            }
 
 #ifndef NDEBUG
             debug("height: %d width: %d dimension_bar: %d dimension_value: %d bars:%d bar width: "
@@ -1202,19 +1207,19 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 #endif
                 case OUTPUT_NONCURSES:
                     if (p.orientation == ORIENT_SPLIT_H) {
-                        rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars,
-                                                     p.bar_width, p.bar_spacing, remainder, bars,
-                                                     previous_frame, p.gradient, x_axis_info,
-                                                     ORIENT_BOTTOM, 1);
-                        rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars,
-                                                     p.bar_width, p.bar_spacing, remainder, bars,
-                                                     previous_frame, p.gradient, x_axis_info,
-                                                     ORIENT_TOP, 1);
+                        rc = draw_terminal_noncurses(
+                            inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
+                            remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
+                            x_axis_info, ORIENT_BOTTOM, 1);
+                        rc = draw_terminal_noncurses(
+                            inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
+                            remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
+                            x_axis_info, ORIENT_TOP, 1);
                     } else {
-                        rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars,
-                                                     p.bar_width, p.bar_spacing, remainder, bars,
-                                                     previous_frame, p.gradient, x_axis_info,
-                                                     p.orientation, 0);
+                        rc = draw_terminal_noncurses(
+                            inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
+                            remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
+                            x_axis_info, p.orientation, 0);
                     }
                     break;
                 case OUTPUT_NCURSES:

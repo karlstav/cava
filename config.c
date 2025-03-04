@@ -85,7 +85,7 @@ enum input_method default_methods[] = {
 };
 
 char *outputMethod, *orientation, *channels, *xaxisScale, *monoOption, *fragmentShader,
-    *vertexShader;
+    *vertexShader, *blendDirection;
 
 const char *input_method_names[] = {
     "fifo", "portaudio", "pipewire", "alsa", "pulse", "sndio", "oss", "jack", "shmem", "winscap",
@@ -177,6 +177,27 @@ bool validate_colors(void *params, void *err) {
 
         for (int i = 0; i < p->gradient_count; i++) {
             if (!validate_color(p->gradient_colors[i], p, error)) {
+                write_errorf(
+                    error,
+                    "Gradient color %d is invalid. It must be HTML color of the form '#xxxxxx'.\n",
+                    i + 1);
+                return false;
+            }
+        }
+    }
+
+    if (p->horizontal_gradient) {
+        if (p->horizontal_gradient_count < 2) {
+            write_errorf(error, "\nAt least two colors must be given as gradient!\n");
+            return false;
+        }
+        if (p->horizontal_gradient_count > 8) {
+            write_errorf(error, "\nMaximum 8 colors can be specified as gradient!\n");
+            return false;
+        }
+
+        for (int i = 0; i < p->horizontal_gradient_count; i++) {
+            if (!validate_color(p->horizontal_gradient_colors[i], p, error)) {
                 write_errorf(
                     error,
                     "Gradient color %d is invalid. It must be HTML color of the form '#xxxxxx'.\n",
@@ -317,6 +338,17 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         return false;
     }
 
+    p->blendDirection = ORIENT_BOTTOM;
+    if (strcmp(blendDirection, "down") == 0) {
+        p->blendDirection = ORIENT_TOP;
+    }
+    if (strcmp(blendDirection, "left") == 0) {
+        p->blendDirection = ORIENT_LEFT;
+    }
+    if (strcmp(blendDirection, "right") == 0) {
+        p->blendDirection = ORIENT_RIGHT;
+    }
+
     p->orientation = ORIENT_BOTTOM;
     if (strcmp(orientation, "top") == 0) {
         p->orientation = ORIENT_TOP;
@@ -346,7 +378,8 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         return false;
     }
 
-    if ((p->orientation != ORIENT_BOTTOM && p->output == OUTPUT_SDL && p->gradient != 0)) {
+    if ((p->orientation != ORIENT_BOTTOM && p->output == OUTPUT_SDL &&
+         (p->gradient != 0 || p->horizontal_gradient != 0))) {
         write_errorf(error,
                      "gradient in sdl is not supported with top, left or right orientation\n");
         return false;
@@ -587,6 +620,10 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     for (int i = 0; i < 8; ++i) {
         p->gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);
     }
+    p->horizontal_gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
+    for (int i = 0; i < 8; ++i) {
+        p->horizontal_gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);
+    }
     p->vertex_shader = malloc(sizeof(char) * PATH_MAX);
     p->fragment_shader = malloc(sizeof(char) * PATH_MAX);
 
@@ -605,6 +642,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     for (int i = 0; i < 8; ++i) {
         free(p->gradient_colors[i]);
     }
+
     free(p->gradient_colors);
     p->gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
     p->gradient_colors[0] = strdup(iniparser_getstring(ini, "color:gradient_color_1", "not_set"));
@@ -615,6 +653,29 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->gradient_colors[5] = strdup(iniparser_getstring(ini, "color:gradient_color_6", "not_set"));
     p->gradient_colors[6] = strdup(iniparser_getstring(ini, "color:gradient_color_7", "not_set"));
     p->gradient_colors[7] = strdup(iniparser_getstring(ini, "color:gradient_color_8", "not_set"));
+
+    p->horizontal_gradient = iniparser_getint(ini, "color:horizontal_gradient", 0);
+    for (int i = 0; i < 8; ++i) {
+        free(p->horizontal_gradient_colors[i]);
+    }
+    free(p->horizontal_gradient_colors);
+    p->horizontal_gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
+    p->horizontal_gradient_colors[0] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_1", "not_set"));
+    p->horizontal_gradient_colors[1] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_2", "not_set"));
+    p->horizontal_gradient_colors[2] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_3", "not_set"));
+    p->horizontal_gradient_colors[3] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_4", "not_set"));
+    p->horizontal_gradient_colors[4] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_5", "not_set"));
+    p->horizontal_gradient_colors[5] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_6", "not_set"));
+    p->horizontal_gradient_colors[6] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_7", "not_set"));
+    p->horizontal_gradient_colors[7] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_8", "not_set"));
 
 #else
     outputMethod = malloc(sizeof(char) * 32);
@@ -628,6 +689,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->raw_target = malloc(sizeof(char) * 129);
     p->data_format = malloc(sizeof(char) * 32);
     orientation = malloc(sizeof(char) * 32);
+    blendDirection = malloc(sizeof(char) * 32);
     vertexShader = malloc(sizeof(char) * PATH_MAX / 2);
     fragmentShader = malloc(sizeof(char) * PATH_MAX / 2);
 
@@ -652,11 +714,37 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     GetPrivateProfileString("color", "gradient_color_8", "not_set", p->gradient_colors[7], 9,
                             configPath);
 
+    p->horizontal_gradient = GetPrivateProfileInt("color", "horizontal_gradient", 0, configPath);
+
+    GetPrivateProfileString("color", "horizontal_gradient_color_1", "not_set",
+                            p->horizontal_gradient_colors[0], 9, configPath);
+    GetPrivateProfileString("color", "horizontal_gradient_color_2", "not_set",
+                            p->horizontal_gradient_colors[1], 9, configPath);
+    GetPrivateProfileString("color", "horizontal_gradient_color_3", "not_set",
+                            p->horizontal_gradient_colors[2], 9, configPath);
+    GetPrivateProfileString("color", "horizontal_gradient_color_4", "not_set",
+                            p->horizontal_gradient_colors[3], 9, configPath);
+    GetPrivateProfileString("color", "horizontal_gradient_color_5", "not_set",
+                            p->horizontal_gradient_colors[4], 9, configPath);
+    GetPrivateProfileString("color", "horizontal_gradient_color_6", "not_set",
+                            p->horizontal_gradient_colors[5], 9, configPath);
+    GetPrivateProfileString("color", "horizontal_gradient_color_7", "not_set",
+                            p->horizontal_gradient_colors[6], 9, configPath);
+    GetPrivateProfileString("color", "horizontal_gradient_color_8", "not_set",
+                            p->horizontal_gradient_colors[7], 9, configPath);
+
 #endif
     p->gradient_count = 0;
     for (int i = 0; i < 7; ++i) {
         if (strcmp(p->gradient_colors[i], "not_set") != 0)
             p->gradient_count++;
+        else
+            break;
+    }
+    p->horizontal_gradient_count = 0;
+    for (int i = 0; i < 7; ++i) {
+        if (strcmp(p->horizontal_gradient_colors[i], "not_set") != 0)
+            p->horizontal_gradient_count++;
         else
             break;
     }
@@ -705,6 +793,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     free(p->data_format);
     free(vertexShader);
     free(fragmentShader);
+    free(blendDirection);
 
     channels = strdup(iniparser_getstring(ini, "output:channels", "stereo"));
     monoOption = strdup(iniparser_getstring(ini, "output:mono_option", "average"));
@@ -715,6 +804,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->frame_delim = (char)iniparser_getint(ini, "output:frame_delimiter", 10);
     p->ascii_range = iniparser_getint(ini, "output:ascii_max_range", 1000);
     p->bit_format = iniparser_getint(ini, "output:bit_format", 16);
+    blendDirection = strdup(iniparser_getstring(ini, "color:blend_direction", "up"));
 
     p->sdl_width = iniparser_getint(ini, "output:sdl_width", 1000);
     p->sdl_height = iniparser_getint(ini, "output:sdl_height", 500);
@@ -854,6 +944,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->noise_reduction = GetPrivateProfileInt("smoothing", "noise_reduction", 77, configPath);
     GetPrivateProfileString("output", "xaxis", "none", xaxisScale, 16, configPath);
     GetPrivateProfileString("output", "orientation", "bottom", orientation, 16, configPath);
+    GetPrivateProfileString("color", "blend_orientation", "up", orientation, 16, configPath);
 
     p->fixedbars = GetPrivateProfileInt("general", "bars", 0, configPath);
 

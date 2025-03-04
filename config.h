@@ -103,9 +103,8 @@ enum orientation {
 };
 
 struct config_params {
-    char *color, *bcolor, *raw_target, *audio_source,
-        /**gradient_color_1, *gradient_color_2,*/ **gradient_colors, *data_format, *vertex_shader,
-        *fragment_shader;
+    char *color, *bcolor, *raw_target, *audio_source, **gradient_colors,
+        **horizontal_gradient_colors, *data_format, *vertex_shader, *fragment_shader;
 
     char bar_delim, frame_delim;
     double monstercat, integral, gravity, ignore, sens, noise_reduction;
@@ -116,12 +115,13 @@ struct config_params {
     enum xaxis_scale xaxis;
     enum mono_option mono_opt;
     enum orientation orientation;
+    enum orientation blendDirection;
     int userEQ_keys, userEQ_enabled, col, bgcol, autobars, stereo, raw_format, ascii_range,
-        bit_format, gradient, gradient_count, fixedbars, framerate, bar_width, bar_spacing,
-        bar_height, autosens, overshoot, waves, samplerate, samplebits, channels, autoconnect,
-        sleep_timer, sdl_width, sdl_height, sdl_x, sdl_y, sdl_full_screen, draw_and_quit, zero_test,
-        non_zero_test, reverse, sync_updates, continuous_rendering, disable_blanking,
-        show_idle_bar_heads, waveform;
+        bit_format, gradient, gradient_count, horizontal_gradient, horizontal_gradient_count,
+        fixedbars, framerate, bar_width, bar_spacing, bar_height, autosens, overshoot, waves,
+        samplerate, samplebits, channels, autoconnect, sleep_timer, sdl_width, sdl_height, sdl_x,
+        sdl_y, sdl_full_screen, draw_and_quit, zero_test, non_zero_test, reverse, sync_updates,
+        continuous_rendering, disable_blanking, show_idle_bar_heads, waveform;
 };
 
 struct error_s {

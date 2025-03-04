@@ -242,6 +242,25 @@
 ; gradient_color_8 = '#cc3333'
 
 
+# Horizontal is only supported on noncurses output.
+# Only one color will be calculated per bar.
+; horizontal_gradient = 0
+; horizontal_gradient_color_1 = '#c45161'
+; horizontal_gradient_color_2 = '#e094a0'
+; horizontal_gradient_color_3 = '#f2b6c0'
+; horizontal_gradient_color_4 = '#f2dde1'
+; horizontal_gradient_color_5 = '#cbc7d8'
+; horizontal_gradient_color_6 = '#8db7d2'
+; horizontal_gradient_color_7 = '#5e62a9'
+; horizontal_gradient_color_8 = '#434279'
+
+
+# If both vertical and horizontal gradient is enabled, vertical will be blended in this direction.
+# Can be 'up', 'down', 'left' or 'right'. 'up' means the vertical gradient will be blended in from
+# bottom to top. I.e. the bottom will be only the horizontal
+# and top will be only the color of the vertical gradient.
+; blend_direction = 'up'
+
 
 [smoothing]
 
