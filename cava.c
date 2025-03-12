@@ -544,7 +544,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
 
         if (p.upper_cut_off > audio.rate / 2) {
             cleanup();
-            fprintf(stderr, "higher cutoff frequency can't be higher than sample rate / 2");
+            fprintf(stderr,
+                    "higher cutoff frequency can't be higher than sample rate / 2\nhigher "
+                    "cutoff frequency is set to: %d, got sample rate: %d\n",
+                    p.upper_cut_off, audio.rate);
             exit(EXIT_FAILURE);
         }
 
