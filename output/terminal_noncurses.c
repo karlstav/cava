@@ -467,7 +467,8 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
                         center_adjusted = 1;
                     }
 
-                    if (current_cell < 8 || current_cell > 0) {
+                    // horizontal gradient
+                    if (current_cell > 0) {
                         if (!gradient && horizontal_gradient) {
                             cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx,
                                            "\033[38;2;%d;%d;%dm",
@@ -537,7 +538,8 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
                         center_adjusted = 1;
                     }
 
-                    if (current_cell < 8 || current_cell > 0) {
+                    // horizontal gradient
+                    if (current_cell > 0) {
                         if (!gradient && horizontal_gradient) {
                             cx +=
                                 swprintf(frame_buffer + cx, buf_length - cx, L"\033[38;2;%d;%d;%dm",
