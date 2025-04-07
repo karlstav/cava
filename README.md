@@ -212,9 +212,9 @@ running:
 
 #### Arch
 
-Cava is in [AUR](https://aur.archlinux.org/packages/cava/).
+Cava is available in Arch Linux official repo:
 
-    pacaur -S cava
+    pacman -S cava
 
 #### Ubuntu/Debian
 
