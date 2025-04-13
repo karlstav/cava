@@ -261,6 +261,10 @@
 # and top will be only the color of the vertical gradient.
 ; blend_direction = 'up'
 
+# use theme file instead of defining colors in this file
+# themes are located in $HOME/.config/cava/themes
+; theme = 'none'
+
 
 [smoothing]
 
