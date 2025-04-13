@@ -104,7 +104,7 @@ enum orientation {
 
 struct config_params {
     char *color, *bcolor, *raw_target, *audio_source, **gradient_colors,
-        **horizontal_gradient_colors, *data_format, *vertex_shader, *fragment_shader;
+        **horizontal_gradient_colors, *data_format, *vertex_shader, *fragment_shader, *theme;
 
     char bar_delim, frame_delim;
     double monstercat, integral, gravity, ignore, sens, noise_reduction;

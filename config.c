@@ -20,6 +20,8 @@
 
 #define NUMBER_OF_SHADERS 6
 
+#define NUMBER_OF_THEMES 2
+
 #ifdef _WIN32
 #include "Shlwapi.h"
 #include "Windows.h"
@@ -31,6 +33,10 @@
 #define IDR_SPECTROGRAM_SHADER 105
 #define IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER 106
 #define IDR_EYE_OF_PHI_SHADER 107
+
+#define IDR_SOLARIZED_DARK_THEME 501
+#define IDR_TRICOLOR_THEME 502
+
 #define PATH_MAX 260
 #define PACKAGE "cava"
 #define _CRT_SECURE_NO_WARNINGS 1
@@ -51,6 +57,8 @@ int default_shader_data[NUMBER_OF_SHADERS] = {
     IDR_NORTHERN_LIGHTS_SHADER, IDR_PASS_THROUGH_SHADER,
     IDR_BAR_SPECTRUM_SHADER,    IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER,
     IDR_SPECTROGRAM_SHADER,     IDR_EYE_OF_PHI_SHADER};
+
+int default_theme_data[NUMBER_OF_THEMES] = {IDR_SOLARIZED_DARK_THEME, IDR_TRICOLOR_THEME;
 #else
 #define INCBIN_SILENCE_BITCODE_WARNING
 #include "third_party/incbin.h"
@@ -76,6 +84,11 @@ const char *default_shader_name[NUMBER_OF_SHADERS] = {
     "northern_lights.frag", "pass_through.vert",
     "bar_spectrum.frag",    "winamp_line_style_spectrum.frag",
     "spectrogram.frag",     "eye_of_phi.frag"};
+
+INCTXT(solarized_dark, "output/themes/solarized_dark");
+INCTXT(tricolor, "output/themes/tricolor");
+const char *default_theme_data[NUMBER_OF_THEMES] = {gsolarized_darkData, gtricolorData};
+const char *default_theme_name[NUMBER_OF_THEMES] = {"solarized_dark", "tricolor"};
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
 
@@ -616,6 +629,39 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         }
     }
     free(shaderPath);
+
+    // create default theme files if they do not exist
+    char *themePath = malloc(sizeof(char) * PATH_MAX);
+    sprintf(themePath, "%s/themes", cava_config_home);
+#ifndef _WIN32
+    mkdir(themePath, 0777);
+#else
+    CreateDirectoryA(themePath, NULL);
+#endif
+    for (int i = 0; i < NUMBER_OF_THEMES; i++) {
+        char *themeFile = malloc(sizeof(char) * PATH_MAX);
+        sprintf(themeFile, "%s/%s", themePath, default_theme_name[i]);
+
+        fp = fopen(themeFile, "ab+");
+        if (fp) {
+            fseek(fp, 0, SEEK_END);
+            if (ftell(fp) == 0) {
+                printf("theme file is empty, creating default theme file\n");
+#ifndef _WIN32
+                fwrite(default_theme_data[i], strlen(default_theme_data[i]), sizeof(char), fp);
+#else
+                DWORD themeDataSize = 0;
+                const char *themeData = NULL;
+                LoadFileInResource(default_theme_data[i], TEXTFILE, &themeDataSize, &themeData);
+                fwrite(themeData, themeDataSize, sizeof(char), fp);
+#endif
+            }
+            fclose(fp);
+            free(themeFile);
+        }
+    }
+    free(themePath);
+
     p->gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
     for (int i = 0; i < 8; ++i) {
         p->gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);
@@ -627,6 +673,9 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->vertex_shader = malloc(sizeof(char) * PATH_MAX);
     p->fragment_shader = malloc(sizeof(char) * PATH_MAX);
 
+    p->theme = malloc(sizeof(char) * PATH_MAX);
+    char *themeFile = malloc(sizeof(char) * PATH_MAX);
+
 #ifndef _WIN32
     // config: parse ini
     dictionary *ini;
@@ -634,6 +683,21 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     free(p->color);
     free(p->bcolor);
+
+    p->theme = strdup(iniparser_getstring(ini, "color:theme", "none"));
+
+    if (strcmp(p->theme, "none") != 0) {
+        sprintf(themeFile, "%s/themes/%s", cava_config_home, p->theme);
+        fp = fopen(themeFile, "rb");
+        if (fp) {
+            fclose(fp);
+        } else {
+            write_errorf(error, "Unable to open theme file '%s', exiting...\n", themeFile);
+            return false;
+        }
+        iniparser_freedict(ini);
+        ini = iniparser_load(themeFile);
+    }
 
     p->color = strdup(iniparser_getstring(ini, "color:foreground", "default"));
     p->bcolor = strdup(iniparser_getstring(ini, "color:background", "default"));
@@ -693,6 +757,22 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     vertexShader = malloc(sizeof(char) * PATH_MAX / 2);
     fragmentShader = malloc(sizeof(char) * PATH_MAX / 2);
 
+    GetPrivateProfileString("color", "theme", "none", p->theme, 64, configPath);
+
+    char *configFileBak = configPath;
+
+    if (strcmp(p->theme, "none") != 0) {
+        sprintf(themeFile, "%s/themes/%s", cava_config_home, p->theme);
+        fp = fopen(themeFile, "rb");
+        if (fp) {
+            fclose(fp);
+            configPath = themeFile;
+        } else {
+            write_errorf(error, "Unable to open theme file '%s', exiting...\n", themeFile);
+            return false;
+        }
+    }
+
     GetPrivateProfileString("color", "foreground", "default", p->color, 9, configPath);
     GetPrivateProfileString("color", "background", "default", p->bcolor, 9, configPath);
     p->gradient = GetPrivateProfileInt("color", "gradient", 0, configPath);
@@ -733,6 +813,10 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     GetPrivateProfileString("color", "horizontal_gradient_color_8", "not_set",
                             p->horizontal_gradient_colors[7], 9, configPath);
 
+    if (strcmp(p->theme, "none") != 0) {
+        configPath = configFileBak;
+    }
+
 #endif
     p->gradient_count = 0;
     for (int i = 0; i < 7; ++i) {
@@ -748,6 +832,11 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         else
             break;
     }
+    if (strcmp(p->theme, "none") != 0) {
+        iniparser_freedict(ini);
+        ini = iniparser_load(configPath);
+    }
+    free(themeFile);
 
     if (colorsOnly) {
         return validate_colors(p, error);
