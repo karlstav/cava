@@ -695,6 +695,8 @@ You can also use Cava's output for other programs by using raw output mode, whic
 
 A useful starting point example script written in python that consumes raw data can be found [here](https://github.com/karlstav/cava/issues/123#issuecomment-307891020).
 
+### cava2sse
+is a stand-alone component for making Cava's raw values available as [server-sent events](https://en.wikipedia.org/wiki/Server-sent_events). With this, any application can use CAVA's output data over the network.
 
 Contribution
 ------
