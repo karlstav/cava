@@ -134,7 +134,7 @@
 #
 # 'raw' is an 8 or 16 bit (configurable via the 'bit_format' option) data
 # stream of the bar heights that can be used to send to other applications.
-# 'raw' defaults to 200 bars, which can be adjusted in the 'bars' option above.
+# 'raw' defaults to 1024 bars stereo (512 bars mono), which can be adjusted in the 'bars' option above.
 #
 # 'noritake' outputs a bitmap in the format expected by a Noritake VFD display
 #  in graphic mode. It only support the 3000 series graphical VFDs for now.
@@ -181,8 +181,8 @@
 ; frame_delimiter = 10
 
 # sdl window size and position. -1,-1 is centered.
-; sdl_width = 1000
-; sdl_height = 500
+; sdl_width = 1024
+; sdl_height = 512
 ; sdl_x = -1
 ; sdl_y= -1
 ; sdl_full_screen = 0

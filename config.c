@@ -895,8 +895,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->bit_format = iniparser_getint(ini, "output:bit_format", 16);
     blendDirection = strdup(iniparser_getstring(ini, "color:blend_direction", "up"));
 
-    p->sdl_width = iniparser_getint(ini, "output:sdl_width", 1000);
-    p->sdl_height = iniparser_getint(ini, "output:sdl_height", 500);
+    p->sdl_width = iniparser_getint(ini, "output:sdl_width", 1024);
+    p->sdl_height = iniparser_getint(ini, "output:sdl_height", 512);
     p->sdl_x = iniparser_getint(ini, "output:sdl_x", -1);
     p->sdl_y = iniparser_getint(ini, "output:sdl_y", -1);
     p->sdl_full_screen = iniparser_getint(ini, "output:sdl_full_screen", 0);
