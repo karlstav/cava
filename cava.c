@@ -551,6 +551,14 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             exit(EXIT_FAILURE);
         }
 
+        // force stereo if only one channel is available
+        if (p.stereo && audio_channels == 1)
+            p.stereo = 0;
+
+        int output_channels = 1;
+        if (p.stereo)
+            output_channels = 2;
+
         int *bars;
         int *previous_frame;
 
@@ -691,11 +699,11 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 debug("open file %s for writing raw output\n", p.raw_target);
 #endif
 
-                // width must be hardcoded for raw output.
-                width = 512;
-
-                p.bar_width = 1; // not used
-                p.bar_spacing = 1;
+                // width must be hardcoded for raw output. only used to calculate the number of
+                // bars in auto mode
+                width = 512 * output_channels;
+                p.bar_width = 1;
+                p.bar_spacing = 0;
 
                 if (strcmp(p.data_format, "ascii") != 0) {
                     // "binary" or "noritake"
@@ -708,42 +716,57 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 exit(EXIT_FAILURE); // Can't happen.
             }
 
-            // force stereo if only one channel is available
-            if (p.stereo && audio_channels == 1)
-                p.stereo = 0;
-
+            // getting numbers of bars
+            int number_of_bars = -1;
             // handle for user setting too many bars
             if (p.fixedbars) {
-                p.autobars = 0;
-                if (p.fixedbars * p.bar_width + p.fixedbars * p.bar_spacing - p.bar_spacing > width)
-                    p.autobars = 1;
-            }
-
-            // getting numbers of bars
-            int number_of_bars = p.fixedbars;
-
-            if (p.autobars == 1)
+                number_of_bars = p.fixedbars;
+                if (number_of_bars * p.bar_width + p.fixedbars * p.bar_spacing - p.bar_spacing >
+                    width) {
+                    cleanup();
+                    fprintf(stderr, "window is too narrow for number of bars set, maximum is %d\n",
+                            (width - p.bar_spacing) / (p.bar_width + p.bar_spacing));
+                    audio.terminate = 1;
+                    exit(EXIT_FAILURE);
+                }
+                if (number_of_bars <= 1) {
+                    cleanup();
+                    fprintf(stderr, "fixed number of bars must be at least 1\n");
+                    exit(EXIT_FAILURE);
+                }
+                if (output_channels == 2 && number_of_bars % 2 != 0) {
+                    cleanup();
+                    fprintf(stderr, "must have even number of bars with stereo output\n");
+                    exit(EXIT_FAILURE);
+                }
+            } else {
                 number_of_bars = (*dimension_bar + p.bar_spacing) / (p.bar_width + p.bar_spacing);
 
-            if (number_of_bars <= 1) {
-                number_of_bars = 1; // must have at least 1 bars
-                if (p.stereo) {
-                    number_of_bars = 2; // stereo have at least 2 bars
+                if (output_mode == OUTPUT_SDL_GLSL) {
+                    if (number_of_bars > 512)
+                        number_of_bars = 512; // cant have more than 512 bars in glsl due to shader
+                                              // program implementation limitations
+                } else {
+                    if (number_of_bars / output_channels > 512)
+                        number_of_bars = 512 * output_channels; // cant have more than 512 bars on
+                                                                // 44100 rate per channel
                 }
-            }
-            if (number_of_bars > 512)
-                number_of_bars = 512; // cant have more than 512 bars on 44100 rate
 
-            int output_channels = 1;
-            if (p.stereo) { // stereo must have even numbers of bars
-                output_channels = 2;
-                if (number_of_bars % 2 != 0)
-                    number_of_bars--;
+                if (number_of_bars <= 1) {
+                    number_of_bars = 1; // must have at least 1 bars
+                    if (p.stereo) {
+                        number_of_bars = 2; // stereo have at least 2 bars
+                    }
+                }
+                if (output_channels == 2 && number_of_bars % 2 != 0)
+                    number_of_bars--; // stereo must have even numbers of bars
             }
+
             int raw_number_of_bars = (number_of_bars / output_channels) * audio_channels;
             if (p.waveform) {
                 raw_number_of_bars = number_of_bars;
             }
+
             // checks if there is stil extra room, will use this to center
             remainder = (*dimension_bar - number_of_bars * p.bar_width -
                          number_of_bars * p.bar_spacing + p.bar_spacing) /
