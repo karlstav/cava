@@ -74,20 +74,22 @@ INCTXT(eye_of_phi, "output/shaders/eye_of_phi.frag");
 
 INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
 
+INCTXT(solarized_dark, "output/themes/solarized_dark");
+INCTXT(tricolor, "output/themes/tricolor");
+
 // INCTXT will create a char g<name>Data
 const char *default_shader_data[NUMBER_OF_SHADERS] = {
     gnorthern_lightsfragData,        gpass_throughvertData, gbar_spectrumData,
     gwinamp_line_style_spectrumData, gspectrogramData,      geye_of_phiData};
+
+const char *default_theme_data[NUMBER_OF_THEMES] = {gsolarized_darkData, gtricolorData};
 #endif // _WIN32
+
 // name of the installed shader file, technically does not have to be the same as in the source
 const char *default_shader_name[NUMBER_OF_SHADERS] = {
     "northern_lights.frag", "pass_through.vert",
     "bar_spectrum.frag",    "winamp_line_style_spectrum.frag",
     "spectrogram.frag",     "eye_of_phi.frag"};
-
-INCTXT(solarized_dark, "output/themes/solarized_dark");
-INCTXT(tricolor, "output/themes/tricolor");
-const char *default_theme_data[NUMBER_OF_THEMES] = {gsolarized_darkData, gtricolorData};
 const char *default_theme_name[NUMBER_OF_THEMES] = {"solarized_dark", "tricolor"};
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
@@ -832,10 +834,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         else
             break;
     }
-    if (strcmp(p->theme, "none") != 0) {
-        iniparser_freedict(ini);
-        ini = iniparser_load(configPath);
-    }
+
     free(themeFile);
 
     if (colorsOnly) {
@@ -843,6 +842,10 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     }
 #ifndef _WIN32
 
+    if (strcmp(p->theme, "none") != 0) {
+        iniparser_freedict(ini);
+        ini = iniparser_load(configPath);
+    }
     outputMethod = strdup(iniparser_getstring(ini, "output:method", "noncurses"));
 
     orientation = strdup(iniparser_getstring(ini, "output:orientation", "bottom"));
