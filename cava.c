@@ -956,26 +956,28 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                     break;
                 case 'o': // change orientation 
                     if (output_mode == OUTPUT_NCURSES) {
-                      if (p.orientation == ORIENT_BOTTOM) {
-                        p.orientation = ORIENT_RIGHT;
-                      } else if (p.orientation == ORIENT_RIGHT) {
-                        p.orientation = ORIENT_TOP;
-                      } else if (p.orientation == ORIENT_TOP) {
-                        p.orientation = ORIENT_LEFT;
+                        if (p.orientation == ORIENT_BOTTOM) {
+                            p.orientation = ORIENT_RIGHT;
+                        } else if (p.orientation == ORIENT_RIGHT) {
+                            p.orientation = ORIENT_TOP;
+                        } else if (p.orientation == ORIENT_TOP) {
+                            p.orientation = ORIENT_LEFT;
+                        } else {
+                            p.orientation = ORIENT_BOTTOM;
+                        }
+
+                        if (p.orientation == ORIENT_LEFT || p.orientation == ORIENT_RIGHT) {
+                            dimension_bar = &height;
+                            dimension_value = &width;
+                        } else {
+                            dimension_bar = &width;
+                            dimension_value = &height;
+                        }
                       } else {
-                        p.orientation = ORIENT_BOTTOM;
+                            p.orientation = (p.orientation == ORIENT_BOTTOM) ? 
+                                            ORIENT_TOP : ORIENT_BOTTOM;
                       }
 
-                      if (p.orientation == ORIENT_LEFT || p.orientation == ORIENT_RIGHT) {
-                        dimension_bar = &height;
-                        dimension_value = &width;
-                      } else {
-                        dimension_bar = &width;
-                        dimension_value = &height;
-                      }
-                    } else {
-                      p.orientation = (p.orientation == ORIENT_BOTTOM) ? ORIENT_TOP : ORIENT_BOTTOM;
-                    }
                     resizeTerminal = true;
                     break;
 
