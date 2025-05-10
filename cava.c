@@ -123,6 +123,7 @@ int should_reload = 0;
 int reload_colors = 0;
 // whether we should quit
 int should_quit = 0;
+int signal_received = 0;
 
 // these variables are used only in main, but making them global
 // will allow us to not free them on exit without ASan complaining
@@ -172,8 +173,6 @@ void sig_handler(int sig_no) {
     }
 #endif
 
-    cleanup();
-
 #ifdef _WIN32
     if (sig_no == CTRL_C_EVENT || sig_no == CTRL_CLOSE_EVENT) {
         sig_no = SIGINT;
@@ -181,12 +180,13 @@ void sig_handler(int sig_no) {
         return TRUE;
     }
 #endif
-    if (sig_no == SIGINT) {
-        printf("CTRL-C pressed -- goodbye\n");
+    if (sig_no == SIGINT || sig_no == SIGTERM) {
+        should_reload = 1;
+        should_quit = 1;
     }
 
-    signal(sig_no, SIG_DFL);
-    raise(sig_no);
+    signal_received = sig_no;
+
 #ifdef _WIN32
     return TRUE;
 #endif
@@ -1366,7 +1366,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         free(audio.cava_in);
         cleanup();
 
-        if (should_quit) {
+        if (should_quit && signal_received == 0) {
             if (p.zero_test && total_bar_height > 0) {
                 fprintf(stderr, "Test mode: expected total bar height to be zero, but was: %d\n",
                         total_bar_height);
@@ -1378,6 +1378,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             } else {
                 return EXIT_SUCCESS;
             }
+        }
+        if (signal_received != 0) {
+            signal(signal_received, SIG_DFL);
+            raise(signal_received);
         }
         // fclose(fp);
         // CloseHandle(hFile);
