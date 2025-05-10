@@ -954,7 +954,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                         p.bgcol = 0;
                     resizeTerminal = true;
                     break;
-                case 'o': // change orientation 
+                case 'o': // change orientation
                     if (output_mode == OUTPUT_NCURSES) {
                         if (p.orientation == ORIENT_BOTTOM) {
                             p.orientation = ORIENT_RIGHT;
@@ -973,10 +973,10 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                             dimension_bar = &width;
                             dimension_value = &height;
                         }
-                      } else {
-                            p.orientation = (p.orientation == ORIENT_BOTTOM) ? 
-                                            ORIENT_TOP : ORIENT_BOTTOM;
-                      }
+                    } else {
+                        p.orientation =
+                            (p.orientation == ORIENT_BOTTOM) ? ORIENT_TOP : ORIENT_BOTTOM;
+                    }
 
                     resizeTerminal = true;
                     break;
