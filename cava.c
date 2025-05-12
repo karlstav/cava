@@ -315,6 +315,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             abort();
         }
     }
+    int reload = 0;
 
     // general: main loop
     while (1) {
@@ -323,7 +324,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         // config: load
         struct error_s error;
         error.length = 0;
-        if (!load_config(configPath, &p, 0, &error)) {
+        if (!load_config(configPath, &p, 0, &error, reload)) {
             fprintf(stderr, "Error loading config. %s", error.message);
             exit(EXIT_FAILURE);
         }
@@ -971,7 +972,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 if (reload_colors) {
                     struct error_s error;
                     error.length = 0;
-                    if (!load_config(configPath, (void *)&p, 1, &error)) {
+                    if (!load_config(configPath, (void *)&p, 1, &error, reload)) {
                         cleanup();
                         fprintf(stderr, "Error loading config. %s", error.message);
                         exit(EXIT_FAILURE);
@@ -1350,6 +1351,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             free(cava_out);
             free(bars);
             free(bars_raw);
+            free(previous_bars_raw);
             free(previous_frame);
         } // reloading config
 
@@ -1365,6 +1367,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         free(audio.source);
         free(audio.cava_in);
         cleanup();
+        reload = 1;
 
         if (should_quit && signal_received == 0) {
             if (p.zero_test && total_bar_height > 0) {

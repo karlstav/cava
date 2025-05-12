@@ -130,4 +130,4 @@ struct error_s {
 };
 
 bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colorsOnly,
-                 struct error_s *error);
+                 struct error_s *error, int reload);
