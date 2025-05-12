@@ -510,7 +510,7 @@ bool validate_config(struct config_params *p, struct error_s *error) {
 }
 
 bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colorsOnly,
-                 struct error_s *error) {
+                 struct error_s *error, int reload) {
     FILE *fp;
     char *cava_config_home = malloc(PATH_MAX / 2);
 
@@ -664,18 +664,11 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     }
     free(themePath);
 
-    p->gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
-    for (int i = 0; i < 8; ++i) {
-        p->gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);
-    }
-    p->horizontal_gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
-    for (int i = 0; i < 8; ++i) {
-        p->horizontal_gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);
-    }
+    free(p->vertex_shader);
+    free(p->fragment_shader);
     p->vertex_shader = malloc(sizeof(char) * PATH_MAX);
     p->fragment_shader = malloc(sizeof(char) * PATH_MAX);
 
-    p->theme = malloc(sizeof(char) * PATH_MAX);
     char *themeFile = malloc(sizeof(char) * PATH_MAX);
 
 #ifndef _WIN32
@@ -705,12 +698,14 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->bcolor = strdup(iniparser_getstring(ini, "color:background", "default"));
 
     p->gradient = iniparser_getint(ini, "color:gradient", 0);
-    for (int i = 0; i < 8; ++i) {
-        free(p->gradient_colors[i]);
-    }
 
+    if (reload) {
+        for (int i = 0; i < 8; ++i)
+            free(p->gradient_colors[i]);
+    }
     free(p->gradient_colors);
     p->gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
+
     p->gradient_colors[0] = strdup(iniparser_getstring(ini, "color:gradient_color_1", "not_set"));
     p->gradient_colors[1] = strdup(iniparser_getstring(ini, "color:gradient_color_2", "not_set"));
     p->gradient_colors[2] = strdup(iniparser_getstring(ini, "color:gradient_color_3", "not_set"));
@@ -721,11 +716,14 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->gradient_colors[7] = strdup(iniparser_getstring(ini, "color:gradient_color_8", "not_set"));
 
     p->horizontal_gradient = iniparser_getint(ini, "color:horizontal_gradient", 0);
-    for (int i = 0; i < 8; ++i) {
-        free(p->horizontal_gradient_colors[i]);
+
+    if (reload) {
+        for (int i = 0; i < 8; ++i)
+            free(p->horizontal_gradient_colors[i]);
     }
     free(p->horizontal_gradient_colors);
     p->horizontal_gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
+
     p->horizontal_gradient_colors[0] =
         strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_1", "not_set"));
     p->horizontal_gradient_colors[1] =
@@ -758,6 +756,15 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     blendDirection = malloc(sizeof(char) * 32);
     vertexShader = malloc(sizeof(char) * PATH_MAX / 2);
     fragmentShader = malloc(sizeof(char) * PATH_MAX / 2);
+
+    p->gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
+    for (int i = 0; i < 8; ++i) {
+        p->gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);
+    }
+    p->horizontal_gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
+    for (int i = 0; i < 8; ++i) {
+        p->horizontal_gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);
+    }
 
     GetPrivateProfileString("color", "theme", "none", p->theme, 64, configPath);
 
@@ -818,7 +825,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     if (strcmp(p->theme, "none") != 0) {
         configPath = configFileBak;
     }
-
+    free(p->theme);
 #endif
     p->gradient_count = 0;
     for (int i = 0; i < 7; ++i) {
@@ -836,18 +843,25 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     }
 
     free(themeFile);
-
-    if (colorsOnly) {
-        return validate_colors(p, error);
-    }
 #ifndef _WIN32
-
     if (strcmp(p->theme, "none") != 0) {
         iniparser_freedict(ini);
         ini = iniparser_load(configPath);
     }
-    outputMethod = strdup(iniparser_getstring(ini, "output:method", "noncurses"));
+    free(p->theme);
+#endif
 
+    if (colorsOnly) {
+        return validate_colors(p, error);
+    }
+
+#ifndef _WIN32
+
+    free(orientation);
+    free(xaxisScale);
+    free(outputMethod);
+
+    outputMethod = strdup(iniparser_getstring(ini, "output:method", "noncurses"));
     orientation = strdup(iniparser_getstring(ini, "output:orientation", "bottom"));
     xaxisScale = strdup(iniparser_getstring(ini, "output:xaxis", "none"));
     p->monstercat = iniparser_getdouble(ini, "smoothing:monstercat", 0);
@@ -1101,7 +1115,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     sprintf(p->fragment_shader, "%s/shaders/%s", cava_config_home, fragmentShader);
 
     bool result = validate_config(p, error);
-
     free(cava_config_home);
 
     return result;
