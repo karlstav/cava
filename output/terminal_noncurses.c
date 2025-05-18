@@ -640,6 +640,7 @@ void cleanup_terminal_noncurses(void) {
     GetConsoleCursorInfo(hStdOut, &curInfo);
     curInfo.bVisible = TRUE;
     SetConsoleCursorInfo(hStdOut, &curInfo);
+    printf("\033[0m\n");
     system("cls");
 #else
     setecho(STDIN_FILENO, 1);
@@ -650,7 +651,7 @@ void cleanup_terminal_noncurses(void) {
     system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
     system("setterm -cursor on");
 #endif
+    printf("\033[0m\n");
     system("clear");
 #endif
-    printf("\033[0m\n");
 }
