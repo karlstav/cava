@@ -195,6 +195,14 @@ void input_winscap(void *data) {
         pClient->lpVtbl->GetBufferSize(pClient, &bufferFrameCount);
 
         IAudioCaptureClient *pCapture = NULL;
+        hr = pClient->lpVtbl->GetService(pClient, &IID_IAudioCaptureClient, (void **)&pCapture);
+        if (FAILED(hr) || pCapture == NULL) {
+            fwprintf(stderr, L"Failed to initialize IAudioCaptureClient\n");
+            pClient->lpVtbl->Release(pClient);
+            pDevice->lpVtbl->Release(pDevice);
+            WaitForSingleObject(hEvent, INFINITE);
+            continue;
+        }
 
         pClient->lpVtbl->GetService(pClient, &IID_IAudioCaptureClient, (void **)&pCapture);
 
