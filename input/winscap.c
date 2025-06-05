@@ -19,9 +19,6 @@
 DEFINE_GUID(IID_IMMNotificationClient, 
     0x7991eec9, 0x7e89, 0x4d85, 0x83, 0xd0, 0x68, 0x5a, 0xe8, 0x7e, 0x5c, 0x04);
 
-DEFINE_GUID(IID_IAudioCaptureClient, 
-    0x1cb9ad4c, 0xdbfa, 0x4c32, 0xb1, 0x78, 0xc2, 0xf5, 0x68, 0xa7, 0x03, 0xb2);
-
 #define REFTIMES_PER_SEC 10000000
 #define REFTIMES_PER_MILLISEC 10000
 
@@ -140,6 +137,9 @@ void input_winscap(void *data) {
                                                  0x8D,       0xB6,   0x36,   0x17, 0xE6};
     static const GUID IID_IAudioClient = {0x1CB9AD4C, 0xDBFA, 0x4c32, 0xB1, 0x78, 0xC2,
                                           0xF5,       0x68,   0xA7,   0x03, 0xB2};
+    static const GUID IID_IAudioCaptureClient = {
+        0xc8adbd64, 0xe71e, 0x48a0, {0xa4, 0xde, 0x18, 0x5c, 0x39, 0x5c, 0xd3, 0x17}};
+
     // IID_IMMNotificationClient definition for linking
     // (moved to file scope below)
 
@@ -195,14 +195,6 @@ void input_winscap(void *data) {
         pClient->lpVtbl->GetBufferSize(pClient, &bufferFrameCount);
 
         IAudioCaptureClient *pCapture = NULL;
-        hr = pClient->lpVtbl->GetService(pClient, &IID_IAudioCaptureClient, (void **)&pCapture);
-        if (FAILED(hr) || pCapture == NULL) {
-            fwprintf(stderr, L"Failed to initialize IAudioCaptureClient\n");
-            pClient->lpVtbl->Release(pClient);
-            pDevice->lpVtbl->Release(pDevice);
-            WaitForSingleObject(hEvent, INFINITE);
-            continue;
-        }
 
         pClient->lpVtbl->GetService(pClient, &IID_IAudioCaptureClient, (void **)&pCapture);
 
@@ -231,13 +223,20 @@ void input_winscap(void *data) {
             UINT32 packetLength;
             HRESULT hrNext = pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
 
-            if (hrNext == AUDCLNT_E_DEVICE_INVALIDATED) {
-                // while (!deviceChanged)
-                //     ;
+            if (hrNext == AUDCLNT_E_DEVICE_INVALIDATED || deviceChanged) {
+                // Device was changed or invalidated, break to reinitialize
+                deviceChanged = FALSE;
                 break;
-            } else {
-                // ensure(hrNext);
-                ;
+            } else if (FAILED(hrNext)) {
+                // Handle other errors if necessary
+                fwprintf(stderr, L"Audio capture error: 0x%08lx\n", hrNext);
+                // If the error is related to device change, break to reinitialize
+                if (hrNext == AUDCLNT_E_ENDPOINT_CREATE_FAILED ||
+                    hrNext == AUDCLNT_E_SERVICE_NOT_RUNNING ||
+                    hrNext == AUDCLNT_E_DEVICE_IN_USE) {
+                    break;
+                }
+                break;
             }
 
             while (packetLength) {

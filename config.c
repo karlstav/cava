@@ -746,6 +746,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->color = malloc(sizeof(char) * 14);
     p->bcolor = malloc(sizeof(char) * 14);
     p->audio_source = malloc(sizeof(char) * 129);
+    p->theme = malloc(sizeof(char) * 64);
 
     xaxisScale = malloc(sizeof(char) * 32);
     channels = malloc(sizeof(char) * 32);
