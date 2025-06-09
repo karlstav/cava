@@ -16,8 +16,12 @@
 #include "common.h"
 
 // IID_IMMNotificationClient definition for linking
-DEFINE_GUID(IID_IMMNotificationClient, 0x7991eec9, 0x7e89, 0x4d85, 0x83, 0xd0, 0x68, 0x5a, 0xe8,
-            0x7e, 0x5c, 0x04);
+
+#ifndef __IIMNotificationClient_DEFINED__
+DEFINE_GUID(IID_IMMNotificationClient, 0x7991eec9, 0x7e89, 0x4d85, 0x83, 0x90, 0x6c, 0x70, 0x3c,
+            0xec, 0x60, 0xc0);
+#define __IIMNotificationClient_DEFINED__
+#endif
 
 #define REFTIMES_PER_SEC 10000000
 #define REFTIMES_PER_MILLISEC 10000
