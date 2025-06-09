@@ -393,11 +393,6 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
     if (offset)
         lines /= 2;
 
-    if (orientation == ORIENT_TOP && offset) {
-        cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dB",
-                       lines); // move down
-    }
-
     for (int current_line = lines - 1; current_line >= 0; current_line--) {
 
         if (orientation == ORIENT_BOTTOM) {
@@ -431,7 +426,7 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
         }
 
         int same_bar = 0;
-        int center_adjusted = 0;
+        new_line = 1;
 
         for (int i = 0; i < number_of_bars; i++) {
 
@@ -449,22 +444,34 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
                 same_bar++;
             } else {
                 if (tty) {
-                    if (same_line > 0) {
-                        cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[%dB",
-                                       same_line); // move down
-                        new_line += same_line;
-                        same_line = 0;
+                    // move cursor to beginning of this line
+                    if (new_line) {
+                        if (orientation == ORIENT_TOP && offset) {
+                            if (rest || same_bar)
+                                cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx,
+                                               "\033[%d;%dH", lines * 2 - current_line,
+                                               1 + rest + (bar_width + bar_spacing) * same_bar);
+                            else
+                                cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[%dH",
+                                               lines * 2 - current_line);
+                        } else {
+
+                            if (rest || same_bar)
+                                cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx,
+                                               "\033[%d;%dH", lines - current_line,
+                                               1 + rest + (bar_width + bar_spacing) * same_bar);
+                            else
+                                cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[%dH",
+                                               lines - current_line);
+                        }
+                        new_line = 0;
+                        same_bar = 0;
                     }
 
                     if (same_bar > 0) {
                         cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[%dC",
                                        (bar_width + bar_spacing) * same_bar); // move forward
                         same_bar = 0;
-                    }
-
-                    if (!center_adjusted && rest) {
-                        cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[%dC", rest);
-                        center_adjusted = 1;
                     }
 
                     // horizontal gradient
@@ -515,27 +522,42 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
                         cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "%s",
                                        ttybarstring[current_cell]);
 
-                    if (bar_spacing)
-                        cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[%dC",
-                                       bar_spacing);
+                    if (bar_spacing && i < number_of_bars - 1) {
+                        if (bar_spacing == 1)
+                            cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, " ");
+                        else
+                            cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[%dC",
+                                           bar_spacing);
+                    }
                 } else if (!tty) {
-                    if (same_line > 0) {
-                        cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dB",
-                                       same_line); // move down
-                        new_line += same_line;
-                        same_line = 0;
+
+                    // move cursor to beginning of this line
+                    if (new_line) {
+                        if (orientation == ORIENT_TOP && offset) {
+                            if (rest || same_bar)
+                                cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%d;%dH",
+                                               lines * 2 - current_line,
+                                               1 + rest + (bar_width + bar_spacing) * same_bar);
+                            else
+                                cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dH",
+                                               lines * 2 - current_line);
+                        } else {
+                            if (rest || same_bar)
+                                cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%d;%dH",
+                                               lines - current_line,
+                                               1 + rest + (bar_width + bar_spacing) * same_bar);
+                            else
+                                cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dH",
+                                               lines - current_line);
+                        }
+                        new_line = 0;
+                        same_bar = 0;
                     }
 
                     if (same_bar > 0) {
                         cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dC",
                                        (bar_width + bar_spacing) * same_bar); // move forward
                         same_bar = 0;
-                    }
-
-                    if (!center_adjusted && rest) {
-                        cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dC",
-                                       rest); // move forward (center align)
-                        center_adjusted = 1;
                     }
 
                     // horizontal gradient
@@ -589,41 +611,33 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
                     } else {
                         if (orientation == ORIENT_BOTTOM)
                             cx += swprintf(frame_buffer + cx, buf_length - cx,
-                                           barstring[current_cell]); // draw full
+                                           barstring[current_cell]); // draw fragment
                         else if (orientation == ORIENT_TOP)
                             cx += swprintf(frame_buffer + cx, buf_length - cx,
                                            top_barstring[current_cell]); // draw fragment (top)
                     }
 
-                    if (bar_spacing)
-                        cx +=
-                            swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dC", bar_spacing);
+                    if (bar_spacing && i < number_of_bars - 1) {
+                        if (bar_spacing == 1)
+                            cx += swprintf(frame_buffer + cx, buf_length - cx, L" ");
+                        else
+                            cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dC",
+                                           bar_spacing);
+                    }
                 }
             }
         }
 
-        if (same_bar != number_of_bars) {
-            if (current_line != 0) {
-                if (tty)
-                    cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\n");
-                else if (!tty)
-                    cx += swprintf(frame_buffer + cx, buf_length - cx, L"\n");
-
-                new_line++;
-            }
-        } else {
+        if (same_bar == number_of_bars) {
             same_line++;
         }
     }
-    if (orientation == ORIENT_TOP && offset) {
-        cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dA",
-                       lines); // move up
-    }
+
     if (same_line != lines) {
         if (tty)
-            printf("%s\r\033[%dA", ttyframe_buffer, new_line);
+            printf("%s", ttyframe_buffer);
         else if (!tty)
-            printf("%ls\r\033[%dA", frame_buffer, new_line);
+            printf("%ls", frame_buffer);
 
         fflush(stdout);
     }
