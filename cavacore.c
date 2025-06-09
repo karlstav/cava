@@ -508,6 +508,7 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
             // check if we overshoot target height
             if (cava_out[n] > 1.0) {
                 overshoot = 1;
+                cava_out[n] = 1.0;
             }
         }
     }

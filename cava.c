@@ -640,7 +640,7 @@ Keys:\n\
                 if (p.xaxis != NONE)
                     lines--;
 
-                height = lines * 8;
+                height = lines * 8 * p.max_height;
                 break;
             case OUTPUT_RAW:
             case OUTPUT_NORITAKE:
@@ -769,11 +769,15 @@ Keys:\n\
             }
 
             // checks if there is stil extra room, will use this to center
-            remainder = (*dimension_bar - number_of_bars * p.bar_width -
-                         number_of_bars * p.bar_spacing + p.bar_spacing) /
-                        2;
-            if (remainder < 0)
+            if (p.center_align) {
+                remainder = (*dimension_bar - number_of_bars * p.bar_width -
+                             number_of_bars * p.bar_spacing + p.bar_spacing) /
+                            2;
+                if (remainder < 0)
+                    remainder = 0;
+            } else {
                 remainder = 0;
+            }
 
             if (output_mode == OUTPUT_NONCURSES) {
                 init_terminal_noncurses(inAtty, p.color, p.bcolor, p.col, p.bgcol, p.gradient,

@@ -506,6 +506,14 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     else
         p->channels = 2;
 
+    if (p->max_height > 1.0) {
+        write_errorf(error, "max_height is defined in percent and can't be more than 100\n");
+        return false;
+    } else if (p->max_height < 0.0) {
+        write_errorf(error, "max_height can't be negative\n");
+        return false;
+    }
+
     return validate_colors(p, error);
 }
 
@@ -883,7 +891,9 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->lower_cut_off = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
     p->upper_cut_off = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
     p->sleep_timer = iniparser_getint(ini, "general:sleep_timer", 0);
-
+    int max_height = iniparser_getint(ini, "general:max_height", 100);
+    p->max_height = max_height / 100.0;
+    p->center_align = iniparser_getint(ini, "general:center_align", 1);
     // hidden test features
 
     // draw this many frames and quit, used for testing
