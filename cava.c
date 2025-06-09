@@ -295,8 +295,7 @@ Keys:\n\
         b         Cycle background color\n\
         o         Change orientation bottom -> right -> top -> left (ncurses), top <-> bottom (other modes)\n\
         q         Quit\n\
-\n\
-as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n";
+\n";
     int c;
     while ((c = getopt(argc, argv, "p:vh")) != -1) {
         switch (c) {
