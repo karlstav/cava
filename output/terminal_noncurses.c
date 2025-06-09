@@ -89,12 +89,13 @@ void free_terminal_noncurses(void) {
     }
 }
 
-int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg_color_string,
-                            int col, int bgcol, int gradient, int gradient_count,
-                            char **gradient_color_strings, int horizontal_gradient,
-                            int horizontal_gradient_count, char **horizontal_gradient_color_strings,
-                            int number_of_bars, int width, int lines, int bar_width,
-                            enum orientation orientation, enum orientation blendDirection) {
+int init_terminal_noncurses(int tty, int actualTerminal, char *const fg_color_string,
+                            char *const bg_color_string, int col, int bgcol, int gradient,
+                            int gradient_count, char **gradient_color_strings,
+                            int horizontal_gradient, int horizontal_gradient_count,
+                            char **horizontal_gradient_color_strings, int number_of_bars, int width,
+                            int lines, int bar_width, enum orientation orientation,
+                            enum orientation blendDirection) {
 
     free_terminal_noncurses();
 
@@ -185,9 +186,15 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
 
 #else
 #ifndef __FreeBSD__
-    system("setterm -cursor off");
+    if (!actualTerminal)
+        system("setterm -cursor off");
 #endif
-    system("clear");
+    if (actualTerminal) {
+        printf("\033[2J");
+    } else {
+        system("clear");
+    }
+    printf("\033[?25l");
 #endif
 
     // output: reset console
@@ -666,6 +673,10 @@ void cleanup_terminal_noncurses(void) {
     system("setterm -cursor on");
 #endif
     printf("\033[0m\n");
+    printf("\033[?25h");
+    printf("\033c");
+
     system("clear");
+
 #endif
 }
