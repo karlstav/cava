@@ -16,8 +16,8 @@
 #include "common.h"
 
 // IID_IMMNotificationClient definition for linking
-DEFINE_GUID(IID_IMMNotificationClient, 
-    0x7991eec9, 0x7e89, 0x4d85, 0x83, 0xd0, 0x68, 0x5a, 0xe8, 0x7e, 0x5c, 0x04);
+DEFINE_GUID(IID_IMMNotificationClient, 0x7991eec9, 0x7e89, 0x4d85, 0x83, 0xd0, 0x68, 0x5a, 0xe8,
+            0x7e, 0x5c, 0x04);
 
 #define REFTIMES_PER_SEC 10000000
 #define REFTIMES_PER_MILLISEC 10000
@@ -35,18 +35,19 @@ typedef struct DeviceChangeNotification {
 } DeviceChangeNotification;
 
 // Forward declarations
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_QueryInterface(
-    IMMNotificationClient *This, REFIID riid, void **ppvObject);
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_QueryInterface(IMMNotificationClient *This,
+                                                                  REFIID riid, void **ppvObject);
 ULONG STDMETHODCALLTYPE DeviceChangeNotification_AddRef(IMMNotificationClient *This);
 ULONG STDMETHODCALLTYPE DeviceChangeNotification_Release(IMMNotificationClient *This);
 HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDefaultDeviceChanged(
     IMMNotificationClient *This, EDataFlow flow, ERole role, LPCWSTR pwstrDeviceId);
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceAdded(
-    IMMNotificationClient *This, LPCWSTR pwstrDeviceId);
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceRemoved(
-    IMMNotificationClient *This, LPCWSTR pwstrDeviceId);
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceStateChanged(
-    IMMNotificationClient *This, LPCWSTR pwstrDeviceId, DWORD dwNewState);
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceAdded(IMMNotificationClient *This,
+                                                                 LPCWSTR pwstrDeviceId);
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceRemoved(IMMNotificationClient *This,
+                                                                   LPCWSTR pwstrDeviceId);
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceStateChanged(IMMNotificationClient *This,
+                                                                        LPCWSTR pwstrDeviceId,
+                                                                        DWORD dwNewState);
 HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnPropertyValueChanged(
     IMMNotificationClient *This, LPCWSTR pwstrDeviceId, const PROPERTYKEY key);
 
@@ -58,19 +59,20 @@ IMMNotificationClientVtbl g_DeviceChangeNotification_Vtbl = {
     DeviceChangeNotification_OnDeviceAdded,
     DeviceChangeNotification_OnDeviceRemoved,
     DeviceChangeNotification_OnDefaultDeviceChanged,
-    DeviceChangeNotification_OnPropertyValueChanged
-};
+    DeviceChangeNotification_OnPropertyValueChanged};
 
-void DeviceChangeNotification_Init(DeviceChangeNotification *self, volatile BOOL *changed, HANDLE hEvent) {
+void DeviceChangeNotification_Init(DeviceChangeNotification *self, volatile BOOL *changed,
+                                   HANDLE hEvent) {
     self->lpVtbl = &g_DeviceChangeNotification_Vtbl;
     self->ref = 1;
     self->changed = changed;
     self->hEvent = hEvent;
 }
 
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_QueryInterface(
-    IMMNotificationClient *This, REFIID riid, void **ppvObject) {
-    if (!ppvObject) return E_POINTER;
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_QueryInterface(IMMNotificationClient *This,
+                                                                  REFIID riid, void **ppvObject) {
+    if (!ppvObject)
+        return E_POINTER;
     if (IsEqualIID(riid, &IID_IUnknown) || IsEqualIID(riid, &IID_IMMNotificationClient)) {
         *ppvObject = This;
         DeviceChangeNotification_AddRef(This);
@@ -96,24 +98,27 @@ HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDefaultDeviceChanged(
     IMMNotificationClient *This, EDataFlow flow, ERole role, LPCWSTR pwstrDeviceId) {
     DeviceChangeNotification *self = (DeviceChangeNotification *)This;
     if (flow == eRender && role == eConsole) {
-        if (self->changed) *self->changed = TRUE;
-        if (self->hEvent) SetEvent(self->hEvent);
+        if (self->changed)
+            *self->changed = TRUE;
+        if (self->hEvent)
+            SetEvent(self->hEvent);
     }
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceAdded(
-    IMMNotificationClient *This, LPCWSTR pwstrDeviceId) {
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceAdded(IMMNotificationClient *This,
+                                                                 LPCWSTR pwstrDeviceId) {
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceRemoved(
-    IMMNotificationClient *This, LPCWSTR pwstrDeviceId) {
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceRemoved(IMMNotificationClient *This,
+                                                                   LPCWSTR pwstrDeviceId) {
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceStateChanged(
-    IMMNotificationClient *This, LPCWSTR pwstrDeviceId, DWORD dwNewState) {
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceStateChanged(IMMNotificationClient *This,
+                                                                        LPCWSTR pwstrDeviceId,
+                                                                        DWORD dwNewState) {
     return S_OK;
 }
 
@@ -154,13 +159,12 @@ void input_winscap(void *data) {
                                   &IID_IMMDeviceEnumerator, (void **)&pEnumerator);
 
     HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-    
+
     volatile BOOL deviceChanged = FALSE;
     DeviceChangeNotification deviceChangeNotification;
     DeviceChangeNotification_Init(&deviceChangeNotification, &deviceChanged, hEvent);
-    pEnumerator->lpVtbl->RegisterEndpointNotificationCallback(pEnumerator, (IMMNotificationClient *)&deviceChangeNotification);
-    
-   
+    pEnumerator->lpVtbl->RegisterEndpointNotificationCallback(
+        pEnumerator, (IMMNotificationClient *)&deviceChangeNotification);
 
     while (!audio->terminate) {
         ResetEvent(hEvent);
@@ -232,8 +236,7 @@ void input_winscap(void *data) {
                 fwprintf(stderr, L"Audio capture error: 0x%08lx\n", hrNext);
                 // If the error is related to device change, break to reinitialize
                 if (hrNext == AUDCLNT_E_ENDPOINT_CREATE_FAILED ||
-                    hrNext == AUDCLNT_E_SERVICE_NOT_RUNNING ||
-                    hrNext == AUDCLNT_E_DEVICE_IN_USE) {
+                    hrNext == AUDCLNT_E_SERVICE_NOT_RUNNING || hrNext == AUDCLNT_E_DEVICE_IN_USE) {
                     break;
                 }
                 break;
