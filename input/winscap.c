@@ -17,10 +17,10 @@
 
 // IID_IMMNotificationClient definition for linking
 
-#ifndef __IIMNotificationClient_INTERFACE_DEFINED__
+#ifndef __IMMNotificationClient_INTERFACE_DEFINED__
 DEFINE_GUID(IID_IMMNotificationClient, 0x7991eec9, 0x7e89, 0x4d85, 0x83, 0x90, 0x6c, 0x70, 0x3c,
             0xec, 0x60, 0xc0);
-#define __IIMNotificationClient_INTERFACE_DEFINED__
+#define __IMMNotificationClient_INTERFACE_DEFINED__
 #endif
 
 #define REFTIMES_PER_SEC 10000000
