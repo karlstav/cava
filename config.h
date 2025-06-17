@@ -107,7 +107,8 @@ struct config_params {
         **horizontal_gradient_colors, *data_format, *vertex_shader, *fragment_shader, *theme;
 
     char bar_delim, frame_delim;
-    double monstercat, integral, gravity, ignore, sens, noise_reduction;
+    double monstercat, integral, gravity, ignore, sens, noise_reduction, max_height;
+
     unsigned int lower_cut_off, upper_cut_off;
     double *userEQ;
     enum input_method input;
@@ -121,7 +122,7 @@ struct config_params {
         fixedbars, framerate, bar_width, bar_spacing, bar_height, autosens, overshoot, waves,
         samplerate, samplebits, channels, autoconnect, sleep_timer, sdl_width, sdl_height, sdl_x,
         sdl_y, sdl_full_screen, draw_and_quit, zero_test, non_zero_test, reverse, sync_updates,
-        continuous_rendering, disable_blanking, show_idle_bar_heads, waveform;
+        continuous_rendering, disable_blanking, show_idle_bar_heads, waveform, center_align;
 };
 
 struct error_s {

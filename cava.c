@@ -295,8 +295,7 @@ Keys:\n\
         b         Cycle background color\n\
         o         Change orientation bottom -> right -> top -> left (ncurses), top <-> bottom (other modes)\n\
         q         Quit\n\
-\n\
-as of 0.4.0 all options are specified in config file, see in '/home/username/.config/cava/' \n";
+\n";
     int c;
     while ((c = getopt(argc, argv, "p:vh")) != -1) {
         switch (c) {
@@ -331,42 +330,67 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
         }
 
         int inAtty = 0;
+        int inAterminal = 0;
 
         output_mode = p.output;
 #ifndef _WIN32
         if (output_mode == OUTPUT_NCURSES || output_mode == OUTPUT_NONCURSES) {
             // Check if we're running in a tty
-            if (strncmp(ttyname(0), "/dev/tty", 8) == 0 || strcmp(ttyname(0), "/dev/console") == 0)
+            if (strncmp(ttyname(0), "/dev/tty", 8) == 0 ||
+                strcmp(ttyname(0), "/dev/console") == 0 ||
+                strncmp(ttyname(0), "/dev/ttyS", 9) == 0 ||
+                strncmp(ttyname(0), "/dev/ttyUSB", 11) == 0)
                 inAtty = 1;
+
+            // Check if we are running in a dumb terminal
+            if (strncmp(ttyname(0), "/dev/ttyS", 9) == 0 ||
+                strncmp(ttyname(0), "/dev/ttyUSB", 11) == 0)
+                inAterminal = 1;
 
             // in macos vitual terminals are called ttys(xyz) and there are no ttys
             if (strncmp(ttyname(0), "/dev/ttys", 9) == 0)
                 inAtty = 0;
+
             if (inAtty) {
-#ifdef CAVAFONT
-                // checking if cava psf font is installed in FONTDIR
-                FILE *font_file;
-                font_file = fopen(FONTDIR "/" FONTFILE, "r");
-                if (font_file) {
-                    fclose(font_file);
-#ifdef __FreeBSD__
-                    system("vidcontrol -f " FONTDIR "/" FONTFILE " >/dev/null 2>&1");
-#else
-                    system("setfont " FONTDIR "/" FONTFILE " >/dev/null 2>&1");
-#endif
+                if (inAterminal) {
+                    printf("\033P 1;32;1;0;0;2 { sp @ "
+                           "\?\?\?\?\?\?\?\?/GGGGGGGG;"
+                           "\?\?\?\?\?\?\?\?/GGGGGGGG;"
+                           "\?\?\?\?\?\?\?\?/KKKKKKKK;"
+                           "\?\?\?\?\?\?\?\?/MMMMMMMM;"
+                           "\?\?\?\?\?\?\?\?/NNNNNNNN;"
+                           "oooooooo/NNNNNNNN;"
+                           "wwwwwwww/NNNNNNNN;"
+                           "}}}}}}}}/NNNNNNNN;"
+                           "~~~~~~~~/NNNNNNNN");
+
+                    printf("\033( sp @ ");
                 } else {
-                    // if not it might still be available, we dont know, must try
+#ifdef CAVAFONT
+                    // checking if cava psf font is installed in FONTDIR
+                    FILE *font_file;
+                    font_file = fopen(FONTDIR "/" FONTFILE, "r");
+                    if (font_file) {
+                        fclose(font_file);
 #ifdef __FreeBSD__
-                    system("vidcontrol -f " FONTFILE " >/dev/null 2>&1");
+                        system("vidcontrol -f " FONTDIR "/" FONTFILE " >/dev/null 2>&1");
 #else
-                    system("setfont " FONTFILE " >/dev/null 2>&1");
+                        system("setfont " FONTDIR "/" FONTFILE " >/dev/null 2>&1");
 #endif
-                }
+                    } else {
+                        // if not it might still be available, we dont know, must try
+#ifdef __FreeBSD__
+                        system("vidcontrol -f " FONTFILE " >/dev/null 2>&1");
+#else
+                        system("setfont " FONTFILE " >/dev/null 2>&1");
+#endif
+                    }
 #endif // CAVAFONT
 #ifndef __FreeBSD__
-                if (p.disable_blanking)
-                    system("setterm -blank 0");
+                    if (p.disable_blanking)
+                        system("setterm -blank 0");
 #endif
+                }
                 if (p.orientation != ORIENT_BOTTOM) {
                     cleanup();
                     fprintf(stderr, "only default bottom orientation is supported in tty\n");
@@ -641,7 +665,7 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
                 if (p.xaxis != NONE)
                     lines--;
 
-                height = lines * 8;
+                height = lines * 8 * p.max_height;
                 break;
             case OUTPUT_RAW:
             case OUTPUT_NORITAKE:
@@ -770,18 +794,22 @@ as of 0.4.0 all options are specified in config file, see in '/home/username/.co
             }
 
             // checks if there is stil extra room, will use this to center
-            remainder = (*dimension_bar - number_of_bars * p.bar_width -
-                         number_of_bars * p.bar_spacing + p.bar_spacing) /
-                        2;
-            if (remainder < 0)
+            if (p.center_align) {
+                remainder = (*dimension_bar - number_of_bars * p.bar_width -
+                             number_of_bars * p.bar_spacing + p.bar_spacing) /
+                            2;
+                if (remainder < 0)
+                    remainder = 0;
+            } else {
                 remainder = 0;
+            }
 
             if (output_mode == OUTPUT_NONCURSES) {
-                init_terminal_noncurses(inAtty, p.color, p.bcolor, p.col, p.bgcol, p.gradient,
-                                        p.gradient_count, p.gradient_colors, p.horizontal_gradient,
-                                        p.horizontal_gradient_count, p.horizontal_gradient_colors,
-                                        number_of_bars, width, lines, p.bar_width, p.orientation,
-                                        p.blendDirection);
+                init_terminal_noncurses(inAtty, inAterminal, p.color, p.bcolor, p.col, p.bgcol,
+                                        p.gradient, p.gradient_count, p.gradient_colors,
+                                        p.horizontal_gradient, p.horizontal_gradient_count,
+                                        p.horizontal_gradient_colors, number_of_bars, width, lines,
+                                        p.bar_width, p.orientation, p.blendDirection);
             }
 
 #ifndef NDEBUG

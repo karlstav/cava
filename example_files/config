@@ -36,6 +36,12 @@
 ; bar_width = 1
 ; bar_spacing = 0
 
+# ceter bars in terminal, if there is space.
+; center_align = 1
+
+# max height of bars in terminal, in percent of terminal height.
+; max_height = 100
+
 
 # Lower and higher cutoff frequencies for lowest and highest bars
 # the bandwidth of the visualizer.
