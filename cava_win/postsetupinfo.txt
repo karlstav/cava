@@ -1,0 +1,1 @@
+config file for cava is created in "%USERPROFILE%\.config\cava" upon first launch
