@@ -1079,7 +1079,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->max_height = GetPrivateProfileInt("general", "max_height", 100, configPath) / 100.0;
     p->center_align = GetPrivateProfileInt("general", "center_align", 1, configPath);
 
-
     GetPrivateProfileString("output", "channels", "stereo", channels, 16, configPath);
     GetPrivateProfileString("output", "mono_option", "average", monoOption, 16, configPath);
     p->reverse = GetPrivateProfileInt("output", "reverse", 0, configPath);
