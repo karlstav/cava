@@ -1076,6 +1076,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->lower_cut_off = GetPrivateProfileInt("general", "lower_cutoff_freq", 50, configPath);
     p->upper_cut_off = GetPrivateProfileInt("general", "higher_cutoff_freq", 10000, configPath);
     p->sleep_timer = GetPrivateProfileInt("general", "sleep_timer", 0, configPath);
+    p->max_height = GetPrivateProfileInt("general", "max_height", 100, configPath) / 100.0;
+    p->center_align = GetPrivateProfileInt("general", "center_align", 1, configPath);
 
     GetPrivateProfileString("output", "channels", "stereo", channels, 16, configPath);
     GetPrivateProfileString("output", "mono_option", "average", monoOption, 16, configPath);
