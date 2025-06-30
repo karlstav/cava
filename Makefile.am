@@ -25,7 +25,8 @@ EXTRA_DIST = \
     LICENSE \
     run_all_tests.sh \
     SHADERS.md \
-    .clang-format
+    .clang-format \
+    CMakeLists.txt
 
 if OSX
     cava_CFLAGS += -DNORT
