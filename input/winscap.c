@@ -25,11 +25,6 @@ DEFINE_GUID(IID_IMMNotificationClient, 0x7991eec9, 0x7e89, 0x4d85, 0x83, 0x90, 0
 #define REFTIMES_PER_SEC 10000000
 #define REFTIMES_PER_MILLISEC 10000
 
-// the device change funcitonality is disabled until I figure out how
-// or if to rewrite it to c
-
-// C implementation of IMMNotificationClient for device change notification
-
 typedef struct DeviceChangeNotification {
     IMMNotificationClientVtbl *lpVtbl;
     LONG ref;
@@ -148,9 +143,6 @@ void input_winscap(void *data) {
     static const GUID IID_IAudioCaptureClient = {
         0xc8adbd64, 0xe71e, 0x48a0, {0xa4, 0xde, 0x18, 0x5c, 0x39, 0x5c, 0xd3, 0x17}};
 
-    // IID_IMMNotificationClient definition for linking
-    // (moved to file scope below)
-
     struct audio_data *audio = (struct audio_data *)data;
     pthread_mutex_lock(&audio->lock);
     CoInitialize(0);
@@ -194,6 +186,9 @@ void input_winscap(void *data) {
             pProps->lpVtbl->GetValue(pProps, &PKEY_Device_FriendlyName, &varName);
             fwprintf(stderr, L"Failed to open: %s\n", varName.pwszVal);
             PropVariantClear(&varName);
+            if (pProps) pProps->lpVtbl->Release(pProps);
+            if (pClient) pClient->lpVtbl->Release(pClient);
+            if (pDevice) pDevice->lpVtbl->Release(pDevice);
             WaitForSingleObject(hEvent, INFINITE);
             continue;
         }
@@ -262,8 +257,14 @@ void input_winscap(void *data) {
                 pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
             }
         }
-        // deviceChanged = false;
+        deviceChanged = FALSE;
         pClient->lpVtbl->Stop(pClient);
         free(pSilence);
+        if (pCapture) pCapture->lpVtbl->Release(pCapture);
+        if (pClient) pClient->lpVtbl->Release(pClient);
+        if (pDevice) pDevice->lpVtbl->Release(pDevice);
     }
+    if (pEnumerator) pEnumerator->lpVtbl->UnregisterEndpointNotificationCallback(pEnumerator, (IMMNotificationClient *)&deviceChangeNotification);
+    if (pEnumerator) pEnumerator->lpVtbl->Release(pEnumerator);
+    CoUninitialize();
 }
