@@ -186,9 +186,12 @@ void input_winscap(void *data) {
             pProps->lpVtbl->GetValue(pProps, &PKEY_Device_FriendlyName, &varName);
             fwprintf(stderr, L"Failed to open: %s\n", varName.pwszVal);
             PropVariantClear(&varName);
-            if (pProps) pProps->lpVtbl->Release(pProps);
-            if (pClient) pClient->lpVtbl->Release(pClient);
-            if (pDevice) pDevice->lpVtbl->Release(pDevice);
+            if (pProps)
+                pProps->lpVtbl->Release(pProps);
+            if (pClient)
+                pClient->lpVtbl->Release(pClient);
+            if (pDevice)
+                pDevice->lpVtbl->Release(pDevice);
             WaitForSingleObject(hEvent, INFINITE);
             continue;
         }
@@ -260,11 +263,17 @@ void input_winscap(void *data) {
         deviceChanged = FALSE;
         pClient->lpVtbl->Stop(pClient);
         free(pSilence);
-        if (pCapture) pCapture->lpVtbl->Release(pCapture);
-        if (pClient) pClient->lpVtbl->Release(pClient);
-        if (pDevice) pDevice->lpVtbl->Release(pDevice);
+        if (pCapture)
+            pCapture->lpVtbl->Release(pCapture);
+        if (pClient)
+            pClient->lpVtbl->Release(pClient);
+        if (pDevice)
+            pDevice->lpVtbl->Release(pDevice);
     }
-    if (pEnumerator) pEnumerator->lpVtbl->UnregisterEndpointNotificationCallback(pEnumerator, (IMMNotificationClient *)&deviceChangeNotification);
-    if (pEnumerator) pEnumerator->lpVtbl->Release(pEnumerator);
+    if (pEnumerator)
+        pEnumerator->lpVtbl->UnregisterEndpointNotificationCallback(
+            pEnumerator, (IMMNotificationClient *)&deviceChangeNotification);
+    if (pEnumerator)
+        pEnumerator->lpVtbl->Release(pEnumerator);
     CoUninitialize();
 }
