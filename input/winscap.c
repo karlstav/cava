@@ -15,53 +15,115 @@
 
 #include "common.h"
 
+// IID_IMMNotificationClient definition for linking
+
+#if !defined(__MINGW32__) && !defined(__MINGW64__)
+DEFINE_GUID(IID_IMMNotificationClient, 0x7991eec9, 0x7e89, 0x4d85, 0x83, 0x90, 0x6c, 0x70, 0x3c,
+            0xec, 0x60, 0xc0);
+#endif
+
 #define REFTIMES_PER_SEC 10000000
 #define REFTIMES_PER_MILLISEC 10000
 
-// the device change funcitonality is disabled until I figure out how
-// or if to rewrite it to c
-/*
-class DeviceChangeNotification : public IMMNotificationClient {
-    volatile ULONG ref;
-    volatile bool &changed;
+typedef struct DeviceChangeNotification {
+    IMMNotificationClientVtbl *lpVtbl;
+    LONG ref;
+    volatile BOOL *changed;
     HANDLE hEvent;
+} DeviceChangeNotification;
 
-  public:
-    DeviceChangeNotification(volatile bool &changed, HANDLE hEvent)
-        : changed(changed), hEvent(hEvent) {}
+// Forward declarations
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_QueryInterface(IMMNotificationClient *This,
+                                                                  REFIID riid, void **ppvObject);
+ULONG STDMETHODCALLTYPE DeviceChangeNotification_AddRef(IMMNotificationClient *This);
+ULONG STDMETHODCALLTYPE DeviceChangeNotification_Release(IMMNotificationClient *This);
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDefaultDeviceChanged(
+    IMMNotificationClient *This, EDataFlow flow, ERole role, LPCWSTR pwstrDeviceId);
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceAdded(IMMNotificationClient *This,
+                                                                 LPCWSTR pwstrDeviceId);
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceRemoved(IMMNotificationClient *This,
+                                                                   LPCWSTR pwstrDeviceId);
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceStateChanged(IMMNotificationClient *This,
+                                                                        LPCWSTR pwstrDeviceId,
+                                                                        DWORD dwNewState);
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnPropertyValueChanged(
+    IMMNotificationClient *This, LPCWSTR pwstrDeviceId, const PROPERTYKEY key);
 
-    // This is meant to be allocated on stack, so we don't actually free.
-    STDMETHODIMP_(ULONG) AddRef() { return InterlockedIncrement(&ref); }
-    STDMETHODIMP_(ULONG) Release() { return InterlockedDecrement(&ref); }
+IMMNotificationClientVtbl g_DeviceChangeNotification_Vtbl = {
+    DeviceChangeNotification_QueryInterface,
+    DeviceChangeNotification_AddRef,
+    DeviceChangeNotification_Release,
+    DeviceChangeNotification_OnDeviceStateChanged,
+    DeviceChangeNotification_OnDeviceAdded,
+    DeviceChangeNotification_OnDeviceRemoved,
+    DeviceChangeNotification_OnDefaultDeviceChanged,
+    DeviceChangeNotification_OnPropertyValueChanged};
 
-    STDMETHODIMP QueryInterface(REFIID iid, void **ppv) {
-        if (iid == IID_IUnknown) {
-            AddRef();
-            *ppv = (IUnknown *)this;
-        } else if (iid == __uuidof(IMMNotificationClient)) {
-            AddRef();
-            *ppv = (IMMNotificationClient *)this;
-        } else {
-            *ppv = nullptr;
-            return E_NOINTERFACE;
-        }
+void DeviceChangeNotification_Init(DeviceChangeNotification *self, volatile BOOL *changed,
+                                   HANDLE hEvent) {
+    self->lpVtbl = &g_DeviceChangeNotification_Vtbl;
+    self->ref = 1;
+    self->changed = changed;
+    self->hEvent = hEvent;
+}
+
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_QueryInterface(IMMNotificationClient *This,
+                                                                  REFIID riid, void **ppvObject) {
+    if (!ppvObject)
+        return E_POINTER;
+    if (IsEqualIID(riid, &IID_IUnknown) || IsEqualIID(riid, &IID_IMMNotificationClient)) {
+        *ppvObject = This;
+        DeviceChangeNotification_AddRef(This);
         return S_OK;
     }
+    *ppvObject = NULL;
+    return E_NOINTERFACE;
+}
 
-    STDMETHODIMP OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR) {
-        if (flow == eRender && role == eConsole) {
-            changed = true;
-            SetEvent(hEvent);
-        }
-        return S_OK;
+ULONG STDMETHODCALLTYPE DeviceChangeNotification_AddRef(IMMNotificationClient *This) {
+    DeviceChangeNotification *self = (DeviceChangeNotification *)This;
+    return InterlockedIncrement(&self->ref);
+}
+
+ULONG STDMETHODCALLTYPE DeviceChangeNotification_Release(IMMNotificationClient *This) {
+    DeviceChangeNotification *self = (DeviceChangeNotification *)This;
+    LONG ref = InterlockedDecrement(&self->ref);
+    // This object is meant to be stack-allocated, so do not free.
+    return ref;
+}
+
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDefaultDeviceChanged(
+    IMMNotificationClient *This, EDataFlow flow, ERole role, LPCWSTR pwstrDeviceId) {
+    DeviceChangeNotification *self = (DeviceChangeNotification *)This;
+    if (flow == eRender && role == eConsole) {
+        if (self->changed)
+            *self->changed = TRUE;
+        if (self->hEvent)
+            SetEvent(self->hEvent);
     }
+    return S_OK;
+}
 
-    STDMETHODIMP OnDeviceAdded(LPCWSTR) { return S_OK; }
-    STDMETHODIMP OnDeviceRemoved(LPCWSTR) { return S_OK; }
-    STDMETHODIMP OnDeviceStateChanged(LPCWSTR, DWORD) { return S_OK; }
-    STDMETHODIMP OnPropertyValueChanged(LPCWSTR, const PROPERTYKEY) { return S_OK; }
-};
-*/
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceAdded(IMMNotificationClient *This,
+                                                                 LPCWSTR pwstrDeviceId) {
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceRemoved(IMMNotificationClient *This,
+                                                                   LPCWSTR pwstrDeviceId) {
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceStateChanged(IMMNotificationClient *This,
+                                                                        LPCWSTR pwstrDeviceId,
+                                                                        DWORD dwNewState) {
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnPropertyValueChanged(
+    IMMNotificationClient *This, LPCWSTR pwstrDeviceId, const PROPERTYKEY key) {
+    return S_OK;
+}
 
 struct {
     HRESULT hr;
@@ -78,7 +140,6 @@ void input_winscap(void *data) {
                                                  0x8D,       0xB6,   0x36,   0x17, 0xE6};
     static const GUID IID_IAudioClient = {0x1CB9AD4C, 0xDBFA, 0x4c32, 0xB1, 0x78, 0xC2,
                                           0xF5,       0x68,   0xA7,   0x03, 0xB2};
-
     static const GUID IID_IAudioCaptureClient = {
         0xc8adbd64, 0xe71e, 0x48a0, {0xa4, 0xde, 0x18, 0x5c, 0x39, 0x5c, 0xd3, 0x17}};
 
@@ -93,11 +154,12 @@ void input_winscap(void *data) {
                                   &IID_IMMDeviceEnumerator, (void **)&pEnumerator);
 
     HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-    /*
-    volatile bool deviceChanged = false;
-    DeviceChangeNotification deviceChangeNotification(deviceChanged, hEvent);
-    pEnumerator->RegisterEndpointNotificationCallback(&deviceChangeNotification);
-    */
+
+    volatile BOOL deviceChanged = FALSE;
+    DeviceChangeNotification deviceChangeNotification;
+    DeviceChangeNotification_Init(&deviceChangeNotification, &deviceChanged, hEvent);
+    pEnumerator->lpVtbl->RegisterEndpointNotificationCallback(
+        pEnumerator, (IMMNotificationClient *)&deviceChangeNotification);
 
     while (!audio->terminate) {
         ResetEvent(hEvent);
@@ -124,6 +186,12 @@ void input_winscap(void *data) {
             pProps->lpVtbl->GetValue(pProps, &PKEY_Device_FriendlyName, &varName);
             fwprintf(stderr, L"Failed to open: %s\n", varName.pwszVal);
             PropVariantClear(&varName);
+            if (pProps)
+                pProps->lpVtbl->Release(pProps);
+            if (pClient)
+                pClient->lpVtbl->Release(pClient);
+            if (pDevice)
+                pDevice->lpVtbl->Release(pDevice);
             WaitForSingleObject(hEvent, INFINITE);
             continue;
         }
@@ -160,13 +228,19 @@ void input_winscap(void *data) {
             UINT32 packetLength;
             HRESULT hrNext = pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
 
-            if (hrNext == AUDCLNT_E_DEVICE_INVALIDATED) {
-                // while (!deviceChanged)
-                //     ;
+            if (hrNext == AUDCLNT_E_DEVICE_INVALIDATED || deviceChanged) {
+                // Device was changed or invalidated, break to reinitialize
+                deviceChanged = FALSE;
                 break;
-            } else {
-                // ensure(hrNext);
-                ;
+            } else if (FAILED(hrNext)) {
+                // Handle other errors if necessary
+                fwprintf(stderr, L"Audio capture error: 0x%08lx\n", hrNext);
+                // If the error is related to device change, break to reinitialize
+                if (hrNext == AUDCLNT_E_ENDPOINT_CREATE_FAILED ||
+                    hrNext == AUDCLNT_E_SERVICE_NOT_RUNNING || hrNext == AUDCLNT_E_DEVICE_IN_USE) {
+                    break;
+                }
+                break;
             }
 
             while (packetLength) {
@@ -186,8 +260,20 @@ void input_winscap(void *data) {
                 pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
             }
         }
-        // deviceChanged = false;
+        deviceChanged = FALSE;
         pClient->lpVtbl->Stop(pClient);
         free(pSilence);
+        if (pCapture)
+            pCapture->lpVtbl->Release(pCapture);
+        if (pClient)
+            pClient->lpVtbl->Release(pClient);
+        if (pDevice)
+            pDevice->lpVtbl->Release(pDevice);
     }
+    if (pEnumerator)
+        pEnumerator->lpVtbl->UnregisterEndpointNotificationCallback(
+            pEnumerator, (IMMNotificationClient *)&deviceChangeNotification);
+    if (pEnumerator)
+        pEnumerator->lpVtbl->Release(pEnumerator);
+    CoUninitialize();
 }
