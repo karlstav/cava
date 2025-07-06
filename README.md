@@ -5,7 +5,7 @@ CAVA [![Build Status](https://github.com/karlstav/cava/workflows/build-and-test/
 
 by [Karl Stavestrand](mailto:karl@stavestrand.no)
 
-Can now also run in a [dumb terminal](https://github.com/karlstav/cava/blob/master/TERMINAL.md)!
+Now also supports [dumb terminals](https://github.com/karlstav/cava/blob/master/TERMINAL.md)!
 
 ![spectrum](https://github.com/karlstav/cava/blob/master/example_files/cava.gif "spectrum")
 
