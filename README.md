@@ -545,6 +545,14 @@ Install [Background Music](https://github.com/kyleneideck/BackgroundMusic) which
 source = "Background Music"
 ```
 
+**BlackHole**
+
+Install [BlackHole](https://github.com/ExistentialAudio/BlackHole) and create a [Multi Output Device](https://github.com/ExistentialAudio/BlackHole/wiki/Multi-Output-Device), making sure you have your speaker as the first output device in the list, and BlackHole as second (check the ⚠️ note under [4. Select Output Devices](https://github.com/ExistentialAudio/BlackHole/wiki/Multi-Output-Device#4-select-output-devices) on the linked wiki page). Once installed and running just edit your [config](#configuration) to use this interface with portaudio (changing `2ch` to `16ch` or `64ch` if you're using those):
+
+```
+source = "BlackHole 2ch"
+```
+
 **Sound Flower**
 
 [Soundflower](https://github.com/mattingalls/Soundflower) also works to create a loopback interface. Use Audio MIDI Setup to configure a virtual interface that outputs audio to both your speakers and the loopback interface, following [this](https://github.com/RogueAmoeba/Soundflower-Original/issues/44#issuecomment-151586106) recipe. By creating a multi-output device you lose the ability to control the volume on your keyboard. Because of this, we recommend the Background Music app which still gives you keyboard controls.
