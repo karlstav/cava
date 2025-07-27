@@ -10,10 +10,130 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
+#include <stdint.h>
+#include <stddef.h>
 
 #include <functiondiscoverykeys.h>
 
 #include "common.h"
+
+static void make_stereo_waveformatex(const WAVEFORMATEX *orig, WAVEFORMATEX *stereo) {
+    *stereo = *orig;
+    stereo->wFormatTag = WAVE_FORMAT_PCM;
+    stereo->nChannels = 2;
+    stereo->wBitsPerSample = 16;
+    stereo->nBlockAlign = stereo->nChannels * (stereo->wBitsPerSample / 8);
+    stereo->nAvgBytesPerSec = stereo->nSamplesPerSec * stereo->nBlockAlign;
+    stereo->cbSize = 0;
+}
+
+// Downmix interleaved 16-bit PCM to stereo
+static void downmix_to_stereo_s16(const int16_t *src, int16_t *dst, size_t frames, int channels) {
+    size_t i;
+    for (i = 0; i < frames; ++i) {
+        int left = 0, right = 0;
+        if (channels >= 2) {
+            left += src[i * channels + 0];
+            right += src[i * channels + 1];
+        }
+        if (channels >= 3) {
+            left += (int)(src[i * channels + 2] * 0.7f);
+            right += (int)(src[i * channels + 2] * 0.7f);
+        }
+        if (channels >= 5) {
+            left += (int)(src[i * channels + 4] * 0.7f);
+            right += (int)(src[i * channels + 5] * 0.7f);
+        }
+        if (channels >= 7) {
+            left += (int)(src[i * channels + 6] * 0.7f);
+            right += (int)(src[i * channels + 7] * 0.7f);
+        }
+        if (left > 32767)
+            left = 32767;
+        if (left < -32768)
+            left = -32768;
+        if (right > 32767)
+            right = 32767;
+        if (right < -32768)
+            right = -32768;
+        dst[i * 2 + 0] = (int16_t)left;
+        dst[i * 2 + 1] = (int16_t)right;
+    }
+}
+
+// Downmix interleaved 32-bit PCM to stereo
+static void downmix_to_stereo_s32(const int32_t *src, int16_t *dst, size_t frames, int channels) {
+    size_t i;
+    for (i = 0; i < frames; ++i) {
+        int64_t left = 0, right = 0;
+        if (channels >= 2) {
+            left += src[i * channels + 0];
+            right += src[i * channels + 1];
+        }
+        if (channels >= 3) {
+            left += (int64_t)(src[i * channels + 2] * 0.7f);
+            right += (int64_t)(src[i * channels + 2] * 0.7f);
+        }
+        if (channels >= 5) {
+            left += (int64_t)(src[i * channels + 4] * 0.7f);
+            right += (int64_t)(src[i * channels + 5] * 0.7f);
+        }
+        if (channels >= 7) {
+            left += (int64_t)(src[i * channels + 6] * 0.7f);
+            right += (int64_t)(src[i * channels + 7] * 0.7f);
+        }
+        // Convert from 32-bit to 16-bit with clipping
+        left >>= 16;
+        right >>= 16;
+        if (left > 32767)
+            left = 32767;
+        if (left < -32768)
+            left = -32768;
+        if (right > 32767)
+            right = 32767;
+        if (right < -32768)
+            right = -32768;
+        dst[i * 2 + 0] = (int16_t)left;
+        dst[i * 2 + 1] = (int16_t)right;
+    }
+}
+
+// Downmix interleaved 32-bit float to stereo
+static void downmix_to_stereo_f32(const float *src, int16_t *dst, size_t frames, int channels) {
+    size_t i;
+    for (i = 0; i < frames; ++i) {
+        float left = 0.0f, right = 0.0f;
+        if (channels >= 2) {
+            left += src[i * channels + 0];
+            right += src[i * channels + 1];
+        }
+        if (channels >= 3) {
+            left += src[i * channels + 2] * 0.7f;
+            right += src[i * channels + 2] * 0.7f;
+        }
+        if (channels >= 5) {
+            left += src[i * channels + 4] * 0.7f;
+            right += src[i * channels + 5] * 0.7f;
+        }
+        if (channels >= 7) {
+            left += src[i * channels + 6] * 0.7f;
+            right += src[i * channels + 7] * 0.7f;
+        }
+        // Convert from float [-1.0, 1.0] to int16_t
+        int l = (int)(left * 32767.0f);
+        int r = (int)(right * 32767.0f);
+        if (l > 32767)
+            l = 32767;
+        if (l < -32768)
+            l = -32768;
+        if (r > 32767)
+            r = 32767;
+        if (r < -32768)
+            r = -32768;
+        dst[i * 2 + 0] = (int16_t)l;
+        dst[i * 2 + 1] = (int16_t)r;
+    }
+}
 
 // IID_IMMNotificationClient definition for linking
 
@@ -215,11 +335,22 @@ void input_winscap(void *data) {
 
         pClient->lpVtbl->Start(pClient);
 
-        audio->channels = format.nChannels;
-        audio->rate = format.nSamplesPerSec;
-        audio->format = format.wBitsPerSample;
-        if (format.wBitsPerSample == 32)
-            audio->IEEE_FLOAT = 1;
+		WAVEFORMATEX stereo_format;
+        make_stereo_waveformatex(&format, &stereo_format);
+
+        if (format.nChannels > 2) {
+			audio->channels = 2;
+			audio->rate = stereo_format.nSamplesPerSec;
+			audio->format = stereo_format.wBitsPerSample;
+			audio->IEEE_FLOAT = 0;
+        } else {
+			audio->channels = format.nChannels;
+			audio->rate = format.nSamplesPerSec;
+			audio->format = format.wBitsPerSample;
+			if (format.wBitsPerSample == 32)
+				audio->IEEE_FLOAT = 1;
+        }
+
         pthread_mutex_unlock(&audio->lock);
         // deviceChanged
         while (!audio->terminate) {
@@ -253,8 +384,36 @@ void input_winscap(void *data) {
                 if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
                     pData = pSilence;
 
-                write_to_cava_input_buffers(numFramesAvailable * format.nChannels,
-                                            (unsigned char *)pData, audio);
+                if (format.nChannels > 2) {
+                    int16_t *stereo_buffer =
+                        (int16_t *)malloc(numFramesAvailable * 2 * sizeof(int16_t));
+                    if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
+                        // Fill stereo_buffer with zeros (silence)
+                        memset(stereo_buffer, 0, numFramesAvailable * 2 * sizeof(int16_t));
+                    } else {
+                        if (format.wFormatTag == WAVE_FORMAT_IEEE_FLOAT &&
+                            format.wBitsPerSample == 32) {
+                            downmix_to_stereo_f32((const float *)pData, stereo_buffer,
+                                                  numFramesAvailable, format.nChannels);
+                        } else if (format.wBitsPerSample == 32) {
+                            downmix_to_stereo_s32((const int32_t *)pData, stereo_buffer,
+                                                  numFramesAvailable, format.nChannels);
+                        } else if (format.wBitsPerSample == 16) {
+                            downmix_to_stereo_s16((const int16_t *)pData, stereo_buffer,
+                                                  numFramesAvailable, format.nChannels);
+                        } else {
+                            // Unsupported format, handle error
+                            free(stereo_buffer);
+                            break;
+                        }
+                    }
+                    write_to_cava_input_buffers(numFramesAvailable * 2,
+                                                (unsigned char *)stereo_buffer, audio);
+                    free(stereo_buffer);
+                } else {
+                    write_to_cava_input_buffers(numFramesAvailable * format.nChannels,
+                                                (unsigned char *)pData, audio);
+                }
 
                 pCapture->lpVtbl->ReleaseBuffer(pCapture, numFramesAvailable);
                 pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
