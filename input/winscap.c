@@ -394,6 +394,93 @@ struct {
     {AUDCLNT_E_UNSUPPORTED_FORMAT, L"Requested sound format unsupported"},
 };
 
+void write_silent_frame(struct audio_data *audio, IAudioCaptureClient *pCapture,
+                        UINT32 numFramesAvailable, UINT32 *packetLength) {
+	// Send one silent frame to the spectrometer
+	int silent_channels = audio->channels;
+	int silent_bytes = silent_channels * sizeof(int16_t); // 16-bit PCM
+	int16_t silence[2] = {0}; // Support up to 2 channels, adjust if needed
+
+	write_to_cava_input_buffers(silent_channels, (unsigned char *)silence, audio);
+	pCapture->lpVtbl->ReleaseBuffer(pCapture, numFramesAvailable);
+	pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
+}
+
+void process_mono(UINT32 numFramesAvailable, const WAVEFORMATEX format, const void *pData,
+                  struct audio_data *audio, IAudioCaptureClient *pCapture, UINT32 *packetLength,
+                  WAVEFORMATEX mono_format) {
+	int16_t *mono_buffer =
+		(int16_t *)malloc(numFramesAvailable * sizeof(int16_t));
+	if (format.wFormatTag == WAVE_FORMAT_IEEE_FLOAT &&
+		format.wBitsPerSample == 32) {
+		convert_mono_f32_to_s16((const float *)pData, mono_buffer,
+								numFramesAvailable);
+	} else if (format.wBitsPerSample == 32) {
+		convert_mono_s32_to_s16((const int32_t *)pData, mono_buffer,
+								numFramesAvailable);
+	} else if (format.wBitsPerSample == 24) {
+		convert_mono_s24_to_s16((const uint8_t *)pData, mono_buffer,
+								numFramesAvailable);
+	} else {
+		// Unsupported format, handle error
+		write_silent_frame(audio, pCapture, numFramesAvailable, &packetLength);
+		return;
+	}
+
+	write_to_cava_input_buffers(numFramesAvailable * mono_format.nChannels,
+								(unsigned char *)mono_buffer, audio);
+	free(mono_buffer);
+}
+
+void process_stereo(UINT32 numFramesAvailable, const WAVEFORMATEX format, const void *pData,
+                    struct audio_data *audio, IAudioCaptureClient *pCapture, UINT32 *packetLength,
+                    WAVEFORMATEX stereo_format) {
+	int16_t *stereo_buffer = (int16_t *)malloc(numFramesAvailable * 2 * sizeof(int16_t));
+	if (format.wFormatTag == WAVE_FORMAT_IEEE_FLOAT &&
+		format.wBitsPerSample == 32) {
+		convert_stereo_f32_to_s16((const float *)pData, stereo_buffer,
+								  numFramesAvailable);
+	} else if (format.wBitsPerSample == 32) {
+		convert_stereo_s32_to_s16((const int32_t *)pData, stereo_buffer,
+								  numFramesAvailable);
+	} else if (format.wBitsPerSample == 24) {
+		convert_stereo_s24_to_s16((const uint8_t *)pData, stereo_buffer,
+								  numFramesAvailable);
+	} else {
+		// Unsupported format, handle error
+		write_silent_frame(audio, pCapture, numFramesAvailable, &packetLength);
+		return;
+	}
+	write_to_cava_input_buffers(numFramesAvailable * stereo_format.nChannels, (unsigned char *)stereo_buffer, audio);
+	free(stereo_buffer);
+}
+
+void process_multichannel(UINT32 numFramesAvailable, const WAVEFORMATEX format, const void *pData,
+                          struct audio_data *audio, IAudioCaptureClient *pCapture, UINT32 *packetLength,
+                          WAVEFORMATEX stereo_format) {
+	int16_t *stereo_buffer = (int16_t *)malloc(numFramesAvailable * 2 * sizeof(int16_t));
+	if (format.wFormatTag == WAVE_FORMAT_IEEE_FLOAT &&
+		format.wBitsPerSample == 32) {
+		downmix_to_stereo_f32((const float *)pData, stereo_buffer,
+							  numFramesAvailable, format.nChannels);
+	} else if (format.wBitsPerSample == 32) {
+		downmix_to_stereo_s32((const int32_t *)pData, stereo_buffer,
+							  numFramesAvailable, format.nChannels);
+	} else if (format.wBitsPerSample == 24) {
+		downmix_to_stereo_s24((const uint8_t *)pData, stereo_buffer,
+							  numFramesAvailable, format.nChannels);
+	} else if (format.wBitsPerSample == 16) {
+		downmix_to_stereo_s16((const int16_t *)pData, stereo_buffer,
+							  numFramesAvailable, format.nChannels);
+	} else {
+		// Unsupported format, handle error
+		write_silent_frame(audio, pCapture, numFramesAvailable, &packetLength);
+		return;
+	}
+	write_to_cava_input_buffers(numFramesAvailable * stereo_format.nChannels, (unsigned char *)stereo_buffer, audio);
+	free(stereo_buffer);
+}
+
 void input_winscap(void *data) {
 
     static const GUID CLSID_MMDeviceEnumerator = {0xBCDE0395, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4,
@@ -434,8 +521,13 @@ void input_winscap(void *data) {
 
         hr = pClient->lpVtbl->GetMixFormat(pClient, &wfx);
 
+        if (FAILED(hr) || wfx == NULL) {
+            fwprintf(stderr, L"Failed to GetMixFormat for client\n");
+            continue;
+        }
+
         HRESULT hrInit = pClient->lpVtbl->Initialize(pClient, AUDCLNT_SHAREMODE_SHARED,
-                                                     AUDCLNT_STREAMFLAGS_LOOPBACK,
+                                                     AUDCLNT_STREAMFLAGS_LOOPBACK | AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
                                                      16 * REFTIMES_PER_MILLISEC, 0, wfx, 0);
         if (FAILED(hrInit)) {
             //_com_error err(hrInit);
@@ -454,7 +546,19 @@ void input_winscap(void *data) {
                 pClient->lpVtbl->Release(pClient);
             if (pDevice)
                 pDevice->lpVtbl->Release(pDevice);
-            WaitForSingleObject(hEvent, INFINITE);
+            WaitForSingleObject(hEvent, INFINITE); // I think this line may cause the program to hang need to test on spacial device
+            continue;
+        }
+
+        // use event handling instead of polling
+        HRESULT hrEvent = pClient->lpVtbl->SetEventHandle(pClient, hEvent);
+        if (FAILED(hrEvent)) {
+            fwprintf(stderr, L"SetEventHandle failed: 0x%08lx\n", hrEvent);
+            // Clean up resources as needed
+            if (pClient)
+                pClient->lpVtbl->Release(pClient);
+            if (pDevice)
+                pDevice->lpVtbl->Release(pDevice);
             continue;
         }
 
@@ -467,20 +571,20 @@ void input_winscap(void *data) {
 
         WAVEFORMATEX format = *wfx;
 
-        DWORD dwDelay =
-            (DWORD)(((double)REFTIMES_PER_SEC * bufferFrameCount / format.nSamplesPerSec) /
-                    REFTIMES_PER_MILLISEC / 2);
-
         LPBYTE pSilence = (LPBYTE)malloc(bufferFrameCount * format.nBlockAlign);
 
         ZeroMemory(pSilence, bufferFrameCount * format.nBlockAlign);
 
         pClient->lpVtbl->Start(pClient);
 
+        WORD nChannels = format.nChannels;
+
 		WAVEFORMATEX stereo_format;
         make_stereo_waveformatex(&format, &stereo_format);
         WAVEFORMATEX mono_format;
         make_mono_waveformatex(&format, &mono_format);
+
+        DWORD nSamplesPerSec = format.nSamplesPerSec;
 
         bool convert_to_s16_stereo = format.nChannels == 2 && format.wBitsPerSample > 16;
         bool convert_to_s16_mono = format.nChannels == 1 && format.wBitsPerSample > 16;
@@ -490,11 +594,13 @@ void input_winscap(void *data) {
 			audio->rate = stereo_format.nSamplesPerSec;
 			audio->format = stereo_format.wBitsPerSample;
 			audio->IEEE_FLOAT = 0;
+			nSamplesPerSec = stereo_format.nSamplesPerSec;
         } else if (convert_to_s16_mono) {
             audio->channels = 1;
             audio->rate = mono_format.nSamplesPerSec;
             audio->format = mono_format.wBitsPerSample;
             audio->IEEE_FLOAT = 0;
+            nSamplesPerSec = mono_format.nSamplesPerSec;
         } else {
 			audio->channels = format.nChannels;
 			audio->rate = format.nSamplesPerSec;
@@ -504,9 +610,14 @@ void input_winscap(void *data) {
         }
 
         pthread_mutex_unlock(&audio->lock);
+
         // deviceChanged
         while (!audio->terminate) {
-            Sleep(dwDelay);
+            DWORD waitResult = WaitForSingleObject(hEvent, INFINITE);
+            if (waitResult != WAIT_OBJECT_0) {
+                // Handle error or termination
+                continue;
+            }
 
             UINT32 packetLength;
             HRESULT hrNext = pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
@@ -533,86 +644,21 @@ void input_winscap(void *data) {
 
                 pCapture->lpVtbl->GetBuffer(pCapture, &pData, &numFramesAvailable, &flags, 0, 0);
 
-                if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
-                    pData = pSilence;
+                if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
+                    write_silent_frame(audio, pCapture, numFramesAvailable, &packetLength);
+					continue;
+                }
 
                 if (format.nChannels > 2 || format.wBitsPerSample > 16) {
-                    int16_t *stereo_buffer =
-                        (int16_t *)malloc(numFramesAvailable * 2 * sizeof(int16_t));
-                    if (format.nChannels >= 2) {
-                        if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
-                            // Fill buffers with zeros (silence)
-                            memset(stereo_buffer, 0, numFramesAvailable * 2 * sizeof(int16_t));
-                        } else {
-                            if (format.nChannels > 2) {
-                                if (format.wFormatTag == WAVE_FORMAT_IEEE_FLOAT &&
-                                    format.wBitsPerSample == 32) {
-                                    downmix_to_stereo_f32((const float *)pData, stereo_buffer,
-                                                          numFramesAvailable, format.nChannels);
-                                } else if (format.wBitsPerSample == 32) {
-                                    downmix_to_stereo_s32((const int32_t *)pData, stereo_buffer,
-                                                          numFramesAvailable, format.nChannels);
-                                } else if (format.wBitsPerSample == 24) {
-                                    downmix_to_stereo_s24((const uint8_t *)pData, stereo_buffer,
-                                                          numFramesAvailable, format.nChannels);
-                                } else if (format.wBitsPerSample == 16) {
-                                    downmix_to_stereo_s16((const int16_t *)pData, stereo_buffer,
-                                                          numFramesAvailable, format.nChannels);
-                                } else {
-                                    // Unsupported format, handle error
-                                    free(stereo_buffer);
-                                    break;
-                                }
-                            }
-                            if (format.nChannels == 2 && format.wBitsPerSample > 16) {
-                                if (format.wFormatTag == WAVE_FORMAT_IEEE_FLOAT &&
-                                    format.wBitsPerSample == 32) {
-                                    convert_stereo_f32_to_s16((const float *)pData, stereo_buffer,
-                                                              numFramesAvailable);
-                                } else if (format.wBitsPerSample == 32) {
-                                    convert_stereo_s32_to_s16((const int32_t *)pData, stereo_buffer,
-                                                              numFramesAvailable);
-                                } else if (format.wBitsPerSample == 24) {
-                                    convert_stereo_s24_to_s16((const uint8_t *)pData, stereo_buffer,
-                                                              numFramesAvailable);
-                                } else {
-                                    // Unsupported format, handle error
-                                    free(stereo_buffer);
-                                    break;
-                                }
-                            }
-                            write_to_cava_input_buffers(numFramesAvailable *
-                                                            stereo_format.nChannels,
-                                                        (unsigned char *)stereo_buffer, audio);
-                            free(stereo_buffer);
-                        }
-                    } else if (format.nChannels == 1 && format.wBitsPerSample > 16) {
-                        int16_t *mono_buffer =
-                            (int16_t *)malloc(numFramesAvailable * sizeof(int16_t));
-                        if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
-                            // Fill buffers with zeros (silence)
-                            memset(mono_buffer, 0, numFramesAvailable * sizeof(int16_t));
-                        } else {
-                            if (format.wFormatTag == WAVE_FORMAT_IEEE_FLOAT &&
-                                format.wBitsPerSample == 32) {
-                                convert_mono_f32_to_s16((const float *)pData, mono_buffer,
-                                                        numFramesAvailable);
-                            } else if (format.wBitsPerSample == 32) {
-                                convert_mono_s32_to_s16((const int32_t *)pData, mono_buffer,
-                                                        numFramesAvailable);
-                            } else if (format.wBitsPerSample == 24) {
-                                convert_mono_s24_to_s16((const uint8_t *)pData, mono_buffer,
-                                                        numFramesAvailable);
-                            } else {
-                                // Unsupported format, handle error
-                                free(mono_buffer);
-                                break;
-                            }
-                        }
-
-                        write_to_cava_input_buffers(numFramesAvailable * mono_format.nChannels,
-                                                    (unsigned char *)mono_buffer, audio);
-                        free(mono_buffer);
+                    switch (format.nChannels) {
+                        case 1:
+							process_mono(numFramesAvailable, format, pData, audio, pCapture, &packetLength, mono_format);
+                            break;
+                        case 2:
+							process_stereo(numFramesAvailable, format, pData, audio, pCapture, &packetLength, stereo_format);
+                            break;
+                        default:
+							process_multichannel(numFramesAvailable, format, pData, audio, pCapture, &packetLength, stereo_format);
                     }
                 } else {
                     write_to_cava_input_buffers(numFramesAvailable * format.nChannels,
