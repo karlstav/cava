@@ -591,21 +591,21 @@ void input_winscap(void *data) {
                             (int16_t *)malloc(numFramesAvailable * sizeof(int16_t));
                         if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
                             // Fill buffers with zeros (silence)
-                            memset(stereo_buffer, 0, numFramesAvailable * 2 * sizeof(int16_t));
+                            memset(mono_buffer, 0, numFramesAvailable * sizeof(int16_t));
                         } else {
                             if (format.wFormatTag == WAVE_FORMAT_IEEE_FLOAT &&
                                 format.wBitsPerSample == 32) {
-                                convert_mono_f32_to_s16((const float *)pData, stereo_buffer,
+                                convert_mono_f32_to_s16((const float *)pData, mono_buffer,
                                                         numFramesAvailable);
                             } else if (format.wBitsPerSample == 32) {
-                                convert_mono_s32_to_s16((const int32_t *)pData, stereo_buffer,
+                                convert_mono_s32_to_s16((const int32_t *)pData, mono_buffer,
                                                         numFramesAvailable);
                             } else if (format.wBitsPerSample == 24) {
-                                convert_mono_s24_to_s16((const uint8_t *)pData, stereo_buffer,
+                                convert_mono_s24_to_s16((const uint8_t *)pData, mono_buffer,
                                                         numFramesAvailable);
                             } else {
                                 // Unsupported format, handle error
-                                free(stereo_buffer);
+                                free(mono_buffer);
                                 break;
                             }
                         }
