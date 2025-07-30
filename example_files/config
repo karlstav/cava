@@ -70,7 +70,7 @@
 # (all pulseaudio sinks(outputs) have 'monitor' sources(inputs) associated with them).
 #
 # For pipewire 'source' will be the object name or object.serial of the device to capture from.
-# Both input and output devices are supported.
+# Both input and output devices are supported. To capture the monitor source of a sink node, append '.monitor' to the sink's object name.
 #
 # For alsa 'source' will be the capture device.
 # For fifo 'source' will be the path to fifo-file.
