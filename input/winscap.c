@@ -305,7 +305,7 @@ struct {
 };
 
 void write_silent_frame(struct audio_data *audio, IAudioCaptureClient *pCapture,
-                        UINT32 numFramesAvailable, UINT32 *packetLength) {
+                        UINT32 numFramesAvailable, UINT32 packetLength) {
 	// Send one silent frame to the spectrometer
 	int silent_channels = audio->channels;
 	int silent_bytes = silent_channels * sizeof(int16_t); // 16-bit PCM
@@ -317,7 +317,7 @@ void write_silent_frame(struct audio_data *audio, IAudioCaptureClient *pCapture,
 }
 
 void process_multichannel(UINT32 numFramesAvailable, const WAVEFORMATEX format, const void *pData,
-                          struct audio_data *audio, IAudioCaptureClient *pCapture, UINT32 *packetLength,
+                          struct audio_data *audio, IAudioCaptureClient *pCapture, UINT32 packetLength,
                           WAVEFORMATEX stereo_format) {
 	int16_t *stereo_buffer = (int16_t *)malloc(numFramesAvailable * 2 * sizeof(int16_t));
 	if (format.wFormatTag == WAVE_FORMAT_IEEE_FLOAT &&
@@ -335,7 +335,7 @@ void process_multichannel(UINT32 numFramesAvailable, const WAVEFORMATEX format, 
 							  numFramesAvailable, format.nChannels);
 	} else {
 		// Unsupported format, handle error
-		write_silent_frame(audio, pCapture, numFramesAvailable, &packetLength);
+		write_silent_frame(audio, pCapture, numFramesAvailable, packetLength);
 		return;
 	}
 	write_to_cava_input_buffers(numFramesAvailable * stereo_format.nChannels, (unsigned char *)stereo_buffer, audio);
@@ -486,12 +486,12 @@ void input_winscap(void *data) {
                 pCapture->lpVtbl->GetBuffer(pCapture, &pData, &numFramesAvailable, &flags, 0, 0);
 
                 if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
-                    write_silent_frame(audio, pCapture, numFramesAvailable, &packetLength);
+                    write_silent_frame(audio, pCapture, numFramesAvailable, packetLength);
 					continue;
                 }
 
                 if (format.nChannels > 2) {
-					process_multichannel(numFramesAvailable, format, pData, audio, pCapture, &packetLength, stereo_format);
+					process_multichannel(numFramesAvailable, format, pData, audio, pCapture, packetLength, stereo_format);
                 } else {
                     write_to_cava_input_buffers(numFramesAvailable * format.nChannels,
                                                 (unsigned char *)pData, audio);
