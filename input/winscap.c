@@ -355,13 +355,25 @@ void input_winscap(void *data) {
 
     struct audio_data *audio = (struct audio_data *)data;
     pthread_mutex_lock(&audio->lock);
-    CoInitialize(0);
+    
+    HRESULT hr = CoInitialize(0);
+    if (FAILED(hr)) {
+        fwprintf(stderr, L"CoInitialize failed: 0x%08lx\n", hr);
+        pthread_mutex_unlock(&audio->lock);
+        return;
+    }
 
     WAVEFORMATEX *wfx = NULL;
     WAVEFORMATEXTENSIBLE *wfx_ext = NULL;
     IMMDeviceEnumerator *pEnumerator = NULL;
-    HRESULT hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
+    hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
                                   &IID_IMMDeviceEnumerator, (void **)&pEnumerator);
+    if (FAILED(hr)) {
+        fwprintf(stderr, L"Failed to create device enumerator: 0x%08lx\n", hr);
+        CoUninitialize();
+        pthread_mutex_unlock(&audio->lock);
+        return;
+    }
 
     HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
