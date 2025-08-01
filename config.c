@@ -977,6 +977,9 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->samplebits = iniparser_getint(ini, "input:sample_bits", 16);
     p->channels = iniparser_getint(ini, "input:channels", 2);
     p->autoconnect = iniparser_getint(ini, "input:autoconnect", 2);
+    p->active = iniparser_getint(ini, "input:active", 0);
+    p->remix = iniparser_getint(ini, "input:remix", 1);
+    p->virtual = iniparser_getint(ini, "input:virtual", 1);
 
     enum input_method default_input = INPUT_FIFO;
     for (size_t i = 0; i < ARRAY_SIZE(default_methods); i++) {

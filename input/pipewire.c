@@ -9,7 +9,9 @@
 
 struct pw_data {
     struct pw_main_loop *loop;
+    struct spa_source *timer;
     struct pw_stream *stream;
+    bool idle;
 
     struct spa_audio_info format;
     unsigned move : 1;
@@ -42,6 +44,58 @@ static void on_process(void *userdata) {
     pw_stream_queue_buffer(data->stream, b);
 }
 
+static void on_timeout(void *userdata, uint64_t expirations)
+{
+    struct pw_data *data = userdata;
+    unsigned char zero_sample[data->cava_audio->cava_buffer_size * (data->cava_audio->format / 4)] = {};
+
+    if (data->cava_audio->terminate)
+        pw_main_loop_quit(data->loop);
+
+    if (!data->idle) {
+        if (expirations < 10) {
+            write_to_cava_input_buffers(data->cava_audio->cava_buffer_size, zero_sample, data->cava_audio);
+        } else {
+            struct timespec timeout, interval;
+            data->idle = true;
+            timeout.tv_sec = 0;
+            timeout.tv_nsec = 500 * SPA_NSEC_PER_MSEC;
+            interval.tv_sec = 0;
+            interval.tv_nsec = 500 * SPA_NSEC_PER_MSEC;
+
+            pw_loop_update_timer(pw_main_loop_get_loop(data->loop),
+                            data->timer, &timeout, &interval, false);
+        }
+    }
+}
+
+static void on_stream_state_changed(void *_data, enum pw_stream_state old,
+                                    enum pw_stream_state state, const char *error) {
+    struct pw_data *data = _data;
+
+
+    data->idle = false;
+    switch (state) {
+    case PW_STREAM_STATE_PAUSED:
+        struct timespec timeout, interval;
+
+        timeout.tv_sec = 0;
+        timeout.tv_nsec = 1000 * SPA_NSEC_PER_MSEC / 60;
+        interval.tv_sec = 0;
+        interval.tv_nsec = 1000 * SPA_NSEC_PER_MSEC / 60;
+
+        pw_loop_update_timer(pw_main_loop_get_loop(data->loop),
+                        data->timer, &timeout, &interval, false);
+        break;
+    case PW_STREAM_STATE_STREAMING:
+        pw_loop_update_timer(pw_main_loop_get_loop(data->loop),
+                        data->timer, NULL, NULL, false);
+        break;
+    default:
+        break;
+    }
+}
+
 static void on_stream_param_changed(void *_data, uint32_t id, const struct spa_pod *param) {
     struct pw_data *data = _data;
 
@@ -60,9 +114,31 @@ static void on_stream_param_changed(void *_data, uint32_t id, const struct spa_p
 
 static const struct pw_stream_events stream_events = {
     PW_VERSION_STREAM_EVENTS,
+    .state_changed = on_stream_state_changed,
     .param_changed = on_stream_param_changed,
     .process = on_process,
 };
+
+
+unsigned int next_power_of_2(unsigned int n) {
+    if (n == 0) return 1; // Handle zero case
+
+    n--; // Decrement n to handle the case where n is already a power of two
+    n |= n >> 1;
+    n |= n >> 2;
+    n |= n >> 4;
+    n |= n >> 8;
+    n |= n >> 16;
+    n++; // Increment to get the next power of two
+    return n;
+}
+
+static void do_quit(void *userdata, int signal_number) {
+    struct pw_data *data = userdata;
+    data->cava_audio->terminate = 1;
+    pw_log_warn("pw quit signal %d received, terminating...", signal_number);
+    pw_main_loop_quit(data->loop);
+}
 
 void *input_pipewire(void *audiodata) {
     struct pw_data data = {
@@ -75,8 +151,7 @@ void *input_pipewire(void *audiodata) {
     struct pw_properties *props;
     struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
     uint32_t nom;
-    nom = nearbyint((10000 * data.cava_audio->rate) / 1000000.0);
-
+    nom = next_power_of_2((512 * data.cava_audio->rate / 48000 ));
     pw_init(0, 0);
 
     data.loop = pw_main_loop_new(NULL);
@@ -87,6 +162,12 @@ void *input_pipewire(void *audiodata) {
                          "pulse input method instead.");
         return 0;
     }
+
+    pw_loop_add_signal(pw_main_loop_get_loop(data.loop), SIGINT, do_quit, &data);
+    pw_loop_add_signal(pw_main_loop_get_loop(data.loop), SIGTERM, do_quit, &data);
+
+
+    data.timer = pw_loop_add_timer(pw_main_loop_get_loop(data.loop), on_timeout, &data);
 
     props = pw_properties_new(PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY, "Capture",
                               PW_KEY_MEDIA_ROLE, "Music", NULL);
@@ -104,10 +185,15 @@ void *input_pipewire(void *audiodata) {
         pw_properties_set(props, PW_KEY_TARGET_OBJECT, source);
     }
     pw_properties_setf(props, PW_KEY_NODE_LATENCY, "%u/%u", nom, data.cava_audio->rate);
-    pw_properties_set(props, PW_KEY_NODE_ALWAYS_PROCESS, "true");
+    pw_properties_set(props, PW_KEY_STREAM_MONITOR , "true");
 
-    data.stream = pw_stream_new_simple(pw_main_loop_get_loop(data.loop), "cava", props,
-                                       &stream_events, &data);
+    if (data.cava_audio->active)
+        pw_properties_set(props, PW_KEY_NODE_ALWAYS_PROCESS, "true");
+    else
+        pw_properties_set(props, PW_KEY_NODE_PASSIVE, "true");
+
+    if (data.cava_audio->virtual)
+        pw_properties_set(props, PW_KEY_NODE_VIRTUAL, "true");
 
     enum spa_audio_format audio_format = SPA_AUDIO_FORMAT_S16;
 
@@ -126,9 +212,42 @@ void *input_pipewire(void *audiodata) {
         break;
     };
 
-    params[0] = spa_format_audio_raw_build(
-        &b, SPA_PARAM_EnumFormat,
-        &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data.cava_audio->rate));
+    if (data.cava_audio->remix) {
+        pw_properties_set(props, PW_KEY_STREAM_DONT_REMIX, "false");
+        pw_properties_set(props, "channelmix.upmix", "true");
+        
+        if (data.cava_audio->channels < 2) {
+        // N to 1 with all channels shown
+        params[0] = spa_format_audio_raw_build(
+            &b, SPA_PARAM_EnumFormat,
+            &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format,
+                                    .rate = data.cava_audio->rate,
+                                    .channels = data.cava_audio->channels,
+                                     ));
+        } else {
+        // N to 2 with all channels shown
+        params[0] = spa_format_audio_raw_build(
+            &b, SPA_PARAM_EnumFormat,
+            &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format,
+                                    .rate = data.cava_audio->rate,
+                                    .channels = data.cava_audio->channels,
+                                    .position = { SPA_AUDIO_CHANNEL_FL, SPA_AUDIO_CHANNEL_FR },
+                                     ));
+        }
+    } else {
+        // N to 2 with only FL and FR shown
+        params[0] = spa_format_audio_raw_build(
+            &b, SPA_PARAM_EnumFormat,
+            &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format,
+                                    .rate = data.cava_audio->rate,
+                                    .channels = data.cava_audio->channels,
+                                     ));
+
+
+    }
+
+    data.stream = pw_stream_new_simple(pw_main_loop_get_loop(data.loop), "cava", props,
+                                       &stream_events, &data);
 
     pw_stream_connect(data.stream, PW_DIRECTION_INPUT, PW_ID_ANY,
                       PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS |
