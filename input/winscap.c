@@ -190,8 +190,9 @@ static void downmix_to_stereo_f32(const float *src, int16_t *dst, size_t frames,
 // IID_IMMNotificationClient definition for linking
 
 #if !defined(__MINGW32__) && !defined(__MINGW64__)
-DEFINE_GUID(IID_IMMNotificationClient, 0x7991eec9, 0x7e89, 0x4d85, 0x83, 0x90, 0x6c, 0x70, 0x3c,
-            0xec, 0x60, 0xc0);
+DEFINE_GUID(
+    IID_IMMNotificationClient, 0x7991eec9, 0x7e89, 0x4d85, 0x83, 0x90, 0x6c, 0x70, 0x3c, 0xec,
+    0x60, 0xc0);
 #endif
 
 #define REFTIMES_PER_SEC 10000000
@@ -205,19 +206,18 @@ typedef struct DeviceChangeNotification {
 } DeviceChangeNotification;
 
 // Forward declarations
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_QueryInterface(IMMNotificationClient *This,
-                                                                  REFIID riid, void **ppvObject);
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_QueryInterface(
+    IMMNotificationClient *This, REFIID riid, void **ppvObject);
 ULONG STDMETHODCALLTYPE DeviceChangeNotification_AddRef(IMMNotificationClient *This);
 ULONG STDMETHODCALLTYPE DeviceChangeNotification_Release(IMMNotificationClient *This);
 HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDefaultDeviceChanged(
     IMMNotificationClient *This, EDataFlow flow, ERole role, LPCWSTR pwstrDeviceId);
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceAdded(IMMNotificationClient *This,
-                                                                 LPCWSTR pwstrDeviceId);
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceRemoved(IMMNotificationClient *This,
-                                                                   LPCWSTR pwstrDeviceId);
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceStateChanged(IMMNotificationClient *This,
-                                                                        LPCWSTR pwstrDeviceId,
-                                                                        DWORD dwNewState);
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceAdded(
+    IMMNotificationClient *This, LPCWSTR pwstrDeviceId);
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceRemoved(
+    IMMNotificationClient *This, LPCWSTR pwstrDeviceId);
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceStateChanged(
+    IMMNotificationClient *This, LPCWSTR pwstrDeviceId, DWORD dwNewState);
 HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnPropertyValueChanged(
     IMMNotificationClient *This, LPCWSTR pwstrDeviceId, const PROPERTYKEY key);
 
@@ -239,8 +239,8 @@ void DeviceChangeNotification_Init(DeviceChangeNotification *self, volatile BOOL
     self->hEvent = hEvent;
 }
 
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_QueryInterface(IMMNotificationClient *This,
-                                                                  REFIID riid, void **ppvObject) {
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_QueryInterface(
+    IMMNotificationClient *This, REFIID riid, void **ppvObject) {
     if (!ppvObject)
         return E_POINTER;
     if (IsEqualIID(riid, &IID_IUnknown) || IsEqualIID(riid, &IID_IMMNotificationClient)) {
@@ -276,19 +276,18 @@ HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDefaultDeviceChanged(
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceAdded(IMMNotificationClient *This,
-                                                                 LPCWSTR pwstrDeviceId) {
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceAdded(
+    IMMNotificationClient *This, LPCWSTR pwstrDeviceId) {
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceRemoved(IMMNotificationClient *This,
-                                                                   LPCWSTR pwstrDeviceId) {
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceRemoved(
+    IMMNotificationClient *This, LPCWSTR pwstrDeviceId) {
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceStateChanged(IMMNotificationClient *This,
-                                                                        LPCWSTR pwstrDeviceId,
-                                                                        DWORD dwNewState) {
+HRESULT STDMETHODCALLTYPE DeviceChangeNotification_OnDeviceStateChanged(
+    IMMNotificationClient *This, LPCWSTR pwstrDeviceId, DWORD dwNewState) {
     return S_OK;
 }
 
@@ -316,40 +315,43 @@ void write_silent_frame(struct audio_data *audio, IAudioCaptureClient *pCapture,
 	pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
 }
 
-void process_multichannel(UINT32 numFramesAvailable, const WAVEFORMATEX format, const void *pData,
-                          struct audio_data *audio, IAudioCaptureClient *pCapture, UINT32 packetLength,
-                          WAVEFORMATEX stereo_format) {
+void process_multichannel(
+    UINT32 numFramesAvailable, const WAVEFORMATEX format, const void *pData,
+    struct audio_data *audio, IAudioCaptureClient *pCapture, UINT32 packetLength,
+    WAVEFORMATEX stereo_format) {
+
 	int16_t *stereo_buffer = (int16_t *)malloc(numFramesAvailable * 2 * sizeof(int16_t));
 	if (format.wFormatTag == WAVE_FORMAT_IEEE_FLOAT &&
 		format.wBitsPerSample == 32) {
-		downmix_to_stereo_f32((const float *)pData, stereo_buffer,
-							  numFramesAvailable, format.nChannels);
+		downmix_to_stereo_f32(
+            (const float *)pData, stereo_buffer, numFramesAvailable, format.nChannels);
 	} else if (format.wBitsPerSample == 32) {
-		downmix_to_stereo_s32((const int32_t *)pData, stereo_buffer,
-							  numFramesAvailable, format.nChannels);
+		downmix_to_stereo_s32(
+            (const int32_t *)pData, stereo_buffer, numFramesAvailable, format.nChannels);
 	} else if (format.wBitsPerSample == 24) {
-		downmix_to_stereo_s24((const uint8_t *)pData, stereo_buffer,
-							  numFramesAvailable, format.nChannels);
+		downmix_to_stereo_s24(
+            (const uint8_t *)pData, stereo_buffer, numFramesAvailable, format.nChannels);
 	} else if (format.wBitsPerSample == 16) {
-		downmix_to_stereo_s16((const int16_t *)pData, stereo_buffer,
-							  numFramesAvailable, format.nChannels);
+		downmix_to_stereo_s16(
+            (const int16_t *)pData, stereo_buffer, numFramesAvailable, format.nChannels);
 	} else {
 		// Unsupported format, handle error
 		write_silent_frame(audio, pCapture, numFramesAvailable, packetLength);
 		return;
 	}
-	write_to_cava_input_buffers(numFramesAvailable * stereo_format.nChannels, (unsigned char *)stereo_buffer, audio);
+	write_to_cava_input_buffers(
+        numFramesAvailable * stereo_format.nChannels, (unsigned char *)stereo_buffer, audio);
 	free(stereo_buffer);
 }
-
+                                                                                                   
 void input_winscap(void *data) {
 
-    static const GUID CLSID_MMDeviceEnumerator = {0xBCDE0395, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4,
-                                                  0x57,       0x92,   0x91,   0x69, 0x2E};
-    static const GUID IID_IMMDeviceEnumerator = {0xA95664D2, 0x9614, 0x4F35, 0xA7, 0x46, 0xDE,
-                                                 0x8D,       0xB6,   0x36,   0x17, 0xE6};
-    static const GUID IID_IAudioClient = {0x1CB9AD4C, 0xDBFA, 0x4c32, 0xB1, 0x78, 0xC2,
-                                          0xF5,       0x68,   0xA7,   0x03, 0xB2};
+    static const GUID CLSID_MMDeviceEnumerator = {
+        0xBCDE0395, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4, 0x57, 0x92, 0x91, 0x69, 0x2E};
+    static const GUID IID_IMMDeviceEnumerator = {
+        0xA95664D2, 0x9614, 0x4F35, 0xA7, 0x46, 0xDE, 0x8D, 0xB6, 0x36, 0x17, 0xE6};
+    static const GUID IID_IAudioClient = {
+        0x1CB9AD4C, 0xDBFA, 0x4c32, 0xB1, 0x78, 0xC2, 0xF5, 0x68, 0xA7, 0x03, 0xB2};
     static const GUID IID_IAudioCaptureClient = {
         0xc8adbd64, 0xe71e, 0x48a0, {0xa4, 0xde, 0x18, 0x5c, 0x39, 0x5c, 0xd3, 0x17}};
 
@@ -366,8 +368,9 @@ void input_winscap(void *data) {
     WAVEFORMATEX *wfx = NULL;
     WAVEFORMATEXTENSIBLE *wfx_ext = NULL;
     IMMDeviceEnumerator *pEnumerator = NULL;
-    hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
-                                  &IID_IMMDeviceEnumerator, (void **)&pEnumerator);
+    hr = CoCreateInstance(
+        &CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator,
+        (void **)&pEnumerator);
     if (FAILED(hr)) {
         fwprintf(stderr, L"Failed to create device enumerator: 0x%08lx\n", hr);
         CoUninitialize();
@@ -399,9 +402,11 @@ void input_winscap(void *data) {
             continue;
         }
 
-        HRESULT hrInit = pClient->lpVtbl->Initialize(pClient, AUDCLNT_SHAREMODE_SHARED,
-                                                     AUDCLNT_STREAMFLAGS_LOOPBACK | AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-                                                     16 * REFTIMES_PER_MILLISEC, 0, wfx, 0);
+        HRESULT hrInit = pClient->lpVtbl->Initialize(
+            pClient, AUDCLNT_SHAREMODE_SHARED,
+            AUDCLNT_STREAMFLAGS_LOOPBACK | AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+            16 * REFTIMES_PER_MILLISEC, 0, wfx, 0);
+
         if (FAILED(hrInit)) {
             //_com_error err(hrInit);
 
@@ -419,7 +424,7 @@ void input_winscap(void *data) {
                 pClient->lpVtbl->Release(pClient);
             if (pDevice)
                 pDevice->lpVtbl->Release(pDevice);
-            WaitForSingleObject(hEvent, INFINITE); // I think this line may cause the program to hang need to test on spacial device
+            WaitForSingleObject(hEvent, INFINITE); // may freeze, need to test on spacial device
             continue;
         }
 
@@ -503,10 +508,12 @@ void input_winscap(void *data) {
                 }
 
                 if (format.nChannels > 2) {
-					process_multichannel(numFramesAvailable, format, pData, audio, pCapture, packetLength, stereo_format);
+					process_multichannel(
+                        numFramesAvailable, format, pData, audio,
+                        pCapture, packetLength, stereo_format);
                 } else {
-                    write_to_cava_input_buffers(numFramesAvailable * format.nChannels,
-                                                (unsigned char *)pData, audio);
+                    write_to_cava_input_buffers(
+                        numFramesAvailable * format.nChannels, (unsigned char *)pData, audio);
                 }
 
                 pCapture->lpVtbl->ReleaseBuffer(pCapture, numFramesAvailable);
