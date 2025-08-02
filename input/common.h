@@ -31,8 +31,11 @@ struct audio_data {
     int terminate;    // shared variable used to terminate audio thread
     char error_message[1024];
     int samples_counter;
-    int IEEE_FLOAT;  // format for 32bit (0=int, 1=float)
-    int autoconnect; // auto connect to audio source (0=off, 1=once at startup, 2=regularly)
+    int IEEE_FLOAT;   // format for 32bit (0=int, 1=float)
+    int autoconnect;  // auto connect to audio source (0=off, 1=once at startup, 2=regularly)
+    int active;       // actively monitor sources when the graph is idle
+    int remix;        // remix the incoming stream to this many channels
+    int virtual;      // set node.virtual to avoid recording notifications
     pthread_mutex_t lock;
 };
 
