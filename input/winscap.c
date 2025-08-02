@@ -7,6 +7,9 @@
 #include <audioclient.h>
 #include <fcntl.h>
 #include <io.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
@@ -14,6 +17,175 @@
 #include <functiondiscoverykeys.h>
 
 #include "common.h"
+
+static void make_stereo_waveformatex(const WAVEFORMATEX *orig, WAVEFORMATEX *stereo) {
+    *stereo = *orig;
+    stereo->wFormatTag = WAVE_FORMAT_PCM;
+    stereo->nChannels = 2;
+    stereo->wBitsPerSample = 16;
+    stereo->nBlockAlign = stereo->nChannels * (stereo->wBitsPerSample / 8);
+    stereo->nAvgBytesPerSec = stereo->nSamplesPerSec * stereo->nBlockAlign;
+    stereo->cbSize = 0;
+}
+
+// Downmix interleaved 16-bit PCM to stereo
+static void downmix_to_stereo_s16(const int16_t *src, int16_t *dst, size_t frames, int channels) {
+    size_t i;
+    for (i = 0; i < frames; ++i) {
+        int left = 0, right = 0;
+        if (channels >= 2) {
+            left += src[i * channels + 0];
+            right += src[i * channels + 1];
+        }
+        if (channels >= 3) {
+            left += (int)(src[i * channels + 2] * 0.7f);
+            right += (int)(src[i * channels + 2] * 0.7f);
+        }
+        if (channels >= 5) {
+            left += (int)(src[i * channels + 4] * 0.7f);
+            right += (int)(src[i * channels + 5] * 0.7f);
+        }
+        if (channels >= 7) {
+            left += (int)(src[i * channels + 6] * 0.7f);
+            right += (int)(src[i * channels + 7] * 0.7f);
+        }
+        if (left > 32767)
+            left = 32767;
+        if (left < -32768)
+            left = -32768;
+        if (right > 32767)
+            right = 32767;
+        if (right < -32768)
+            right = -32768;
+        dst[i * 2 + 0] = (int16_t)left;
+        dst[i * 2 + 1] = (int16_t)right;
+    }
+}
+
+// Helper to convert 3 bytes (little-endian) to signed 32-bit int
+static inline int32_t s24_to_s32(const uint8_t *p) {
+    int32_t val = p[0] | (p[1] << 8) | (p[2] << 16);
+    // Sign-extend if negative
+    if (val & 0x800000)
+        val |= ~0xFFFFFF;
+    return val;
+}
+
+// Downmix interleaved 24-bit PCM to stereo
+static void downmix_to_stereo_s24(const uint8_t *src, int16_t *dst, size_t frames, int channels) {
+    size_t i;
+    for (i = 0; i < frames; ++i) {
+        int left = 0, right = 0;
+
+        const uint8_t *frame = src + i * channels * 3;
+        if (channels >= 2) {
+            left += s24_to_s32(frame + 0 * 3) >> 8;
+            right += s24_to_s32(frame + 1 * 3) >> 8;
+        }
+        if (channels >= 3) {
+            int32_t c = s24_to_s32(frame + 2 * 3) >> 8;
+            left += (int)(c * 0.7f);
+            right += (int)(c * 0.7f);
+        }
+        if (channels >= 5) {
+            int32_t c4 = s24_to_s32(frame + 4 * 3) >> 8;
+            int32_t c5 = s24_to_s32(frame + 5 * 3) >> 8;
+            left += (int)(c4 * 0.7f);
+            right += (int)(c5 * 0.7f);
+        }
+        if (channels >= 7) {
+            int32_t c6 = s24_to_s32(frame + 6 * 3) >> 8;
+            int32_t c7 = s24_to_s32(frame + 7 * 3) >> 8;
+            left += (int)(c6 * 0.7f);
+            right += (int)(c7 * 0.7f);
+        }
+        // Clip to int16_t
+        if (left > 32767)
+            left = 32767;
+        if (left < -32768)
+            left = -32768;
+        if (right > 32767)
+            right = 32767;
+        if (right < -32768)
+            right = -32768;
+        dst[i * 2 + 0] = (int16_t)left;
+        dst[i * 2 + 1] = (int16_t)right;
+    }
+}
+
+// Downmix interleaved 32-bit PCM to stereo
+static void downmix_to_stereo_s32(const int32_t *src, int16_t *dst, size_t frames, int channels) {
+    size_t i;
+    for (i = 0; i < frames; ++i) {
+        int64_t left = 0, right = 0;
+        if (channels >= 2) {
+            left += src[i * channels + 0];
+            right += src[i * channels + 1];
+        }
+        if (channels >= 3) {
+            left += (int64_t)(src[i * channels + 2] * 0.7f);
+            right += (int64_t)(src[i * channels + 2] * 0.7f);
+        }
+        if (channels >= 5) {
+            left += (int64_t)(src[i * channels + 4] * 0.7f);
+            right += (int64_t)(src[i * channels + 5] * 0.7f);
+        }
+        if (channels >= 7) {
+            left += (int64_t)(src[i * channels + 6] * 0.7f);
+            right += (int64_t)(src[i * channels + 7] * 0.7f);
+        }
+        // Convert from 32-bit to 16-bit with clipping
+        left >>= 16;
+        right >>= 16;
+        if (left > 32767)
+            left = 32767;
+        if (left < -32768)
+            left = -32768;
+        if (right > 32767)
+            right = 32767;
+        if (right < -32768)
+            right = -32768;
+        dst[i * 2 + 0] = (int16_t)left;
+        dst[i * 2 + 1] = (int16_t)right;
+    }
+}
+
+// Downmix interleaved 32-bit float to stereo
+static void downmix_to_stereo_f32(const float *src, int16_t *dst, size_t frames, int channels) {
+    size_t i;
+    for (i = 0; i < frames; ++i) {
+        float left = 0.0f, right = 0.0f;
+        if (channels >= 2) {
+            left += src[i * channels + 0];
+            right += src[i * channels + 1];
+        }
+        if (channels >= 3) {
+            left += src[i * channels + 2] * 0.7f;
+            right += src[i * channels + 2] * 0.7f;
+        }
+        if (channels >= 5) {
+            left += src[i * channels + 4] * 0.7f;
+            right += src[i * channels + 5] * 0.7f;
+        }
+        if (channels >= 7) {
+            left += src[i * channels + 6] * 0.7f;
+            right += src[i * channels + 7] * 0.7f;
+        }
+        // Convert from float [-1.0, 1.0] to int16_t
+        int l = (int)(left * 32767.0f);
+        int r = (int)(right * 32767.0f);
+        if (l > 32767)
+            l = 32767;
+        if (l < -32768)
+            l = -32768;
+        if (r > 32767)
+            r = 32767;
+        if (r < -32768)
+            r = -32768;
+        dst[i * 2 + 0] = (int16_t)l;
+        dst[i * 2 + 1] = (int16_t)r;
+    }
+}
 
 // IID_IMMNotificationClient definition for linking
 
@@ -132,6 +304,45 @@ struct {
     {AUDCLNT_E_UNSUPPORTED_FORMAT, L"Requested sound format unsupported"},
 };
 
+void write_silent_frame(struct audio_data *audio, IAudioCaptureClient *pCapture,
+                        UINT32 numFramesAvailable, UINT32 packetLength) {
+    // Send one silent frame to the spectrometer
+    int silent_channels = audio->channels;
+    int silent_bytes = silent_channels * sizeof(int16_t); // 16-bit PCM
+    int16_t silence[2] = {0};
+
+    write_to_cava_input_buffers(silent_channels, (unsigned char *)silence, audio);
+    pCapture->lpVtbl->ReleaseBuffer(pCapture, numFramesAvailable);
+    pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
+}
+
+void process_multichannel(UINT32 numFramesAvailable, const WAVEFORMATEX format, const void *pData,
+                          struct audio_data *audio, IAudioCaptureClient *pCapture,
+                          UINT32 packetLength, WAVEFORMATEX stereo_format) {
+
+    int16_t *stereo_buffer = (int16_t *)malloc(numFramesAvailable * 2 * sizeof(int16_t));
+    if (format.wFormatTag == WAVE_FORMAT_IEEE_FLOAT && format.wBitsPerSample == 32) {
+        downmix_to_stereo_f32((const float *)pData, stereo_buffer, numFramesAvailable,
+                              format.nChannels);
+    } else if (format.wBitsPerSample == 32) {
+        downmix_to_stereo_s32((const int32_t *)pData, stereo_buffer, numFramesAvailable,
+                              format.nChannels);
+    } else if (format.wBitsPerSample == 24) {
+        downmix_to_stereo_s24((const uint8_t *)pData, stereo_buffer, numFramesAvailable,
+                              format.nChannels);
+    } else if (format.wBitsPerSample == 16) {
+        downmix_to_stereo_s16((const int16_t *)pData, stereo_buffer, numFramesAvailable,
+                              format.nChannels);
+    } else {
+        // Unsupported format, handle error
+        write_silent_frame(audio, pCapture, numFramesAvailable, packetLength);
+        return;
+    }
+    write_to_cava_input_buffers(numFramesAvailable * stereo_format.nChannels,
+                                (unsigned char *)stereo_buffer, audio);
+    free(stereo_buffer);
+}
+
 void input_winscap(void *data) {
 
     static const GUID CLSID_MMDeviceEnumerator = {0xBCDE0395, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4,
@@ -145,13 +356,25 @@ void input_winscap(void *data) {
 
     struct audio_data *audio = (struct audio_data *)data;
     pthread_mutex_lock(&audio->lock);
-    CoInitialize(0);
+
+    HRESULT hr = CoInitialize(0);
+    if (FAILED(hr)) {
+        fwprintf(stderr, L"CoInitialize failed: 0x%08lx\n", hr);
+        pthread_mutex_unlock(&audio->lock);
+        return;
+    }
 
     WAVEFORMATEX *wfx = NULL;
     WAVEFORMATEXTENSIBLE *wfx_ext = NULL;
     IMMDeviceEnumerator *pEnumerator = NULL;
-    HRESULT hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
-                                  &IID_IMMDeviceEnumerator, (void **)&pEnumerator);
+    hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator,
+                          (void **)&pEnumerator);
+    if (FAILED(hr)) {
+        fwprintf(stderr, L"Failed to create device enumerator: 0x%08lx\n", hr);
+        CoUninitialize();
+        pthread_mutex_unlock(&audio->lock);
+        return;
+    }
 
     HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
@@ -172,9 +395,16 @@ void input_winscap(void *data) {
 
         hr = pClient->lpVtbl->GetMixFormat(pClient, &wfx);
 
+        if (FAILED(hr) || wfx == NULL) {
+            fwprintf(stderr, L"Failed to GetMixFormat for client\n");
+            continue;
+        }
+
         HRESULT hrInit = pClient->lpVtbl->Initialize(pClient, AUDCLNT_SHAREMODE_SHARED,
-                                                     AUDCLNT_STREAMFLAGS_LOOPBACK,
+                                                     AUDCLNT_STREAMFLAGS_LOOPBACK |
+                                                         AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
                                                      16 * REFTIMES_PER_MILLISEC, 0, wfx, 0);
+
         if (FAILED(hrInit)) {
             //_com_error err(hrInit);
 
@@ -192,7 +422,19 @@ void input_winscap(void *data) {
                 pClient->lpVtbl->Release(pClient);
             if (pDevice)
                 pDevice->lpVtbl->Release(pDevice);
-            WaitForSingleObject(hEvent, INFINITE);
+            WaitForSingleObject(hEvent, INFINITE); // may freeze, need to test on spacial device
+            continue;
+        }
+
+        // use event handling instead of polling
+        HRESULT hrEvent = pClient->lpVtbl->SetEventHandle(pClient, hEvent);
+        if (FAILED(hrEvent)) {
+            fwprintf(stderr, L"SetEventHandle failed: 0x%08lx\n", hrEvent);
+            // Clean up resources as needed
+            if (pClient)
+                pClient->lpVtbl->Release(pClient);
+            if (pDevice)
+                pDevice->lpVtbl->Release(pDevice);
             continue;
         }
 
@@ -205,25 +447,33 @@ void input_winscap(void *data) {
 
         WAVEFORMATEX format = *wfx;
 
-        DWORD dwDelay =
-            (DWORD)(((double)REFTIMES_PER_SEC * bufferFrameCount / format.nSamplesPerSec) /
-                    REFTIMES_PER_MILLISEC / 2);
-
-        LPBYTE pSilence = (LPBYTE)malloc(bufferFrameCount * format.nBlockAlign);
-
-        ZeroMemory(pSilence, bufferFrameCount * format.nBlockAlign);
-
         pClient->lpVtbl->Start(pClient);
 
-        audio->channels = format.nChannels;
-        audio->rate = format.nSamplesPerSec;
-        audio->format = format.wBitsPerSample;
-        if (format.wBitsPerSample == 32)
-            audio->IEEE_FLOAT = 1;
+        WAVEFORMATEX stereo_format;
+        make_stereo_waveformatex(&format, &stereo_format);
+
+        if (format.nChannels > 2) {
+            audio->channels = 2;
+            audio->rate = stereo_format.nSamplesPerSec;
+            audio->format = stereo_format.wBitsPerSample;
+            audio->IEEE_FLOAT = 0;
+        } else {
+            audio->channels = format.nChannels;
+            audio->rate = format.nSamplesPerSec;
+            audio->format = format.wBitsPerSample;
+            if (format.wBitsPerSample == 32)
+                audio->IEEE_FLOAT = 1;
+        }
+
         pthread_mutex_unlock(&audio->lock);
+
         // deviceChanged
         while (!audio->terminate) {
-            Sleep(dwDelay);
+            DWORD waitResult = WaitForSingleObject(hEvent, INFINITE);
+            if (waitResult != WAIT_OBJECT_0) {
+                // Handle error or termination
+                continue;
+            }
 
             UINT32 packetLength;
             HRESULT hrNext = pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
@@ -250,11 +500,18 @@ void input_winscap(void *data) {
 
                 pCapture->lpVtbl->GetBuffer(pCapture, &pData, &numFramesAvailable, &flags, 0, 0);
 
-                if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
-                    pData = pSilence;
+                if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
+                    write_silent_frame(audio, pCapture, numFramesAvailable, packetLength);
+                    continue;
+                }
 
-                write_to_cava_input_buffers(numFramesAvailable * format.nChannels,
-                                            (unsigned char *)pData, audio);
+                if (format.nChannels > 2) {
+                    process_multichannel(numFramesAvailable, format, pData, audio, pCapture,
+                                         packetLength, stereo_format);
+                } else {
+                    write_to_cava_input_buffers(numFramesAvailable * format.nChannels,
+                                                (unsigned char *)pData, audio);
+                }
 
                 pCapture->lpVtbl->ReleaseBuffer(pCapture, numFramesAvailable);
                 pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
@@ -262,7 +519,6 @@ void input_winscap(void *data) {
         }
         deviceChanged = FALSE;
         pClient->lpVtbl->Stop(pClient);
-        free(pSilence);
         if (pCapture)
             pCapture->lpVtbl->Release(pCapture);
         if (pClient)
