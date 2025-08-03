@@ -429,7 +429,8 @@ Keys:\n\
         audio.autoconnect = 0;
 
         audio.input_buffer_size = BUFFER_SIZE * audio.channels;
-        audio.cava_buffer_size = audio.input_buffer_size * 8;
+        audio.cava_buffer_size = 16384; // this is the size at rates of 44100 or 48k, will be
+                                        // adjusted later if sample rate is unusual
 
         audio.cava_in = (double *)malloc(audio.cava_buffer_size * sizeof(double));
         memset(audio.cava_in, 0, sizeof(int) * audio.cava_buffer_size);
@@ -809,11 +810,11 @@ Keys:\n\
             }
 
             if (output_mode == OUTPUT_NONCURSES) {
-                init_terminal_noncurses(inAtty, inAterminal, p.color, p.bcolor, p.col, p.bgcol,
-                                        p.gradient, p.gradient_count, p.gradient_colors,
-                                        p.horizontal_gradient, p.horizontal_gradient_count,
-                                        p.horizontal_gradient_colors, number_of_bars, width, lines,
-                                        p.bar_width, p.orientation, p.blendDirection);
+                init_terminal_noncurses(inAtty, p.color, p.bcolor, p.col, p.bgcol, p.gradient,
+                                        p.gradient_count, p.gradient_colors, p.horizontal_gradient,
+                                        p.horizontal_gradient_count, p.horizontal_gradient_colors,
+                                        number_of_bars, width, lines, p.bar_width, p.orientation,
+                                        p.blendDirection);
             }
 
 #ifndef NDEBUG
@@ -838,6 +839,17 @@ Keys:\n\
                 cleanup();
                 fprintf(stderr, "Error initializing cava . %s", plan->error_message);
                 exit(EXIT_FAILURE);
+            }
+
+            // if the sample rate is unusual high or low, we need to adjust the input buffer size
+            // after the audio thread has started
+            if (plan->input_buffer_size != audio.cava_buffer_size) {
+                pthread_mutex_lock(&audio.lock);
+                audio.cava_buffer_size = plan->input_buffer_size;
+                free(audio.cava_in);
+                audio.cava_in = (double *)malloc(audio.cava_buffer_size * sizeof(double));
+                memset(audio.cava_in, 0, sizeof(double) * audio.cava_buffer_size);
+                pthread_mutex_unlock(&audio.lock);
             }
 
             bars_left = (float *)malloc(number_of_bars / output_channels * sizeof(float));

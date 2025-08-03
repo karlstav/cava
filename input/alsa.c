@@ -73,8 +73,6 @@ void *input_alsa(void *data) {
     unsigned char *buf = malloc(buffer_size);
     frames = period_size / ((audio->format / 8) * CHANNELS_COUNT);
 
-    signed char *buffer = malloc(period_size);
-
     while (!audio->terminate) {
 
         err = snd_pcm_readi(handle, buf, frames);
@@ -93,7 +91,6 @@ void *input_alsa(void *data) {
     }
 
     free(buf);
-    free(buffer);
     snd_pcm_close(handle);
     return NULL;
 }

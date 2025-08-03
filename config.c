@@ -1105,8 +1105,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     p->input = GetPrivateProfileInt("input", "method", INPUT_WINSCAP, configPath);
     if (p->input != INPUT_WINSCAP) {
-        write_errorf(error, "cava was built without '%s' input support\n",
-                     input_method_names[p->input]);
+        write_errorf(error, "on windows changing input method is not supported, "
+                            "simply leave the input method setting commented out\n");
         return false;
     }
     GetPrivateProfileString("input", "source", "auto", p->audio_source, 64, configPath);
