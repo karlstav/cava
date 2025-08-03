@@ -44,8 +44,7 @@ static void on_process(void *userdata) {
     pw_stream_queue_buffer(data->stream, b);
 }
 
-static void on_timeout(void *userdata, uint64_t expirations)
-{
+static void on_timeout(void *userdata, uint64_t expirations) {
     struct pw_data *data = userdata;
 
     if (data->cava_audio->terminate)
@@ -62,14 +61,15 @@ static void on_timeout(void *userdata, uint64_t expirations)
             interval.tv_sec = 0;
             interval.tv_nsec = 500 * SPA_NSEC_PER_MSEC;
 
-            pw_loop_update_timer(pw_main_loop_get_loop(data->loop),
-                            data->timer, &timeout, &interval, false);
+            pw_loop_update_timer(pw_main_loop_get_loop(data->loop), data->timer, &timeout,
+                                 &interval, false);
         }
     }
 }
 
 static void on_stream_state_changed(void *_data, [[maybe_unused]] enum pw_stream_state old,
-                                    enum pw_stream_state state, [[maybe_unused]] const char *error) {
+                                    enum pw_stream_state state,
+                                    [[maybe_unused]] const char *error) {
     struct pw_data *data = _data;
 
     data->idle = false;
@@ -82,12 +82,11 @@ static void on_stream_state_changed(void *_data, [[maybe_unused]] enum pw_stream
         interval.tv_sec = 0;
         interval.tv_nsec = 10 * SPA_NSEC_PER_MSEC;
 
-        pw_loop_update_timer(pw_main_loop_get_loop(data->loop),
-                        data->timer, &timeout, &interval, false);
+        pw_loop_update_timer(pw_main_loop_get_loop(data->loop), data->timer, &timeout, &interval,
+                             false);
         break;
     case PW_STREAM_STATE_STREAMING:
-        pw_loop_update_timer(pw_main_loop_get_loop(data->loop),
-                        data->timer, NULL, NULL, false);
+        pw_loop_update_timer(pw_main_loop_get_loop(data->loop), data->timer, NULL, NULL, false);
         break;
     default:
         break;
@@ -117,9 +116,9 @@ static const struct pw_stream_events stream_events = {
     .process = on_process,
 };
 
-
 unsigned int next_power_of_2(unsigned int n) {
-    if (n == 0) return 1; // Handle zero case
+    if (n == 0)
+        return 1; // Handle zero case
 
     n--; // Decrement n to handle the case where n is already a power of two
     n |= n >> 1;
@@ -142,7 +141,7 @@ void *input_pipewire(void *audiodata) {
     struct pw_properties *props;
     struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
     uint32_t nom;
-    nom = next_power_of_2((512 * data.cava_audio->rate / 48000 ));
+    nom = next_power_of_2((512 * data.cava_audio->rate / 48000));
     pw_init(0, 0);
 
     data.loop = pw_main_loop_new(NULL);
@@ -201,34 +200,28 @@ void *input_pipewire(void *audiodata) {
     if (data.cava_audio->remix) {
         pw_properties_set(props, PW_KEY_STREAM_DONT_REMIX, "false");
         pw_properties_set(props, "channelmix.upmix", "true");
-        
+
         if (data.cava_audio->channels < 2) {
         // N to 1 with all channels shown
         params[0] = spa_format_audio_raw_build(
             &b, SPA_PARAM_EnumFormat,
-            &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format,
-                                    .rate = data.cava_audio->rate,
-                                    .channels = data.cava_audio->channels,
-                                     ));
+            &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data.cava_audio->rate,
+                                     .channels = data.cava_audio->channels, ));
         } else {
         // N to 2 with all channels shown
         params[0] = spa_format_audio_raw_build(
             &b, SPA_PARAM_EnumFormat,
-            &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format,
-                                    .rate = data.cava_audio->rate,
-                                    .channels = data.cava_audio->channels,
-                                    .position = { SPA_AUDIO_CHANNEL_FL, SPA_AUDIO_CHANNEL_FR },
-                                     ));
+            &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data.cava_audio->rate,
+                                     .channels = data.cava_audio->channels,
+                                     .position = {SPA_AUDIO_CHANNEL_FL,
+                                                  SPA_AUDIO_CHANNEL_FR}, ));
         }
     } else {
         // N to 2 with only FL and FR shown
         params[0] = spa_format_audio_raw_build(
             &b, SPA_PARAM_EnumFormat,
-            &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format,
-                                    .rate = data.cava_audio->rate,
-                                    .channels = data.cava_audio->channels,
-                                     ));
-
+            &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data.cava_audio->rate,
+                                     .channels = data.cava_audio->channels, ));
 
     }
 
