@@ -202,19 +202,19 @@ void *input_pipewire(void *audiodata) {
         pw_properties_set(props, "channelmix.upmix", "true");
 
         if (data.cava_audio->channels < 2) {
-        // N to 1 with all channels shown
-        params[0] = spa_format_audio_raw_build(
-            &b, SPA_PARAM_EnumFormat,
-            &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data.cava_audio->rate,
-                                     .channels = data.cava_audio->channels, ));
+            // N to 1 with all channels shown
+            params[0] = spa_format_audio_raw_build(
+                &b, SPA_PARAM_EnumFormat,
+                &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data.cava_audio->rate,
+                                         .channels = data.cava_audio->channels, ));
         } else {
-        // N to 2 with all channels shown
-        params[0] = spa_format_audio_raw_build(
-            &b, SPA_PARAM_EnumFormat,
-            &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data.cava_audio->rate,
-                                     .channels = data.cava_audio->channels,
-                                     .position = {SPA_AUDIO_CHANNEL_FL,
-                                                  SPA_AUDIO_CHANNEL_FR}, ));
+            // N to 2 with all channels shown
+            params[0] = spa_format_audio_raw_build(
+                &b, SPA_PARAM_EnumFormat,
+                &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data.cava_audio->rate,
+                                         .channels = data.cava_audio->channels,
+                                         .position = {SPA_AUDIO_CHANNEL_FL,
+                                                      SPA_AUDIO_CHANNEL_FR}, ));
         }
     } else {
         // N to 2 with only FL and FR shown
@@ -222,7 +222,6 @@ void *input_pipewire(void *audiodata) {
             &b, SPA_PARAM_EnumFormat,
             &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data.cava_audio->rate,
                                      .channels = data.cava_audio->channels, ));
-
     }
 
     data.stream = pw_stream_new_simple(pw_main_loop_get_loop(data.loop), "cava", props,
