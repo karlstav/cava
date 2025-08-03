@@ -68,8 +68,8 @@ static void on_timeout(void *userdata, uint64_t expirations)
     }
 }
 
-static void on_stream_state_changed(void *_data, enum pw_stream_state old,
-                                    enum pw_stream_state state, const char *error) {
+static void on_stream_state_changed(void *_data, [[maybe_unused]] enum pw_stream_state old,
+                                    enum pw_stream_state state, [[maybe_unused]] const char *error) {
     struct pw_data *data = _data;
 
     data->idle = false;
