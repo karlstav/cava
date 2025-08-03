@@ -89,13 +89,12 @@ void free_terminal_noncurses(void) {
     }
 }
 
-int init_terminal_noncurses(int tty, int actualTerminal, char *const fg_color_string,
-                            char *const bg_color_string, int col, int bgcol, int gradient,
-                            int gradient_count, char **gradient_color_strings,
-                            int horizontal_gradient, int horizontal_gradient_count,
-                            char **horizontal_gradient_color_strings, int number_of_bars, int width,
-                            int lines, int bar_width, enum orientation orientation,
-                            enum orientation blendDirection) {
+int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg_color_string,
+                            int col, int bgcol, int gradient, int gradient_count,
+                            char **gradient_color_strings, int horizontal_gradient,
+                            int horizontal_gradient_count, char **horizontal_gradient_color_strings,
+                            int number_of_bars, int width, int lines, int bar_width,
+                            enum orientation orientation, enum orientation blendDirection) {
 
     free_terminal_noncurses();
 
@@ -185,16 +184,8 @@ int init_terminal_noncurses(int tty, int actualTerminal, char *const fg_color_st
     system("cls");
 
 #else
-#ifndef __FreeBSD__
-    if (!actualTerminal)
-        system("setterm -cursor off");
-#endif
-    if (actualTerminal) {
-        printf("\033[2J");
-    } else {
-        system("clear");
-    }
-    printf("\033[?25l");
+    printf("\033[2J");   // clear screen
+    printf("\033[?25l"); // hide cursor
 #endif
 
     // output: reset console
@@ -670,13 +661,12 @@ void cleanup_terminal_noncurses(void) {
 #else
     system("setfont  >/dev/null 2>&1");
     system("setfont /usr/share/consolefonts/Lat2-Fixed16.psf.gz  >/dev/null 2>&1");
-    system("setterm -cursor on");
 #endif
-    printf("\033[0m\n");
-    printf("\033[?25h");
-    printf("\033c");
-
-    system("clear");
+    printf("\033[0m\n"); // reset colors
+    printf("\033[?25h"); // show cursor
+    printf("\033c");     // reset terminal
+    printf("\033[2J");   // clear screen
+    fflush(stdout);
 
 #endif
 }

@@ -806,11 +806,11 @@ Keys:\n\
             }
 
             if (output_mode == OUTPUT_NONCURSES) {
-                init_terminal_noncurses(inAtty, inAterminal, p.color, p.bcolor, p.col, p.bgcol,
-                                        p.gradient, p.gradient_count, p.gradient_colors,
-                                        p.horizontal_gradient, p.horizontal_gradient_count,
-                                        p.horizontal_gradient_colors, number_of_bars, width, lines,
-                                        p.bar_width, p.orientation, p.blendDirection);
+                init_terminal_noncurses(inAtty, p.color, p.bcolor, p.col, p.bgcol, p.gradient,
+                                        p.gradient_count, p.gradient_colors, p.horizontal_gradient,
+                                        p.horizontal_gradient_count, p.horizontal_gradient_colors,
+                                        number_of_bars, width, lines, p.bar_width, p.orientation,
+                                        p.blendDirection);
             }
 
 #ifndef NDEBUG
