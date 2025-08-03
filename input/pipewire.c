@@ -131,13 +131,6 @@ unsigned int next_power_of_2(unsigned int n) {
     return n;
 }
 
-static void do_quit(void *userdata, int signal_number) {
-    struct pw_data *data = userdata;
-    data->cava_audio->terminate = 1;
-    pw_log_warn("pw quit signal %d received, terminating...", signal_number);
-    pw_main_loop_quit(data->loop);
-}
-
 void *input_pipewire(void *audiodata) {
     struct pw_data data = {
         0,
