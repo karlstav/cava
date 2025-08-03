@@ -51,6 +51,7 @@ void reset_output_buffers(struct audio_data *data) {
     for (uint16_t n = 0; n < audio->cava_buffer_size; n++) {
         audio->cava_in[n] = 0;
     }
+    audio->samples_counter = audio->cava_buffer_size;
     pthread_mutex_unlock(&audio->lock);
 }
 
