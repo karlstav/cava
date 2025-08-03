@@ -118,6 +118,7 @@
 #   channels:    sndio, oss, jack
 #   autoconnect: jack
 # Other methods ignore these settings.
+# For pipewire, sample_rate will default to 48000, for all other input methods, sample_rate will default to 44100.
 #
 # For 'sndio' and 'oss' they are only preferred values, i.e. if the values are not supported
 # by the chosen audio device, the device will use other supported values instead.
