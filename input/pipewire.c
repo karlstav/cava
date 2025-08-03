@@ -47,14 +47,13 @@ static void on_process(void *userdata) {
 static void on_timeout(void *userdata, uint64_t expirations)
 {
     struct pw_data *data = userdata;
-    unsigned char zero_sample[data->cava_audio->cava_buffer_size * (data->cava_audio->format / 4)] = {};
 
     if (data->cava_audio->terminate)
         pw_main_loop_quit(data->loop);
 
     if (!data->idle) {
         if (expirations < 10) {
-            write_to_cava_input_buffers(data->cava_audio->cava_buffer_size, zero_sample, data->cava_audio);
+            reset_output_buffers(data->cava_audio);
         } else {
             struct timespec timeout, interval;
             data->idle = true;
@@ -73,16 +72,15 @@ static void on_stream_state_changed(void *_data, enum pw_stream_state old,
                                     enum pw_stream_state state, const char *error) {
     struct pw_data *data = _data;
 
-
     data->idle = false;
     switch (state) {
     case PW_STREAM_STATE_PAUSED:
         struct timespec timeout, interval;
 
         timeout.tv_sec = 0;
-        timeout.tv_nsec = 1000 * SPA_NSEC_PER_MSEC / 60;
+        timeout.tv_nsec = 10 * SPA_NSEC_PER_MSEC;
         interval.tv_sec = 0;
-        interval.tv_nsec = 1000 * SPA_NSEC_PER_MSEC / 60;
+        interval.tv_nsec = 10 * SPA_NSEC_PER_MSEC;
 
         pw_loop_update_timer(pw_main_loop_get_loop(data->loop),
                         data->timer, &timeout, &interval, false);
@@ -163,10 +161,6 @@ void *input_pipewire(void *audiodata) {
         return 0;
     }
 
-    pw_loop_add_signal(pw_main_loop_get_loop(data.loop), SIGINT, do_quit, &data);
-    pw_loop_add_signal(pw_main_loop_get_loop(data.loop), SIGTERM, do_quit, &data);
-
-
     data.timer = pw_loop_add_timer(pw_main_loop_get_loop(data.loop), on_timeout, &data);
 
     props = pw_properties_new(PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY, "Capture",
@@ -185,7 +179,6 @@ void *input_pipewire(void *audiodata) {
         pw_properties_set(props, PW_KEY_TARGET_OBJECT, source);
     }
     pw_properties_setf(props, PW_KEY_NODE_LATENCY, "%u/%u", nom, data.cava_audio->rate);
-    pw_properties_set(props, PW_KEY_STREAM_MONITOR , "true");
 
     if (data.cava_audio->active)
         pw_properties_set(props, PW_KEY_NODE_ALWAYS_PROCESS, "true");
