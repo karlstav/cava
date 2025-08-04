@@ -531,6 +531,10 @@ Keys:\n\
         case INPUT_PIPEWIRE:
             audio.format = p.samplebits;
             audio.rate = p.samplerate;
+            audio.channels = p.channels;
+            audio.active = p.active;
+            audio.remix = p.remix;
+            audio.virtual = p.virtual;
             thr_id = pthread_create(&p_thread, NULL, input_pipewire, (void *)&audio);
             break;
 #endif

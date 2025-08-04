@@ -118,16 +118,26 @@
 #   channels:    sndio, oss, jack
 #   autoconnect: jack
 # Other methods ignore these settings.
+# For pipewire, sample_rate will default to 48000, for all other input methods, sample_rate will default to 44100.
 #
 # For 'sndio' and 'oss' they are only preferred values, i.e. if the values are not supported
 # by the chosen audio device, the device will use other supported values instead.
 # Example: 48000, 32 and 2, but the device only supports 44100, 16 and 1, then it
 # will use 44100, 16 and 1.
 #
+#
+# The 'pipewire' input method has three options to control linking and mixing:
+#   active: Force the node to always process. Useful for monitoring sources when no other application is active.
+#   remix: Allow pipewire to remix audio channels to match cava's channel count. Useful for surround sound.
+#   virtual: Set the node to virtual, to avoid recording notifications from the DE.
+#
 ; sample_rate = 44100
 ; sample_bits = 16
 ; channels = 2
 ; autoconnect = 2
+; active = 0
+; remix = 1
+; virtual = 1
 
 
 [output]

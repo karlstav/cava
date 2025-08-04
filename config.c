@@ -973,11 +973,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
 
     free(p->audio_source);
 
-    p->samplerate = iniparser_getint(ini, "input:sample_rate", 44100);
-    p->samplebits = iniparser_getint(ini, "input:sample_bits", 16);
-    p->channels = iniparser_getint(ini, "input:channels", 2);
-    p->autoconnect = iniparser_getint(ini, "input:autoconnect", 2);
-
     enum input_method default_input = INPUT_FIFO;
     for (size_t i = 0; i < ARRAY_SIZE(default_methods); i++) {
         enum input_method method = default_methods[i];
@@ -988,6 +983,18 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     char *input_method_name =
         strdup(iniparser_getstring(ini, "input:method", input_method_names[default_input]));
     p->input = input_method_by_name(input_method_name);
+
+    if (p->input == input_method_by_name("pipewire"))
+        p->samplerate = iniparser_getint(ini, "input:sample_rate", 48000);
+    else
+        p->samplerate = iniparser_getint(ini, "input:sample_rate", 44100);
+    p->samplebits = iniparser_getint(ini, "input:sample_bits", 16);
+    p->channels = iniparser_getint(ini, "input:channels", 2);
+    p->autoconnect = iniparser_getint(ini, "input:autoconnect", 2);
+    p->active = iniparser_getint(ini, "input:active", 0);
+    p->remix = iniparser_getint(ini, "input:remix", 1);
+    p->virtual = iniparser_getint(ini, "input:virtual", 1);
+
     switch (p->input) {
 #ifdef ALSA
     case INPUT_ALSA:
