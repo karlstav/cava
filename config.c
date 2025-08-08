@@ -1065,7 +1065,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->waves = GetPrivateProfileInt("smoothing", "waves", 0, configPath);
     p->monstercat = GetPrivateProfileInt("smoothing", "monstercat", 0, configPath);
 
-    p->noise_reduction = GetPrivateProfileInt("smoothing", "noise_reduction", 77, configPath);
+    p->noise_reduction = GetPrivateProfileInt("smoothing", "noise_reduction", 70, configPath);
     GetPrivateProfileString("output", "xaxis", "none", xaxisScale, 16, configPath);
     GetPrivateProfileString("output", "orientation", "bottom", orientation, 16, configPath);
     GetPrivateProfileString("color", "blend_orientation", "up", orientation, 16, configPath);
