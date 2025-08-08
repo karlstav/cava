@@ -238,14 +238,6 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         // and nyquist freq in M/2 but testing shows it is not...
         // or maybe the nq freq is in M/4
 
-        p->eq[n] = pow(p->cut_off_frequency[n], 1);
-
-        // the numbers that come out of the FFT are verry high
-        // the EQ is used to "normalize" them by dividing with this very huge number
-        p->eq[n] /= pow(2, 29);
-
-        p->eq[n] /= log2(p->FFTbassbufferSize);
-
         if (p->cut_off_frequency[n] < bass_cut_off) {
             // BASS
             bar_buffer[n] = 1;
@@ -262,13 +254,14 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                    p->cut_off_frequency[n] < treble_cut_off) {
             // MID
             bar_buffer[n] = 2;
-            p->FFTbuffer_lower_cut_off[n] = relative_cut_off[n] * (p->FFTmidbufferSize / 2);
+            p->FFTbuffer_lower_cut_off[n] =
+                ceil(relative_cut_off[n] * (float)(p->FFTmidbufferSize / 2));
             p->treble_cut_off_bar++;
             if ((p->treble_cut_off_bar - p->bass_cut_off_bar) == 1) {
                 first_bar = 1;
                 if (n > 0) {
                     p->FFTbuffer_upper_cut_off[n - 1] =
-                        relative_cut_off[n] * (p->FFTbassbufferSize / 2);
+                        relative_cut_off[n] * (p->FFTbassbufferSize / 2) - 1;
                 }
             } else {
                 first_bar = 0;
@@ -277,16 +270,18 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
             if (p->FFTbuffer_lower_cut_off[n] > p->FFTmidbufferSize / 2) {
                 p->FFTbuffer_lower_cut_off[n] = p->FFTmidbufferSize / 2;
             }
+
         } else {
             // TREBLE
             bar_buffer[n] = 3;
-            p->FFTbuffer_lower_cut_off[n] = relative_cut_off[n] * (p->FFTtreblebufferSize / 2);
+            p->FFTbuffer_lower_cut_off[n] =
+                ceil(relative_cut_off[n] * (float)(p->FFTtreblebufferSize / 2));
             first_treble_bar++;
             if (first_treble_bar == 1) {
                 first_bar = 1;
                 if (n > 0) {
                     p->FFTbuffer_upper_cut_off[n - 1] =
-                        relative_cut_off[n] * (p->FFTmidbufferSize / 2);
+                        relative_cut_off[n] * (p->FFTmidbufferSize / 2) - 1;
                 }
             } else {
                 first_bar = 0;
@@ -323,26 +318,55 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                         // push the spectrum up
                         p->FFTbuffer_lower_cut_off[n] = p->FFTbuffer_lower_cut_off[n - 1] + 1;
                         p->FFTbuffer_upper_cut_off[n - 1] = p->FFTbuffer_lower_cut_off[n] - 1;
-
-                        // calculate new cut off frequency
-                        if (bar_buffer[n] == 1)
-                            relative_cut_off[n] = (float)(p->FFTbuffer_lower_cut_off[n]) /
-                                                  ((float)p->FFTbassbufferSize / 2);
-                        else if (bar_buffer[n] == 2)
-                            relative_cut_off[n] = (float)(p->FFTbuffer_lower_cut_off[n]) /
-                                                  ((float)p->FFTmidbufferSize / 2);
-                        else if (bar_buffer[n] == 3)
-                            relative_cut_off[n] = (float)(p->FFTbuffer_lower_cut_off[n]) /
-                                                  ((float)p->FFTtreblebufferSize / 2);
-
-                        p->cut_off_frequency[n] = relative_cut_off[n] * ((float)p->rate / 2);
                     }
                 }
             } else {
-                if (p->FFTbuffer_upper_cut_off[n - 1] <= p->FFTbuffer_lower_cut_off[n - 1])
+                if (p->FFTbuffer_upper_cut_off[n - 1] < p->FFTbuffer_lower_cut_off[n - 1])
                     p->FFTbuffer_upper_cut_off[n - 1] = p->FFTbuffer_lower_cut_off[n - 1] + 1;
             }
         }
+        // calculate actual cut off frequency
+        if (bar_buffer[n] == 1)
+            relative_cut_off[n] =
+                (float)(p->FFTbuffer_lower_cut_off[n]) / ((float)p->FFTbassbufferSize / 2);
+        else if (bar_buffer[n] == 2)
+            relative_cut_off[n] =
+                (float)(p->FFTbuffer_lower_cut_off[n]) / ((float)p->FFTmidbufferSize / 2);
+        else if (bar_buffer[n] == 3)
+            relative_cut_off[n] =
+                (float)(p->FFTbuffer_lower_cut_off[n]) / ((float)p->FFTtreblebufferSize / 2);
+
+        p->cut_off_frequency[n] = relative_cut_off[n] * ((float)p->rate / 2);
+    }
+    for (int n = 0; n < p->number_of_bars; n++) {
+        p->eq[n] = pow(p->cut_off_frequency[n], 1);
+
+        // the numbers that come out of the FFT are verry high
+        // the EQ is used to "normalize" them by dividing with this very huge number
+        p->eq[n] /= pow(2, 29);
+
+        p->eq[n] /= log2(p->FFTbassbufferSize);
+
+        p->eq[n] /= p->FFTbuffer_upper_cut_off[n] - p->FFTbuffer_lower_cut_off[n] + 1;
+        if (n < p->number_of_bars - 1) {
+            //  p->eq[n] *= pow(p->cut_off_frequency[n + 1] - p->cut_off_frequency[n], 0.5);
+        } else {
+            //  p->eq[n] *= pow(upper_cut_off - p->cut_off_frequency[n], 0.5);
+        }
+
+        /*
+        if (n <= p->bass_cut_off_bar) {
+            p->eq[n] *= pow(p->FFTbuffer_upper_cut_off[n] / (double)p->FFTbassbufferSize, 0.5);
+        } else if (n > p->bass_cut_off_bar && n <= p->treble_cut_off_bar) {
+            p->eq[n] *= pow(p->FFTbuffer_upper_cut_off[n] / (double)p->FFTmidbufferSize, 0.5);
+        } else {
+            p->eq[n] *= pow(p->FFTbuffer_upper_cut_off[n] / (double)p->FFTtreblebufferSize, 0.5);
+        }
+        printf("Bar %d: Lower cut off: %d, Upper cut off: %d, Cut off frequency: %.2f, bar buffer: "
+               "%d eq: %.10f\n",
+               n, p->FFTbuffer_lower_cut_off[n], p->FFTbuffer_upper_cut_off[n],
+               p->cut_off_frequency[n], bar_buffer[n], p->eq[n]);
+            */
     }
     free(bar_buffer);
     free(relative_cut_off);
@@ -460,12 +484,10 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
         }
 
         // getting average multiply with eq
-        temp_l /= p->FFTbuffer_upper_cut_off[n] - p->FFTbuffer_lower_cut_off[n] + 1;
         temp_l *= p->eq[n];
         cava_out[n] = temp_l;
 
         if (p->audio_channels == 2) {
-            temp_r /= p->FFTbuffer_upper_cut_off[n] - p->FFTbuffer_lower_cut_off[n] + 1;
             temp_r *= p->eq[n];
             cava_out[n + p->number_of_bars] = temp_r;
         }
