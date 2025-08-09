@@ -345,7 +345,13 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         // the EQ is used to "normalize" them by dividing with this very huge number
         p->eq[n] /= pow(2, 29);
 
-        p->eq[n] /= log2(p->FFTbassbufferSize);
+        if (n <= p->bass_cut_off_bar) {
+            p->eq[n] /= log2(p->FFTbassbufferSize);
+        } else if (n > p->bass_cut_off_bar && n <= p->treble_cut_off_bar) {
+            p->eq[n] /= log2(p->FFTmidbufferSize);
+        } else {
+            p->eq[n] /= log2(p->FFTtreblebufferSize);
+        }
 
         p->eq[n] /= p->FFTbuffer_upper_cut_off[n] - p->FFTbuffer_lower_cut_off[n] + 1;
         if (n < p->number_of_bars - 1) {
