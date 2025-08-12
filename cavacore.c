@@ -473,7 +473,6 @@ void cava_destroy(struct cava_plan *p) {
 
     free(p->input_buffer);
     free(p->bass_multiplier);
-    free(p->mid_multiplier);
     free(p->multiplier);
     free(p->eq);
     free(p->cut_off_frequency);

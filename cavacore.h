@@ -55,7 +55,6 @@ struct cava_plan {
     fftw_complex *out_l, *out_r;
 
     double *bass_multiplier;
-    double *mid_multiplier;
     double *multiplier;
 
     double *in_bass_r_raw, *in_bass_l_raw;
