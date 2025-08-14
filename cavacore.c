@@ -203,10 +203,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                     (p->cut_off_frequency[n - 1] - p->cut_off_frequency[n - 2]);
         }
 
+        // remember nyquist!
         relative_cut_off[n] = p->cut_off_frequency[n] / (p->rate / 2);
-        // remember nyquist!, per my calculations this should be rate/2
-        // and nyquist freq in M/2 but testing shows it is not...
-        // or maybe the nq freq is in M/4
 
         if (p->cut_off_frequency[n] < bass_cut_off) {
             // BASS
@@ -278,6 +276,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         p->cut_off_frequency[n] = relative_cut_off[n] * ((float)p->rate / 2);
     }
 
+    // hard coded eq
     for (int n = 0; n < p->number_of_bars; n++) {
         p->eq[n] = pow(p->cut_off_frequency[n], 0.8);
         // the numbers that come out of the FFT are verry high
@@ -289,26 +288,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         } else {
             p->eq[n] /= log2(p->FFTbufferSize);
         }
-
         p->eq[n] /= p->FFTbuffer_upper_cut_off[n] - p->FFTbuffer_lower_cut_off[n] + 1;
-        if (n < p->number_of_bars - 1) {
-            //  p->eq[n] *= pow(p->cut_off_frequency[n + 1] - p->cut_off_frequency[n], 0.5);
-        } else {
-            //  p->eq[n] *= pow(upper_cut_off - p->cut_off_frequency[n], 0.5);
-        }
-
-        /*
-        if (n <= p->bass_cut_off_bar) {
-            p->eq[n] *= pow(p->FFTbuffer_upper_cut_off[n] / (double)p->FFTbassbufferSize, 0.5);
-        } else if (n > p->bass_cut_off_bar && n <= p->treble_cut_off_bar) {
-            p->eq[n] *= pow(p->FFTbuffer_upper_cut_off[n] / (double)p->FFTmidbufferSize, 0.5);
-        } else {
-            p->eq[n] *= pow(p->FFTbuffer_upper_cut_off[n] / (double)p->FFTtreblebufferSize, 0.5);
-        }
-        printf("Bar %d: Lower cut off: %d, Upper cut off: %d, Cut off frequency: %.2f, bar buffer: "
-               "%d eq: %.10f\n",
-               n, p->FFTbuffer_lower_cut_off[n], p->FFTbuffer_upper_cut_off[n],
-               p->cut_off_frequency[n], p->bass_cut_off_bar, p->eq[n]);*/
     }
     free(relative_cut_off);
     return p;
