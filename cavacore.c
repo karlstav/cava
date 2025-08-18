@@ -278,7 +278,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
     // hard coded eq
     for (int n = 0; n < p->number_of_bars; n++) {
-        p->eq[n] = pow(p->cut_off_frequency[n], 0.8);
+        p->eq[n] = pow(p->cut_off_frequency[n + 1], 0.8);
         // the numbers that come out of the FFT are verry high
         // the EQ is used to "normalize" them by dividing with this very huge number
         p->eq[n] /= pow(2, 28);
