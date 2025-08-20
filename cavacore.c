@@ -189,6 +189,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     p->bass_cut_off_bar = 0;
     int first_bar = 1;
 
+    float min_bandwidth = p->rate / p->FFTbassbufferSize;
+
     for (int n = 0; n < p->number_of_bars + 1; n++) {
         double bar_distribution_coefficient = frequency_constant * (-1);
         bar_distribution_coefficient +=
@@ -196,11 +198,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         p->cut_off_frequency[n] = upper_cut_off * pow(10, bar_distribution_coefficient);
 
         if (n > 0) {
-            if (p->cut_off_frequency[n - 1] >= p->cut_off_frequency[n] &&
-                p->cut_off_frequency[n - 1] > bass_cut_off)
-                p->cut_off_frequency[n] =
-                    p->cut_off_frequency[n - 1] +
-                    (p->cut_off_frequency[n - 1] - p->cut_off_frequency[n - 2]);
+            if (p->cut_off_frequency[n - 1] >= p->cut_off_frequency[n])
+                p->cut_off_frequency[n] = p->cut_off_frequency[n - 1] + min_bandwidth;
         }
 
         // remember nyquist!
