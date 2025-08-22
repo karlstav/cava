@@ -1,0 +1,59 @@
+name: Build CAVA Android
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout CAVA
+        uses: actions/checkout@v4
+        with:
+          path: cava
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build cmake unzip git
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK
+        run: sdkmanager "ndk;25.2.9519653"
+
+      - name: Export NDK path
+        run: |
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "$ANDROID_SDK_ROOT/ndk/25.2.9519653" >> $GITHUB_PATH
+
+      - name: Clone fftw3-android
+        run: |
+          cd $GITHUB_WORKSPACE
+          git clone https://github.com/Lauszus/fftw3-android
+
+      - name: Build fftw3-android
+        run: |
+          cd fftw3-android
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Build CAVA
+        run: |
+          cd cava/cavandroid
+          ./gradlew assembleRelease \
+            -Pcmake.fftw3.dir="$GITHUB_WORKSPACE/fftw3-android"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CAVA-APK
+          path: cava/cavandroid/app/build/outputs/apk/release/app-release.apk
