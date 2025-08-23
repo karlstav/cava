@@ -307,11 +307,12 @@ struct {
 void write_silent_frame(struct audio_data *audio, IAudioCaptureClient *pCapture,
                         UINT32 numFramesAvailable, UINT32 packetLength) {
     // Send one silent frame to the spectrometer
+    int bytes_per_sample = audio->format / 8;
     int silent_channels = audio->channels;
-    int silent_bytes = silent_channels * sizeof(int16_t); // 16-bit PCM
-    int16_t silence[2] = {0};
+    LPBYTE silence = (LPBYTE)calloc(silent_channels, bytes_per_sample);
 
     write_to_cava_input_buffers(silent_channels, (unsigned char *)silence, audio);
+    free(silence);
     pCapture->lpVtbl->ReleaseBuffer(pCapture, numFramesAvailable);
     pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
 }
