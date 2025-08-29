@@ -313,13 +313,15 @@ void write_silent_frame(struct audio_data *audio, IAudioCaptureClient *pCapture,
     static int silence_size = 0;
     int required_size = numFramesAvailable * silent_channels * bytes_per_sample;
     if (!silence || silence_size < required_size) {
-        if (silence) free(silence);
+        if (silence)
+            free(silence);
         silence = (LPBYTE)calloc(1, required_size);
         silence_size = required_size;
     }
 
     // Write all silent frames in one batch
-    write_to_cava_input_buffers(numFramesAvailable * silent_channels, (unsigned char *)silence, audio);
+    write_to_cava_input_buffers(numFramesAvailable * silent_channels, (unsigned char *)silence,
+                                audio);
     pCapture->lpVtbl->ReleaseBuffer(pCapture, numFramesAvailable);
     pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
     Sleep(1); // Prevent busy loop
