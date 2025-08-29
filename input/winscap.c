@@ -306,15 +306,23 @@ struct {
 
 void write_silent_frame(struct audio_data *audio, IAudioCaptureClient *pCapture,
                         UINT32 numFramesAvailable, UINT32 packetLength) {
-    // Send one silent frame to the spectrometer
+    // Batch silent frames to reduce CPU usage
     int bytes_per_sample = audio->format / 8;
     int silent_channels = audio->channels;
-    LPBYTE silence = (LPBYTE)calloc(silent_channels, bytes_per_sample);
+    static LPBYTE silence = NULL;
+    static int silence_size = 0;
+    int required_size = numFramesAvailable * silent_channels * bytes_per_sample;
+    if (!silence || silence_size < required_size) {
+        if (silence) free(silence);
+        silence = (LPBYTE)calloc(1, required_size);
+        silence_size = required_size;
+    }
 
-    write_to_cava_input_buffers(silent_channels, (unsigned char *)silence, audio);
-    free(silence);
+    // Write all silent frames in one batch
+    write_to_cava_input_buffers(numFramesAvailable * silent_channels, (unsigned char *)silence, audio);
     pCapture->lpVtbl->ReleaseBuffer(pCapture, numFramesAvailable);
     pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
+    Sleep(1); // Prevent busy loop
 }
 
 void process_multichannel(UINT32 numFramesAvailable, const WAVEFORMATEX format, const void *pData,
