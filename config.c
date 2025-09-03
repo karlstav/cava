@@ -1104,8 +1104,46 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->sync_updates = GetPrivateProfileInt("output", "synchronized_sync", 0, configPath);
     p->show_idle_bar_heads = GetPrivateProfileInt("output", "show_idle_bar_heads", 1, configPath);
     p->waveform = GetPrivateProfileInt("output", "waveform", 0, configPath);
+    
+    // read eq values
+    p->userEQ_keys = 0;
+    p->userEQ = (double *)malloc(sizeof(double));
+    if (p->userEQ == NULL) {
+        write_errorf(error, "Memory allocation failed\n");
+        return false;
+    }
+    while (1) {
+        char eqResult[10];
+        char keyNum[3];
 
-    p->userEQ_enabled = 0;
+        // pass key counter as string to GetPrivateProfileString
+        sprintf(keyNum, "%d", p->userEQ_keys + 1);
+        GetPrivateProfileString("eq", keyNum, "NOT FOUND", eqResult, sizeof(eqResult), configPath);
+        if (!strcmp(eqResult, "NOT FOUND")) {
+            break;
+        } else {
+            double *oldPtr = p->userEQ;
+            p->userEQ = (double *)realloc(p->userEQ, sizeof(double) * (p->userEQ_keys + 1));
+            if (p->userEQ == NULL) {
+                write_errorf(error, "Memory reallocation failed\n");
+                free(oldPtr);
+                return false;
+            }
+
+            int *endptr;
+            p->userEQ[p->userEQ_keys] = strtod(eqResult, &endptr);
+            if (endptr == eqResult) {
+                write_errorf(error, "Invalid string to double conversion, %d : \"%s\" \n",
+                                     p->userEQ_keys + 1, eqResult);
+                free(p->userEQ);
+                return false;
+            }
+            p->userEQ_keys++;
+        }
+    }
+    if (p->userEQ_keys > 0) {
+        p->userEQ_enabled = 1;
+    }
 
     p->input = GetPrivateProfileInt("input", "method", INPUT_WINSCAP, configPath);
     if (p->input != INPUT_WINSCAP) {
