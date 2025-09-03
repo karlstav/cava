@@ -1104,7 +1104,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->sync_updates = GetPrivateProfileInt("output", "synchronized_sync", 0, configPath);
     p->show_idle_bar_heads = GetPrivateProfileInt("output", "show_idle_bar_heads", 1, configPath);
     p->waveform = GetPrivateProfileInt("output", "waveform", 0, configPath);
-    
+
     // read eq values
     p->userEQ_keys = 0;
     p->userEQ = (double *)malloc(sizeof(double));
@@ -1130,11 +1130,11 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
                 return false;
             }
 
-            int *endptr;
+            char *endptr;
             p->userEQ[p->userEQ_keys] = strtod(eqResult, &endptr);
             if (endptr == eqResult) {
                 write_errorf(error, "Invalid string to double conversion, %d : \"%s\" \n",
-                                     p->userEQ_keys + 1, eqResult);
+                             p->userEQ_keys + 1, eqResult);
                 free(p->userEQ);
                 return false;
             }
