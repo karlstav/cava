@@ -277,16 +277,20 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
     // hard coded eq
     for (int n = 0; n < p->number_of_bars; n++) {
-        p->eq[n] = pow(p->cut_off_frequency[n + 1], 0.8);
+
         // the numbers that come out of the FFT are verry high
         // the EQ is used to "normalize" them by dividing with this very huge number
-        p->eq[n] /= pow(2, 28);
+        p->eq[n] = 1 / pow(2, 28);
+
+        // need to boost the EQ for higher frequencies
+        p->eq[n] *= pow(p->cut_off_frequency[n + 1], 0.8);
 
         if (n < p->bass_cut_off_bar) {
             p->eq[n] /= log2(p->FFTbassbufferSize);
         } else {
             p->eq[n] /= log2(p->FFTbufferSize);
         }
+
         p->eq[n] /= p->FFTbuffer_upper_cut_off[n] - p->FFTbuffer_lower_cut_off[n] + 1;
     }
     free(relative_cut_off);
@@ -440,7 +444,7 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
             p->sens_init = 0;
         } else {
             if (!silence) {
-                p->sens = p->sens * 1.002;
+                p->sens = p->sens * 1.001;
                 if (p->sens_init)
                     p->sens = p->sens * 1.1;
             }

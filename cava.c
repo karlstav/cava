@@ -334,7 +334,8 @@ Keys:\n\
 
         output_mode = p.output;
 #ifndef _WIN32
-        if (output_mode == OUTPUT_NCURSES || output_mode == OUTPUT_NONCURSES) {
+        if ((output_mode == OUTPUT_NCURSES || output_mode == OUTPUT_NONCURSES) &&
+            ttyname(0) != NULL) {
             // Check if we're running in a tty
             if (strncmp(ttyname(0), "/dev/tty", 8) == 0 ||
                 strcmp(ttyname(0), "/dev/console") == 0 ||
