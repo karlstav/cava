@@ -526,6 +526,7 @@ void input_winscap(void *data) {
 
                 pCapture->lpVtbl->ReleaseBuffer(pCapture, numFramesAvailable);
                 pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
+                ResetEvent(hEvent);
             }
         }
         deviceChanged = FALSE;
