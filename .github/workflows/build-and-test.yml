@@ -24,6 +24,8 @@ jobs:
       run: ./configure
     - name: Run make
       run: make CFLAGS='-Werror'
+    - name: Run make distcheck
+      run: make distcheck
     - name: Prepare tests
       run: |
         pulseaudio -D
