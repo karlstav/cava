@@ -30,7 +30,7 @@
 #include <windows.h>
 #define PATH_MAX 260
 #define PACKAGE "cava"
-#define VERSION "0.10.4"
+#define VERSION "0.10.5"
 #define _CRT_SECURE_NO_WARNINGS 1
 #endif // _WIN32
 
