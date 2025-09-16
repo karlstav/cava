@@ -227,10 +227,18 @@ void *input_pipewire(void *audiodata) {
     data.stream = pw_stream_new_simple(pw_main_loop_get_loop(data.loop), "cava", props,
                                        &stream_events, &data);
 
-    pw_stream_connect(data.stream, PW_DIRECTION_INPUT, PW_ID_ANY,
-                      PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS |
-                          PW_STREAM_FLAG_RT_PROCESS,
-                      params, 1);
+    int status = pw_stream_connect(data.stream, PW_DIRECTION_INPUT, PW_ID_ANY,
+                                   PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS |
+                                       PW_STREAM_FLAG_RT_PROCESS,
+                                   params, 1);
+
+    if (status < 0) {
+        data.cava_audio->terminate = 1;
+        sprintf(data.cava_audio->error_message,
+                __FILE__ ": Could not connect stream. Is your system running pipewire? Maybe try "
+                         "pulse input method instead.");
+        return 0;
+    }
 
     pw_main_loop_run(data.loop);
 
