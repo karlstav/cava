@@ -509,6 +509,9 @@ void input_winscap(void *data) {
                 UINT32 numFramesAvailable;
                 DWORD flags;
 
+                if (deviceChanged)
+                    break;
+
                 pCapture->lpVtbl->GetBuffer(pCapture, &pData, &numFramesAvailable, &flags, 0, 0);
 
                 if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
