@@ -761,9 +761,10 @@ Keys:\n\
                     audio.terminate = 1;
                     exit(EXIT_FAILURE);
                 }
-                if (number_of_bars <= 1) {
+                if (number_of_bars < output_channels) {
                     cleanup();
-                    fprintf(stderr, "fixed number of bars must be at least 1\n");
+                    fprintf(stderr, "fixed number of bars must be at least 1 with mono output and "
+                                    "2 with stereo output\n");
                     exit(EXIT_FAILURE);
                 }
                 if (output_channels == 2 && number_of_bars % 2 != 0) {
