@@ -283,7 +283,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         p->eq[n] = 1 / pow(2, 28);
 
         // need to boost the EQ for higher frequencies
-        p->eq[n] *= pow(p->cut_off_frequency[n + 1], 0.9);
+        p->eq[n] *= pow(p->cut_off_frequency[n + 1], 0.8);
 
         if (n < p->bass_cut_off_bar) {
             p->eq[n] /= log2(p->FFTbassbufferSize);
