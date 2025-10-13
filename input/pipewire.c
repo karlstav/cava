@@ -88,6 +88,10 @@ static void on_stream_state_changed(void *_data, [[maybe_unused]] enum pw_stream
     case PW_STREAM_STATE_STREAMING:
         pw_loop_update_timer(pw_main_loop_get_loop(data->loop), data->timer, NULL, NULL, false);
         break;
+    case PW_STREAM_STATE_ERROR:
+    case PW_STREAM_STATE_UNCONNECTED:
+        data->cava_audio->terminate = 1;
+        break;
     default:
         break;
     }
