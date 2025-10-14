@@ -1,6 +1,5 @@
 // input: ALSA
 #include "input/alsa.h"
-#include "debug.h"
 #include "input/common.h"
 
 #include <alloca.h>
@@ -18,8 +17,7 @@ static void initialize_audio_parameters(snd_pcm_t **handle, struct audio_data *a
     if (err < 0) {
         fprintf(stderr, "error opening stream: %s\n", snd_strerror(err));
         exit(EXIT_FAILURE);
-    } else
-        debug("open stream successful\n");
+    }
 
     snd_pcm_hw_params_t *params;
     snd_pcm_hw_params_alloca(&params);      // assembling params
@@ -79,12 +77,12 @@ void *input_alsa(void *data) {
 
         if (err == -EPIPE) {
             /* EPIPE means overrun */
-            debug("overrun occurred\n");
+            fprintf(stderr, "overrun occurred\n");
             snd_pcm_prepare(handle);
         } else if (err < 0) {
-            debug("error from read: %s\n", snd_strerror(err));
+            fprintf(stderr, "error from read: %s\n", snd_strerror(err));
         } else if (err != (int)frames) {
-            debug("short read, read %d %d frames\n", err, (int)frames);
+            fprintf(stderr, "short read, read %d %d frames\n", err, (int)frames);
         }
 
         write_to_cava_input_buffers(frames * CHANNELS_COUNT, buf, data);

@@ -44,7 +44,6 @@
 
 #include "config.h"
 
-#include "debug.h"
 #include "util.h"
 
 #ifdef SDL
@@ -319,7 +318,6 @@ Keys:\n\
     // general: main loop
     while (1) {
 
-        debug("loading config\n");
         // config: load
         struct error_s error;
         error.length = 0;
@@ -437,8 +435,6 @@ Keys:\n\
 
         audio.threadparams = 0; // most input threads don't adjust the parameters
         audio.terminate = 0;
-
-        debug("starting audio thread\n");
 
         pthread_t p_thread;
         int timeout_counter = 0;
@@ -569,7 +565,6 @@ Keys:\n\
             }
         }
         pthread_mutex_unlock(&audio.lock);
-        debug("got format: %d and rate %d\n", audio.format, audio.rate);
 
         int audio_channels = audio.channels;
 
@@ -726,10 +721,6 @@ Keys:\n\
                     exit(1);
                 }
 
-#ifndef NDEBUG
-                debug("open file %s for writing raw output\n", p.raw_target);
-#endif
-
                 // width must be hardcoded for raw output. only used to calculate the number of
                 // bars in auto mode
                 width = 512 * output_channels;
@@ -817,13 +808,6 @@ Keys:\n\
                                         number_of_bars, width, lines, p.bar_width, p.orientation,
                                         p.blendDirection);
             }
-
-#ifndef NDEBUG
-            debug("height: %d width: %d dimension_bar: %d dimension_value: %d bars:%d bar width: "
-                  "%d remainder: %d\n",
-                  height, width, *dimension_bar, *dimension_value, number_of_bars, p.bar_width,
-                  remainder);
-#endif
 
             double userEQ_keys_to_bars_ratio;
 
@@ -942,11 +926,6 @@ Keys:\n\
             bool silence = false;
             char ch = '\0';
 
-#ifndef NDEBUG
-            int maxvalue = 0;
-            int minvalue = 0;
-#endif
-
             struct timespec sleep_mode_timer = {.tv_sec = 1, .tv_nsec = 0};
 
             int total_frames = 0;
@@ -1061,13 +1040,6 @@ Keys:\n\
                     break;
                 }
 
-#ifndef NDEBUG
-                // clear();
-#ifndef _WIN32
-                refresh();
-#endif
-#endif
-
                 // checking if audio thread has exited unexpectedly
                 pthread_mutex_lock(&audio.lock);
                 if (audio.terminate == 1) {
@@ -1096,9 +1068,6 @@ Keys:\n\
                             sleep_counter = 0;
 
                         if (sleep_counter > p.framerate * p.sleep_timer) {
-#ifndef NDEBUG
-                            printw("no sound detected for 30 sec, going to sleep mode\n");
-#endif
                             nanosleep(&sleep_mode_timer, NULL);
                             continue;
                         }
@@ -1258,42 +1227,9 @@ Keys:\n\
                     if (bars[n] != previous_frame[n])
                         re_paint = 1;
 #endif
-
-#ifndef NDEBUG
-                    mvprintw(n, 0, "%d: f:%f->%f (%d->%d), eq:\
-						%15e, peak:%d \n",
-                             n, plan->cut_off_frequency[n], plan->cut_off_frequency[n + 1],
-                             plan->FFTbuffer_lower_cut_off[n], plan->FFTbuffer_upper_cut_off[n],
-                             plan->eq[n], bars[n]);
-
-                    if (bars[n] < minvalue) {
-                        minvalue = bars[n];
-                        debug("min value: %d\n", minvalue); // checking maxvalue 10000
-                    }
-                    if (bars[n] > maxvalue) {
-                        maxvalue = bars[n];
-                    }
-                    if (bars[n] < 0) {
-                        debug("negative bar value!! %d\n", bars[n]);
-                        //    exit(EXIT_FAILURE); // Can't happen.
-                    }
-
-#endif
                 }
 
-#ifndef NDEBUG
-                mvprintw(number_of_bars + 1, 0, "sensitivity %.10e", p.sens);
-                mvprintw(number_of_bars + 2, 0, "min value: %d\n",
-                         minvalue); // checking maxvalue 10000
-                mvprintw(number_of_bars + 3, 0, "max value: %d\n",
-                         maxvalue); // checking maxvalue 10000
-#ifndef _WIN32
-                (void)x_axis_info;
-#endif // !_WIN32
-#endif
-
-// output: draw processed input
-#ifdef NDEBUG
+                // output: draw processed input
                 if (p.sync_updates) {
                     printf("\033[2026h\033\\");
                     fflush(stdout);
@@ -1379,8 +1315,6 @@ Keys:\n\
                     reloadConf = true;
                     should_quit = true;
                 }
-
-#endif
 
                 memcpy(previous_frame, bars, number_of_bars * sizeof(int));
                 if (p.output == OUTPUT_SDL_GLSL) {

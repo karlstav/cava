@@ -8,7 +8,7 @@ cava_SOURCES = cava.c cavacore.c config.c input/common.c input/fifo.c input/shme
                output/terminal_noncurses.c output/raw.c output/noritake.c \
                cavacore.h config.h input/common.h input/fifo.h input/shmem.h \
                output/terminal_noncurses.h output/raw.h output/noritake.h \
-               debug.h util.h third_party/incbin.h
+               util.h third_party/incbin.h
 cava_CPPFLAGS = -DPACKAGE=\"$(PACKAGE)\" -DVERSION=\"$(VERSION)\" \
            -D_POSIX_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE_EXTENDED \
 	   -DFONTDIR=\"@FONT_DIR@\" -DFONTFILE=\"@FONT_FILE@\"
