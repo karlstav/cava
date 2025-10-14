@@ -807,7 +807,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     p->autosens = iniparser_getint(ini, "general:autosens", 1);
     p->overshoot = iniparser_getint(ini, "general:overshoot", 20);
     p->lower_cut_off = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
-    p->upper_cut_off = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
+    p->upper_cut_off = iniparser_getint(ini, "general:higher_cutoff_freq", 8000);
     p->sleep_timer = iniparser_getint(ini, "general:sleep_timer", 0);
     int max_height = iniparser_getint(ini, "general:max_height", 100);
     p->max_height = max_height / 100.0;
