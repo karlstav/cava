@@ -1061,6 +1061,15 @@ Keys:\n\
 #endif
 #endif
 
+                // checking if audio thread has exited unexpectedly
+                pthread_mutex_lock(&audio.lock);
+                if (audio.terminate == 1) {
+                    cleanup();
+                    fprintf(stderr, "Audio thread exited unexpectedly. %s\n", audio.error_message);
+                    exit(EXIT_FAILURE);
+                }
+                pthread_mutex_unlock(&audio.lock);
+
                 // process: check if input is present
                 silence = true;
 
@@ -1371,14 +1380,6 @@ Keys:\n\
                     memcpy(previous_bars_raw, bars_raw, number_of_bars * sizeof(float));
                 }
 
-                // checking if audio thread has exited unexpectedly
-                pthread_mutex_lock(&audio.lock);
-                if (audio.terminate == 1) {
-                    cleanup();
-                    fprintf(stderr, "Audio thread exited unexpectedly. %s\n", audio.error_message);
-                    exit(EXIT_FAILURE);
-                }
-                pthread_mutex_unlock(&audio.lock);
 #ifdef _WIN32
                 QueryPerformanceCounter(&t2);
                 elapsedTime = (t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart;
