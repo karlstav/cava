@@ -907,7 +907,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     p->samplebits = iniparser_getint(ini, "input:sample_bits", 16);
     p->channels = iniparser_getint(ini, "input:channels", 2);
     p->autoconnect = iniparser_getint(ini, "input:autoconnect", 2);
-    p->active = iniparser_getint(ini, "input:active", 0);
+    p->active = iniparser_getint(ini, "input:active", 1);
     p->remix = iniparser_getint(ini, "input:remix", 1);
     p->virtual_node = iniparser_getint(ini, "input:virtual", 1);
 
