@@ -177,7 +177,7 @@ void *input_pipewire(void *audiodata) {
     else
         pw_properties_set(props, PW_KEY_NODE_PASSIVE, "true");
 
-    if (data.cava_audio->virtual)
+    if (data.cava_audio->virtual_node)
         pw_properties_set(props, PW_KEY_NODE_VIRTUAL, "true");
 
     enum spa_audio_format audio_format = SPA_AUDIO_FORMAT_S16;
