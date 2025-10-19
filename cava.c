@@ -1058,6 +1058,7 @@ Keys:\n\
                     resizeTerminal = true;
                     reload_colors = 0;
                     free(themeFile);
+                    break;
                 }
 
 #ifndef NDEBUG
