@@ -127,7 +127,7 @@ int signal_received = 0;
 
 // these variables are used only in main, but making them global
 // will allow us to not free them on exit without ASan complaining
-struct config_params p;
+struct config_params p = {0};
 
 // general: cleanup
 void cleanup(void) {
@@ -315,7 +315,6 @@ Keys:\n\
             abort();
         }
     }
-    int reload = 0;
 
     // general: main loop
     while (1) {
@@ -324,7 +323,7 @@ Keys:\n\
         // config: load
         struct error_s error;
         error.length = 0;
-        if (!load_config(configPath, &p, 0, &error, reload)) {
+        if (!load_config(configPath, &p, &error)) {
             fprintf(stderr, "Error loading config. %s", error.message);
             exit(EXIT_FAILURE);
         }
@@ -535,7 +534,7 @@ Keys:\n\
             audio.channels = p.channels;
             audio.active = p.active;
             audio.remix = p.remix;
-            audio.virtual = p.virtual;
+            audio.virtual_node = p.virtual_node;
             thr_id = pthread_create(&p_thread, NULL, input_pipewire, (void *)&audio);
             break;
 #endif
@@ -1036,7 +1035,6 @@ Keys:\n\
                 ch = 0;
 
                 if (should_reload) {
-
                     reloadConf = true;
                     resizeTerminal = true;
                     should_reload = 0;
@@ -1044,14 +1042,22 @@ Keys:\n\
 
                 if (reload_colors) {
                     struct error_s error;
+                    char *themeFile;
                     error.length = 0;
-                    if (!load_config(configPath, (void *)&p, 1, &error, reload)) {
+                    bool result = get_themeFile(configPath, &p, NULL, &error, &themeFile);
+                    if (!result) {
                         cleanup();
+                        exit(EXIT_FAILURE);
+                    }
+                    if (!load_colors(themeFile, (void *)&p, &error)) {
+                        cleanup();
+                        free(themeFile);
                         fprintf(stderr, "Error loading config. %s", error.message);
                         exit(EXIT_FAILURE);
                     }
                     resizeTerminal = true;
                     reload_colors = 0;
+                    free(themeFile);
                 }
 
 #ifndef NDEBUG
@@ -1435,13 +1441,9 @@ Keys:\n\
         pthread_mutex_unlock(&audio.lock);
         pthread_join(p_thread, NULL);
 
-        if (p.userEQ_enabled)
-            free(p.userEQ);
-
         free(audio.source);
         free(audio.cava_in);
         cleanup();
-        reload = 1;
 
         if (should_quit && signal_received == 0) {
             if (p.zero_test && total_bar_height > 0) {
