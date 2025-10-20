@@ -669,6 +669,8 @@ Similarly, sending cava a SIGUSR2 signal will only reload the colors from the co
 $ pkill -USR2 cava
 ```
 
+Colors can be loaded from a separate file by using the `theme` option in the config.
+
 **Examples on how the equalizer works:**
 
     [eq]
