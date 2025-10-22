@@ -27,7 +27,7 @@ DisableProgramGroupPage=yes
 LicenseFile=..\LICENSE
 ; Remove the following line to run in administrative install mode (install for all users).
 PrivilegesRequired=lowest
-OutputBaseFilename=cava_win
+OutputBaseFilename=cava_win_x64_install
 SolidCompression=yes
 WizardStyle=modern
 InfoAfterFile=postsetupinfo.txt
