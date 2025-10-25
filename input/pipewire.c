@@ -136,34 +136,32 @@ unsigned int next_power_of_2(unsigned int n) {
 }
 
 void *input_pipewire(void *audiodata) {
-    struct pw_data data = {
-        0,
-    };
+    struct pw_data *data = (struct pw_data *)malloc(sizeof(struct pw_data));
 
-    data.cava_audio = (struct audio_data *)audiodata;
+    data->cava_audio = (struct audio_data *)audiodata;
     const struct spa_pod *params[1];
-    uint8_t buffer[data.cava_audio->input_buffer_size];
+    uint8_t buffer[data->cava_audio->input_buffer_size];
     struct pw_properties *props;
     struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
     uint32_t nom;
-    nom = next_power_of_2((512 * data.cava_audio->rate / 48000));
+    nom = next_power_of_2((512 * data->cava_audio->rate / 48000));
     pw_init(0, 0);
 
-    data.loop = pw_main_loop_new(NULL);
-    if (data.loop == NULL) {
-        data.cava_audio->terminate = 1;
-        sprintf(data.cava_audio->error_message,
+    data->loop = pw_main_loop_new(NULL);
+    if (data->loop == NULL) {
+        data->cava_audio->terminate = 1;
+        sprintf(data->cava_audio->error_message,
                 __FILE__ ": Could not create main loop. Is your system running pipewire? Maybe try "
                          "pulse input method instead.");
         return 0;
     }
 
-    data.timer = pw_loop_add_timer(pw_main_loop_get_loop(data.loop), on_timeout, &data);
+    data->timer = pw_loop_add_timer(pw_main_loop_get_loop(data->loop), on_timeout, data);
 
     props = pw_properties_new(PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY, "Capture",
                               PW_KEY_MEDIA_ROLE, "Music", NULL);
 
-    char *source = data.cava_audio->source;
+    char *source = data->cava_audio->source;
     size_t sourcelength = strlen(source);
 
     if (8 <= sourcelength && !strcmp(source + sourcelength - 8, ".monitor")) {
@@ -175,19 +173,19 @@ void *input_pipewire(void *audiodata) {
     } else if (strcmp(source, "auto_input") != 0) {
         pw_properties_set(props, PW_KEY_TARGET_OBJECT, source);
     }
-    pw_properties_setf(props, PW_KEY_NODE_LATENCY, "%u/%u", nom, data.cava_audio->rate);
+    pw_properties_setf(props, PW_KEY_NODE_LATENCY, "%u/%u", nom, data->cava_audio->rate);
 
-    if (data.cava_audio->active)
+    if (data->cava_audio->active)
         pw_properties_set(props, PW_KEY_NODE_ALWAYS_PROCESS, "true");
     else
         pw_properties_set(props, PW_KEY_NODE_PASSIVE, "true");
 
-    if (data.cava_audio->virtual_node)
+    if (data->cava_audio->virtual_node)
         pw_properties_set(props, PW_KEY_NODE_VIRTUAL, "true");
 
     enum spa_audio_format audio_format = SPA_AUDIO_FORMAT_S16;
 
-    switch (data.cava_audio->format) {
+    switch (data->cava_audio->format) {
     case 8:
         audio_format = SPA_AUDIO_FORMAT_S8;
         break;
@@ -202,22 +200,22 @@ void *input_pipewire(void *audiodata) {
         break;
     };
 
-    if (data.cava_audio->remix) {
+    if (data->cava_audio->remix) {
         pw_properties_set(props, PW_KEY_STREAM_DONT_REMIX, "false");
         pw_properties_set(props, "channelmix.upmix", "true");
 
-        if (data.cava_audio->channels < 2) {
+        if (data->cava_audio->channels < 2) {
             // N to 1 with all channels shown
             params[0] = spa_format_audio_raw_build(
                 &b, SPA_PARAM_EnumFormat,
-                &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data.cava_audio->rate,
-                                         .channels = data.cava_audio->channels, ));
+                &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data->cava_audio->rate,
+                                         .channels = data->cava_audio->channels, ));
         } else {
             // N to 2 with all channels shown
             params[0] = spa_format_audio_raw_build(
                 &b, SPA_PARAM_EnumFormat,
-                &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data.cava_audio->rate,
-                                         .channels = data.cava_audio->channels,
+                &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data->cava_audio->rate,
+                                         .channels = data->cava_audio->channels,
                                          .position = {SPA_AUDIO_CHANNEL_FL,
                                                       SPA_AUDIO_CHANNEL_FR}, ));
         }
@@ -225,30 +223,33 @@ void *input_pipewire(void *audiodata) {
         // N to 2 with only FL and FR shown
         params[0] = spa_format_audio_raw_build(
             &b, SPA_PARAM_EnumFormat,
-            &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data.cava_audio->rate,
-                                     .channels = data.cava_audio->channels, ));
+            &SPA_AUDIO_INFO_RAW_INIT(.format = audio_format, .rate = data->cava_audio->rate,
+                                     .channels = data->cava_audio->channels, ));
     }
 
-    data.stream = pw_stream_new_simple(pw_main_loop_get_loop(data.loop), "cava", props,
-                                       &stream_events, &data);
+    data->stream = pw_stream_new_simple(pw_main_loop_get_loop(data->loop), "cava", props,
+                                        &stream_events, data);
 
-    int status = pw_stream_connect(data.stream, PW_DIRECTION_INPUT, PW_ID_ANY,
+    int status = pw_stream_connect(data->stream, PW_DIRECTION_INPUT, PW_ID_ANY,
                                    PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS |
                                        PW_STREAM_FLAG_RT_PROCESS,
                                    params, 1);
 
     if (status < 0) {
-        data.cava_audio->terminate = 1;
-        sprintf(data.cava_audio->error_message,
+        data->cava_audio->terminate = 1;
+        sprintf(data->cava_audio->error_message,
                 __FILE__ ": Could not connect stream. Is your system running pipewire? Maybe try "
                          "pulse input method instead.");
-        return 0;
+        goto error_free;
     }
 
-    pw_main_loop_run(data.loop);
-
-    pw_stream_destroy(data.stream);
-    pw_main_loop_destroy(data.loop);
+    pw_main_loop_run(data->loop);
+    pw_stream_destroy(data->stream);
+error_free:
+    pw_loop_destroy_source(pw_main_loop_get_loop(data->loop), data->timer);
+    pw_main_loop_destroy(data->loop);
     pw_deinit();
+    free(data);
+
     return 0;
 }
