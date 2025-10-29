@@ -26,7 +26,7 @@
 #endif
 
 #ifdef _WIN32
-#include "input/winscap.h"
+#include "../include/cava/input/winscap.h"
 #include <windows.h>
 #define PATH_MAX 260
 #define PACKAGE "cava"
@@ -40,43 +40,43 @@
 #include <sys/types.h>
 #include <time.h>
 
-#include "cavacore.h"
+#include "cava/cavacore.h"
 
-#include "config.h"
+#include "cava/config.h"
 
-#include "debug.h"
-#include "util.h"
+#include "../include/cava/debug.h"
+#include "../include/cava/util.h"
 
 #ifdef SDL
-#include "output/sdl_cava.h"
+#include "../include/cava/output/sdl_cava.h"
 #endif
 
 #ifdef SDL_GLSL
-#include "output/sdl_glsl.h"
+#include "../include/cava/output/sdl_glsl.h"
 #endif
 
-#include "input/common.h"
+#include "cava/input/common.h"
 
-#include "output/noritake.h"
-#include "output/raw.h"
-#include "output/terminal_noncurses.h"
+#include "../include/cava/output/noritake.h"
+#include "../include/cava/output/raw.h"
+#include "../include/cava/output/terminal_noncurses.h"
 
 #ifndef _WIN32
 #ifdef NCURSES
-#include "output/terminal_bcircle.h"
-#include "output/terminal_ncurses.h"
+#include "../include/cava/output/terminal_bcircle.h"
+#include "../include/cava/output/terminal_ncurses.h"
 #include <curses.h>
 #endif
 
-#include "input/alsa.h"
-#include "input/fifo.h"
-#include "input/jack.h"
-#include "input/oss.h"
-#include "input/pipewire.h"
-#include "input/portaudio.h"
-#include "input/pulse.h"
-#include "input/shmem.h"
-#include "input/sndio.h"
+#include "../include/cava/input/alsa.h"
+#include "../include/cava/input/fifo.h"
+#include "../include/cava/input/jack.h"
+#include "../include/cava/input/oss.h"
+#include "../include/cava/input/pipewire.h"
+#include "../include/cava/input/portaudio.h"
+#include "../include/cava/input/pulse.h"
+#include "../include/cava/input/shmem.h"
+#include "../include/cava/input/sndio.h"
 #endif
 
 #ifdef __GNUC__

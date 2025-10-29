@@ -1,4 +1,4 @@
-#include "raw.h"
+#include "../../include/cava/output/raw.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>

@@ -1,5 +1,5 @@
-#include "input/shmem.h"
-#include "input/common.h"
+#include "../../include/cava/input/shmem.h"
+#include "cava/input/common.h"
 
 #include <sys/mman.h>
 #include <sys/stat.h>

@@ -17,7 +17,7 @@ if (ANDROID)
 	if (NOT EXISTS "${FFTW_DIR}/obj/local/${CMAKE_ANDROID_ARCH_ABI}/")
 		message(FATAL_ERROR "given lib dir: ${FFTW_DIR}/obj/local/${CMAKE_ANDROID_ARCH_ABI}/ does not exist, did you build it? See cavandroid/README.md")
 	endif()
-	target_include_directories(cavacore PRIVATE "${FFTW_DIR}/jni/fftw3/api/")
+	target_include_directories(cavacore PRIVATE "${FFTW_DIR}/jni/fftw3/api/" include)
 	target_link_directories(cavacore PRIVATE "${FFTW_DIR}/obj/local/${CMAKE_ANDROID_ARCH_ABI}/")
 	target_link_libraries(cavacore fftw3)
 elseif(WIN32)
@@ -27,21 +27,21 @@ elseif(WIN32)
 	find_package(Threads)
 
 	add_executable(cava
-		cava.c
-		cavacore.c
-		config.c
-		input/common.c
-		input/winscap.c
-		output/sdl_cava.c
-		output/sdl_glsl.c
-		output/terminal_noncurses.c
-		output/raw.c
-		output/noritake.c
+		src/cava.c
+		src/cavacore.c
+		src/config.c
+		src/input/common.c
+		src/input/winscap.c
+		src/output/sdl_cava.c
+		src/output/sdl_glsl.c
+		src/output/terminal_noncurses.c
+		src/output/raw.c
+		src/output/noritake.c
 		cava_win/cava/cava.rc
 	)
 
 	target_compile_definitions(cava PRIVATE SDL SDL_GSL NDEBUG)
-	target_include_directories(cava PRIVATE ${GLEW_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS})
+	target_include_directories(cava PRIVATE ${GLEW_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} include)
 	target_link_libraries(cava PRIVATE pthread shlwapi fftw3 GLEW::GLEW SDL2::SDL2)
 else()
 	add_library(cavacore STATIC cavacore.c)

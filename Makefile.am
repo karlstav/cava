@@ -4,25 +4,24 @@ ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = cava
 cavadir = $(top_srcdir)
-cava_SOURCES = cava.c cavacore.c config.c input/common.c input/fifo.c input/shmem.c \
-               output/terminal_noncurses.c output/raw.c output/noritake.c \
-               cavacore.h config.h input/common.h input/fifo.h input/shmem.h \
-               output/terminal_noncurses.h output/raw.h output/noritake.h \
-               debug.h util.h third_party/incbin.h
+cava_SOURCES = src/cava.c src/cavacore.c src/config.c src/input/common.c \
+			   src/input/fifo.c src/input/shmem.c src/output/terminal_noncurses.c \
+			   src/output/raw.c src/output/noritake.c include/third_party/incbin.h
 cava_CPPFLAGS = -DPACKAGE=\"$(PACKAGE)\" -DVERSION=\"$(VERSION)\" \
            -D_POSIX_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE_EXTENDED \
-	   -DFONTDIR=\"@FONT_DIR@\" -DFONTFILE=\"@FONT_FILE@\"
+		   -DFONTDIR=\"@FONT_DIR@\" -DFONTFILE=\"@FONT_FILE@\" \
+		   -I$(top_builddir) -I$(top_builddir)/include
 cava_CFLAGS = -std=c99 -Wall -Wextra -Wno-unused-result -Wno-unknown-warning-option -Wno-maybe-uninitialized -Wno-vla-parameter
 
 EXTRA_DIST = \
-    output/shaders/pass_through.vert \
-    output/shaders/bar_spectrum.frag \
-    output/shaders/northern_lights.frag \
-    output/shaders/winamp_line_style_spectrum.frag \
-    output/shaders/spectrogram.frag \
-    output/shaders/eye_of_phi.frag \
-    output/themes/solarized_dark \
-    output/themes/tricolor \
+    src/output/shaders/pass_through.vert \
+    src/output/shaders/bar_spectrum.frag \
+    src/output/shaders/northern_lights.frag \
+    src/output/shaders/winamp_line_style_spectrum.frag \
+    src/output/shaders/spectrogram.frag \
+    src/output/shaders/eye_of_phi.frag \
+    src/output/themes/solarized_dark \
+    src/output/themes/tricolor \
     example_files/config \
     cava.psf \
     LICENSE \
@@ -51,43 +50,43 @@ endif
 endif
 
 if ALSA
-    cava_SOURCES += input/alsa.c input/alsa.h
+    cava_SOURCES += src/input/alsa.c
 endif
 
 if PORTAUDIO
-    cava_SOURCES += input/portaudio.c input/portaudio.h
+    cava_SOURCES += src/input/portaudio.c
 endif
 
 if PIPEWIRE
-    cava_SOURCES += input/pipewire.c input/pipewire.h
+    cava_SOURCES += src/input/pipewire.c
 endif
 
 if PULSE
-    cava_SOURCES += input/pulse.c input/pulse.h
+    cava_SOURCES += src/input/pulse.c
 endif
 
 if SNDIO
-    cava_SOURCES += input/sndio.c input/sndio.h
+    cava_SOURCES += src/input/sndio.c
 endif
 
 if OSS
-    cava_SOURCES += input/oss.c input/oss.h
+    cava_SOURCES += src/input/oss.c
 endif
 
 if JACK
-    cava_SOURCES += input/jack.c input/jack.h
+    cava_SOURCES += src/input/jack.c
 endif
 
 if NCURSES
-    cava_SOURCES += output/terminal_ncurses.c output/terminal_bcircle.c \
-                    output/terminal_ncurses.h output/terminal_bcircle.h
+    cava_SOURCES += src/output/terminal_ncurses.c \
+					src/output/terminal_bcircle.c
 
 endif
 
 if SDL
-    cava_SOURCES += output/sdl_cava.c output/sdl_cava.h
+    cava_SOURCES += src/output/sdl_cava.c
 endif
 
 if SDL_GLSL
-    cava_SOURCES += output/sdl_glsl.c output/sdl_glsl.h
+    cava_SOURCES += src/output/sdl_glsl.c
 endif

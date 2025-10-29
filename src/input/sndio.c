@@ -3,8 +3,8 @@
 
 #include <sndio.h>
 
-#include "input/common.h"
-#include "input/sndio.h"
+#include "../../include/cava/input/sndio.h"
+#include "cava/input/common.h"
 
 void *input_sndio(void *data) {
     static const unsigned int mode = SIO_REC;

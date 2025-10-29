@@ -1,6 +1,6 @@
-#include "config.h"
+#include "cava/config.h"
 
-#include "util.h"
+#include "cava/util.h"
 
 #include <ctype.h>
 #ifndef _WIN32
@@ -63,21 +63,21 @@ int default_shader_data[NUMBER_OF_SHADERS] = {
 int default_theme_data[NUMBER_OF_THEMES] = {IDR_SOLARIZED_DARK_THEME, IDR_TRICOLOR_THEME};
 #else
 #define INCBIN_SILENCE_BITCODE_WARNING
-#include "third_party/incbin.h"
+#include "../include/third_party/incbin.h"
 
 INCTXT(ConfigFile, "example_files/config");
 
 // add your custom shaders to be installed here
-INCTXT(bar_spectrum, "output/shaders/bar_spectrum.frag");
-INCTXT(northern_lightsfrag, "output/shaders/northern_lights.frag");
-INCTXT(winamp_line_style_spectrum, "output/shaders/winamp_line_style_spectrum.frag");
-INCTXT(spectrogram, "output/shaders/spectrogram.frag");
-INCTXT(eye_of_phi, "output/shaders/eye_of_phi.frag");
+INCTXT(bar_spectrum, "src/output/shaders/bar_spectrum.frag");
+INCTXT(northern_lightsfrag, "src/output/shaders/northern_lights.frag");
+INCTXT(winamp_line_style_spectrum, "src/output/shaders/winamp_line_style_spectrum.frag");
+INCTXT(spectrogram, "src/output/shaders/spectrogram.frag");
+INCTXT(eye_of_phi, "src/output/shaders/eye_of_phi.frag");
 
-INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
+INCTXT(pass_throughvert, "src/output/shaders/pass_through.vert");
 
-INCTXT(solarized_dark, "output/themes/solarized_dark");
-INCTXT(tricolor, "output/themes/tricolor");
+INCTXT(solarized_dark, "src/output/themes/solarized_dark");
+INCTXT(tricolor, "src/output/themes/tricolor");
 
 // INCTXT will create a char g<name>Data
 const char *default_shader_data[NUMBER_OF_SHADERS] = {

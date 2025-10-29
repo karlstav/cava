@@ -6,12 +6,11 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 #endif
-#include "sdl_glsl.h"
+#include "../../include/cava/output/sdl_glsl.h"
+#include "../../include/cava/util.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
-
-#include "../util.h"
 
 SDL_Window *glWindow = NULL;
 GLuint shading_program;

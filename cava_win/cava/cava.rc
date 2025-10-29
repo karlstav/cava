@@ -12,12 +12,12 @@
 
 
 IDR_CONFIG_FILE TEXTFILE "../../example_files/config"
-IDR_BAR_SPECTRUM_SHADER TEXTFILE "../../output/shaders/bar_spectrum.frag"
-IDR_NORTHERN_LIGHTS_SHADER TEXTFILE "../../output/shaders/northern_lights.frag"
-IDR_PASS_THROUGH_SHADER TEXTFILE "../../output/shaders/pass_through.vert"
-IDR_SPECTROGRAM_SHADER TEXTFILE "../../output/shaders/spectrogram.frag"
-IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER TEXTFILE "../../output/shaders/winamp_line_style_spectrum.frag"
-IDR_EYE_OF_PHI_SHADER TEXTFILE "../../output/shaders/eye_of_phi.frag"
+IDR_BAR_SPECTRUM_SHADER TEXTFILE "../../src/output/shaders/bar_spectrum.frag"
+IDR_NORTHERN_LIGHTS_SHADER TEXTFILE "../../src/output/shaders/northern_lights.frag"
+IDR_PASS_THROUGH_SHADER TEXTFILE "../../src/output/shaders/pass_through.vert"
+IDR_SPECTROGRAM_SHADER TEXTFILE "../../src/output/shaders/spectrogram.frag"
+IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER TEXTFILE "../../src/output/shaders/winamp_line_style_spectrum.frag"
+IDR_EYE_OF_PHI_SHADER TEXTFILE "../../src/output/shaders/eye_of_phi.frag"
 
-IDR_SOLARIZED_DARK_THEME TEXTFILE "../../output/themes/solarized_dark"
-IDR_TRICOLOR_THEME TEXTFILE "../../output/themes/tricolor"
+IDR_SOLARIZED_DARK_THEME TEXTFILE "../../src/output/themes/solarized_dark"
+IDR_TRICOLOR_THEME TEXTFILE "../../src/output/themes/tricolor"

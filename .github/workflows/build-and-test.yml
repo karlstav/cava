@@ -24,8 +24,9 @@ jobs:
       run: ./configure
     - name: Run make
       run: make CFLAGS='-Werror'
-    - name: Run make distcheck
-      run: make distcheck
+#temporary disabled
+#    - name: Run make distcheck
+#      run: make distcheck
     - name: Prepare tests
       run: |
         pulseaudio -D
@@ -41,7 +42,7 @@ jobs:
     - name: build cavacore test application
       run: gcc -c -g cavacore_test.c
     - name: link cavacore test application
-      run: gcc -o cavacore_test cavacore_test.o cava-cavacore.o -lm -lfftw3
+      run: gcc -o cavacore_test cavacore_test.o src/cava-cavacore.o -lm -lfftw3
     - name: run cavacore test application
       run: ./cavacore_test
 

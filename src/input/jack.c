@@ -3,8 +3,8 @@
 
 #include <jack/jack.h>
 
-#include "input/common.h"
-#include "input/jack.h"
+#include "../../include/cava/input/jack.h"
+#include "cava/input/common.h"
 
 // CAVA is hard-coded to a maximum of 2 channels, i.e. stereo.
 #define MAX_CHANNELS 2

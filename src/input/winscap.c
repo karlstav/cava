@@ -16,7 +16,7 @@
 
 #include <functiondiscoverykeys.h>
 
-#include "common.h"
+#include "cava/input/common.h"
 
 static void make_stereo_waveformatex(const WAVEFORMATEX *orig, WAVEFORMATEX *stereo) {
     *stereo = *orig;

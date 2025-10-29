@@ -1,4 +1,4 @@
-#include "common.h"
+#include "cava/input/common.h"
 #include <limits.h>
 #include <math.h>
 #include <string.h>

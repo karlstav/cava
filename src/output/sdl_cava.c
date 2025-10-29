@@ -5,12 +5,11 @@
 #include <SDL2/SDL.h>
 #endif
 
-#include "sdl_cava.h"
+#include "../../include/cava/output/sdl_cava.h"
+#include "../../include/cava/util.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
-
-#include "../util.h"
 
 #define MAX_GRADIENT_COLOR_DEFS 8
 
