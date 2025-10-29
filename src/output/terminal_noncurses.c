@@ -1,4 +1,4 @@
-#include "terminal_noncurses.h"
+#include "../../include/cava/output/terminal_noncurses.h"
 
 #include <locale.h>
 #include <math.h>

@@ -1,5 +1,5 @@
-#include "input/pulse.h"
-#include "input/common.h"
+#include "../../include/cava/input/pulse.h"
+#include "cava/input/common.h"
 
 #include <pulse/error.h>
 #include <pulse/pulseaudio.h>

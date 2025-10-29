@@ -118,7 +118,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);SDL;SDL_GLSL;_CRT_SECURE_NO_WARNINGS;_TIMESPEC_DEFINED;NDEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -151,7 +151,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SDL;SDL_GLSL;_CRT_SECURE_NO_WARNINGS;_TIMESPEC_DEFINED;NDEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -177,29 +177,29 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\cava.c" />
-    <ClCompile Include="..\..\cavacore.c" />
-    <ClCompile Include="..\..\config.c" />
-    <ClCompile Include="..\..\input\common.c" />
-    <ClCompile Include="..\..\input\winscap.c" />
-    <ClCompile Include="..\..\output\sdl_cava.c" />
-    <ClCompile Include="..\..\output\sdl_glsl.c" />
-    <ClCompile Include="..\..\output\terminal_noncurses.c" />
-    <ClCompile Include="..\..\output\raw.c" />
-    <ClCompile Include="..\..\output\noritake.c" />
+    <ClCompile Include="..\..\src\cava.c" />
+    <ClCompile Include="..\..\src\cavacore.c" />
+    <ClCompile Include="..\..\src\config.c" />
+    <ClCompile Include="..\..\src\input\common.c" />
+    <ClCompile Include="..\..\src\input\winscap.c" />
+    <ClCompile Include="..\..\src\output\sdl_cava.c" />
+    <ClCompile Include="..\..\src\output\sdl_glsl.c" />
+    <ClCompile Include="..\..\src\output\terminal_noncurses.c" />
+    <ClCompile Include="..\..\src\output\raw.c" />
+    <ClCompile Include="..\..\src\output\noritake.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\cavacore.h" />
-    <ClInclude Include="..\..\config.h" />
-    <ClInclude Include="..\..\debug.h" />
-    <ClInclude Include="..\..\input\common.h" />
-    <ClInclude Include="..\..\input\winscap.h" />
-    <ClInclude Include="..\..\output\sdl_cava.h" />
-    <ClInclude Include="..\..\output\sdl_glsl.h" />
-    <ClInclude Include="..\..\output\terminal_noncurses.h" />
-    <ClInclude Include="..\..\output\raw.h" />
-    <ClInclude Include="..\..\output\noritake.h" />
-    <ClInclude Include="..\..\util.h" />
+    <ClInclude Include="..\..\include\cava\cavacore.h" />
+    <ClInclude Include="..\..\include\cava\config.h" />
+    <ClInclude Include="..\..\include\cava\debug.h" />
+    <ClInclude Include="..\..\include\cava\input\common.h" />
+    <ClInclude Include="..\..\include\cava\input\winscap.h" />
+    <ClInclude Include="..\..\include\cava\output\sdl_cava.h" />
+    <ClInclude Include="..\..\include\cava\output\sdl_glsl.h" />
+    <ClInclude Include="..\..\include\cava\output\terminal_noncurses.h" />
+    <ClInclude Include="..\..\include\cava\output\raw.h" />
+    <ClInclude Include="..\..\include\cava\output\noritake.h" />
+    <ClInclude Include="..\..\include\cava\util.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

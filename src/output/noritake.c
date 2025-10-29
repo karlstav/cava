@@ -1,5 +1,5 @@
-#include "noritake.h"
-#include "../config.h"
+#include "../../include/cava/output/noritake.h"
+#include "cava/config.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
