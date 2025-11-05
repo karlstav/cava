@@ -24,9 +24,9 @@ extern "C" {
 #endif
 #pragma once
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <fftw3.h>
-
 // cava_plan, parameters used internally by cavacore, do not modify these directly
 // only the cut off frequencies is of any potential interest to read out,
 // the rest should most likley be hidden somehow
@@ -97,9 +97,8 @@ struct cava_plan {
 // returns a cava_plan to be used by cava_execute. If cava_plan.status is 0 all is OK.
 // If cava_plan.status is -1, cava_init was called with an illegal paramater, see error string in
 // cava_plan.error_message
-extern struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
-                                   int autosens, double noise_reduction, int low_cut_off,
-                                   int high_cut_off);
+struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels, int autosens,
+                            double noise_reduction, int low_cut_off, int high_cut_off);
 
 // cava_execute, executes visualization
 
@@ -120,11 +119,10 @@ extern struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int ch
 
 // cava_execute assumes cava_in samples to be interleaved if more than one channel
 // only up to two channels are supported.
-extern void cava_execute(double *cava_in, int new_samples, double *cava_out,
-                         struct cava_plan *plan);
+void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cava_plan *plan);
 
 // cava_destroy, destroys the plan, frees up memory
-extern void cava_destroy(struct cava_plan *plan);
+void cava_destroy(struct cava_plan *plan);
 
 #ifdef __cplusplus
 }

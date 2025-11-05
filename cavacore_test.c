@@ -2,11 +2,10 @@
 // gcc -c -g cavacore_test.c
 // gcc -o cavacore_test cavacore_test.o build/libcavacore.a -lm -lfftw3
 
-#include "cavacore.h"
+#include "cava/cavacore.h"
 #include <math.h>
 #include <stdio.h>
 
-#include <stdlib.h>
 #define PI 3.141592654
 
 void main() {

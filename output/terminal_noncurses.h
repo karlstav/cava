@@ -1,4 +1,5 @@
-#include "../config.h"
+#pragma once
+#include "common.h"
 
 int init_terminal_noncurses(int inAtty, char *const fg_color_string, char *const bg_color_string,
                             int col, int bgcol, int gradient, int gradient_count,

@@ -1,11 +1,4 @@
-#include "output/terminal_bcircle.h"
-
-#include <curses.h>
-#include <locale.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <wchar.h>
+#include "terminal_bcircle.h"
 
 #ifndef M_PI
 #define M_PI 3.141592

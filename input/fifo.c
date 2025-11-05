@@ -1,7 +1,4 @@
-#include "input/fifo.h"
-#include "input/common.h"
-
-#include <time.h>
+#include "fifo.h"
 
 int open_fifo(const char *path) {
     int fd = open(path, O_RDONLY);

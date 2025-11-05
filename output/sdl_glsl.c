@@ -8,11 +8,6 @@
 #endif
 #include "sdl_glsl.h"
 
-#include <stdbool.h>
-#include <stdlib.h>
-
-#include "../util.h"
-
 SDL_Window *glWindow = NULL;
 GLuint shading_program;
 GLint uniform_bars;

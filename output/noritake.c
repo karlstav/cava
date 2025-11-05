@@ -1,11 +1,5 @@
 #include "noritake.h"
-#include "../config.h"
-#include <math.h>
-#include <stdint.h>
-#include <stdio.h>
 #ifndef _WIN32
-#include <unistd.h>
-
 int print_ntk_out(int bars_count, int fd, int bit_format, int bar_width, int bar_spacing,
                   int bar_height, int const f[]) {
 #else

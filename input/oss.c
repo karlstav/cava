@@ -1,11 +1,7 @@
-#include <stdbool.h>
-#include <stddef.h>
+#include "oss.h"
 
 #include <sys/ioctl.h>
 #include <sys/soundcard.h>
-
-#include "input/common.h"
-#include "input/oss.h"
 
 static bool set_format(int fd, struct audio_data *audio) {
     // CAVA favors signed and little endian (sle) formats. It might actually not work correctly if

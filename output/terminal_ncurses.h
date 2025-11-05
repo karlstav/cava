@@ -1,4 +1,5 @@
-#include "../config.h"
+#pragma once
+#include "common.h"
 
 void init_terminal_ncurses(char *const fg_color_string, char *const bg_color_string,
                            int predef_fg_color, int predef_bg_color, int gradient,

@@ -118,7 +118,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);SDL;SDL_GLSL;_CRT_SECURE_NO_WARNINGS;_TIMESPEC_DEFINED;NDEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -151,7 +151,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SDL;SDL_GLSL;_CRT_SECURE_NO_WARNINGS;_TIMESPEC_DEFINED;NDEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -177,29 +177,42 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\..\*.h">
+      <Filter>include</Filter> 
+    </ClInclude>
+    <ClInclude Include="..\..\common.h" />
+    <ClInclude Include="..\..\config.h" />
+    <ClInclude Include="..\..\debug.h" />
+    <ClInclude Include="..\..\util.h" />
+    <ClInclude Include="..\..\input\common.h">
+      <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\input\winscap.h" />
+    <ClInclude Include="..\..\output\common.h">
+      <Filter>output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\output\noritake.h" />
+    <ClInclude Include="..\..\output\raw.h" />
+    <ClInclude Include="..\..\output\sdl_cava.h" />
+    <ClInclude Include="..\..\output\sdl_glsl.h" />
+    <ClInclude Include="..\..\output\terminal_noncurses.h" />
     <ClCompile Include="..\..\cava.c" />
     <ClCompile Include="..\..\cavacore.c" />
     <ClCompile Include="..\..\config.c" />
-    <ClCompile Include="..\..\input\common.c" />
+    <ClCompile Include="..\..\input\common.c" >
+      <Filter>input</Filter>
+      <ObjectFileName>common_input</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\..\input\winscap.c" />
+    <ClCompile Include="..\..\output\common.c" >
+      <Filter>output</Filter>
+      <ObjectFileName>common_output</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\..\output\sdl_cava.c" />
     <ClCompile Include="..\..\output\sdl_glsl.c" />
     <ClCompile Include="..\..\output\terminal_noncurses.c" />
     <ClCompile Include="..\..\output\raw.c" />
     <ClCompile Include="..\..\output\noritake.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\cavacore.h" />
-    <ClInclude Include="..\..\config.h" />
-    <ClInclude Include="..\..\debug.h" />
-    <ClInclude Include="..\..\input\common.h" />
-    <ClInclude Include="..\..\input\winscap.h" />
-    <ClInclude Include="..\..\output\sdl_cava.h" />
-    <ClInclude Include="..\..\output\sdl_glsl.h" />
-    <ClInclude Include="..\..\output\terminal_noncurses.h" />
-    <ClInclude Include="..\..\output\raw.h" />
-    <ClInclude Include="..\..\output\noritake.h" />
-    <ClInclude Include="..\..\util.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

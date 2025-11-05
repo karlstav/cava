@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #ifdef NDEBUG
 #define debug(...)                                                                                 \
     do {                                                                                           \

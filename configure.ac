@@ -4,10 +4,6 @@ dnl AC_CONFIG_MACRO_DIRS([m4])
 AM_PROG_AR
 LT_INIT
 AC_PROG_CC
-AC_PROG_CC_STDC
-
-AM_PROG_LIBTOOL
-
 
 AC_CANONICAL_HOST
 
@@ -475,12 +471,39 @@ if test -z "$FONT_DIR" ; then
   FONT_DIR="$DEFAULT_FONT_DIR"
 fi
 
+# --- Define the program name and version for the pkgconfig file ---
+PKG_CONFIG_NAME="libcava"
+PKG_CONFIG_VERSION="$VERSION"
+PKG_CONFIG_DESC="A lightweight, customizable audio visualizer"
 
+AC_SUBST([PKG_CONFIG_NAME])
+AC_SUBST([PKG_CONFIG_VERSION])
+AC_SUBST([PKG_CONFIG_DESC])
+AC_SUBST([VERSION])
+
+CURRENT_ABI=0 # Default for ABI current
+REVISION_ABI=0 # Default for ABI revision
+AGE_ABI=0 # Default for ABI age
+
+VERSION_CLEAN=`git describe --tags --abbrev=0 2>/dev/null || echo ""`
+# Now parse the clean version
+CURRENT_ABI=`echo $VERSION_CLEAN | cut -d. -f1`
+REVISION_ABI=`echo $VERSION_CLEAN | cut -d. -f2`
+AGE_ABI=`echo $VERSION_CLEAN | cut -d. -f3`
+
+# Default if parsing fails
+if test -z "$CURRENT_ABI"; then CURRENT_ABI=0; fi
+if test -z "$REVISION_ABI"; then REVISION_ABI=0; fi
+if test -z "$AGE_ABI"; then AGE_ABI=0; fi
+
+# Set variables for libtool (CURRENT:REVISION:RELEASE)
+AM_LIBTOOL_CURRENT="$CURRENT_ABI"
+AM_LIBTOOL_REVISION="$REVISION_ABI"
+AM_LIBTOOL_RELEASE="$AGE_ABI"
+
+AC_SUBST([AM_LIBTOOL_CURRENT])
+AC_SUBST([AM_LIBTOOL_REVISION])
+AC_SUBST([AM_LIBTOOL_RELEASE]) # Substitute the full string
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
-
-
-
-
-

@@ -1,5 +1,4 @@
-#include "input/portaudio.h"
-#include "input/common.h"
+#include "portaudio.h"
 
 #include <portaudio.h>
 

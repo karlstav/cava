@@ -5,6 +5,7 @@ extern "C" {
 #endif
 
 #pragma once
+#include "common.h"
 
 void *input_winscap(void *data);
 

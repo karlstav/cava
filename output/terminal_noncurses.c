@@ -1,18 +1,10 @@
 #include "terminal_noncurses.h"
 
-#include <locale.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #ifdef _WIN32
-#include <fcntl.h>
 #include <io.h>
-#include <windows.h>
 #else
 #include <sys/ioctl.h>
 #include <termios.h>
-#include <unistd.h>
 #endif
 #include <wchar.h>
 

@@ -1,11 +1,6 @@
-#include "input/shmem.h"
-#include "input/common.h"
+#include "shmem.h"
 
 #include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#include <stdbool.h>
 
 typedef unsigned int u32_t;
 typedef short s16_t;

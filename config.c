@@ -4,16 +4,20 @@
 
 #include <ctype.h>
 #ifndef _WIN32
+#if __has_include(<iniparser.h>)
 #include <iniparser.h>
+#elif __has_include(<iniparser/iniparser.h>)
+#include <iniparser/iniparser.h>
+#elif __has_include(<iniparser4/iniparser.h>)
+#include <iniparser4/iniparser.h>
 #endif
-#include <math.h>
+#endif
 
 #ifdef SNDIO
 #include <sndio.h>
 #endif
 
 #include <stdarg.h>
-#include <stdbool.h>
 #include <stdlib.h>
 
 #include <sys/stat.h>
@@ -24,7 +28,6 @@
 
 #ifdef _WIN32
 #include "Shlwapi.h"
-#include "Windows.h"
 #define TEXTFILE 256
 #define IDR_CONFIG_FILE 101
 #define IDR_BAR_SPECTRUM_SHADER 102
@@ -37,7 +40,6 @@
 #define IDR_SOLARIZED_DARK_THEME 501
 #define IDR_TRICOLOR_THEME 502
 
-#define PATH_MAX 260
 #define PACKAGE "cava"
 #define _CRT_SECURE_NO_WARNINGS 1
 
@@ -589,7 +591,9 @@ bool validate_config(struct config_params *p, struct error_s *error) {
 
 bool load_config(char configPath[PATH_MAX], struct config_params *p, struct error_s *error) {
     free_config(p);
-
+#ifdef _WIN32
+    p->hFile = NULL;
+#endif
     FILE *fp;
     bool result;
     char *cava_config_home = get_cava_config_home(error);
@@ -641,6 +645,33 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
             strcpy(configPath, newPath);
         }
 #endif
+        // expand env variables in configPath
+        char *cfgPathOrig = (char *)malloc(PATH_MAX * sizeof(char));
+        strcpy(cfgPathOrig, configPath);
+        configPath[0] = '\0';
+        const char *delimiter = "/";
+        short int addDelimiter = 0;
+        char *env = NULL;
+
+        if (*cfgPathOrig == *delimiter)
+            addDelimiter = 1;
+
+        for (char *pch = strtok(cfgPathOrig, delimiter); pch != NULL;
+             pch = strtok(NULL, delimiter)) {
+            if (addDelimiter == 1)
+                strcat(configPath, delimiter);
+            if (*pch == '$')
+                env = getenv(pch + 1);
+            if (env && *env) {
+                strcat(configPath, env);
+                env = NULL;
+            } else
+                strcat(configPath, pch);
+            addDelimiter = 1;
+        }
+
+        free(cfgPathOrig);
+
         fp = fopen(configPath, "rb");
         if (fp) {
             fclose(fp);

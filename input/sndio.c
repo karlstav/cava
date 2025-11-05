@@ -1,10 +1,6 @@
-#include <stdbool.h>
-#include <stddef.h>
-
 #include <sndio.h>
 
-#include "input/common.h"
-#include "input/sndio.h"
+#include "sndio.h"
 
 void *input_sndio(void *data) {
     static const unsigned int mode = SIO_REC;

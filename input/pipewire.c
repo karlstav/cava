@@ -1,11 +1,8 @@
-#include "input/pipewire.h"
-#include "input/common.h"
-#include <math.h>
-
-#include <spa/param/audio/format-utils.h>
-#include <spa/param/latency-utils.h>
+#include "pipewire.h"
 
 #include <pipewire/pipewire.h>
+#include <spa/param/audio/format-utils.h>
+#include <spa/param/latency-utils.h>
 
 struct pw_data {
     struct pw_main_loop *loop;
