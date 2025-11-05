@@ -163,7 +163,6 @@ Keys:\n\
     // general: main loop
     while (1) {
 
-        debug("loading config\n");
         // config: load
         struct error_s error;
         error.length = 0;
@@ -278,8 +277,6 @@ Keys:\n\
         audio.threadparams = 0; // most input threads don't adjust the parameters
         audio.terminate = 0;
 
-        debug("starting audio thread\n");
-
         pthread_t p_thread;
         int timeout_counter = 0;
         int total_bar_height = 0;
@@ -312,7 +309,6 @@ Keys:\n\
             }
         }
         pthread_mutex_unlock(&audio.lock);
-        debug("got format: %d and rate %d\n", audio.format, audio.rate);
 
 #ifdef SDL
         // output: start sdl mode
@@ -471,13 +467,6 @@ Keys:\n\
                     break;
                 }
 
-#ifndef NDEBUG
-                // clear();
-#ifndef _WIN32
-                refresh();
-#endif
-#endif
-
                 // checking if audio thread has exited unexpectedly
                 pthread_mutex_lock(&audio.lock);
                 if (audio.terminate == 1) {
@@ -506,9 +495,6 @@ Keys:\n\
                             sleep_counter = 0;
 
                         if (sleep_counter > p.framerate * p.sleep_timer) {
-#ifndef NDEBUG
-                            printw("no sound detected for 30 sec, going to sleep mode\n");
-#endif
                             nanosleep(&sleep_mode_timer, NULL);
                             continue;
                         }
@@ -549,17 +535,14 @@ Keys:\n\
                 audio_raw_fetch(&audio_raw, &p, &re_paint, plan);
 #endif
 
-// output: draw processed input
-#ifdef NDEBUG
+                // output: draw processed input
                 if (p.sync_updates) {
                     printf("\033[2026h\033\\");
                     fflush(stdout);
                     printf("\033[2026l\033\\");
                 }
                 int rc;
-#ifndef _WIN32
-                (void)p.x_axis_info;
-#else
+#ifdef _WIN32
                 QueryPerformanceCounter(&t1);
 #endif
                 switch (p.output) {
@@ -645,8 +628,6 @@ Keys:\n\
                     reloadConf = true;
                     should_quit = true;
                 }
-
-#endif
 
                 memcpy(audio_raw.previous_frame, audio_raw.bars,
                        audio_raw.number_of_bars * sizeof(int));

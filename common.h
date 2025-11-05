@@ -24,5 +24,4 @@
 #include "output/terminal_bcircle.h"
 #include "output/terminal_ncurses.h"
 #endif
-#include "debug.h"
 #include "util.h"

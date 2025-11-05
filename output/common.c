@@ -165,9 +165,6 @@ int audio_raw_init(struct audio_data *audio, struct audio_raw *audio_raw, struct
             exit(1);
         }
 
-#ifndef NDEBUG
-        debug("open file %s for writing raw output\n", prm->raw_target);
-#endif
         // width must be hardcoded for raw output. only used to calculate the number of
         // bars in auto mode
         audio_raw->width = 512 * audio_raw->output_channels;
@@ -256,13 +253,6 @@ int audio_raw_init(struct audio_data *audio, struct audio_raw *audio_raw, struct
                                 audio_raw->width, audio_raw->lines, prm->bar_width,
                                 prm->orientation, prm->blendDirection);
     }
-#ifndef NDEBUG
-    debug("height: %d width: %d dimension_bar: %d dimension_value: %d bars:%d bar width: "
-          "%d remainder: %d\n",
-          audio_raw->height, audio_raw->width, *audio_raw->dimension_bar,
-          *audio_raw->dimension_value, audio_raw->number_of_bars, prm->bar_width,
-          audio_raw->remainder);
-#endif
 
     if (prm->userEQ_enabled && (audio_raw->number_of_bars / audio_raw->output_channels > 0)) {
         audio_raw->userEQ_keys_to_bars_ratio =
@@ -503,11 +493,6 @@ int audio_raw_fetch(struct audio_raw *audio_raw, struct config_params *prm, int 
     *re_paint = 0;
 #endif
 
-#ifndef NDEBUG
-    int maxvalue = 0;
-    int minvalue = 0;
-#endif
-
     for (int n = 0; n < audio_raw->number_of_bars; n++) {
         audio_raw->bars[n] = audio_raw->bars_raw[n];
         // show idle bar heads
@@ -523,35 +508,7 @@ int audio_raw_fetch(struct audio_raw *audio_raw, struct config_params *prm, int 
         if (audio_raw->bars[n] != audio_raw->previous_frame[n])
             *re_paint = 1;
 #endif
-
-#ifndef NDEBUG
-        mvprintw(n, 0, "%d: f:%f->%f (%d->%d), eq:%15e, peak:%d \n", n, plan->cut_off_frequency[n],
-                 plan->cut_off_frequency[n + 1], plan->FFTbuffer_lower_cut_off[n],
-                 plan->FFTbuffer_upper_cut_off[n], plan->eq[n], audio_raw->bars[n]);
-
-        if (audio_raw->bars[n] < minvalue) {
-            minvalue = audio_raw->bars[n];
-            debug("min value: %d\n", minvalue); // checking maxvalue 10000
-        }
-        if (audio_raw->bars[n] > maxvalue) {
-            maxvalue = audio_raw->bars[n];
-        }
-
-        if (audio_raw->bars[n] < 0) {
-            debug("negative bar value!! %d\n", audio_raw->bars[n]);
-            //    exit(EXIT_FAILURE); // Can't happen.
-        }
-
-#endif
     }
-
-#ifndef NDEBUG
-    mvprintw(audio_raw->number_of_bars + 1, 0, "sensitivity %.10e", prm->sens);
-    mvprintw(audio_raw->number_of_bars + 2, 0, "min value: %d\n",
-             minvalue); // checking maxvalue 10000
-    mvprintw(audio_raw->number_of_bars + 3, 0, "max value: %d\n",
-             maxvalue); // checking maxvalue 10000
-#endif
 
     return 0;
 }

@@ -109,7 +109,6 @@ ptr get_input(struct audio_data *audio, struct config_params *prm) {
     audio->threadparams = 0; // most input threads don't adjust the parameters
     audio->terminate = 0;
 
-    debug("starting audio thread\n");
     switch (prm->input) {
 #ifndef _WIN32
 
