@@ -9,6 +9,14 @@
 #include <stdlib.h>
 #define PI 3.141592654
 
+#ifdef PIPEWIRE
+#include "input/pipewire.h"
+#endif
+
+#ifdef AUDIO_INPUT
+#include "input/common.h"
+#endif
+
 void main() {
 
     printf("welcome to cavacore standalone test app\n");
@@ -22,6 +30,31 @@ void main() {
     int high_cut_off = 10000;
     double blueprint_200MHz[10] = {0, 0, 0.930, 0.004, 0, 0, 0, 0, 0, 0};
     double blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 0.878, 0.003, 0, 0};
+#ifdef AUDIO_INPUT
+    struct audio_data audio;
+    memset(&audio, 0, sizeof(audio));
+    audio.source = malloc(1 + strlen("auto"));
+    strcpy(audio.source, "auto");
+    audio.format = 16;
+    audio.rate = rate;
+    audio.channels = channels;
+    audio.input_buffer_size = buffer_size;
+    audio.cava_buffer_size = 16384;
+    audio.active = 1;
+    audio.remix = 0;
+    audio.virtual_node = 0;
+    audio.cava_in = (double *)malloc(audio.cava_buffer_size * sizeof(double));
+    memset(audio.cava_in, 0, sizeof(int) * audio.cava_buffer_size);
+
+    audio.threadparams = 0; // most input threads don't adjust the parameters
+    audio.terminate = 0;
+    int thr_id;
+    pthread_t p_thread;
+    int frame_time_msec = 10;
+    struct timespec framerate_timer = {.tv_sec = 0, .tv_nsec = frame_time_msec * 1e6};
+#else
+    printf("running in simulation mode, no audio input\n\n");
+#endif
 
     printf("planning visualization with %d bars per channel, %d rate, %d channels, autosens, "
            "%.2f noise reduction, %d - %d MHz bandwith.\n",
@@ -52,10 +85,17 @@ void main() {
     for (int i = 0; i < bars_per_channel * channels; i++) {
         cava_out[i] = 0;
     }
-
-    printf("running cava execute 300 times (simulating about 3.5 seconds run time)\n\n");
+#ifdef PIPEWIRE
+    thr_id = pthread_create(&p_thread, NULL, input_pipewire, (void *)&audio);
+#endif
+    printf("running cava execute 300 times (about 3.5 seconds run time)\n\n");
     for (int k = 0; k < 300; k++) {
-
+#ifdef AUDIO_INPUT
+        pthread_mutex_lock(&audio.lock);
+        cava_execute(audio.cava_in, audio.samples_counter, cava_out, plan);
+        pthread_mutex_unlock(&audio.lock);
+        nanosleep(&framerate_timer, NULL);
+#else
         // filling up 512*2 samples at a time, making sure the sinus wave is unbroken
         // 200MHz in left channel, 2000MHz in right
         // if we where using a proper audio source this would be replaced by a simple read function
@@ -63,22 +103,27 @@ void main() {
             cava_in[n * 2] = sin(2 * PI * 200 / rate * (n + (k * buffer_size / 2))) * 20000;
             cava_in[n * 2 + 1] = sin(2 * PI * 2000 / rate * (n + (k * buffer_size / 2))) * 20000;
         }
-
         cava_execute(cava_in, buffer_size, cava_out, plan);
+#endif
     }
-
+#ifdef AUDIO_INPUT
+    pthread_mutex_lock(&audio.lock);
+    audio.terminate = 1;
+    pthread_mutex_unlock(&audio.lock);
+    pthread_join(p_thread, NULL);
+#endif
     // rounding last output to nearst 1/1000th
     for (int i = 0; i < bars_per_channel * 2; i++) {
         cava_out[i] = (double)round(cava_out[i] * 1000) / 1000;
     }
 
-    printf("\nlast output left, max value should be at 200Hz:\n");
+    printf("\nlast output left, max value should be at 200Hz in simulation mode:\n");
     for (int i = 0; i < bars_per_channel; i++) {
         printf("%.3f \t", cava_out[i]);
     }
     printf("MHz\n");
 
-    printf("last output right,  max value should be at 2000Hz:\n");
+    printf("last output right,  max value should be at 2000Hz in simulation mode:\n");
     for (int i = 0; i < bars_per_channel; i++) {
         printf("%.3f \t", cava_out[i + bars_per_channel]);
     }
@@ -99,6 +144,7 @@ void main() {
     free(plan);
     free(cava_in);
     free(cava_out);
+#ifndef AUDIO_INPUT
     if (bp_ok == 1) {
         printf("matching blueprint\n");
         exit(0);
@@ -106,4 +152,5 @@ void main() {
         printf("not matching blueprint\n");
         exit(1);
     }
+#endif
 }
