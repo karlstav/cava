@@ -28,8 +28,8 @@ void main() {
     double noise_reduction = 0.77;
     int low_cut_off = 50;
     int high_cut_off = 10000;
-    double blueprint_200MHz[10] = {0, 0, 0.930, 0.004, 0, 0, 0, 0, 0, 0};
-    double blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 0.878, 0.003, 0, 0};
+    double blueprint_200MHz[10] = {0, 0, 0.940, 0.004, 0, 0, 0, 0, 0, 0};
+    double blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 0.646, 0.002, 0, 0};
 #ifdef AUDIO_INPUT
     struct audio_data audio;
     memset(&audio, 0, sizeof(audio));
