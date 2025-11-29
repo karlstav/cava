@@ -49,7 +49,7 @@ works on:
 * macOS
 * Windows
 
-This program is not intended for scientific use. It's written to look responsive and aesthetic when used to visualize music. 
+This program is not intended for scientific use. It's written to look responsive and aesthetic when used to visualize music.
 
 
 Installing
@@ -68,7 +68,7 @@ Required components:
 * [iniparser](https://github.com/ndevilla/iniparser)
 
 
-Recomended components:
+Recommended components:
 
 The development lib of one of these audio frameworks, depending on your distro:
 * ALSA
@@ -84,7 +84,7 @@ Optional components:
 * autoconf-archive (needed for setting up OpenGL)
 * [ncursesw dev files](http://www.gnu.org/software/ncurses/) (bundled in ncurses in arch)
 
-Only FFTW, iniparser and the build tools are actually required for CAVA to compile, but this will only give you the ability to read from fifo files. To capture audio directlty from your system pipewire, pulseaudio, alsa, sndio, jack or portaudio dev files are required (depending on what audio system you are using).
+Only FFTW, iniparser and the build tools are actually required for CAVA to compile, but this will only give you the ability to read from fifo files. To capture audio directly from your system pipewire, pulseaudio, alsa, sndio, jack or portaudio dev files are required (depending on what audio system you are using).
 
 Ncurses can be used as an alternative output method if you have issues with the default one. But it is not required.
 
@@ -119,7 +119,7 @@ Fedora:
 
     dnf install alsa-lib-devel fftw3-devel pulseaudio-libs-devel libtool iniparser-devel pkgconf
 
-    
+
 macOS:
 
 First install homebrew if you have't already:
@@ -129,7 +129,7 @@ First install homebrew if you have't already:
 Then install prerequisites:
 
     brew install fftw libtool automake pkgconf portaudio iniparser
-    
+
 The installation location for Homebrew packages is different between Intel Macs and Apple Silicon Macs.
 As such, the commands will be a little bit different.
 You can find out which type you have [here](https://support.apple.com/en-us/HT211814#:~:text=To%20open%20About%20This%20Mac,as%20an%20Intel%2Dbased%20Mac.)
@@ -158,7 +158,7 @@ see separate readme in `cava_win` folder.
 
 #### Building
  First of all clone this repo and cd in to it, then run:
- 
+
     ./autogen.sh
     ./configure
     make
@@ -166,8 +166,8 @@ see separate readme in `cava_win` folder.
 If you have a recommended component installed, but do not wish to use it (perhaps if building a binary on one machine to be used on another), then the corresponding feature can be disabled during configuration (see configure --help for details).
 
 For windows there is a VS solution file in the `cava_win` folder.
-    
-#### Installing 
+
+#### Installing
 
 Install `cava` to default `/usr/local`:
 
@@ -184,7 +184,7 @@ Or you can change `PREFIX`, for example:
 
 ### Package managers
 
-All distro specific instalation sources might be out of date. Please check version before reporting any issues here.
+All distro specific installation sources might be out of date. Please check version before reporting any issues here.
 
 
 #### FreeBSD
@@ -221,7 +221,7 @@ Cava is available in Arch Linux official repo:
 ##### Ubuntu 20.10 or more recent / Debian 12 (Bookworm)
 
     sudo apt install cava
-    
+
 ##### Older Ubuntu
 
 Harshal Sheth has added CAVA to his PPA, it can be installed with:
@@ -229,7 +229,7 @@ Harshal Sheth has added CAVA to his PPA, it can be installed with:
     add-apt-repository ppa:hsheth2/ppa
     apt update
     apt install cava
-    
+
 #### macOS
 
 cava is in homebrew.
@@ -260,7 +260,7 @@ e.g.
     method = pulse
 
 The default source is `auto` and should be your currently selected output.
- 
+
 If nothing happens you might have to use a different source than the default. The default might also be your microphone.
 
 
@@ -269,7 +269,7 @@ If nothing happens you might have to use a different source than the default. Th
     method = alsa
 
 
-ALSA can be difficult because there is no native way to grab audio from an output. If you want to capture audio straight fom the output (not just mic or line-in), you must create an ALSA loopback interface, then output the audio simultaneously to both the loopback and your normal interface.
+ALSA can be difficult because there is no native way to grab audio from an output. If you want to capture audio straight from the output (not just mic or line-in), you must create an ALSA loopback interface, then output the audio simultaneously to both the loopback and your normal interface.
 
 To create a loopback interface simply run:
 
@@ -281,11 +281,11 @@ To make it persistent across boot add the line `snd-aloop` to "/etc/modules". To
 
 Playing the audio through your Loopback interface makes it possible for cava to capture it, but there will be no sound in your speakers. In order to play audio on the loopback interface and your actual interface you must make use of the ALSA multi channel.
 
-Look at the included example file `example_files/etc/asound.conf` on how to use the multi channel. I was able to make this work with a HDA Intel PCH sound card, but I had no luck with the an USB DAC.
+Look at the included example file `example_files/etc/asound.conf` on how to use the multi channel. I was able to make this work with an HD Audio Intel PCH sound card, but I had no luck with a USB DAC.
 
 Read more about the ALSA method [here](http://stackoverflow.com/questions/12984089/capture-playback-on-play-only-sound-card-with-alsa).
 
-If you are having problems with the alsa method on Rasberry PI, try enabling `mmap` by adding the following line to `/boot/config.txt` and reboot:
+If you are having problems with the alsa method on Raspberry PI, try enabling `mmap` by adding the following line to `/boot/config.txt` and reboot:
 
 ```
 dtoverlay=i2s-mmap
@@ -535,7 +535,7 @@ Note: squeezelite must be started with the `-v` flag to enable visualizer suppor
 method = portaudio
 ```
 
-Portaudio is the default and only supported way of capturing audio on macOS. Unfortunately portaudio can not capture audio directly from the output, but there are severeal ways to achive this: 
+Portaudio is the default and only supported way of capturing audio on macOS. Unfortunately portaudio can not capture audio directly from the output, but there are several ways to achieve this:
 
 **Background Music**
 
@@ -590,7 +590,7 @@ exit with ctrl+z then run 'bg' to keep it running after you log out.
 
 ### No bars in terminal
 
-Most likley issue [#399](https://github.com/karlstav/cava/issues/399). Locale settings need to be set correctly in order for cava to work.
+Most likely issue [#399](https://github.com/karlstav/cava/issues/399). Locale settings need to be set correctly in order for cava to work.
 
 ### Bars not moving
 
@@ -630,7 +630,7 @@ Usage
 -----
 
     Usage : cava [options]
-    Visualize audio input in terminal. 
+    Visualize audio input in terminal.
 
     Options:
     	    -p          path to config file
@@ -664,7 +664,7 @@ For example:
 $ pkill -USR1 cava
 ```
 
-Similarly, sending cava a SIGUSR2 signal will only reload the colors from the configuration file, which is the same as pressing <kbd>c</kbd> in the terminal. This is slightly faster than reloading the entire config as the audio processing does not need to reinitialize.  
+Similarly, sending cava a SIGUSR2 signal will only reload the colors from the configuration file, which is the same as pressing <kbd>c</kbd> in the terminal. This is slightly faster than reloading the entire config as the audio processing does not need to reinitialize.
 ```
 $ pkill -USR2 cava
 ```

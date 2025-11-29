@@ -285,7 +285,7 @@ AC_CHECK_LIB(m, sqrt, have_m=yes, have_m=no)
 
 
 dnl ######################
-dnl checking for fftw3 
+dnl checking for fftw3
 dnl ######################
 AC_CHECK_LIB(fftw3,fftw_execute, have_fftw=yes, have_fftw=no)
     if [[ $have_fftw = "yes" ]] ; then
@@ -376,7 +376,7 @@ AS_IF([test "x$enable_output_ncurses" != "xno"], [
     AC_CHECK_HEADERS([curses.h], , AC_MSG_ERROR([missing curses.h header]))
     have_ncurses=yes,
 
-    AC_MSG_NOTICE([WARNING: building without ncursesw support ncursesw is recomended!])
+    AC_MSG_NOTICE([WARNING: building without ncursesw support ncursesw is recommended!])
     have_ncurses=no
   )],
   [have_ncurses=no]
@@ -479,8 +479,3 @@ fi
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
-
-
-
-
-

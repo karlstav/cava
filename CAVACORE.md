@@ -11,17 +11,17 @@ the raw output data from fftw will not look very nice when used directly in a vi
 to improve the look of the visualization:
 
 
-## adjustable bandwith
+## adjustable bandwidth
 
-Theoretically the human ear can hear frequencies up to 20kHz, but the information above 10k is hard to separate from eachother
+Theoretically the human ear can hear frequencies up to 20kHz, but the information above 10k is hard to separate from each other
 and does not give much feedback by itself when visualizing audio. Similarly audio down to 20Hz can be heard, but the frequencies
 below 50Hz does not directly provide anything to the visualizing of the audio.
 
 
 ## spread the output logarithmically
 
-The human ear hears different frequencies logarithmically, so notes that are 2x and 4x higher than eachother, will be preceived
-as beeing a fixed amount higher than eachother. Therefore cavacore outputs the frequencies logarithmically. Cavacore will also
+The human ear hears different frequencies logarithmically, so notes that are 2x and 4x higher than each other will be perceived
+as being a fixed amount higher than each other. Therefore cavacore outputs the frequencies logarithmically. Cavacore will also
 group the output in the desired number of samples.
 
 

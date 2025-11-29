@@ -24,7 +24,7 @@ void main() {
     double blueprint_2000MHz[10] = {0, 0, 0, 0, 0, 0, 0.878, 0.003, 0, 0};
 
     printf("planning visualization with %d bars per channel, %d rate, %d channels, autosens, "
-           "%.2f noise reduction, %d - %d MHz bandwith.\n",
+           "%.2f noise reduction, %d - %d MHz bandwidth.\n",
            bars_per_channel, rate, channels, noise_reduction, low_cut_off, high_cut_off);
 
     struct cava_plan *plan =

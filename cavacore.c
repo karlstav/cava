@@ -239,7 +239,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
                 p->FFTbuffer_upper_cut_off[n - 1] = p->FFTbuffer_lower_cut_off[n] - 1;
 
                 // pushing the spectrum up if the exponential function gets "clumped" in the
-                // bass and caluclating new cut off frequencies
+                // bass and calculating new cut off frequencies
                 if (p->FFTbuffer_lower_cut_off[n] <= p->FFTbuffer_lower_cut_off[n - 1]) {
 
                     // check if there is room for more first
@@ -278,7 +278,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     // hard coded eq
     for (int n = 0; n < p->number_of_bars; n++) {
 
-        // the numbers that come out of the FFT are verry high
+        // the numbers that come out of the FFT are very high
         // the EQ is used to "normalize" them by dividing with this very huge number
         p->eq[n] = 1 / pow(2, 28);
 
