@@ -70,7 +70,7 @@ void *input_portaudio(void *audiodata) {
     // start portaudio
     err = Pa_Initialize();
     if (err != paNoError) {
-        fprintf(stderr, "Error: unable to initilize portaudio - %s\n", Pa_GetErrorText(err));
+        fprintf(stderr, "Error: unable to initialize portaudio - %s\n", Pa_GetErrorText(err));
         exit(EXIT_FAILURE);
     }
 
@@ -171,7 +171,7 @@ void *input_portaudio(void *audiodata) {
                       audio->input_buffer_size / audio->channels, paClipOff, recordCallback, &data);
     if (err != paNoError) {
         fprintf(stderr,
-                "Error: failure in opening stream (device: %d), (error: %s). Use \"list\" as souce "
+                "Error: failure in opening stream (device: %d), (error: %s). Use \"list\" as source "
                 "to get a list of "
                 "available sources.\n",
                 deviceNum + 1, Pa_GetErrorText(err));

@@ -1,5 +1,5 @@
 # How to contribute
-Thank you for wanting to contribute to this project. In order to get the development of this project to run as smooth as possible, we will encourage all contributions to follw this simple process:
+Thank you for wanting to contribute to this project. In order to get the development of this project to run as smooth as possible, we will encourage all contributions to follow this simple process:
 
 1. Before any pull request is submitted a github issue must be created for the task.
 2. The new github task is to be opened for suggestions from other contributors.
@@ -12,4 +12,4 @@ Thank you for wanting to contribute to this project. In order to get the develop
 * 4 spaces for indents
 * curly braces on same line as if, while, for statements
 
-Generally please try to keep the style consistent with the code as it is. 
+Generally please try to keep the style consistent with the code as it is.

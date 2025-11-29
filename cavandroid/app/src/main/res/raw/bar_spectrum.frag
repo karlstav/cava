@@ -12,8 +12,8 @@ uniform vec3 u_resolution; // window resolution
 uniform int gradient_count;
 uniform vec3 colors[9]; // gradient colors
 
-uniform int x_on;    // frquency labels on off
-uniform int x_count;    // number of digits in frquency label
+uniform int x_on;    // frequency labels on off
+uniform int x_count;    // number of digits in frequency label
 uniform int x_labels[128]; // digits
 
 vec3 normalize_C(float y,vec3 col_1, vec3 col_2, float y_min, float y_max)

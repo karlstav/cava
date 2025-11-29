@@ -345,7 +345,7 @@ Keys:\n\
                 strncmp(ttyname(0), "/dev/ttyUSB", 11) == 0)
                 inAterminal = 1;
 
-            // in macos vitual terminals are called ttys(xyz) and there are no ttys
+            // in macos virtual terminals are called ttys(xyz) and there are no ttys
             if (strncmp(ttyname(0), "/dev/ttys", 9) == 0)
                 inAtty = 0;
 
@@ -767,11 +767,11 @@ Keys:\n\
 
                 if (output_mode == OUTPUT_SDL_GLSL) {
                     if (number_of_bars > 512)
-                        number_of_bars = 512; // cant have more than 512 bars in glsl due to shader
+                        number_of_bars = 512; // can't have more than 512 bars in glsl due to shader
                                               // program implementation limitations
                 } else {
                     if (number_of_bars / output_channels > 512)
-                        number_of_bars = 512 * output_channels; // cant have more than 512 bars on
+                        number_of_bars = 512 * output_channels; // can't have more than 512 bars on
                                                                 // 44100 rate per channel
                 }
 
@@ -790,7 +790,7 @@ Keys:\n\
                 raw_number_of_bars = number_of_bars;
             }
 
-            // checks if there is stil extra room, will use this to center
+            // checks if there is still extra room, will use this to center
             if (p.center_align) {
                 remainder = (*dimension_bar - number_of_bars * p.bar_width -
                              number_of_bars * p.bar_spacing + p.bar_spacing) /
@@ -965,14 +965,14 @@ Keys:\n\
                 case 'c': // reload colors
                     reload_colors = 1;
                     break;
-                case 'f': // change forground color
+                case 'f': // change foreground color
                     if (p.col < 7)
                         p.col++;
                     else
                         p.col = 0;
                     resizeTerminal = true;
                     break;
-                case 'b': // change backround color
+                case 'b': // change background color
                     if (p.bgcol < 7)
                         p.bgcol++;
                     else

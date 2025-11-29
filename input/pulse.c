@@ -22,7 +22,7 @@ void cb(__attribute__((unused)) pa_context *pulseaudio_context, const pa_server_
     audio->source = strcat(audio->source, ".monitor");
     pthread_mutex_unlock(&audio->lock);
 
-    // quiting mainloop
+    // quitting mainloop
     pa_context_disconnect(pulseaudio_context);
     pa_context_unref(pulseaudio_context);
     pa_mainloop_quit(m_pulseaudio_mainloop, 0);
