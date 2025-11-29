@@ -711,7 +711,7 @@ is a stand-alone component for making Cava's raw values available as [server-sen
 Contribution
 ------
 
-Please read CONTRIBUTING.md before opening a pull request.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
 Thanks to:
 * [CelestialWalrus](https://github.com/CelestialWalrus)
