@@ -170,11 +170,12 @@ void *input_portaudio(void *audiodata) {
         Pa_OpenStream(&stream, &inputParameters, NULL, sampleRate,
                       audio->input_buffer_size / audio->channels, paClipOff, recordCallback, &data);
     if (err != paNoError) {
-        fprintf(stderr,
-                "Error: failure in opening stream (device: %d), (error: %s). Use \"list\" as source "
-                "to get a list of "
-                "available sources.\n",
-                deviceNum + 1, Pa_GetErrorText(err));
+        fprintf(
+            stderr,
+            "Error: failure in opening stream (device: %d), (error: %s). Use \"list\" as source "
+            "to get a list of "
+            "available sources.\n",
+            deviceNum + 1, Pa_GetErrorText(err));
         exit(EXIT_FAILURE);
     }
 
