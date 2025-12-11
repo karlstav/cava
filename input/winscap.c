@@ -358,7 +358,7 @@ void get_audio_device_by_name(IMMDeviceEnumerator *pEnumerator, const char *devi
                               IMMDevice **ppDevice) {
     IMMDeviceCollection *pDeviceCollection = NULL;
     HRESULT hr = pEnumerator->lpVtbl->EnumAudioEndpoints(pEnumerator, eRender, DEVICE_STATE_ACTIVE,
-                                                        &pDeviceCollection);
+                                                         &pDeviceCollection);
     if (FAILED(hr)) {
         fwprintf(stderr, L"Failed to enumerate audio endpoints: 0x%08lx\n", hr);
         return;
