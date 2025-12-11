@@ -41,6 +41,8 @@
 #define PACKAGE "cava"
 #define _CRT_SECURE_NO_WARNINGS 1
 
+#define strdup _strdup
+
 static void LoadFileInResource(int name, int type, DWORD *size, const char **data) {
     HMODULE handle = GetModuleHandle(NULL);
     HRSRC rc = FindResource(handle, MAKEINTRESOURCE(name), MAKEINTRESOURCE(type));
@@ -122,6 +124,32 @@ enum input_method input_method_by_name(const char *str) {
     return INPUT_MAX;
 }
 
+void free_colors(struct config_params *p) {
+    if (p->gradient_colors) {
+        for (int i = 0; i < 8; ++i)
+            if (p->gradient_colors[i]) {
+                free(p->gradient_colors[i]);
+                p->gradient_colors[i] = NULL;
+            }
+        free(p->gradient_colors);
+    }
+    if (p->horizontal_gradient_colors) {
+        for (int i = 0; i < 8; ++i)
+            if (p->horizontal_gradient_colors[i]) {
+                free(p->horizontal_gradient_colors[i]);
+                p->horizontal_gradient_colors[i] = NULL;
+            }
+        free(p->horizontal_gradient_colors);
+    }
+
+    p->gradient_colors = NULL;
+    p->horizontal_gradient_colors = NULL;
+    p->gradient = 0;
+    p->gradient_count = 0;
+    p->horizontal_gradient = 0;
+    p->horizontal_gradient_count = 0;
+}
+
 void write_errorf(void *err, const char *fmt, ...) {
     struct error_s *error = (struct error_s *)err;
     va_list args;
@@ -130,6 +158,48 @@ void write_errorf(void *err, const char *fmt, ...) {
         vsnprintf((char *)error->message + error->length, MAX_ERROR_LEN - error->length, fmt, args);
     va_end(args);
 }
+
+char *get_cava_config_home(struct error_s *error) {
+    char *cava_config_home = malloc(PATH_MAX / 2);
+    // config: creating path to default config file
+    char *configHome = getenv("XDG_CONFIG_HOME");
+    if (configHome != NULL) {
+        sprintf(cava_config_home, "%s/%s/", configHome, PACKAGE);
+#ifndef _WIN32
+        mkdir(cava_config_home, 0777);
+#else
+        CreateDirectoryA(cava_config_home, NULL);
+#endif
+    } else {
+#ifndef _WIN32
+        configHome = getenv("HOME");
+#else
+        configHome = getenv("USERPROFILE");
+#endif
+
+        if (configHome != NULL) {
+            sprintf(cava_config_home, "%s/%s/", configHome, ".config");
+#ifndef _WIN32
+            mkdir(cava_config_home, 0777);
+#else
+            CreateDirectoryA(cava_config_home, NULL);
+#endif
+
+            sprintf(cava_config_home, "%s/%s/%s/", configHome, ".config", PACKAGE);
+#ifndef _WIN32
+            mkdir(cava_config_home, 0777);
+#else
+            CreateDirectoryA(cava_config_home, NULL);
+#endif
+        } else {
+            write_errorf(error, "No HOME found (ERR_HOMELESS), exiting...");
+            free(cava_config_home);
+            return NULL;
+        }
+    }
+    return cava_config_home;
+}
+
 int validate_color(char *checkColor, void *params, void *err) {
     struct config_params *p = (struct config_params *)params;
     struct error_s *error = (struct error_s *)err;
@@ -517,45 +587,15 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     return validate_colors(p, error);
 }
 
-bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colorsOnly,
-                 struct error_s *error, int reload) {
+bool load_config(char configPath[PATH_MAX], struct config_params *p, struct error_s *error) {
+    free_config(p);
+
     FILE *fp;
-    char *cava_config_home = malloc(PATH_MAX / 2);
-
-    // config: creating path to default config file
-    char *configHome = getenv("XDG_CONFIG_HOME");
-    if (configHome != NULL) {
-        sprintf(cava_config_home, "%s/%s/", configHome, PACKAGE);
-#ifndef _WIN32
-        mkdir(cava_config_home, 0777);
-#else
-        CreateDirectoryA(cava_config_home, NULL);
-#endif
-    } else {
-#ifndef _WIN32
-        configHome = getenv("HOME");
-#else
-        configHome = getenv("USERPROFILE");
-#endif
-
-        if (configHome != NULL) {
-            sprintf(cava_config_home, "%s/%s/", configHome, ".config");
-#ifndef _WIN32
-            mkdir(cava_config_home, 0777);
-#else
-            CreateDirectoryA(cava_config_home, NULL);
-#endif
-
-            sprintf(cava_config_home, "%s/%s/%s/", configHome, ".config", PACKAGE);
-#ifndef _WIN32
-            mkdir(cava_config_home, 0777);
-#else
-            CreateDirectoryA(cava_config_home, NULL);
-#endif
-        } else {
-            write_errorf(error, "No HOME found (ERR_HOMELESS), exiting...");
-            return false;
-        }
+    bool result;
+    char *cava_config_home = get_cava_config_home(error);
+    if (!cava_config_home) {
+        free_config(p);
+        return false;
     }
     if (configPath[0] == '\0') {
         // config: adding default filename file
@@ -584,6 +624,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
                 fclose(fp);
             } else {
                 write_errorf(error, "Unable to open or create file '%s', exiting...\n", configPath);
+                free(cava_config_home);
+                free_config(p);
                 return false;
             }
         }
@@ -604,6 +646,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             fclose(fp);
         } else {
             write_errorf(error, "Unable to open file '%s', exiting...\n", configPath);
+            free(cava_config_home);
+            free_config(p);
             return false;
         }
     }
@@ -672,83 +716,27 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     }
     free(themePath);
 
-    free(p->vertex_shader);
-    free(p->fragment_shader);
-    p->vertex_shader = malloc(sizeof(char) * PATH_MAX);
-    p->fragment_shader = malloc(sizeof(char) * PATH_MAX);
-
-    char *themeFile = malloc(sizeof(char) * PATH_MAX);
-
+    char *themeFile;
 #ifndef _WIN32
     // config: parse ini
     dictionary *ini;
     ini = iniparser_load(configPath);
 
-    free(p->color);
-    free(p->bcolor);
-
     p->theme = strdup(iniparser_getstring(ini, "color:theme", "none"));
+    result = get_themeFile(configPath, p, cava_config_home, error, &themeFile);
+    if (!result) {
+        iniparser_freedict(ini);
+        free(cava_config_home);
+        free_config(p);
+        return false;
+    }
 
-    if (strcmp(p->theme, "none") != 0) {
-        sprintf(themeFile, "%s/themes/%s", cava_config_home, p->theme);
-        fp = fopen(themeFile, "rb");
-        if (fp) {
-            fclose(fp);
-        } else {
-            write_errorf(error, "Unable to open theme file '%s', exiting...\n", themeFile);
-            return false;
-        }
+    if (strcmp(themeFile, configPath) != 0) {
         iniparser_freedict(ini);
         ini = iniparser_load(themeFile);
     }
-
     p->color = strdup(iniparser_getstring(ini, "color:foreground", "default"));
     p->bcolor = strdup(iniparser_getstring(ini, "color:background", "default"));
-
-    p->gradient = iniparser_getint(ini, "color:gradient", 0);
-
-    if (reload) {
-        for (int i = 0; i < 8; ++i)
-            free(p->gradient_colors[i]);
-    }
-    free(p->gradient_colors);
-    p->gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
-
-    p->gradient_colors[0] = strdup(iniparser_getstring(ini, "color:gradient_color_1", "not_set"));
-    p->gradient_colors[1] = strdup(iniparser_getstring(ini, "color:gradient_color_2", "not_set"));
-    p->gradient_colors[2] = strdup(iniparser_getstring(ini, "color:gradient_color_3", "not_set"));
-    p->gradient_colors[3] = strdup(iniparser_getstring(ini, "color:gradient_color_4", "not_set"));
-    p->gradient_colors[4] = strdup(iniparser_getstring(ini, "color:gradient_color_5", "not_set"));
-    p->gradient_colors[5] = strdup(iniparser_getstring(ini, "color:gradient_color_6", "not_set"));
-    p->gradient_colors[6] = strdup(iniparser_getstring(ini, "color:gradient_color_7", "not_set"));
-    p->gradient_colors[7] = strdup(iniparser_getstring(ini, "color:gradient_color_8", "not_set"));
-
-    p->horizontal_gradient = iniparser_getint(ini, "color:horizontal_gradient", 0);
-
-    if (reload) {
-        for (int i = 0; i < 8; ++i)
-            free(p->horizontal_gradient_colors[i]);
-    }
-    free(p->horizontal_gradient_colors);
-    p->horizontal_gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
-
-    p->horizontal_gradient_colors[0] =
-        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_1", "not_set"));
-    p->horizontal_gradient_colors[1] =
-        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_2", "not_set"));
-    p->horizontal_gradient_colors[2] =
-        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_3", "not_set"));
-    p->horizontal_gradient_colors[3] =
-        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_4", "not_set"));
-    p->horizontal_gradient_colors[4] =
-        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_5", "not_set"));
-    p->horizontal_gradient_colors[5] =
-        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_6", "not_set"));
-    p->horizontal_gradient_colors[6] =
-        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_7", "not_set"));
-    p->horizontal_gradient_colors[7] =
-        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_8", "not_set"));
-
 #else
     outputMethod = malloc(sizeof(char) * 32);
     p->color = malloc(sizeof(char) * 14);
@@ -766,89 +754,27 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     vertexShader = malloc(sizeof(char) * PATH_MAX / 2);
     fragmentShader = malloc(sizeof(char) * PATH_MAX / 2);
 
-    p->gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
-    for (int i = 0; i < 8; ++i) {
-        p->gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);
-    }
-    p->horizontal_gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
-    for (int i = 0; i < 8; ++i) {
-        p->horizontal_gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);
-    }
-
     GetPrivateProfileString("color", "theme", "none", p->theme, 64, configPath);
 
-    char *configFileBak = configPath;
-
-    if (strcmp(p->theme, "none") != 0) {
-        sprintf(themeFile, "%s/themes/%s", cava_config_home, p->theme);
-        fp = fopen(themeFile, "rb");
-        if (fp) {
-            fclose(fp);
-            configPath = themeFile;
-        } else {
-            write_errorf(error, "Unable to open theme file '%s', exiting...\n", themeFile);
-            return false;
-        }
+    result = get_themeFile(configPath, p, cava_config_home, error, &themeFile);
+    if (!result) {
+        free(cava_config_home);
+        free_config(p);
+        return false;
     }
-
-    GetPrivateProfileString("color", "foreground", "default", p->color, 9, configPath);
-    GetPrivateProfileString("color", "background", "default", p->bcolor, 9, configPath);
-    p->gradient = GetPrivateProfileInt("color", "gradient", 0, configPath);
-
-    GetPrivateProfileString("color", "gradient_color_1", "not_set", p->gradient_colors[0], 9,
-                            configPath);
-    GetPrivateProfileString("color", "gradient_color_2", "not_set", p->gradient_colors[1], 9,
-                            configPath);
-    GetPrivateProfileString("color", "gradient_color_3", "not_set", p->gradient_colors[2], 9,
-                            configPath);
-    GetPrivateProfileString("color", "gradient_color_4", "not_set", p->gradient_colors[3], 9,
-                            configPath);
-    GetPrivateProfileString("color", "gradient_color_5", "not_set", p->gradient_colors[4], 9,
-                            configPath);
-    GetPrivateProfileString("color", "gradient_color_6", "not_set", p->gradient_colors[5], 9,
-                            configPath);
-    GetPrivateProfileString("color", "gradient_color_7", "not_set", p->gradient_colors[6], 9,
-                            configPath);
-    GetPrivateProfileString("color", "gradient_color_8", "not_set", p->gradient_colors[7], 9,
-                            configPath);
-
-    p->horizontal_gradient = GetPrivateProfileInt("color", "horizontal_gradient", 0, configPath);
-
-    GetPrivateProfileString("color", "horizontal_gradient_color_1", "not_set",
-                            p->horizontal_gradient_colors[0], 9, configPath);
-    GetPrivateProfileString("color", "horizontal_gradient_color_2", "not_set",
-                            p->horizontal_gradient_colors[1], 9, configPath);
-    GetPrivateProfileString("color", "horizontal_gradient_color_3", "not_set",
-                            p->horizontal_gradient_colors[2], 9, configPath);
-    GetPrivateProfileString("color", "horizontal_gradient_color_4", "not_set",
-                            p->horizontal_gradient_colors[3], 9, configPath);
-    GetPrivateProfileString("color", "horizontal_gradient_color_5", "not_set",
-                            p->horizontal_gradient_colors[4], 9, configPath);
-    GetPrivateProfileString("color", "horizontal_gradient_color_6", "not_set",
-                            p->horizontal_gradient_colors[5], 9, configPath);
-    GetPrivateProfileString("color", "horizontal_gradient_color_7", "not_set",
-                            p->horizontal_gradient_colors[6], 9, configPath);
-    GetPrivateProfileString("color", "horizontal_gradient_color_8", "not_set",
-                            p->horizontal_gradient_colors[7], 9, configPath);
-
-    if (strcmp(p->theme, "none") != 0) {
-        configPath = configFileBak;
-    }
-    free(p->theme);
+    GetPrivateProfileString("color", "foreground", "default", p->color, 9, themeFile);
+    GetPrivateProfileString("color", "background", "default", p->bcolor, 9, themeFile);
 #endif
-    p->gradient_count = 0;
-    for (int i = 0; i < 7; ++i) {
-        if (strcmp(p->gradient_colors[i], "not_set") != 0)
-            p->gradient_count++;
-        else
-            break;
-    }
-    p->horizontal_gradient_count = 0;
-    for (int i = 0; i < 7; ++i) {
-        if (strcmp(p->horizontal_gradient_colors[i], "not_set") != 0)
-            p->horizontal_gradient_count++;
-        else
-            break;
+
+    result = load_colors(themeFile, p, error);
+    if (!result) {
+#ifndef _WIN32
+        iniparser_freedict(ini);
+#endif
+        free(cava_config_home);
+        free_config(p);
+        free(themeFile);
+        return result;
     }
 
     free(themeFile);
@@ -857,14 +783,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         iniparser_freedict(ini);
         ini = iniparser_load(configPath);
     }
-    free(p->theme);
-#endif
-
-    if (colorsOnly) {
-        return validate_colors(p, error);
-    }
-
-#ifndef _WIN32
 
     free(orientation);
     free(xaxisScale);
@@ -889,7 +807,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->autosens = iniparser_getint(ini, "general:autosens", 1);
     p->overshoot = iniparser_getint(ini, "general:overshoot", 20);
     p->lower_cut_off = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
-    p->upper_cut_off = iniparser_getint(ini, "general:higher_cutoff_freq", 10000);
+    p->upper_cut_off = iniparser_getint(ini, "general:higher_cutoff_freq", 8000);
     p->sleep_timer = iniparser_getint(ini, "general:sleep_timer", 0);
     int max_height = iniparser_getint(ini, "general:max_height", 100);
     p->max_height = max_height / 100.0;
@@ -906,8 +824,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     // config: output
     free(channels);
     free(monoOption);
-    free(p->raw_target);
-    free(p->data_format);
     free(vertexShader);
     free(fragmentShader);
     free(blendDirection);
@@ -930,8 +846,10 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->sdl_full_screen = iniparser_getint(ini, "output:sdl_full_screen", 0);
 
     if (strcmp(outputMethod, "sdl") == 0 || strcmp(outputMethod, "sdl_glsl") == 0) {
-        free(p->color);
-        free(p->bcolor);
+        if (p->color)
+            free(p->color);
+        if (p->bcolor)
+            free(p->bcolor);
         p->color = strdup(iniparser_getstring(ini, "color:foreground", "#33cccc"));
         p->bcolor = strdup(iniparser_getstring(ini, "color:background", "#111111"));
         p->bar_width = iniparser_getint(ini, "general:bar_width", 20);
@@ -971,8 +889,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         p->userEQ_enabled = 0;
     }
 
-    free(p->audio_source);
-
     enum input_method default_input = INPUT_FIFO;
     for (size_t i = 0; i < ARRAY_SIZE(default_methods); i++) {
         enum input_method method = default_methods[i];
@@ -991,9 +907,9 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->samplebits = iniparser_getint(ini, "input:sample_bits", 16);
     p->channels = iniparser_getint(ini, "input:channels", 2);
     p->autoconnect = iniparser_getint(ini, "input:autoconnect", 2);
-    p->active = iniparser_getint(ini, "input:active", 0);
+    p->active = iniparser_getint(ini, "input:active", 1);
     p->remix = iniparser_getint(ini, "input:remix", 1);
-    p->virtual = iniparser_getint(ini, "input:virtual", 1);
+    p->virtual_node = iniparser_getint(ini, "input:virtual", 1);
 
     switch (p->input) {
 #ifdef ALSA
@@ -1049,17 +965,22 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
         }
         write_errorf(error, "input method '%s' is not supported, supported methods are: %s\n",
                      input_method_name, supported_methods);
+        iniparser_freedict(ini);
+        free(cava_config_home);
+        free_config(p);
         return false;
     }
     default:
         write_errorf(error, "cava was built without '%s' input support\n",
                      input_method_names[p->input]);
+        iniparser_freedict(ini);
+        free(cava_config_home);
+        free_config(p);
         return false;
     }
     free(input_method_name);
     iniparser_freedict(ini);
 #else
-
     GetPrivateProfileString("output", "method", "noncurses", outputMethod, 16, configPath);
 
     p->waves = GetPrivateProfileInt("smoothing", "waves", 0, configPath);
@@ -1110,6 +1031,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     p->userEQ = (double *)malloc(sizeof(double));
     if (p->userEQ == NULL) {
         write_errorf(error, "Memory allocation failed\n");
+        free(cava_config_home);
+        free_config(p);
         return false;
     }
     while (1) {
@@ -1127,6 +1050,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             if (p->userEQ == NULL) {
                 write_errorf(error, "Memory reallocation failed\n");
                 free(oldPtr);
+                free(cava_config_home);
+                free_config(p);
                 return false;
             }
 
@@ -1135,7 +1060,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
             if (endptr == eqResult) {
                 write_errorf(error, "Invalid string to double conversion, %d : \"%s\" \n",
                              p->userEQ_keys + 1, eqResult);
-                free(p->userEQ);
+                free(cava_config_home);
+                free_config(p);
                 return false;
             }
             p->userEQ_keys++;
@@ -1149,6 +1075,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
     if (p->input != INPUT_WINSCAP) {
         write_errorf(error, "on windows changing input method is not supported, "
                             "simply leave the input method setting commented out\n");
+        free(cava_config_home);
+        free_config(p);
         return false;
     }
     GetPrivateProfileString("input", "source", "auto", p->audio_source, 64, configPath);
@@ -1168,12 +1096,189 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, bool colors
                             configPath);
 
 #endif
+    p->fragment_shader = malloc(sizeof(char) * PATH_MAX);
+    p->vertex_shader = malloc(sizeof(char) * PATH_MAX);
 
     sprintf(p->vertex_shader, "%s/shaders/%s", cava_config_home, vertexShader);
     sprintf(p->fragment_shader, "%s/shaders/%s", cava_config_home, fragmentShader);
 
-    bool result = validate_config(p, error);
+    result = validate_config(p, error);
     free(cava_config_home);
 
     return result;
+}
+
+bool load_colors(char *themeFile, struct config_params *p, struct error_s *error) {
+    free_colors(p);
+
+    p->gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
+    p->horizontal_gradient_colors = (char **)malloc(sizeof(char *) * 8 * 9);
+
+#ifndef _WIN32
+    dictionary *ini;
+    ini = iniparser_load(themeFile);
+
+    p->gradient = iniparser_getint(ini, "color:gradient", 0);
+
+    p->gradient_colors[0] = strdup(iniparser_getstring(ini, "color:gradient_color_1", "not_set"));
+    p->gradient_colors[1] = strdup(iniparser_getstring(ini, "color:gradient_color_2", "not_set"));
+    p->gradient_colors[2] = strdup(iniparser_getstring(ini, "color:gradient_color_3", "not_set"));
+    p->gradient_colors[3] = strdup(iniparser_getstring(ini, "color:gradient_color_4", "not_set"));
+    p->gradient_colors[4] = strdup(iniparser_getstring(ini, "color:gradient_color_5", "not_set"));
+    p->gradient_colors[5] = strdup(iniparser_getstring(ini, "color:gradient_color_6", "not_set"));
+    p->gradient_colors[6] = strdup(iniparser_getstring(ini, "color:gradient_color_7", "not_set"));
+    p->gradient_colors[7] = strdup(iniparser_getstring(ini, "color:gradient_color_8", "not_set"));
+
+    p->horizontal_gradient = iniparser_getint(ini, "color:horizontal_gradient", 0);
+
+    p->horizontal_gradient_colors[0] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_1", "not_set"));
+    p->horizontal_gradient_colors[1] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_2", "not_set"));
+    p->horizontal_gradient_colors[2] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_3", "not_set"));
+    p->horizontal_gradient_colors[3] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_4", "not_set"));
+    p->horizontal_gradient_colors[4] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_5", "not_set"));
+    p->horizontal_gradient_colors[5] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_6", "not_set"));
+    p->horizontal_gradient_colors[6] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_7", "not_set"));
+    p->horizontal_gradient_colors[7] =
+        strdup(iniparser_getstring(ini, "color:horizontal_gradient_color_8", "not_set"));
+
+    iniparser_freedict(ini);
+#else
+    for (int i = 0; i < 8; ++i) {
+        p->gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);
+    }
+    for (int i = 0; i < 8; ++i) {
+        p->horizontal_gradient_colors[i] = (char *)malloc(sizeof(char *) * 9);
+    }
+    p->gradient = GetPrivateProfileInt("color", "gradient", 0, themeFile);
+
+    GetPrivateProfileString("color", "gradient_color_1", "not_set", p->gradient_colors[0], 9,
+                            themeFile);
+    GetPrivateProfileString("color", "gradient_color_2", "not_set", p->gradient_colors[1], 9,
+                            themeFile);
+    GetPrivateProfileString("color", "gradient_color_3", "not_set", p->gradient_colors[2], 9,
+                            themeFile);
+    GetPrivateProfileString("color", "gradient_color_4", "not_set", p->gradient_colors[3], 9,
+                            themeFile);
+    GetPrivateProfileString("color", "gradient_color_5", "not_set", p->gradient_colors[4], 9,
+                            themeFile);
+    GetPrivateProfileString("color", "gradient_color_6", "not_set", p->gradient_colors[5], 9,
+                            themeFile);
+    GetPrivateProfileString("color", "gradient_color_7", "not_set", p->gradient_colors[6], 9,
+                            themeFile);
+    GetPrivateProfileString("color", "gradient_color_8", "not_set", p->gradient_colors[7], 9,
+                            themeFile);
+
+    p->horizontal_gradient = GetPrivateProfileInt("color", "horizontal_gradient", 0, themeFile);
+
+    GetPrivateProfileString("color", "horizontal_gradient_color_1", "not_set",
+                            p->horizontal_gradient_colors[0], 9, themeFile);
+    GetPrivateProfileString("color", "horizontal_gradient_color_2", "not_set",
+                            p->horizontal_gradient_colors[1], 9, themeFile);
+    GetPrivateProfileString("color", "horizontal_gradient_color_3", "not_set",
+                            p->horizontal_gradient_colors[2], 9, themeFile);
+    GetPrivateProfileString("color", "horizontal_gradient_color_4", "not_set",
+                            p->horizontal_gradient_colors[3], 9, themeFile);
+    GetPrivateProfileString("color", "horizontal_gradient_color_5", "not_set",
+                            p->horizontal_gradient_colors[4], 9, themeFile);
+    GetPrivateProfileString("color", "horizontal_gradient_color_6", "not_set",
+                            p->horizontal_gradient_colors[5], 9, themeFile);
+    GetPrivateProfileString("color", "horizontal_gradient_color_7", "not_set",
+                            p->horizontal_gradient_colors[6], 9, themeFile);
+    GetPrivateProfileString("color", "horizontal_gradient_color_8", "not_set",
+                            p->horizontal_gradient_colors[7], 9, themeFile);
+#endif
+    p->gradient_count = 0;
+    for (int i = 0; i < 7; ++i) {
+        if (strcmp(p->gradient_colors[i], "not_set") != 0)
+            p->gradient_count++;
+        else
+            break;
+    }
+    p->horizontal_gradient_count = 0;
+    for (int i = 0; i < 7; ++i) {
+        if (strcmp(p->horizontal_gradient_colors[i], "not_set") != 0)
+            p->horizontal_gradient_count++;
+        else
+            break;
+    }
+
+    bool result = validate_colors(p, error);
+    if (!result)
+        free_colors(p);
+    return result;
+}
+
+bool get_themeFile(char configPath[PATH_MAX], struct config_params *p, char *cava_config_home,
+                   struct error_s *error, char **themeFile) {
+    FILE *fp;
+    char *cava_cfg_home;
+    *themeFile = malloc(sizeof(char) * PATH_MAX);
+
+    if (strcmp(p->theme, "none") != 0) {
+        if (!cava_config_home)
+            cava_cfg_home = get_cava_config_home(error);
+        else
+            cava_cfg_home = cava_config_home;
+
+        sprintf(*themeFile, "%s/themes/%s", cava_cfg_home, p->theme);
+
+        if (!cava_config_home)
+            free(cava_cfg_home);
+
+        cava_cfg_home = NULL;
+
+        fp = fopen(*themeFile, "rb");
+        if (fp) {
+            fclose(fp);
+        } else {
+            write_errorf(error, "Unable to open theme file '%s', exiting...\n", *themeFile);
+            free(*themeFile);
+            return false;
+        }
+    } else {
+        free(*themeFile);
+        *themeFile = strdup(configPath);
+    }
+
+    return true;
+}
+
+void free_config(struct config_params *p) {
+    if (p->vertex_shader)
+        free(p->vertex_shader);
+    if (p->fragment_shader)
+        free(p->fragment_shader);
+    if (p->color)
+        free(p->color);
+    if (p->bcolor)
+        free(p->bcolor);
+    if (p->raw_target)
+        free(p->raw_target);
+    if (p->audio_source)
+        free(p->audio_source);
+    if (p->data_format)
+        free(p->data_format);
+    if (p->theme)
+        free(p->theme);
+    if (p->userEQ)
+        free(p->userEQ);
+
+    p->color = NULL;
+    p->bcolor = NULL;
+    p->vertex_shader = NULL;
+    p->fragment_shader = NULL;
+    p->raw_target = NULL;
+    p->audio_source = NULL;
+    p->data_format = NULL;
+    p->theme = NULL;
+    p->userEQ = NULL;
+
+    free_colors(p);
 }

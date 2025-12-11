@@ -191,7 +191,6 @@
   <ItemGroup>
     <ClInclude Include="..\..\cavacore.h" />
     <ClInclude Include="..\..\config.h" />
-    <ClInclude Include="..\..\debug.h" />
     <ClInclude Include="..\..\input\common.h" />
     <ClInclude Include="..\..\input\winscap.h" />
     <ClInclude Include="..\..\output\sdl_cava.h" />

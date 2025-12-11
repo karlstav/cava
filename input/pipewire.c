@@ -88,6 +88,11 @@ static void on_stream_state_changed(void *_data, [[maybe_unused]] enum pw_stream
     case PW_STREAM_STATE_STREAMING:
         pw_loop_update_timer(pw_main_loop_get_loop(data->loop), data->timer, NULL, NULL, false);
         break;
+    case PW_STREAM_STATE_ERROR:
+    case PW_STREAM_STATE_UNCONNECTED:
+        data->cava_audio->terminate = 1;
+        pw_main_loop_quit(data->loop);
+        break;
     default:
         break;
     }
@@ -177,7 +182,7 @@ void *input_pipewire(void *audiodata) {
     else
         pw_properties_set(props, PW_KEY_NODE_PASSIVE, "true");
 
-    if (data.cava_audio->virtual)
+    if (data.cava_audio->virtual_node)
         pw_properties_set(props, PW_KEY_NODE_VIRTUAL, "true");
 
     enum spa_audio_format audio_format = SPA_AUDIO_FORMAT_S16;
@@ -227,10 +232,18 @@ void *input_pipewire(void *audiodata) {
     data.stream = pw_stream_new_simple(pw_main_loop_get_loop(data.loop), "cava", props,
                                        &stream_events, &data);
 
-    pw_stream_connect(data.stream, PW_DIRECTION_INPUT, PW_ID_ANY,
-                      PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS |
-                          PW_STREAM_FLAG_RT_PROCESS,
-                      params, 1);
+    int status = pw_stream_connect(data.stream, PW_DIRECTION_INPUT, PW_ID_ANY,
+                                   PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS |
+                                       PW_STREAM_FLAG_RT_PROCESS,
+                                   params, 1);
+
+    if (status < 0) {
+        data.cava_audio->terminate = 1;
+        sprintf(data.cava_audio->error_message,
+                __FILE__ ": Could not connect stream. Is your system running pipewire? Maybe try "
+                         "pulse input method instead.");
+        return 0;
+    }
 
     pw_main_loop_run(data.loop);
 

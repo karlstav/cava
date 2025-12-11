@@ -211,7 +211,7 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
 
         for (int n = lines; n >= 0; n--) {
             for (int i = 0; i < width; i++) {
-                printf(" "); // setting backround color
+                printf(" "); // setting background color
             }
             if (n != 0)
                 printf("\n");

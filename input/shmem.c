@@ -31,7 +31,7 @@ typedef struct {
 void *input_shmem(void *data) {
     struct audio_data *audio = (struct audio_data *)data;
     vis_t *mmap_area;
-    int fd; /* file descriptor to mmaped area */
+    int fd; /* file descriptor to mapped area */
     int mmap_count = sizeof(vis_t);
     int buf_frames;
     int fftw_frames = audio->input_buffer_size / 2;
