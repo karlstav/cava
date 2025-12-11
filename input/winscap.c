@@ -354,6 +354,62 @@ void process_multichannel(UINT32 numFramesAvailable, const WAVEFORMATEX format, 
     free(stereo_buffer);
 }
 
+void get_audio_device_by_name(IMMDeviceEnumerator *pEnumerator, const char *device_name,
+                              IMMDevice **ppDevice) {
+    IMMDeviceCollection *pDeviceCollection = NULL;
+    HRESULT hr = pEnumerator->lpVtbl->EnumAudioEndpoints(pEnumerator, eRender, DEVICE_STATE_ACTIVE,
+                                                        &pDeviceCollection);
+    if (FAILED(hr)) {
+        fwprintf(stderr, L"Failed to enumerate audio endpoints: 0x%08lx\n", hr);
+        return;
+    }
+    UINT deviceCount = 0;
+    pDeviceCollection->lpVtbl->GetCount(pDeviceCollection, &deviceCount);
+    for (UINT i = 0; i < deviceCount; i++) {
+        IMMDevice *pCurrDevice = NULL;
+        IPropertyStore *pProps = NULL;
+
+        hr = pDeviceCollection->lpVtbl->Item(pDeviceCollection, i, &pCurrDevice);
+        if (FAILED(hr)) {
+            fwprintf(stderr, L"Failed to get device %d: 0x%08lx\n", i, hr);
+            continue;
+        }
+
+        hr = pCurrDevice->lpVtbl->OpenPropertyStore(pCurrDevice, STGM_READ, &pProps);
+        if (FAILED(hr)) {
+            fwprintf(stderr, L"Failed to open property store for device %d: 0x%08lx\n", i, hr);
+            pCurrDevice->lpVtbl->Release(pCurrDevice);
+            continue;
+        }
+
+        PROPVARIANT varName;
+        PropVariantInit(&varName);
+        hr = pProps->lpVtbl->GetValue(pProps, &PKEY_Device_FriendlyName, &varName);
+        if (FAILED(hr)) {
+            fwprintf(stderr, L"Failed to get device name for device %d: 0x%08lx\n", i, hr);
+            PropVariantClear(&varName);
+            pProps->lpVtbl->Release(pProps);
+            pCurrDevice->lpVtbl->Release(pCurrDevice);
+            continue;
+        }
+
+        wchar_t wide_source[256];
+        mbstowcs(wide_source, device_name, 256);
+        if (wcscmp(varName.pwszVal, wide_source) == 0) {
+            *ppDevice = pCurrDevice;
+            PropVariantClear(&varName);
+            pProps->lpVtbl->Release(pProps);
+            break;
+        }
+
+        PropVariantClear(&varName);
+        pProps->lpVtbl->Release(pProps);
+        pCurrDevice->lpVtbl->Release(pCurrDevice);
+    }
+    if (pDeviceCollection)
+        pDeviceCollection->lpVtbl->Release(pDeviceCollection);
+}
+
 void input_winscap(void *data) {
 
     static const GUID CLSID_MMDeviceEnumerator = {0xBCDE0395, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4,
@@ -378,6 +434,7 @@ void input_winscap(void *data) {
     WAVEFORMATEX *wfx = NULL;
     WAVEFORMATEXTENSIBLE *wfx_ext = NULL;
     IMMDeviceEnumerator *pEnumerator = NULL;
+    IMMDeviceCollection *pDeviceCollection = NULL;
     hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator,
                           (void **)&pEnumerator);
     if (FAILED(hr)) {
@@ -399,8 +456,15 @@ void input_winscap(void *data) {
         ResetEvent(hEvent);
 
         IMMDevice *pDevice = NULL;
-        pEnumerator->lpVtbl->GetDefaultAudioEndpoint(pEnumerator, eRender, eConsole, &pDevice);
-
+        // TODO: allow selection of other than default device
+        if (*audio->source != '\0') {
+            // obtain device ID from name
+            get_audio_device_by_name(pEnumerator, audio->source, &pDevice);
+        }
+        // fallback to default device
+        if (!pDevice) {
+            pEnumerator->lpVtbl->GetDefaultAudioEndpoint(pEnumerator, eRender, eConsole, &pDevice);
+        }
         IAudioClient *pClient = NULL;
         pDevice->lpVtbl->Activate(pDevice, &IID_IAudioClient, CLSCTX_ALL, 0, (void **)&pClient);
 
