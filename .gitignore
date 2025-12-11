@@ -30,3 +30,5 @@ cava_win/packages/*
 cava_win/x64/*
 yasb/*
 cava_win/vcpkg_installed/vcpkg/*
+cava_win/vcpkg_installed/x64-windows/*
+cava_win/meson-private
