@@ -460,9 +460,16 @@ void input_winscap(void *data) {
         if (*audio->source != '\0') {
             // obtain device ID from name
             get_audio_device_by_name(pEnumerator, audio->source, &pDevice);
+            if (pDevice == NULL) {
+                // exit with error
+                fwprintf(stderr, L"Could not find audio device with name: %S\n", audio->source);
+                CoUninitialize();
+                pthread_mutex_unlock(&audio->lock);
+                exit(EXIT_FAILURE);
+            }
         }
         // fallback to default device
-        if (!pDevice) {
+        else {
             pEnumerator->lpVtbl->GetDefaultAudioEndpoint(pEnumerator, eRender, eConsole, &pDevice);
         }
         IAudioClient *pClient = NULL;
