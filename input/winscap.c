@@ -457,7 +457,7 @@ void input_winscap(void *data) {
 
         IMMDevice *pDevice = NULL;
         // TODO: allow selection of other than default device
-        if (*audio->source != '\0') {
+        if (*audio->source != '\0' && strcmp(audio->source, "auto") != 0) {
             // obtain device ID from name
             get_audio_device_by_name(pEnumerator, audio->source, &pDevice);
             if (pDevice == NULL) {
