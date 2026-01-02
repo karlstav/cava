@@ -490,6 +490,10 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     p->stereo = -1;
     if (strcmp(channels, "mono") == 0) {
         p->stereo = 0;
+        if (p->horizontal_stereo) {
+            write_errorf(error, "horizontal stereo is not supported in mono mode\n");
+            return false;
+        }
     }
     if (strcmp(monoOption, "average") == 0) {
         p->mono_opt = AVERAGE;
@@ -831,6 +835,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     channels = strdup(iniparser_getstring(ini, "output:channels", "stereo"));
     monoOption = strdup(iniparser_getstring(ini, "output:mono_option", "average"));
     p->reverse = iniparser_getint(ini, "output:reverse", 0);
+    p->horizontal_stereo = iniparser_getint(ini, "output:horizontal_stereo", 0);
+    p->left_bottom = iniparser_getint(ini, "output:left_bottom", 0);
     p->raw_target = strdup(iniparser_getstring(ini, "output:raw_target", "/dev/stdout"));
     p->data_format = strdup(iniparser_getstring(ini, "output:data_format", "binary"));
     p->bar_delim = (char)iniparser_getint(ini, "output:bar_delimiter", 59);

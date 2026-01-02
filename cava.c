@@ -785,11 +785,6 @@ Keys:\n\
                     number_of_bars--; // stereo must have even numbers of bars
             }
 
-            int raw_number_of_bars = (number_of_bars / output_channels) * audio_channels;
-            if (p.waveform) {
-                raw_number_of_bars = number_of_bars;
-            }
-
             // checks if there is still extra room, will use this to center
             if (p.center_align) {
                 remainder = (*dimension_bar - number_of_bars * p.bar_width -
@@ -808,7 +803,14 @@ Keys:\n\
                                         number_of_bars, width, lines, p.bar_width, p.orientation,
                                         p.blendDirection);
             }
+            if (p.horizontal_stereo) {
+                number_of_bars *= 2;
+            }
 
+            int raw_number_of_bars = (number_of_bars / output_channels) * audio_channels;
+            if (p.waveform) {
+                raw_number_of_bars = number_of_bars;
+            }
             double userEQ_keys_to_bars_ratio;
 
             if (p.userEQ_enabled && (number_of_bars / output_channels > 0)) {
@@ -1169,22 +1171,42 @@ Keys:\n\
                     if (audio_channels == 2) {
                         if (p.stereo) {
                             // mirroring stereo channels
-                            for (int n = 0; n < number_of_bars; n++) {
-                                if (n < number_of_bars / 2) {
-                                    if (p.reverse) {
-                                        bars_raw[n] = bars_left[n];
+                            if (p.horizontal_stereo) {
+                                for (int n = 0; n < number_of_bars; n++) {
+                                    if (n < number_of_bars / 2) {
+                                        if (p.reverse) {
+                                            bars_raw[n] = bars_left[number_of_bars / 2 - n - 1];
+                                        } else {
+                                            bars_raw[n] = bars_left[n];
+                                        }
                                     } else {
-                                        bars_raw[n] = bars_left[number_of_bars / 2 - n - 1];
+                                        if (p.reverse) {
+                                            bars_raw[n] = bars_right[number_of_bars - n - 1];
+                                        } else {
+                                            bars_raw[n] = bars_right[n - number_of_bars / 2];
+                                        }
                                     }
-                                } else {
-                                    if (p.reverse) {
-                                        bars_raw[n] = bars_right[number_of_bars - n - 1];
+                                }
+
+                            } else {
+                                for (int n = 0; n < number_of_bars; n++) {
+                                    if (n < number_of_bars / 2) {
+                                        if (p.reverse) {
+                                            bars_raw[n] = bars_left[n];
+                                        } else {
+                                            bars_raw[n] = bars_left[number_of_bars / 2 - n - 1];
+                                        }
                                     } else {
-                                        bars_raw[n] = bars_right[n - number_of_bars / 2];
+                                        if (p.reverse) {
+                                            bars_raw[n] = bars_right[number_of_bars - n - 1];
+                                        } else {
+                                            bars_raw[n] = bars_right[n - number_of_bars / 2];
+                                        }
                                     }
                                 }
                             }
                         } else {
+
                             // stereo mono output
                             for (int n = 0; n < number_of_bars; n++) {
                                 if (p.reverse) {
@@ -1256,14 +1278,41 @@ Keys:\n\
 #endif
                 case OUTPUT_NONCURSES:
                     if (p.orientation == ORIENT_SPLIT_H) {
-                        rc = draw_terminal_noncurses(
-                            inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
-                            remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
-                            x_axis_info, ORIENT_BOTTOM, 1);
-                        rc = draw_terminal_noncurses(
-                            inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
-                            remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
-                            x_axis_info, ORIENT_TOP, 1);
+                        // in split horizontal mode we need to draw two times
+                        // once for bottom and once for top
+                        // ORIENT_BOTTOM will be the top bars and ORIENT_TOP the bottom bars
+                        // since bottom hear means from mid upwards and top is from mid downwards
+                        if (p.horizontal_stereo) {
+                            // in horizontal stereo mode we need to split the bars array in half
+                            // first half is right channel, second half is left channel
+                            int right_bars[number_of_bars / 2];
+                            int right_previous_frame[number_of_bars / 2];
+                            for (int i = 0; i < number_of_bars / 2; i++) {
+                                right_bars[i] = bars[i + number_of_bars / 2];
+                                right_previous_frame[i] = previous_frame[i + number_of_bars / 2];
+                            }
+
+                            rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars / 2,
+                                                         p.bar_width, p.bar_spacing, remainder,
+                                                         right_bars, right_previous_frame,
+                                                         p.gradient, p.horizontal_gradient,
+                                                         x_axis_info, 1 - p.left_bottom, 1);
+
+                            rc = draw_terminal_noncurses(
+                                inAtty, lines, width, number_of_bars / 2, p.bar_width,
+                                p.bar_spacing, remainder, bars, previous_frame, p.gradient,
+                                p.horizontal_gradient, x_axis_info, p.left_bottom, 1);
+
+                        } else {
+                            rc = draw_terminal_noncurses(
+                                inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
+                                remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
+                                x_axis_info, ORIENT_BOTTOM, 1);
+                            rc = draw_terminal_noncurses(
+                                inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
+                                remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
+                                x_axis_info, ORIENT_TOP, 1);
+                        }
                     } else {
                         rc = draw_terminal_noncurses(
                             inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
