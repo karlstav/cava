@@ -121,7 +121,7 @@ struct config_params {
         bit_format, gradient, gradient_count, horizontal_gradient, horizontal_gradient_count,
         fixedbars, framerate, bar_width, bar_spacing, bar_height, autosens, overshoot, waves,
         active, remix, virtual_node, samplerate, samplebits, channels, autoconnect, sleep_timer,
-        sdl_width, sdl_height, sdl_x, sdl_y, sdl_full_screen, draw_and_quit, zero_test,
+        live_config, sdl_width, sdl_height, sdl_x, sdl_y, sdl_full_screen, draw_and_quit, zero_test,
         non_zero_test, reverse, sync_updates, continuous_rendering, disable_blanking,
         show_idle_bar_heads, waveform, center_align, horizontal_stereo, left_bottom;
 };
