@@ -610,6 +610,9 @@ Keys:\n\
         int *bars;
         int *previous_frame;
 
+        int *right_bars;
+        int *right_previous_frame;
+
         float *bars_left, *bars_right;
         double *cava_out;
         float *bars_raw;
@@ -896,6 +899,13 @@ Keys:\n\
             memset(previous_bars_raw, 0, sizeof(float) * number_of_bars);
             memset(previous_frame, 0, sizeof(int) * number_of_bars);
             memset(cava_out, 0, sizeof(double) * number_of_bars * audio.channels / output_channels);
+
+            if (p.horizontal_stereo) {
+                right_bars = (int *)malloc(number_of_bars * sizeof(int));
+                right_previous_frame = (int *)malloc(number_of_bars * sizeof(int));
+                memset(right_bars, 0, sizeof(int) * number_of_bars);
+                memset(right_previous_frame, 0, sizeof(int) * number_of_bars);
+            }
 
             int x_axis_info = 0;
             // process: calculate x axis values
@@ -1347,8 +1357,6 @@ Keys:\n\
                         if (p.horizontal_stereo) {
                             // in horizontal stereo mode we need to split the bars array in half
                             // first half is right channel, second half is left channel
-                            int right_bars[number_of_bars / 2];
-                            int right_previous_frame[number_of_bars / 2];
                             for (int i = 0; i < number_of_bars / 2; i++) {
                                 right_bars[i] = bars[i + number_of_bars / 2];
                                 right_previous_frame[i] = previous_frame[i + number_of_bars / 2];
@@ -1492,6 +1500,10 @@ Keys:\n\
             free(bars_raw);
             free(previous_bars_raw);
             free(previous_frame);
+            if (p.horizontal_stereo) {
+                free(right_bars);
+                free(right_previous_frame);
+            }
 
 #ifndef _WIN32
             if ((output_mode == OUTPUT_RAW || output_mode == OUTPUT_NORITAKE) &&
