@@ -4,6 +4,9 @@
 
 [general]
 
+# Auto reload config if the configuration file has changed. 1 = on, 0 = off.
+; live-config = 1
+
 # Smoothing mode. Can be 'normal', 'scientific' or 'waves'. DEPRECATED as of 0.6.0
 ; mode = normal
 
@@ -46,7 +49,7 @@
 # Lower and higher cutoff frequencies for lowest and highest bars
 # the bandwidth of the visualizer.
 # Note: there is a minimum total bandwidth of 43Mhz x number of bars.
-# Cava will automatically increase the higher cutoff if a too low band is specified.
+# Cava will automatically increase the higher cutoff frequency if needed to satisfy the minimum bandwidth.
 ; lower_cutoff_freq = 50
 ; higher_cutoff_freq = 10000
 
@@ -213,7 +216,7 @@
 # 'frequency' displays the lower cut off frequency of the bar above.
 # Only supported on ncurses and noncurses output.
 ; xaxis = none
- 
+
 # enable synchronized sync. 1 = on, 0 = off
 # removes flickering in alacritty terminal emulator.
 # defaults to off since the behaviour in other terminal emulators is unknown

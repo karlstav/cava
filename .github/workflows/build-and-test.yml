@@ -1,77 +1,103 @@
+---
 name: build-and-test
-on: [push, pull_request, workflow_dispatch]
+
+'on':
+  push:
+  pull_request:
+  workflow_dispatch:
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: DoozyX/clang-format-lint-action@v0.5
-      with:
-        source: '.'
-        exclude: './third_party'
-        extensions: 'h,c'
+      - uses: actions/checkout@v4
+      - uses: DoozyX/clang-format-lint-action@v0.5
+        with:
+          source: .
+          exclude: ./third_party
+          extensions: h,c
+
   build-linux:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install libfftw3-dev libasound2-dev libncursesw5-dev libpulse-dev libtool automake autoconf-archive libiniparser-dev portaudio19-dev libsndio-dev libsdl2-2.0-0 libsdl2-dev squeezelite pulseaudio libpipewire-0.3-dev
-    - name: Generate configure
-      run: ./autogen.sh
-    - name: Run ./configure
-      run: ./configure
-    - name: Run make
-      run: make CFLAGS='-Werror'
-    - name: Run make distcheck
-      run: make distcheck
-    - name: Prepare tests
-      run: |
-        pulseaudio -D
-        squeezelite -o pulse -v -m 51:fb:32:f8:e6:9f -z
-    - name: run non zero test
-      run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
-    - name: run pulseaudio test
-      run: ./cava -p example_files/test_configs/pulse_zero_test > /dev/null
-    - name: run fifo test
-      run: ./cava -p example_files/test_configs/fifo_zero_test > /dev/null
-    - name: run shmem test
-      run: ./cava -p example_files/test_configs/shmem_zero_test > /dev/null
-    - name: build cavacore test application
-      run: gcc -c -g cavacore_test.c
-    - name: link cavacore test application
-      run: gcc -o cavacore_test cavacore_test.o cava-cavacore.o -lm -lfftw3
-    - name: run cavacore test application
-      run: ./cavacore_test
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libfftw3-dev \
+            libasound2-dev \
+            libncursesw5-dev \
+            libpulse-dev \
+            libtool \
+            automake \
+            autoconf-archive \
+            libiniparser-dev \
+            portaudio19-dev \
+            libsndio-dev \
+            libsdl2-2.0-0 \
+            libsdl2-dev \
+            squeezelite \
+            pulseaudio \
+            libpipewire-0.3-dev
+      - name: Generate configure
+        run: ./autogen.sh
+      - name: Run ./configure
+        run: ./configure
+      - name: Run make
+        run: make CFLAGS='-Werror'
+      - name: Run make distcheck
+        run: make distcheck
+      - name: Prepare tests
+        run: |
+          pulseaudio -D
+          squeezelite -o pulse -v -m 51:fb:32:f8:e6:9f -z
+      - name: run non zero test
+        run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
+      - name: run pulseaudio test
+        run: ./cava -p example_files/test_configs/pulse_zero_test > /dev/null
+      - name: run fifo test
+        run: ./cava -p example_files/test_configs/fifo_zero_test > /dev/null
+      - name: run shmem test
+        run: ./cava -p example_files/test_configs/shmem_zero_test > /dev/null
+      - name: build cavacore test application
+        run: gcc -c -g cavacore_test.c
+      - name: link cavacore test application
+        run: gcc -o cavacore_test cavacore_test.o cava-cavacore.o -lm -lfftw3
+      - name: run cavacore test application
+        run: ./cavacore_test
 
   build-macos:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Install dependencies
-      run: |
-        brew install fftw libtool automake portaudio iniparser sdl2
-        ln -s /usr/local/bin/glibtoolize /usr/local/bin/libtoolize
-    - name: Generate configuresdl2
-      run: PATH="/opt/homebrew/opt/libtool/libexec/gnubin:$PATH" ./autogen.sh
-    - name: Run ./configure
-      run: LDFLAGS="-L/opt/homebrew/lib" CPPFLAGS="-I/opt/homebrew/include" ./configure
-    - name: Run make
-      run:  make CFLAGS='-Werror'
-    - name: run non zero test
-      run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          brew install fftw libtool automake portaudio iniparser sdl2
+          ln -s /usr/local/bin/glibtoolize /usr/local/bin/libtoolize
+      - name: Generate configuresdl2
+        run: |
+          PATH="/opt/homebrew/opt/libtool/libexec/gnubin:$PATH" ./autogen.sh
+      - name: Run ./configure
+        run: |
+          LDFLAGS="-L/opt/homebrew/lib" \
+          CPPFLAGS="-I/opt/homebrew/include" \
+          ./configure
+      - name: Run make
+        run: make CFLAGS='-Werror'
+      - name: run non zero test
+        run: ./cava -p example_files/test_configs/non_zero_test > /dev/null
 
   build-windows:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v2
-    - name: Install dependencies
-      run: nuget restore cava_win\cava_win.sln
-    - name: Run msbuild
-      run: msbuild /p:Configuration=Debug cava_win\cava_win.sln
+      - uses: actions/checkout@v4
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+      - name: Install dependencies
+        run: nuget restore cava_win\cava_win.sln
+      - name: Run msbuild
+        run: msbuild /p:Configuration=Debug cava_win\cava_win.sln
 
   build-mingw:
     runs-on: windows-latest
@@ -82,12 +108,12 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
-    - uses: actions/checkout@v4
-    - uses: msys2/setup-msys2@v2
-      with:
-        msystem: ${{matrix.msystem}}
-        pacboy: cc cmake fftw glew ninja SDL2
-    - name: Run cmake build
-      run: |
-        cmake -B bin
-        cmake --build bin
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          pacboy: cc cmake fftw glew ninja SDL2
+      - name: Run cmake build
+        run: |
+          cmake -B bin
+          cmake --build bin
