@@ -1,0 +1,3 @@
+[codespell]
+skip = ./.git,./.deps,./.libs,./autom4te.cache,./build,./third_party,./yasb,./cava_win/packages,./cava_win/x64,./cava_win/vcpkg_installed,./cava_win/meson-private,./m4,./Makefile,./Makefile.in,./aclocal.m4,./ar-lib,./compile,./config.guess,./config.sub,./configure,./depcomp,./install-sh,./libtool,./ltmain.sh,./missing,./version,./cava
+ignore-words-list = datas

@@ -117,12 +117,27 @@ static int getopt(int argc, char *const argv[], const char *optstring) {
 // needs to know output mode in order to clean up terminal
 int output_mode;
 // whether we should reload the config or not
-int should_reload = 0;
+volatile sig_atomic_t should_reload = 0;
 // whether we should only reload colors or not
-int reload_colors = 0;
+volatile sig_atomic_t reload_colors = 0;
 // whether we should quit
-int should_quit = 0;
-int signal_received = 0;
+volatile sig_atomic_t should_quit = 0;
+volatile sig_atomic_t signal_received = 0;
+
+static bool get_file_state(const char *path, time_t *mtime, long long *size) {
+#ifdef _WIN32
+    struct _stat st;
+    if (_stat(path, &st) != 0)
+        return false;
+#else
+    struct stat st;
+    if (stat(path, &st) != 0)
+        return false;
+#endif
+    *mtime = st.st_mtime;
+    *size = (long long)st.st_size;
+    return true;
+}
 
 // these variables are used only in main, but making them global
 // will allow us to not free them on exit without ASan complaining
@@ -326,6 +341,13 @@ Keys:\n\
             exit(EXIT_FAILURE);
         }
 
+        time_t config_mtime = 0;
+        long long config_size = 0;
+        bool has_config_state = false;
+        if (p.live_config) {
+            has_config_state = get_file_state(configPath, &config_mtime, &config_size);
+        }
+
         int inAtty = 0;
         int inAterminal = 0;
 
@@ -431,7 +453,7 @@ Keys:\n\
                                         // adjusted later if sample rate is unusual
 
         audio.cava_in = (double *)malloc(audio.cava_buffer_size * sizeof(double));
-        memset(audio.cava_in, 0, sizeof(int) * audio.cava_buffer_size);
+        memset(audio.cava_in, 0, sizeof(double) * audio.cava_buffer_size);
 
         audio.threadparams = 0; // most input threads don't adjust the parameters
         audio.terminate = 0;
@@ -593,8 +615,13 @@ Keys:\n\
         float *bars_raw;
         float *previous_bars_raw;
 
-        int height, lines, width, remainder, fp;
+        int height, lines, width, remainder;
         int *dimension_bar, *dimension_value;
+#ifndef _WIN32
+        int fp = -1;
+        int keepalive_fd = -1;
+        bool close_output_fd = false;
+#endif
 #ifdef _WIN32
         HANDLE hFile = NULL;
 #endif
@@ -671,13 +698,21 @@ Keys:\n\
             case OUTPUT_NORITAKE:
                 if (strcmp(p.raw_target, "/dev/stdout") != 0) {
 #ifndef _WIN32
-                    int fptest;
+                    if (close_output_fd && fp != -1) {
+                        close(fp);
+                        fp = -1;
+                        close_output_fd = false;
+                    }
+                    if (keepalive_fd != -1) {
+                        close(keepalive_fd);
+                        keepalive_fd = -1;
+                    }
                     // checking if file exists
                     if (access(p.raw_target, F_OK) != -1) {
                         // file exists, testopening in case it's a fifo
-                        fptest = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644);
+                        keepalive_fd = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644);
 
-                        if (fptest == -1) {
+                        if (keepalive_fd == -1) {
                             fprintf(stderr, "could not open file %s for writing\n", p.raw_target);
                             exit(1);
                         }
@@ -688,9 +723,14 @@ Keys:\n\
                             exit(1);
                         }
                         // fifo needs to be open for reading in order to write to it
-                        fptest = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644);
+                        keepalive_fd = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644);
+                        if (keepalive_fd == -1) {
+                            fprintf(stderr, "could not open file %s for writing\n", p.raw_target);
+                            exit(1);
+                        }
                     }
                     fp = open(p.raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
+                    close_output_fd = true;
 #else
                     int pipeLength = strlen("\\\\.\\pipe\\") + strlen(p.raw_target) + 1;
                     char *pipePath = malloc(pipeLength);
@@ -909,14 +949,20 @@ Keys:\n\
 
             bool resizeTerminal = false;
 
-            int frame_time_msec = (1 / (float)p.framerate) * 1000;
-            struct timespec framerate_timer = {.tv_sec = 0, .tv_nsec = 0};
-            if (p.framerate <= 1) {
-                framerate_timer.tv_sec = frame_time_msec / 1000;
-            } else {
-                framerate_timer.tv_sec = 0;
-                framerate_timer.tv_nsec = frame_time_msec * 1e6;
-            }
+            int effective_framerate = p.framerate;
+            if (effective_framerate <= 0)
+                effective_framerate = 60;
+
+            long long frame_time_ns = (long long)(1000000000.0 / (double)effective_framerate);
+            if (frame_time_ns < 1)
+                frame_time_ns = 1;
+
+            int frame_time_msec = (int)(frame_time_ns / 1000000LL);
+            if (frame_time_msec < 1)
+                frame_time_msec = 1;
+
+            struct timespec framerate_timer = {.tv_sec = frame_time_ns / 1000000000LL,
+                                               .tv_nsec = frame_time_ns % 1000000000LL};
 #ifdef _WIN32
             LARGE_INTEGER frequency; // ticks per second
             LARGE_INTEGER t1, t2;    // ticks
@@ -1064,13 +1110,29 @@ Keys:\n\
 
                 if (output_mode != OUTPUT_SDL) {
                     if (p.sleep_timer) {
-                        if (silence && sleep_counter <= p.framerate * p.sleep_timer)
+                        int effective_framerate = p.framerate;
+                        if (effective_framerate <= 0)
+                            effective_framerate = 60;
+                        int sleep_limit = effective_framerate * p.sleep_timer;
+                        if (silence && sleep_counter <= sleep_limit)
                             sleep_counter++;
                         else if (!silence)
                             sleep_counter = 0;
 
-                        if (sleep_counter > p.framerate * p.sleep_timer) {
+                        if (sleep_counter > sleep_limit) {
                             nanosleep(&sleep_mode_timer, NULL);
+                            if (p.live_config) {
+                                time_t new_mtime = 0;
+                                long long new_size = 0;
+                                if (get_file_state(configPath, &new_mtime, &new_size) &&
+                                    (!has_config_state || new_mtime != config_mtime ||
+                                     new_size != config_size)) {
+                                    should_reload = 1;
+                                    config_mtime = new_mtime;
+                                    config_size = new_size;
+                                    has_config_state = true;
+                                }
+                            }
                             continue;
                         }
                     }
@@ -1389,6 +1451,19 @@ Keys:\n\
 #endif
                 }
 
+                if (p.live_config) {
+                    time_t new_mtime = 0;
+                    long long new_size = 0;
+                    if (get_file_state(configPath, &new_mtime, &new_size) &&
+                        (!has_config_state || new_mtime != config_mtime ||
+                         new_size != config_size)) {
+                        should_reload = 1;
+                        config_mtime = new_mtime;
+                        config_size = new_size;
+                        has_config_state = true;
+                    }
+                }
+
                 if (p.draw_and_quit > 0) {
                     total_frames++;
                     if (total_frames >= p.draw_and_quit) {
@@ -1417,6 +1492,21 @@ Keys:\n\
             free(bars_raw);
             free(previous_bars_raw);
             free(previous_frame);
+
+#ifndef _WIN32
+            if ((output_mode == OUTPUT_RAW || output_mode == OUTPUT_NORITAKE) &&
+                strcmp(p.raw_target, "/dev/stdout") != 0) {
+                if (close_output_fd && fp != -1) {
+                    close(fp);
+                    fp = -1;
+                    close_output_fd = false;
+                }
+                if (keepalive_fd != -1) {
+                    close(keepalive_fd);
+                    keepalive_fd = -1;
+                }
+            }
+#endif
         } // reloading config
 
         //**telling audio thread to terminate**//
@@ -1424,6 +1514,8 @@ Keys:\n\
         audio.terminate = 1;
         pthread_mutex_unlock(&audio.lock);
         pthread_join(p_thread, NULL);
+
+        pthread_mutex_destroy(&audio.lock);
 
         free(audio.source);
         free(audio.cava_in);

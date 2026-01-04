@@ -310,12 +310,12 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
         p->framerate += (double)((p->rate * p->audio_channels * p->frame_skip) / new_samples) / 64;
         p->frame_skip = 1;
         // shifting input buffer
-        for (uint16_t n = p->input_buffer_size - 1; n >= new_samples; n--) {
+        for (int n = p->input_buffer_size - 1; n >= new_samples; n--) {
             p->input_buffer[n] = p->input_buffer[n - new_samples];
         }
 
         // fill the input buffer
-        for (uint16_t n = 0; n < new_samples; n++) {
+        for (int n = 0; n < new_samples; n++) {
             p->input_buffer[new_samples - n - 1] = cava_in[n];
             if (cava_in[n]) {
                 silence = 0;
@@ -326,7 +326,7 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     }
 
     // fill the bass, mid and treble buffers
-    for (uint16_t n = 0; n < p->FFTbassbufferSize; n++) {
+    for (int n = 0; n < p->FFTbassbufferSize; n++) {
         if (p->audio_channels == 2) {
             p->in_bass_r_raw[n] = p->input_buffer[n * 2];
             p->in_bass_l_raw[n] = p->input_buffer[n * 2 + 1];
@@ -334,7 +334,7 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
             p->in_bass_l_raw[n] = p->input_buffer[n];
         }
     }
-    for (uint16_t n = 0; n < p->FFTbufferSize; n++) {
+    for (int n = 0; n < p->FFTbufferSize; n++) {
         if (p->audio_channels == 2) {
             p->in_r_raw[n] = p->input_buffer[n * 2];
             p->in_l_raw[n] = p->input_buffer[n * 2 + 1];
