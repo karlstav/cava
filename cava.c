@@ -610,8 +610,8 @@ Keys:\n\
         int *bars;
         int *previous_frame;
 
-        int *right_bars;
-        int *right_previous_frame;
+        int *right_bars = NULL;
+        int *right_previous_frame = NULL;
 
         float *bars_left, *bars_right;
         double *cava_out;
@@ -1500,8 +1500,10 @@ Keys:\n\
             free(bars_raw);
             free(previous_bars_raw);
             free(previous_frame);
-            free(right_bars);
-            free(right_previous_frame);
+            if (p.horizontal_stereo) {
+                free(right_bars);
+                free(right_previous_frame);
+            }
 
 #ifndef _WIN32
             if ((output_mode == OUTPUT_RAW || output_mode == OUTPUT_NORITAKE) &&
