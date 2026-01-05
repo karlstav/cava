@@ -5,7 +5,7 @@
 [general]
 
 # Auto reload config if the configuration file has changed. 1 = on, 0 = off.
-; live-config = 1
+; live-config = 0
 
 # Smoothing mode. Can be 'normal', 'scientific' or 'waves'. DEPRECATED as of 0.6.0
 ; mode = normal
