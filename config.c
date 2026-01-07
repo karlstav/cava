@@ -450,6 +450,8 @@ bool validate_config(struct config_params *p, struct error_s *error) {
             return false;
         }
         p->orientation = ORIENT_SPLIT_H;
+    } else {
+        p->horizontal_stereo = 0;
     }
     if ((p->orientation == ORIENT_LEFT || p->orientation == ORIENT_RIGHT) &&
         !(p->output == OUTPUT_SDL || p->output == OUTPUT_NCURSES)) {
