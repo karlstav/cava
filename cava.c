@@ -629,7 +629,8 @@ Keys:\n\
         HANDLE hFile = NULL;
 #endif
 
-        if (p.orientation == ORIENT_LEFT || p.orientation == ORIENT_RIGHT) {
+        if (p.orientation == ORIENT_LEFT || p.orientation == ORIENT_RIGHT ||
+            p.orientation == ORIENT_SPLIT_V) {
             dimension_bar = &height;
             dimension_value = &width;
         } else {
@@ -651,6 +652,7 @@ Keys:\n\
                                  p.vertex_shader, p.fragment_shader);
             height = p.sdl_height;
             width = p.sdl_width;
+            *dimension_value = 1;
         }
 #endif
 
@@ -695,7 +697,7 @@ Keys:\n\
                 if (p.xaxis != NONE)
                     lines--;
 
-                height = lines * 8 * p.max_height;
+                height = lines;
                 break;
             case OUTPUT_RAW:
             case OUTPUT_NORITAKE:
@@ -846,7 +848,7 @@ Keys:\n\
                                         number_of_bars, width, lines, p.bar_width, p.orientation,
                                         p.blendDirection);
             }
-            if (p.horizontal_stereo) {
+            if (p.split_stereo) {
                 number_of_bars *= 2;
             }
 
@@ -900,7 +902,7 @@ Keys:\n\
             memset(previous_frame, 0, sizeof(int) * number_of_bars);
             memset(cava_out, 0, sizeof(double) * number_of_bars * audio.channels / output_channels);
 
-            if (p.horizontal_stereo) {
+            if (p.split_stereo) {
                 right_bars = (int *)malloc(number_of_bars * sizeof(int));
                 right_previous_frame = (int *)malloc(number_of_bars * sizeof(int));
                 memset(right_bars, 0, sizeof(int) * number_of_bars);
@@ -1038,7 +1040,7 @@ Keys:\n\
                     resizeTerminal = true;
                     break;
                 case 'o': // change orientation
-                    if (output_mode == OUTPUT_NCURSES) {
+                    if (output_mode == OUTPUT_NCURSES || output_mode == OUTPUT_NONCURSES) {
                         if (p.orientation == ORIENT_BOTTOM) {
                             p.orientation = ORIENT_RIGHT;
                         } else if (p.orientation == ORIENT_RIGHT) {
@@ -1097,6 +1099,9 @@ Keys:\n\
                     free(themeFile);
                     break;
                 }
+
+                if (resizeTerminal)
+                    break;
 
                 // checking if audio thread has exited unexpectedly
                 pthread_mutex_lock(&audio.lock);
@@ -1188,29 +1193,32 @@ Keys:\n\
                             cava_out[n] = (cava_out[n] + 1.0) / 2.0;
                     }
 
-                    if (output_mode == OUTPUT_SDL_GLSL) {
+                    if (cava_out[n] > 1.0)
+                        cava_out[n] = 1.0;
+                    else if (cava_out[n] < 0.0)
+                        cava_out[n] = 0.0;
+
+                    if (p.sdl_glsl_gain != 1.0) {
+                        cava_out[n] *= p.sdl_glsl_gain;
                         if (cava_out[n] > 1.0)
                             cava_out[n] = 1.0;
                         else if (cava_out[n] < 0.0)
                             cava_out[n] = 0.0;
-
-                        if (p.sdl_glsl_gain != 1.0) {
-                            cava_out[n] *= p.sdl_glsl_gain;
-                            if (cava_out[n] > 1.0)
-                                cava_out[n] = 1.0;
-                            else if (cava_out[n] < 0.0)
-                                cava_out[n] = 0.0;
-                        }
-                    } else {
-                        cava_out[n] *= *dimension_value;
-                        if (p.orientation == ORIENT_SPLIT_H || p.orientation == ORIENT_SPLIT_V) {
-                            cava_out[n] /= 2;
-                        }
                     }
+
+                    cava_out[n] *= *dimension_value;
+                    if (p.orientation == ORIENT_SPLIT_H || p.orientation == ORIENT_SPLIT_V) {
+                        cava_out[n] /= 2;
+                    }
+                    if (output_mode == OUTPUT_NONCURSES) {
+                        cava_out[n] *= 8 * p.max_height;
+                    }
+
                     if (p.waveform) {
                         bars_raw[n] = cava_out[n];
                     }
                 }
+
                 if (!p.waveform) {
                     if (audio_channels == 2) {
                         for (int n = 0; n < number_of_bars / output_channels; n++) {
@@ -1251,7 +1259,7 @@ Keys:\n\
                     if (audio_channels == 2) {
                         if (p.stereo) {
                             // mirroring stereo channels
-                            if (p.horizontal_stereo) {
+                            if (p.split_stereo) {
                                 for (int n = 0; n < number_of_bars; n++) {
                                     if (n < number_of_bars / 2) {
                                         if (p.reverse) {
@@ -1357,12 +1365,18 @@ Keys:\n\
                     break;
 #endif
                 case OUTPUT_NONCURSES:
-                    if (p.orientation == ORIENT_SPLIT_H) {
+                    if (p.orientation == ORIENT_SPLIT_H || p.orientation == ORIENT_SPLIT_V) {
                         // in split horizontal mode we need to draw two times
                         // once for bottom and once for top
                         // ORIENT_BOTTOM will be the top bars and ORIENT_TOP the bottom bars
                         // since bottom hear means from mid upwards and top is from mid downwards
-                        if (p.horizontal_stereo) {
+
+                        // for horizontal we draw bottom first, for vertical left first
+                        int split_orientation = ORIENT_BOTTOM;
+                        if (p.orientation == ORIENT_SPLIT_V)
+                            split_orientation = ORIENT_LEFT;
+
+                        if (p.split_stereo) {
                             // in horizontal stereo mode we need to split the bars array in half
                             // first half is right channel, second half is left channel
                             for (int i = 0; i < number_of_bars / 2; i++) {
@@ -1370,26 +1384,27 @@ Keys:\n\
                                 right_previous_frame[i] = previous_frame[i + number_of_bars / 2];
                             }
 
-                            rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars / 2,
-                                                         p.bar_width, p.bar_spacing, remainder,
-                                                         right_bars, right_previous_frame,
-                                                         p.gradient, p.horizontal_gradient,
-                                                         x_axis_info, 1 - p.left_bottom, 1);
-
                             rc = draw_terminal_noncurses(
                                 inAtty, lines, width, number_of_bars / 2, p.bar_width,
-                                p.bar_spacing, remainder, bars, previous_frame, p.gradient,
-                                p.horizontal_gradient, x_axis_info, p.left_bottom, 1);
+                                p.bar_spacing, remainder, right_bars, right_previous_frame,
+                                p.gradient, p.horizontal_gradient, x_axis_info,
+                                1 - p.left_bottom + split_orientation, 1);
+
+                            rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars / 2,
+                                                         p.bar_width, p.bar_spacing, remainder,
+                                                         bars, previous_frame, p.gradient,
+                                                         p.horizontal_gradient, x_axis_info,
+                                                         p.left_bottom + split_orientation, 1);
 
                         } else {
                             rc = draw_terminal_noncurses(
                                 inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
                                 remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
-                                x_axis_info, ORIENT_BOTTOM, 1);
+                                x_axis_info, ORIENT_BOTTOM + split_orientation, 1);
                             rc = draw_terminal_noncurses(
                                 inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
                                 remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
-                                x_axis_info, ORIENT_TOP, 1);
+                                x_axis_info, ORIENT_TOP + split_orientation, 1);
                         }
                     } else {
                         rc = draw_terminal_noncurses(
@@ -1508,7 +1523,7 @@ Keys:\n\
             free(bars_raw);
             free(previous_bars_raw);
             free(previous_frame);
-            if (p.horizontal_stereo) {
+            if (p.split_stereo) {
                 free(right_bars);
                 free(right_previous_frame);
             }

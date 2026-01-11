@@ -458,12 +458,27 @@ bool validate_config(struct config_params *p, struct error_s *error) {
             return false;
         }
         p->orientation = ORIENT_SPLIT_H;
-    } else {
-        p->horizontal_stereo = 0;
+    }
+    if (strcmp(orientation, "vertical") == 0) {
+        if (p->output != OUTPUT_NONCURSES) {
+            write_errorf(error, "only noncurses output supports vertical orientation\n");
+            return false;
+        }
+        p->orientation = ORIENT_SPLIT_V;
+        p->left_bottom = 1; // this setting is used to flip channels in horizonal split mode, makes
+                            // no sense here. forcing this to 1 puts left on left and right on right
+    }
+    if (p->orientation != ORIENT_SPLIT_V && p->orientation != ORIENT_SPLIT_H) {
+        p->split_stereo = 0;
+    }
+    if (p->orientation == ORIENT_LEFT || p->orientation == ORIENT_RIGHT ||
+        p->orientation == ORIENT_SPLIT_V) {
+        p->reverse = 1 - p->reverse;
     }
     if ((p->orientation == ORIENT_LEFT || p->orientation == ORIENT_RIGHT) &&
-        !(p->output == OUTPUT_SDL || p->output == OUTPUT_NCURSES)) {
-        write_errorf(error, "only ncurses and sdl supports left/right orientation\n");
+        !(p->output == OUTPUT_SDL || p->output == OUTPUT_NCURSES ||
+          p->output == OUTPUT_NONCURSES)) {
+        write_errorf(error, "only noncurses, ncurses and sdl supports left/right orientation\n");
         return false;
     }
     if ((p->orientation == ORIENT_TOP) &&
@@ -500,8 +515,8 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     p->stereo = -1;
     if (strcmp(channels, "mono") == 0) {
         p->stereo = 0;
-        if (p->horizontal_stereo) {
-            write_errorf(error, "horizontal stereo is not supported in mono mode\n");
+        if (p->split_stereo) {
+            write_errorf(error, "split stereo is not supported in mono mode\n");
             return false;
         }
     }
@@ -853,7 +868,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     channels = strdup(iniparser_getstring(ini, "output:channels", "stereo"));
     monoOption = strdup(iniparser_getstring(ini, "output:mono_option", "average"));
     p->reverse = iniparser_getint(ini, "output:reverse", 0);
-    p->horizontal_stereo = iniparser_getint(ini, "output:horizontal_stereo", 0);
+    p->split_stereo = iniparser_getint(ini, "output:split_stereo", 0);
     p->left_bottom = iniparser_getint(ini, "output:left_bottom", 0);
     p->raw_target = strdup(iniparser_getstring(ini, "output:raw_target", "/dev/stdout"));
     p->data_format = strdup(iniparser_getstring(ini, "output:data_format", "binary"));
