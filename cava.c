@@ -851,6 +851,11 @@ Keys:\n\
             if (p.split_stereo) {
                 number_of_bars *= 2;
             }
+            p.number_of_bars = number_of_bars;
+            p.terminal_lines = lines;
+            p.terminal_width = width;
+            p.terminal_remainder = remainder;
+            p.is_tty = inAtty;
 
             int raw_number_of_bars = (number_of_bars / output_channels) * audio_channels;
             if (p.waveform) {
@@ -1371,11 +1376,6 @@ Keys:\n\
                         // ORIENT_BOTTOM will be the top bars and ORIENT_TOP the bottom bars
                         // since bottom hear means from mid upwards and top is from mid downwards
 
-                        // for horizontal we draw bottom first, for vertical left first
-                        int split_orientation = ORIENT_BOTTOM;
-                        if (p.orientation == ORIENT_SPLIT_V)
-                            split_orientation = ORIENT_LEFT;
-
                         if (p.split_stereo) {
                             // in horizontal stereo mode we need to split the bars array in half
                             // first half is right channel, second half is left channel
@@ -1383,34 +1383,33 @@ Keys:\n\
                                 right_bars[i] = bars[i + number_of_bars / 2];
                                 right_previous_frame[i] = previous_frame[i + number_of_bars / 2];
                             }
-
-                            rc = draw_terminal_noncurses(
-                                inAtty, lines, width, number_of_bars / 2, p.bar_width,
-                                p.bar_spacing, remainder, right_bars, right_previous_frame,
-                                p.gradient, p.horizontal_gradient, x_axis_info,
-                                1 - p.left_bottom + split_orientation, 1);
-
-                            rc = draw_terminal_noncurses(inAtty, lines, width, number_of_bars / 2,
-                                                         p.bar_width, p.bar_spacing, remainder,
-                                                         bars, previous_frame, p.gradient,
-                                                         p.horizontal_gradient, x_axis_info,
-                                                         p.left_bottom + split_orientation, 1);
+                            if (p.orientation == ORIENT_SPLIT_H) {
+                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_BOTTOM,
+                                                             &p);
+                                rc = draw_terminal_noncurses(right_bars, right_previous_frame,
+                                                             ORIENT_TOP, &p);
+                            }
+                            if (p.orientation == ORIENT_SPLIT_V) {
+                                rc = draw_terminal_noncurses(right_bars, right_previous_frame,
+                                                             ORIENT_LEFT, &p);
+                                rc =
+                                    draw_terminal_noncurses(bars, previous_frame, ORIENT_RIGHT, &p);
+                            }
 
                         } else {
-                            rc = draw_terminal_noncurses(
-                                inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
-                                remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
-                                x_axis_info, ORIENT_BOTTOM + split_orientation, 1);
-                            rc = draw_terminal_noncurses(
-                                inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
-                                remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
-                                x_axis_info, ORIENT_TOP + split_orientation, 1);
+                            // pure mirrored split, same bars for both sides
+                            if (p.orientation == ORIENT_SPLIT_H) {
+                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_BOTTOM,
+                                                             &p);
+                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_TOP, &p);
+                            } else if (p.orientation == ORIENT_SPLIT_V) {
+                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_LEFT, &p);
+                                rc =
+                                    draw_terminal_noncurses(bars, previous_frame, ORIENT_RIGHT, &p);
+                            }
                         }
                     } else {
-                        rc = draw_terminal_noncurses(
-                            inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
-                            remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
-                            x_axis_info, p.orientation, 0);
+                        rc = draw_terminal_noncurses(bars, previous_frame, p.orientation, &p);
                     }
                     break;
                 case OUTPUT_NCURSES:

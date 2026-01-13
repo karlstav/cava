@@ -386,10 +386,35 @@ void get_terminal_dim_noncurses(int *width, int *lines) {
 #endif
 }
 
-int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, int bar_width,
-                            int bar_spacing, int rest, int bars[], int previous_frame[],
-                            int vertical_gradient, int horizontal_gradient, int x_axis_info,
-                            enum orientation orientation, int offset) {
+int draw_terminal_noncurses(int bars[], int previous_frame[], enum orientation orientation,
+                            void *config) {
+
+    struct config_params *p = (struct config_params *)config;
+    int vertical_gradient = p->gradient;
+    int horizontal_gradient = p->horizontal_gradient;
+    int x_axis_info = 0;
+    if (p->xaxis != NONE)
+        x_axis_info = 1;
+
+    int bar_width = p->bar_width;
+    int bar_spacing = p->bar_spacing;
+    int width = p->terminal_width;
+    int lines = p->terminal_lines;
+    int rest = p->terminal_remainder;
+    int tty = p->is_tty;
+    int number_of_bars = p->number_of_bars;
+
+    int offset = 0;
+    if (p->orientation == ORIENT_SPLIT_H || p->orientation == ORIENT_SPLIT_V) {
+        offset = 1;
+        if (p->split_stereo) {
+            number_of_bars /= 2;
+        }
+    }
+
+    if (p->orientation == ORIENT_SPLIT_H && p->left_bottom) {
+        orientation = 1 - orientation;
+    }
 
     int current_cell, prev_cell, same_line, new_line, cx;
 
@@ -456,22 +481,23 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
                         // move cursor to beginning of this line
                         if (new_line) {
                             if (orientation == ORIENT_TOP && offset) {
-                                if (rest || same_bar)
+                                if (rest || same_bar) {
                                     cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx,
                                                    "\033[%d;%dH", lines * 2 - current_line,
                                                    1 + rest + (bar_width + bar_spacing) * same_bar);
-                                else
+                                } else {
                                     cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx,
                                                    "\033[%dH", lines * 2 - current_line);
+                                }
                             } else {
-
-                                if (rest || same_bar)
+                                if (rest || same_bar) {
                                     cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx,
                                                    "\033[%d;%dH", lines - current_line,
                                                    1 + rest + (bar_width + bar_spacing) * same_bar);
-                                else
+                                } else {
                                     cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx,
                                                    "\033[%dH", lines - current_line);
+                                }
                             }
                             new_line = 0;
                             same_bar = 0;
@@ -520,21 +546,23 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
                         // move cursor to beginning of this line
                         if (new_line) {
                             if (orientation == ORIENT_TOP && offset) {
-                                if (rest || same_bar)
+                                if (rest || same_bar) {
                                     cx += swprintf(frame_buffer + cx, buf_length - cx,
                                                    L"\033[%d;%dH", lines * 2 - current_line,
                                                    1 + rest + (bar_width + bar_spacing) * same_bar);
-                                else
+                                } else {
                                     cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dH",
                                                    lines * 2 - current_line);
+                                }
                             } else {
-                                if (rest || same_bar)
+                                if (rest || same_bar) {
                                     cx += swprintf(frame_buffer + cx, buf_length - cx,
                                                    L"\033[%d;%dH", lines - current_line,
                                                    1 + rest + (bar_width + bar_spacing) * same_bar);
-                                else
+                                } else {
                                     cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%dH",
                                                    lines - current_line);
+                                }
                             }
                             new_line = 0;
                             same_bar = 0;
