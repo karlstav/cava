@@ -848,7 +848,8 @@ Keys:\n\
                                         number_of_bars, width, lines, p.bar_width, p.orientation,
                                         p.blendDirection);
             }
-            if (p.split_stereo) {
+            if ((p.orientation == ORIENT_SPLIT_H || p.orientation == ORIENT_SPLIT_V) &&
+                p.split_stereo) {
                 number_of_bars *= 2;
             }
             p.number_of_bars = number_of_bars;
@@ -1045,27 +1046,27 @@ Keys:\n\
                     resizeTerminal = true;
                     break;
                 case 'o': // change orientation
-                    if (output_mode == OUTPUT_NCURSES || output_mode == OUTPUT_NONCURSES) {
-                        if (p.orientation == ORIENT_BOTTOM) {
-                            p.orientation = ORIENT_RIGHT;
-                        } else if (p.orientation == ORIENT_RIGHT) {
-                            p.orientation = ORIENT_TOP;
-                        } else if (p.orientation == ORIENT_TOP) {
-                            p.orientation = ORIENT_LEFT;
-                        } else {
+                    p.orientation++;
+                    if (output_mode == OUTPUT_NONCURSES) {
+                        if (p.orientation > ORIENT_SPLIT_V) {
                             p.orientation = ORIENT_BOTTOM;
                         }
-
-                        if (p.orientation == ORIENT_LEFT || p.orientation == ORIENT_RIGHT) {
-                            dimension_bar = &height;
-                            dimension_value = &width;
-                        } else {
-                            dimension_bar = &width;
-                            dimension_value = &height;
+                    } else if (output_mode == OUTPUT_NCURSES) {
+                        if (p.orientation > ORIENT_RIGHT) {
+                            p.orientation = ORIENT_BOTTOM;
                         }
                     } else {
                         p.orientation =
                             (p.orientation == ORIENT_BOTTOM) ? ORIENT_TOP : ORIENT_BOTTOM;
+                    }
+
+                    if (p.orientation == ORIENT_LEFT || p.orientation == ORIENT_RIGHT ||
+                        p.orientation == ORIENT_SPLIT_V) {
+                        dimension_bar = &height;
+                        dimension_value = &width;
+                    } else {
+                        dimension_bar = &width;
+                        dimension_value = &height;
                     }
 
                     resizeTerminal = true;
@@ -1264,7 +1265,9 @@ Keys:\n\
                     if (audio_channels == 2) {
                         if (p.stereo) {
                             // mirroring stereo channels
-                            if (p.split_stereo) {
+                            if ((p.orientation == ORIENT_SPLIT_H ||
+                                 p.orientation == ORIENT_SPLIT_V) &&
+                                p.split_stereo) {
                                 for (int n = 0; n < number_of_bars; n++) {
                                     if (n < number_of_bars / 2) {
                                         if (p.reverse) {
