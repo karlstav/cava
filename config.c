@@ -18,7 +18,7 @@
 
 #include <sys/stat.h>
 
-#define NUMBER_OF_SHADERS 6
+#define NUMBER_OF_SHADERS 8
 
 #define NUMBER_OF_THEMES 2
 
@@ -33,6 +33,8 @@
 #define IDR_SPECTROGRAM_SHADER 105
 #define IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER 106
 #define IDR_EYE_OF_PHI_SHADER 107
+#define IDR_ORION_CIRCLE_SHADER 108
+#define IDR_ORION_CIRCLE_ROTATE_SHADER 109
 
 #define IDR_SOLARIZED_DARK_THEME 501
 #define IDR_TRICOLOR_THEME 502
@@ -58,7 +60,8 @@ static void LoadFileInResource(int name, int type, DWORD *size, const char **dat
 int default_shader_data[NUMBER_OF_SHADERS] = {
     IDR_NORTHERN_LIGHTS_SHADER, IDR_PASS_THROUGH_SHADER,
     IDR_BAR_SPECTRUM_SHADER,    IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER,
-    IDR_SPECTROGRAM_SHADER,     IDR_EYE_OF_PHI_SHADER};
+    IDR_SPECTROGRAM_SHADER,     IDR_EYE_OF_PHI_SHADER,
+    IDR_ORION_CIRCLE_SHADER,    IDR_ORION_CIRCLE_ROTATE_SHADER};
 
 int default_theme_data[NUMBER_OF_THEMES] = {IDR_SOLARIZED_DARK_THEME, IDR_TRICOLOR_THEME};
 #else
@@ -73,6 +76,8 @@ INCTXT(northern_lightsfrag, "output/shaders/northern_lights.frag");
 INCTXT(winamp_line_style_spectrum, "output/shaders/winamp_line_style_spectrum.frag");
 INCTXT(spectrogram, "output/shaders/spectrogram.frag");
 INCTXT(eye_of_phi, "output/shaders/eye_of_phi.frag");
+INCTXT(orion_circle, "output/shaders/orion_circle.frag");
+INCTXT(orion_circle_rotate, "output/shaders/orion_circle_rotate.frag");
 
 INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
 
@@ -82,7 +87,8 @@ INCTXT(tricolor, "output/themes/tricolor");
 // INCTXT will create a char g<name>Data
 const char *default_shader_data[NUMBER_OF_SHADERS] = {
     gnorthern_lightsfragData,        gpass_throughvertData, gbar_spectrumData,
-    gwinamp_line_style_spectrumData, gspectrogramData,      geye_of_phiData};
+    gwinamp_line_style_spectrumData, gspectrogramData,      geye_of_phiData,
+    gorion_circleData,               gorion_circle_rotateData};
 
 const char *default_theme_data[NUMBER_OF_THEMES] = {gsolarized_darkData, gtricolorData};
 #endif // _WIN32
@@ -91,7 +97,8 @@ const char *default_theme_data[NUMBER_OF_THEMES] = {gsolarized_darkData, gtricol
 const char *default_shader_name[NUMBER_OF_SHADERS] = {
     "northern_lights.frag", "pass_through.vert",
     "bar_spectrum.frag",    "winamp_line_style_spectrum.frag",
-    "spectrogram.frag",     "eye_of_phi.frag"};
+    "spectrogram.frag",     "eye_of_phi.frag",
+    "orion_circle.frag",    "orion_circle_rotate.frag"};
 const char *default_theme_name[NUMBER_OF_THEMES] = {"solarized_dark", "tricolor"};
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
