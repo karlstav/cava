@@ -8,8 +8,10 @@
 #endif
 #include "sdl_glsl.h"
 
+#include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "../util.h"
 
@@ -22,9 +24,10 @@ GLint uniform_time;
 GLint uniform_input_texture;
 GLuint fbo;
 GLuint texture;
-int frame_counter = 0;
+uint64_t start_counter;
+double perf_freq;
 
-SDL_GLContext *glContext = NULL;
+SDL_GLContext glContext = NULL;
 
 struct colors {
     uint16_t R;
@@ -76,7 +79,7 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
         fprintf(stderr, "Window could not be created! SDL_Error: %s\n", SDL_GetError());
         exit(1);
     }
-    SDL_GLContext glContext = SDL_GL_CreateContext(glWindow);
+    glContext = SDL_GL_CreateContext(glWindow);
     if (glContext == NULL) {
         fprintf(stderr, "GLContext could not be created! SDL Error: %s\n", SDL_GetError());
         exit(1);
@@ -96,6 +99,9 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
     if (SDL_GL_SetSwapInterval(1) < 0) {
         printf("Warning: Unable to set VSync! SDL Error: %s\n", SDL_GetError());
     }
+
+    perf_freq = (double)SDL_GetPerformanceFrequency();
+    start_counter = SDL_GetPerformanceCounter();
 
     shading_program = custom_shaders(vertex_shader, fragmnet_shader);
     glReleaseShaderCompiler();
@@ -140,31 +146,34 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
 
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
-    // Create a texture to attach to the framebuffer
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
-
-    // Check if the framebuffer is complete
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        fprintf(stderr, "Framebuffer not complete!\n");
-        exit(1);
-    }
-
-    // Unbind the framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
     uniform_bars = glGetUniformLocation(shading_program, "bars");
     uniform_previous_bars = glGetUniformLocation(shading_program, "previous_bars");
     uniform_bars_count = glGetUniformLocation(shading_program, "bars_count");
     uniform_time = glGetUniformLocation(shading_program, "shader_time");
     uniform_input_texture = glGetUniformLocation(shading_program, "inputTexture");
+
+    if (uniform_input_texture != -1) {
+        glGenFramebuffers(1, &fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+        // Create a texture to attach to the framebuffer
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                     NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+
+        // Check if the framebuffer is complete
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            fprintf(stderr, "Framebuffer not complete!\n");
+            exit(1);
+        }
+
+        // Unbind the framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
 
     int error = glGetError();
     if (error != 0) {
@@ -211,7 +220,7 @@ void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string, char *co
 
     GLint uniform_gradient_colors;
     uniform_gradient_colors = glGetUniformLocation(shading_program, "gradient_colors");
-    float gradient_colors[8][3];
+    float gradient_colors[8][3] = {0};
     for (int i = 0; i < gradient_count; i++) {
         parse_color(gradient_color_strings[i], &color);
         gradient_colors[i][0] = (float)color.R / 255.0;
@@ -232,56 +241,79 @@ int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[
     SDL_Event event;
 
     if (re_paint || continuous_rendering) {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        if (uniform_input_texture != -1)
+        if (uniform_input_texture != -1) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, texture);
             glUniform1i(uniform_input_texture, 0);
+        }
         if (uniform_bars != -1)
             glUniform1fv(uniform_bars, bars_count, bars);
         if (uniform_previous_bars != -1)
             glUniform1fv(uniform_previous_bars, bars_count, previous_bars);
         if (uniform_bars_count != -1)
             glUniform1i(uniform_bars_count, bars_count);
-        frame_counter++;
-        float frame_time_sec = (float)frame_time / 1000.0f;
-        if (uniform_time != -1)
-            glUniform1f(uniform_time, frame_counter * frame_time_sec);
+        if (uniform_time != -1) {
+            uint64_t now = SDL_GetPerformanceCounter();
+            double elapsed = (double)(now - start_counter) / perf_freq;
+            float wrapped = (float)fmod(elapsed, 4096.0);
+            glUniform1f(uniform_time, wrapped);
+        }
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
         SDL_GL_SwapWindow(glWindow);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-        glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        if (uniform_input_texture != -1) {
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+            glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
     }
     SDL_Delay(frame_time);
 
-    SDL_PollEvent(&event);
-    if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-        glViewport(0, 0, event.window.data1, event.window.data2);
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-        glViewport(0, 0, event.window.data1, event.window.data2);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, event.window.data1, event.window.data2, 0, GL_RGBA,
-                     GL_UNSIGNED_BYTE, NULL);
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+            glViewport(0, 0, event.window.data1, event.window.data2);
+            if (uniform_input_texture != -1) {
+                glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+                glViewport(0, 0, event.window.data1, event.window.data2);
+                glBindTexture(GL_TEXTURE_2D, texture);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, event.window.data1, event.window.data2, 0,
+                             GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        rc = -1;
-    }
-    if (event.type == SDL_KEYDOWN) {
-        if (event.key.keysym.sym == SDLK_q || event.key.keysym.sym == SDLK_ESCAPE)
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            }
+            rc = -1;
+        }
+        if (event.type == SDL_KEYDOWN) {
+            if (event.key.keysym.sym == SDLK_q || event.key.keysym.sym == SDLK_ESCAPE)
+                rc = -2;
+        }
+        if (event.type == SDL_QUIT)
             rc = -2;
     }
-    if (event.type == SDL_QUIT)
-        rc = -2;
 
     return rc;
 }
 
 // general: cleanup
 void cleanup_sdl_glsl(void) {
-    SDL_GL_DeleteContext(glContext);
-    SDL_DestroyWindow(glWindow);
+    if (fbo != 0) {
+        glDeleteFramebuffers(1, &fbo);
+        fbo = 0;
+    }
+    if (texture != 0) {
+        glDeleteTextures(1, &texture);
+        texture = 0;
+    }
+    if (glContext != NULL) {
+        SDL_GL_DeleteContext(glContext);
+        glContext = NULL;
+    }
+    if (glWindow != NULL) {
+        SDL_DestroyWindow(glWindow);
+        glWindow = NULL;
+    }
     SDL_Quit();
 }
 
