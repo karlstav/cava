@@ -576,6 +576,13 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     }
     p->sens = p->sens / 100;
 
+    // validate: sdl_glsl_gain
+    if (p->sdl_glsl_gain < 0) {
+        write_errorf(error, "sdl_glsl_gain can't be negative\n");
+        return false;
+    }
+    p->sdl_glsl_gain = p->sdl_glsl_gain / 100;
+
     // validate: channels
     if (p->channels <= 1)
         p->channels = 1;
@@ -867,6 +874,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
 
     p->continuous_rendering = iniparser_getint(ini, "output:continuous_rendering", 0);
 
+    p->sdl_glsl_gain = iniparser_getdouble(ini, "output:sdl_glsl_gain", 100);
+
     p->disable_blanking = iniparser_getint(ini, "output:disable_blanking", 0);
 
     p->show_idle_bar_heads = iniparser_getint(ini, "output:show_idle_bar_heads", 1);
@@ -1099,6 +1108,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     }
 
     p->continuous_rendering = GetPrivateProfileInt("output", "continuous_rendering", 0, configPath);
+
+    p->sdl_glsl_gain = GetPrivateProfileInt("output", "sdl_glsl_gain", 100, configPath);
 
     GetPrivateProfileString("output", "vertex_shader", "pass_through.vert", vertexShader, 64,
                             configPath);

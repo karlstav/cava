@@ -107,7 +107,7 @@ struct config_params {
         **horizontal_gradient_colors, *data_format, *vertex_shader, *fragment_shader, *theme;
 
     char bar_delim, frame_delim;
-    double monstercat, integral, gravity, ignore, sens, noise_reduction, max_height;
+    double monstercat, integral, gravity, ignore, sens, noise_reduction, max_height, sdl_glsl_gain;
 
     unsigned int lower_cut_off, upper_cut_off;
     double *userEQ;

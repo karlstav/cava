@@ -229,6 +229,8 @@
 ; for glsl output mode, keep rendering even if no audio
 ; continuous_rendering = 0
 
+; sdl_glsl_gain = 100
+
 # disable console blank (screen saver) in tty
 # (Not supported on FreeBSD)
 ; disable_blanking = 0
