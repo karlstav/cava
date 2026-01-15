@@ -19,6 +19,7 @@ GLint uniform_bars;
 GLint uniform_previous_bars;
 GLint uniform_bars_count;
 GLint uniform_time;
+GLint uniform_input_texture;
 GLuint fbo;
 GLuint texture;
 int frame_counter = 0;
@@ -163,6 +164,7 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
     uniform_previous_bars = glGetUniformLocation(shading_program, "previous_bars");
     uniform_bars_count = glGetUniformLocation(shading_program, "bars_count");
     uniform_time = glGetUniformLocation(shading_program, "shader_time");
+    uniform_input_texture = glGetUniformLocation(shading_program, "inputTexture");
 
     int error = glGetError();
     if (error != 0) {
@@ -232,12 +234,18 @@ int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[
     if (re_paint || continuous_rendering) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
-        glUniform1i(glGetUniformLocation(shading_program, "inputTexture"), 0);
-        glUniform1fv(uniform_bars, bars_count, bars);
-        glUniform1fv(uniform_previous_bars, bars_count, previous_bars);
-        glUniform1i(uniform_bars_count, bars_count);
+        if (uniform_input_texture != -1)
+            glUniform1i(uniform_input_texture, 0);
+        if (uniform_bars != -1)
+            glUniform1fv(uniform_bars, bars_count, bars);
+        if (uniform_previous_bars != -1)
+            glUniform1fv(uniform_previous_bars, bars_count, previous_bars);
+        if (uniform_bars_count != -1)
+            glUniform1i(uniform_bars_count, bars_count);
         frame_counter++;
-        glUniform1f(uniform_time, (frame_counter * frame_time) / 1000.0);
+        float frame_time_sec = (float)frame_time / 1000.0f;
+        if (uniform_time != -1)
+            glUniform1f(uniform_time, frame_counter * frame_time_sec);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
