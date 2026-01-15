@@ -6,6 +6,8 @@
 #define IDR_SPECTROGRAM_SHADER 105
 #define IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER 106
 #define IDR_EYE_OF_PHI_SHADER 107
+#define IDR_ORION_CIRCLE_SHADER 108
+#define IDR_ORION_CIRCLE_ROTATE_SHADER 109
 
 #define IDR_SOLARIZED_DARK_THEME 501
 #define IDR_TRICOLOR_THEME 502
@@ -18,6 +20,8 @@ IDR_PASS_THROUGH_SHADER TEXTFILE "../../output/shaders/pass_through.vert"
 IDR_SPECTROGRAM_SHADER TEXTFILE "../../output/shaders/spectrogram.frag"
 IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER TEXTFILE "../../output/shaders/winamp_line_style_spectrum.frag"
 IDR_EYE_OF_PHI_SHADER TEXTFILE "../../output/shaders/eye_of_phi.frag"
+IDR_ORION_CIRCLE_SHADER TEXTFILE "../../output/shaders/orion_circle.frag"
+IDR_ORION_CIRCLE_ROTATE_SHADER TEXTFILE "../../output/shaders/orion_circle_rotate.frag"
 
 IDR_SOLARIZED_DARK_THEME TEXTFILE "../../output/themes/solarized_dark"
 IDR_TRICOLOR_THEME TEXTFILE "../../output/themes/tricolor"
