@@ -86,9 +86,10 @@ INCTXT(tricolor, "output/themes/tricolor");
 
 // INCTXT will create a char g<name>Data
 const char *default_shader_data[NUMBER_OF_SHADERS] = {
-    gnorthern_lightsfragData,        gpass_throughvertData, gbar_spectrumData,
-    gwinamp_line_style_spectrumData, gspectrogramData,      geye_of_phiData,
-    gorion_circleData,               gorion_circle_rotateData};
+    gnorthern_lightsfragData, gpass_throughvertData,
+    gbar_spectrumData,        gwinamp_line_style_spectrumData,
+    gspectrogramData,         geye_of_phiData,
+    gorion_circleData,        gorion_circle_rotateData};
 
 const char *default_theme_data[NUMBER_OF_THEMES] = {gsolarized_darkData, gtricolorData};
 #endif // _WIN32
