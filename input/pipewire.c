@@ -74,7 +74,7 @@ static void on_stream_state_changed(void *_data, [[maybe_unused]] enum pw_stream
 
     data->idle = false;
     switch (state) {
-    case PW_STREAM_STATE_PAUSED:
+    case PW_STREAM_STATE_PAUSED: {
         struct timespec timeout, interval;
 
         timeout.tv_sec = 0;
@@ -85,6 +85,7 @@ static void on_stream_state_changed(void *_data, [[maybe_unused]] enum pw_stream
         pw_loop_update_timer(pw_main_loop_get_loop(data->loop), data->timer, &timeout, &interval,
                              false);
         break;
+    }
     case PW_STREAM_STATE_STREAMING:
         pw_loop_update_timer(pw_main_loop_get_loop(data->loop), data->timer, NULL, NULL, false);
         break;
