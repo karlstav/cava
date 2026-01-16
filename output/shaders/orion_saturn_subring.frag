@@ -22,10 +22,10 @@ uniform vec3 fg_color;
 uniform int gradient_count;
 uniform vec3 gradient_colors[8];
 
-uniform sampler2D inputTexture;
-
 vec3 normalize_C(float y, vec3 col_1, vec3 col_2, float y_min, float y_max) {
-    float yr = (y - y_min) / (y_max - y_min);
+    const float EPS = 0.0001;
+    float yr = (y - y_min) / max(y_max - y_min, EPS);
+    yr = clamp(yr, 0.0, 1.0);
     return col_1 * (1.0 - yr) + col_2 * yr;
 }
 
@@ -122,9 +122,7 @@ void main() {
     int core_samples = 0;
 
     int core_limit = min(bc, 64);
-    for (int i = 0; i < 64; i += 4) {
-        if (i >= core_limit)
-            break;
+    for (int i = 0; i < core_limit; i += 4) {
         core_energy += clamp(bars[i], 0.0, 1.0);
         core_samples++;
     }
@@ -141,6 +139,11 @@ void main() {
                  smoothstep(core_radius + core_half_thickness - dr,
                             core_radius + core_half_thickness + dr, r);
     float core_alpha = clamp(core, 0.0, 1.0) * core_act;
+
+    if (ring_alpha == 0.0 && core_alpha == 0.0) {
+        fragColor = vec4(bg_color, 1.0);
+        return;
+    }
 
     vec3 col_ring = gradient_map(amp);
     vec3 col_core = gradient_map(core_amp);

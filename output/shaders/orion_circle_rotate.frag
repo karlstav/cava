@@ -24,10 +24,10 @@ uniform vec3 gradient_colors[8];
 
 uniform float shader_time;
 
-uniform sampler2D inputTexture;
-
 vec3 normalize_C(float y, vec3 col_1, vec3 col_2, float y_min, float y_max) {
-    float yr = (y - y_min) / (y_max - y_min);
+    const float EPS = 0.0001;
+    float yr = (y - y_min) / max(y_max - y_min, EPS);
+    yr = clamp(yr, 0.0, 1.0);
     return col_1 * (1.0 - yr) + col_2 * yr;
 }
 
@@ -65,10 +65,11 @@ void main() {
 
     // Note: rotation is achieved by phase-shifting bar sampling, not by rotating geometry.
     float rotate_speed = 0.10;
-    float phase = fract(shader_time * rotate_speed);
+    float t = fract(shader_time * 0.1);
+    float phase = fract(t * (rotate_speed / 0.1));
 
     float sweep_speed = 0.12;
-    float sweep_pos = fract(shader_time * sweep_speed);
+    float sweep_pos = fract(t * (sweep_speed / 0.1));
     float da = abs(a - sweep_pos);
     da = min(da, 1.0 - da);
     float sweep = 1.0 - smoothstep(0.0, 0.08 + fwidth(a), da);
@@ -117,6 +118,11 @@ void main() {
 
     float alpha = angular_alpha * radial_alpha;
     alpha *= step(0.0035, alpha);
+
+    if (alpha == 0.0) {
+        fragColor = vec4(bg_color, 1.0);
+        return;
+    }
 
     vec3 col;
     if (gradient_count == 0) {
