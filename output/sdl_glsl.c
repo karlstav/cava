@@ -233,6 +233,74 @@ void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string, char *co
     SDL_GL_SwapWindow(glWindow);
 }
 
+void reload_sdl_glsl_shaders(char *const vertex_shader, char *const fragment_shader) {
+    if (glWindow == NULL || glContext == NULL) {
+        return;
+    }
+
+    GLuint old_program = shading_program;
+
+    GLuint new_program = custom_shaders(vertex_shader, fragment_shader);
+    glReleaseShaderCompiler();
+    if (new_program == 0) {
+        if (shading_program != 0) {
+            glDeleteProgram(shading_program);
+        }
+        shading_program = old_program;
+        if (shading_program != 0) {
+            glUseProgram(shading_program);
+        }
+        return;
+    }
+
+    glUseProgram(shading_program);
+
+    uniform_bars = glGetUniformLocation(shading_program, "bars");
+    uniform_previous_bars = glGetUniformLocation(shading_program, "previous_bars");
+    uniform_bars_count = glGetUniformLocation(shading_program, "bars_count");
+    uniform_time = glGetUniformLocation(shading_program, "shader_time");
+    uniform_input_texture = glGetUniformLocation(shading_program, "inputTexture");
+
+    if (uniform_input_texture != -1) {
+        if (fbo == 0 || texture == 0) {
+            int w = 0;
+            int h = 0;
+            SDL_GetWindowSize(glWindow, &w, &h);
+
+            glGenFramebuffers(1, &fbo);
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture,
+                                    0);
+
+            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+                fprintf(stderr, "Framebuffer not complete!\n");
+                exit(1);
+            }
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+    } else {
+        if (fbo != 0) {
+            glDeleteFramebuffers(1, &fbo);
+            fbo = 0;
+        }
+        if (texture != 0) {
+            glDeleteTextures(1, &texture);
+            texture = 0;
+        }
+    }
+
+    if (old_program != 0) {
+        glDeleteProgram(old_program);
+    }
+}
+
 int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[], int frame_time,
                   int re_paint, int continuous_rendering) {
 
@@ -304,6 +372,10 @@ void cleanup_sdl_glsl(void) {
     if (texture != 0) {
         glDeleteTextures(1, &texture);
         texture = 0;
+    }
+    if (shading_program != 0) {
+        glDeleteProgram(shading_program);
+        shading_program = 0;
     }
     if (glContext != NULL) {
         SDL_GL_DeleteContext(glContext);
