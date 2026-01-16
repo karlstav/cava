@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
-// Author: rezky_nightky <with.rezky@gmail.com>
+// SPDX-FileCopyrightText: 2026 rezky_nightky <with.rezky@gmail.com>
+
 // Static Orion (non-rotating)
+
 #version 330
 
 in vec2 fragCoord;

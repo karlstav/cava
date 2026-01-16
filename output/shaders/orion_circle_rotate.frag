@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MIT
-// Author: rezky_nightky <with.rezky@gmail.com>
+// SPDX-FileCopyrightText: 2026 rezky_nightky <with.rezky@gmail.com>
+
+// Rotate Orion
+
 #version 330
 
 in vec2 fragCoord;
@@ -60,10 +63,10 @@ void main() {
     }
 
     // Note: rotation is achieved by phase-shifting bar sampling, not by rotating geometry.
-    float rotate_speed = 0.40;
+    float rotate_speed = 0.10;
     float phase = fract(shader_time * rotate_speed);
 
-    float sweep_speed = 0.25;
+    float sweep_speed = 0.12;
     float sweep_pos = fract(shader_time * sweep_speed);
     float da = abs(a - sweep_pos);
     da = min(da, 1.0 - da);
