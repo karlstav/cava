@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2026 rezky_nightky <with.rezky@gmail.com>
 
-// Saturn Orion
+// Orion Saturn subring
 
 #version 330
 
