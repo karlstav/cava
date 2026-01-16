@@ -16,14 +16,14 @@
 #include "../util.h"
 
 SDL_Window *glWindow = NULL;
-GLuint shading_program;
+GLuint shading_program = 0;
 GLint uniform_bars;
 GLint uniform_previous_bars;
 GLint uniform_bars_count;
 GLint uniform_time;
-GLint uniform_input_texture;
-GLuint fbo;
-GLuint texture;
+GLint uniform_input_texture = -1;
+GLuint fbo = 0;
+GLuint texture = 0;
 uint64_t start_counter;
 double perf_freq;
 
@@ -151,6 +151,9 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
     uniform_bars_count = glGetUniformLocation(shading_program, "bars_count");
     uniform_time = glGetUniformLocation(shading_program, "shader_time");
     uniform_input_texture = glGetUniformLocation(shading_program, "inputTexture");
+    if (uniform_input_texture == -1) {
+        uniform_input_texture = -1;
+    }
 
     if (uniform_input_texture != -1) {
         glGenFramebuffers(1, &fbo);
@@ -243,16 +246,10 @@ void reload_sdl_glsl_shaders(char *const vertex_shader, char *const fragment_sha
     GLuint new_program = custom_shaders(vertex_shader, fragment_shader);
     glReleaseShaderCompiler();
     if (new_program == 0) {
-        if (shading_program != 0) {
-            glDeleteProgram(shading_program);
-        }
-        shading_program = old_program;
-        if (shading_program != 0) {
-            glUseProgram(shading_program);
-        }
         return;
     }
 
+    shading_program = new_program;
     glUseProgram(shading_program);
 
     uniform_bars = glGetUniformLocation(shading_program, "bars");
@@ -424,19 +421,27 @@ GLuint custom_shaders(const char *vsPath, const char *fsPath) {
     vertexShader = get_shader(GL_VERTEX_SHADER, vsPath);
     fragmentShader = get_shader(GL_FRAGMENT_SHADER, fsPath);
 
-    shading_program = glCreateProgram();
+    GLuint program = glCreateProgram();
 
-    glAttachShader(shading_program, vertexShader);
-    glAttachShader(shading_program, fragmentShader);
+    glAttachShader(program, vertexShader);
+    glAttachShader(program, fragmentShader);
 
-    glLinkProgram(shading_program);
+    glLinkProgram(program);
 
     // Error Checking
     GLuint status;
-    status = program_check(shading_program);
-    if (status == GL_FALSE)
+    status = program_check(program);
+
+    glDetachShader(program, vertexShader);
+    glDetachShader(program, fragmentShader);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    if (status == GL_FALSE) {
+        glDeleteProgram(program);
         return 0;
-    return shading_program;
+    }
+    return program;
 }
 
 GLuint get_shader(GLenum eShaderType, const char *filename) {

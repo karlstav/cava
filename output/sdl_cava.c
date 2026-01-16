@@ -24,7 +24,7 @@ struct colors {
     uint16_t RGB[3];
 };
 
-struct colors *gradient_colors_sdl;
+struct colors *gradient_colors_sdl = NULL;
 
 struct colors fg_color = {0};
 struct colors bg_color = {0};
@@ -72,6 +72,10 @@ void init_sdl_surface(int *w, int *h, char *const fg_color_string, char *const b
 
     parse_color(fg_color_string, &fg_color);
     SDL_SetRenderDrawColor(gRenderer, fg_color.RGB[0], fg_color.RGB[1], fg_color.RGB[2], 0xFF);
+    if (gradient_colors_sdl != NULL) {
+        free(gradient_colors_sdl);
+        gradient_colors_sdl = NULL;
+    }
     if (gradient) {
         struct colors gradient_color_defs[MAX_GRADIENT_COLOR_DEFS];
         for (int i = 0; i < gradient_count; i++) {
@@ -187,6 +191,7 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
             rc = -1;
             if (gradient) {
                 free(gradient_colors_sdl);
+                gradient_colors_sdl = NULL;
             }
         }
         if (e.type == SDL_KEYDOWN) {
@@ -202,6 +207,10 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
 
 // general: cleanup
 void cleanup_sdl(void) {
+    if (gradient_colors_sdl != NULL) {
+        free(gradient_colors_sdl);
+        gradient_colors_sdl = NULL;
+    }
     SDL_DestroyWindow(gWindow);
     SDL_Quit();
 }

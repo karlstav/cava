@@ -90,6 +90,72 @@ AS_IF([test "x$enable_ubsan" = "xyes"], [
   LDFLAGS="$LDFLAGS -fsanitize=undefined"
 ])
 
+AC_ARG_ENABLE([cpu-optimizations],
+  AS_HELP_STRING([--enable-cpu-optimizations@<:@=auto|x86-64|x86-64-v2|x86-64-v3|x86-64-v4@:>@],
+    [enable build-time CPU optimizations (opt-in; default is generic)])
+)
+
+cpu_opt="$enable_cpu_optimizations"
+AS_IF([test "x$cpu_opt" = "xyes"], [cpu_opt="auto"])
+AS_IF([test "x$cpu_opt" != "x" -a "x$cpu_opt" != "xno"], [
+  cpu_march=""
+  if test "x$cross_compiling" = "xyes" ; then
+    AC_MSG_NOTICE([cpu optimizations requested but cross-compiling; leaving generic])
+  else
+    case "$host_cpu" in
+      x86_64|amd64)
+        if test "x$cpu_opt" = "xauto" ; then
+          cpu_march="x86-64"
+          if test -r /proc/cpuinfo ; then
+            if grep -qi avx512f /proc/cpuinfo ; then
+              cpu_march="x86-64-v4"
+            elif grep -qi avx2 /proc/cpuinfo ; then
+              cpu_march="x86-64-v3"
+            elif grep -qi sse4_2 /proc/cpuinfo ; then
+              cpu_march="x86-64-v2"
+            fi
+          elif test "x$build_mac" = "xyes" ; then
+            cpu_features=`sysctl -n machdep.cpu.features 2>/dev/null`
+            if echo "$cpu_features" | grep -q AVX512F ; then
+              cpu_march="x86-64-v4"
+            elif echo "$cpu_features" | grep -q AVX2 ; then
+              cpu_march="x86-64-v3"
+            elif echo "$cpu_features" | grep -q 'SSE4\.2' ; then
+              cpu_march="x86-64-v2"
+            fi
+          fi
+        else
+          case "$cpu_opt" in
+            x86-64|x86-64-v2|x86-64-v3|x86-64-v4)
+              cpu_march="$cpu_opt"
+              ;;
+            *)
+              AC_MSG_ERROR([invalid value for --enable-cpu-optimizations: $cpu_opt])
+              ;;
+          esac
+        fi
+        ;;
+      *)
+        AC_MSG_NOTICE([cpu optimizations requested but host_cpu=$host_cpu is not x86_64; leaving generic])
+        ;;
+    esac
+  fi
+
+  if test "x$cpu_march" != "x" ; then
+    saved_CFLAGS="$CFLAGS"
+    CFLAGS="$CFLAGS -march=$cpu_march"
+    AC_MSG_CHECKING([whether $CC supports -march=$cpu_march])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
+      [AC_MSG_RESULT([yes]); CPU_OPT_CFLAGS="-march=$cpu_march"],
+      [AC_MSG_RESULT([no]); CPU_OPT_CFLAGS=""])
+    CFLAGS="$saved_CFLAGS"
+
+    if test "x$CPU_OPT_CFLAGS" != "x" ; then
+      CFLAGS="$CFLAGS $CPU_OPT_CFLAGS"
+      AC_MSG_NOTICE([using CPU optimizations: $CPU_OPT_CFLAGS])
+    fi
+  fi
+ ])
 
 dnl ######################
 dnl checking for pthread
