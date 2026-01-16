@@ -18,7 +18,7 @@
 
 #include <sys/stat.h>
 
-#define NUMBER_OF_SHADERS 8
+#define NUMBER_OF_SHADERS 9
 
 #define NUMBER_OF_THEMES 2
 
@@ -35,6 +35,7 @@
 #define IDR_EYE_OF_PHI_SHADER 107
 #define IDR_ORION_CIRCLE_SHADER 108
 #define IDR_ORION_CIRCLE_ROTATE_SHADER 109
+#define IDR_ORION_SATURN_SHADER 110
 
 #define IDR_SOLARIZED_DARK_THEME 501
 #define IDR_TRICOLOR_THEME 502
@@ -61,7 +62,8 @@ int default_shader_data[NUMBER_OF_SHADERS] = {
     IDR_NORTHERN_LIGHTS_SHADER, IDR_PASS_THROUGH_SHADER,
     IDR_BAR_SPECTRUM_SHADER,    IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER,
     IDR_SPECTROGRAM_SHADER,     IDR_EYE_OF_PHI_SHADER,
-    IDR_ORION_CIRCLE_SHADER,    IDR_ORION_CIRCLE_ROTATE_SHADER};
+    IDR_ORION_CIRCLE_SHADER,    IDR_ORION_CIRCLE_ROTATE_SHADER,
+    IDR_ORION_SATURN_SHADER};
 
 int default_theme_data[NUMBER_OF_THEMES] = {IDR_SOLARIZED_DARK_THEME, IDR_TRICOLOR_THEME};
 #else
@@ -78,6 +80,7 @@ INCTXT(spectrogram, "output/shaders/spectrogram.frag");
 INCTXT(eye_of_phi, "output/shaders/eye_of_phi.frag");
 INCTXT(orion_circle, "output/shaders/orion_circle.frag");
 INCTXT(orion_circle_rotate, "output/shaders/orion_circle_rotate.frag");
+INCTXT(orion_saturn, "output/shaders/orion_saturn.frag");
 
 INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
 
@@ -89,7 +92,8 @@ const char *default_shader_data[NUMBER_OF_SHADERS] = {
     gnorthern_lightsfragData, gpass_throughvertData,
     gbar_spectrumData,        gwinamp_line_style_spectrumData,
     gspectrogramData,         geye_of_phiData,
-    gorion_circleData,        gorion_circle_rotateData};
+    gorion_circleData,        gorion_circle_rotateData,
+    gorion_saturnData};
 
 const char *default_theme_data[NUMBER_OF_THEMES] = {gsolarized_darkData, gtricolorData};
 #endif // _WIN32
@@ -99,7 +103,8 @@ const char *default_shader_name[NUMBER_OF_SHADERS] = {
     "northern_lights.frag", "pass_through.vert",
     "bar_spectrum.frag",    "winamp_line_style_spectrum.frag",
     "spectrogram.frag",     "eye_of_phi.frag",
-    "orion_circle.frag",    "orion_circle_rotate.frag"};
+    "orion_circle.frag",    "orion_circle_rotate.frag",
+    "orion_saturn.frag"};
 const char *default_theme_name[NUMBER_OF_THEMES] = {"solarized_dark", "tricolor"};
 
 double smoothDef[5] = {1, 1, 1, 1, 1};

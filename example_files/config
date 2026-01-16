@@ -63,7 +63,7 @@
 # default value: 50
 ; lower_cutoff_freq = 50
 # default value: 8000
-; higher_cutoff_freq = 10000
+; higher_cutoff_freq = 8000
 
 # Seconds with no input before cava goes to sleep mode. Cava will not perform FFT or drawing and
 # only check for input once per second. Cava will wake up once input is detected. 0 = disable.
@@ -277,6 +277,8 @@
 ; fragment_shader = orion_circle.frag
 # Rotating Orion (animated)
 ; fragment_shader = orion_circle_rotate.frag
+# Orion saturn
+ fragment_shader = orion_saturn.frag
 
 # For glsl output mode, keep rendering even if no audio. 1 = on, 0 = off. Default: 0
 # Enable for animated shaders (e.g. orion_circle_rotate.frag) so time-based effects keep updating.

@@ -59,13 +59,19 @@ void main() {
         return;
     }
 
-    float speed = 0.25;
-    float sweep_pos = fract(shader_time * speed);
+    // Note: rotation is achieved by phase-shifting bar sampling, not by rotating geometry.
+    float rotate_speed = 0.40;
+    float phase = fract(shader_time * rotate_speed);
+
+    float sweep_speed = 0.25;
+    float sweep_pos = fract(shader_time * sweep_speed);
     float da = abs(a - sweep_pos);
     da = min(da, 1.0 - da);
     float sweep = 1.0 - smoothstep(0.0, 0.08 + fwidth(a), da);
 
-    float cell = a * float(bars_count);
+    float a_sample = fract(a + phase);
+
+    float cell = a_sample * float(bars_count);
     int bar = int(floor(cell));
     bar = clamp(bar, 0, bars_count - 1);
     float f = fract(cell);
