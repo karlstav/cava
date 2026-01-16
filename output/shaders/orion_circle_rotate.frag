@@ -86,9 +86,16 @@ void main() {
 
     float fill = float(bar_width) / max(float(bar_width + bar_spacing), 1.0);
     float angular = abs(f - 0.5);
-    float df = fwidth(angular);
-    df = min(df, fill * 0.5);
+    float px = max(length(dFdx(p)), length(dFdy(p)));
+    float df = 0.35 * (float(bc) * px) / (tau * max(r, px));
+    float gap_half = (1.0 - fill) * 0.5;
+    float eps = 1.0 / (float(bc) * 2048.0);
+    float gap_cap = max(gap_half - eps, 0.0);
+    float df_cap = min(gap_cap, fill * 0.15);
+    df = min(df, max(df_cap, 1e-6));
     float angular_alpha = 1.0 - smoothstep(fill * 0.5 - df, fill * 0.5 + df, angular);
+    angular_alpha *= step(angular, fill * 0.5 + df);
+    angular_alpha *= step(0.01, angular_alpha);
 
     float y0 = clamp(bars[bar], 0.0, 1.0);
     float y1 = clamp(bars[bar_next], 0.0, 1.0);
@@ -97,15 +104,19 @@ void main() {
     float amp = y * (1.0 + 0.8 * (1.0 - y));
 
     float min_len = 1.0 / u_resolution.y;
-    float len = max(amp * max_len, min_len);
+    float max_len_cap = max(max_len - min_len, min_len);
+    float len = min(max(amp * max_len, min_len), max_len_cap);
     float act = smoothstep(0.0, min_len / max_len, amp);
 
-    float dr = fwidth(r);
+    float dr = clamp(px, min_len, 2.0 * min_len);
     float inner = smoothstep(base_radius - dr, base_radius + dr, r);
     float outer = 1.0 - smoothstep(base_radius + len - dr, base_radius + len + dr, r);
     float radial_alpha = inner * outer * act;
+    float outer_cap = 1.0 - smoothstep(base_radius + max_len - dr, base_radius + max_len + dr, r);
+    radial_alpha *= outer_cap;
 
     float alpha = angular_alpha * radial_alpha;
+    alpha *= step(0.0035, alpha);
 
     vec3 col;
     if (gradient_count == 0) {
