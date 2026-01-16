@@ -62,7 +62,8 @@ void main() {
         return;
     }
 
-    if (bars_count <= 0) {
+    int bc = min(bars_count, 512);
+    if (bc <= 0) {
         fragColor = vec4(bg_color, 1.0);
         return;
     }
@@ -75,17 +76,24 @@ void main() {
     float theta = atan(p.y, p.x);
     float a = fract((theta + pi) / tau);
 
-    float cell = a * float(bars_count);
+    float cell = a * float(bc);
     int bar = int(floor(cell));
-    bar = clamp(bar, 0, bars_count - 1);
+    bar = clamp(bar, 0, bc - 1);
+    int bar_next = bar + 1;
+    if (bar_next >= bc) {
+        bar_next = 0;
+    }
     float f = fract(cell);
 
     float fill = float(bar_width) / max(float(bar_width + bar_spacing), 1.0);
     float angular = abs(f - 0.5);
-    float df = fwidth(cell);
+    float df = fwidth(angular);
+    df = min(df, fill * 0.5);
     float angular_alpha = 1.0 - smoothstep(fill * 0.5 - df, fill * 0.5 + df, angular);
 
-    float y = clamp(bars[bar], 0.0, 1.0);
+    float y0 = clamp(bars[bar], 0.0, 1.0);
+    float y1 = clamp(bars[bar_next], 0.0, 1.0);
+    float y = mix(y0, y1, f);
     float amp = y * (1.0 + 0.8 * (1.0 - y));
 
     float min_len = 1.0 / u_resolution.y;
@@ -102,7 +110,7 @@ void main() {
     float core_energy = 0.0;
     int core_samples = 0;
 
-    int core_limit = min(bars_count, 64);
+    int core_limit = min(bc, 64);
     for (int i = 0; i < 64; i += 4) {
         if (i >= core_limit)
             break;
