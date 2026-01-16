@@ -1120,15 +1120,15 @@ Keys:\n\
 
                             if (can_soft_reload) {
                                 if (!streq(p_new.vertex_shader, p.vertex_shader) ||
-                                     !streq(p_new.fragment_shader, p.fragment_shader)) {
+                                    !streq(p_new.fragment_shader, p.fragment_shader)) {
                                     reload_sdl_glsl_shaders(p_new.vertex_shader,
                                                             p_new.fragment_shader);
                                 }
 
                                 init_sdl_glsl_surface(&width, &height, p_new.color, p_new.bcolor,
-                                                       p_new.bar_width, p_new.bar_spacing,
-                                                       p_new.gradient, p_new.gradient_count,
-                                                       p_new.gradient_colors);
+                                                      p_new.bar_width, p_new.bar_spacing,
+                                                      p_new.gradient, p_new.gradient_count,
+                                                      p_new.gradient_colors);
 
                                 p.sens = p_new.sens;
                                 p.framerate = p_new.framerate;
@@ -1179,8 +1179,8 @@ Keys:\n\
 
                             if (can_soft_reload) {
                                 init_sdl_surface(&width, &height, p_new.color, p_new.bcolor,
-                                                  p_new.gradient, p_new.gradient_count,
-                                                  p_new.gradient_colors);
+                                                 p_new.gradient, p_new.gradient_count,
+                                                 p_new.gradient_colors);
 
                                 p.sens = p_new.sens;
                                 p.framerate = p_new.framerate;

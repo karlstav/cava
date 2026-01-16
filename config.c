@@ -102,11 +102,11 @@ const char *default_theme_data[NUMBER_OF_THEMES] = {gsolarized_darkData, gtricol
 
 // name of the installed shader file, technically does not have to be the same as in the source
 const char *default_shader_name[NUMBER_OF_SHADERS] = {
-    "northern_lights.frag", "pass_through.vert",
-    "bar_spectrum.frag",    "winamp_line_style_spectrum.frag",
-    "spectrogram.frag",     "eye_of_phi.frag",
-    "orion_circle.frag",    "orion_circle_rotate.frag",
-    "orion_saturn_subring.frag",    "orion_saturn_core.frag"};
+    "northern_lights.frag",      "pass_through.vert",
+    "bar_spectrum.frag",         "winamp_line_style_spectrum.frag",
+    "spectrogram.frag",          "eye_of_phi.frag",
+    "orion_circle.frag",         "orion_circle_rotate.frag",
+    "orion_saturn_subring.frag", "orion_saturn_core.frag"};
 const char *default_theme_name[NUMBER_OF_THEMES] = {"solarized_dark", "tricolor"};
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
