@@ -37,6 +37,9 @@ cava_win/meson-private
 *.orig
 *.rej
 
+# generate by make distcheck
+*.tar.gz
+
 !.codespellrc
 !.github/
 !.github/**

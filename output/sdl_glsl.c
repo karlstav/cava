@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "../util.h"
 
@@ -120,6 +121,7 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
         exit(1);
     }
 
+    glDisable(GL_BLEND);
     glClearColor(0.f, 0.f, 0.f, 1.f);
 
     GLfloat vertexData[] = {-1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f};

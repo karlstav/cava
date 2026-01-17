@@ -150,6 +150,5 @@ void main() {
 
     vec3 col = mix(bg_color, col_ring, ring_alpha);
     col = mix(col, col_core, core_alpha);
-
     fragColor = vec4(col, 1.0);
 }
