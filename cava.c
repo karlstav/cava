@@ -139,6 +139,170 @@ static bool get_file_state(const char *path, time_t *mtime, long long *size) {
     return true;
 }
 
+#if defined(SDL_GLSL) || defined(SDL)
+static void update_frame_timing(const struct config_params *p, int *effective_framerate,
+                                long long *frame_time_ns, int *frame_time_msec,
+                                struct timespec *framerate_timer) {
+    *effective_framerate = p->framerate;
+    if (*effective_framerate <= 0)
+        *effective_framerate = 60;
+
+    *frame_time_ns = (long long)(1000000000.0 / (double)*effective_framerate);
+    if (*frame_time_ns < 1)
+        *frame_time_ns = 1;
+
+    *frame_time_msec = (int)(*frame_time_ns / 1000000LL);
+    if (*frame_time_msec < 1)
+        *frame_time_msec = 1;
+
+    framerate_timer->tv_sec = *frame_time_ns / 1000000000LL;
+    framerate_timer->tv_nsec = *frame_time_ns % 1000000000LL;
+}
+
+#ifdef SDL_GLSL
+static bool try_soft_reload_sdl_glsl(char *configPath, int audio_channels, struct config_params *p,
+                                     int *width, int *height, bool *resizeTerminal,
+                                     bool *has_config_state) {
+    struct config_params p_new = {0};
+    struct error_s error;
+    error.length = 0;
+    if (load_config(configPath, &p_new, &error)) {
+        if (audio_channels == 1) {
+            p_new.stereo = 0;
+            p_new.split_stereo = 0;
+        }
+
+        bool can_soft_reload = true;
+        can_soft_reload &= (p_new.output == p->output);
+        can_soft_reload &= (p_new.input == p->input);
+        can_soft_reload &= (p_new.waveform == p->waveform);
+        can_soft_reload &= (p_new.stereo == p->stereo);
+        can_soft_reload &= (p_new.split_stereo == p->split_stereo);
+        can_soft_reload &= (p_new.reverse == p->reverse);
+        can_soft_reload &= (p_new.orientation == p->orientation);
+        can_soft_reload &= (p_new.fixedbars == p->fixedbars);
+        can_soft_reload &= (p_new.lower_cut_off == p->lower_cut_off);
+        can_soft_reload &= (p_new.upper_cut_off == p->upper_cut_off);
+        can_soft_reload &= (p_new.monstercat == p->monstercat);
+        can_soft_reload &= (p_new.waves == p->waves);
+        can_soft_reload &= (p_new.noise_reduction == p->noise_reduction);
+        can_soft_reload &= (p_new.userEQ_enabled == p->userEQ_enabled);
+        if (p_new.userEQ_enabled)
+            can_soft_reload = false;
+        can_soft_reload &= (p_new.sdl_width == p->sdl_width);
+        can_soft_reload &= (p_new.sdl_height == p->sdl_height);
+        can_soft_reload &= (p_new.sdl_x == p->sdl_x);
+        can_soft_reload &= (p_new.sdl_y == p->sdl_y);
+        can_soft_reload &= (p_new.sdl_full_screen == p->sdl_full_screen);
+        can_soft_reload &= (strcmp(p_new.audio_source, p->audio_source) == 0);
+        can_soft_reload &= (strcmp(p_new.vertex_shader, p->vertex_shader) == 0);
+        can_soft_reload &= (strcmp(p_new.fragment_shader, p->fragment_shader) == 0);
+
+        if (can_soft_reload) {
+            bool layout_changed =
+                (p_new.bar_width != p->bar_width) || (p_new.bar_spacing != p->bar_spacing);
+
+            init_sdl_glsl_surface(width, height, p_new.color, p_new.bcolor, p_new.bar_width,
+                                  p_new.bar_spacing, p_new.gradient, p_new.gradient_count,
+                                  p_new.gradient_colors);
+
+            p->sens = p_new.sens;
+            p->framerate = p_new.framerate;
+            p->continuous_rendering = p_new.continuous_rendering;
+            p->bar_width = p_new.bar_width;
+            p->bar_spacing = p_new.bar_spacing;
+            p->sdl_glsl_gain = p_new.sdl_glsl_gain;
+            p->gradient = p_new.gradient;
+            p->gradient_count = p_new.gradient_count;
+
+            if (layout_changed)
+                *resizeTerminal = true;
+
+            free_config(&p_new);
+            return true;
+        }
+    } else {
+        fprintf(stderr, "Error loading config. %s", error.message);
+        *has_config_state = false;
+        free_config(&p_new);
+        return true;
+    }
+
+    free_config(&p_new);
+    return false;
+}
+#endif
+
+#ifdef SDL
+static bool try_soft_reload_sdl(char *configPath, int audio_channels, struct config_params *p,
+                                int *width, int *height, bool *resizeTerminal,
+                                bool *has_config_state) {
+    struct config_params p_new = {0};
+    struct error_s error;
+    error.length = 0;
+    if (load_config(configPath, &p_new, &error)) {
+        if (audio_channels == 1) {
+            p_new.stereo = 0;
+            p_new.split_stereo = 0;
+        }
+
+        bool can_soft_reload = true;
+        can_soft_reload &= (p_new.output == p->output);
+        can_soft_reload &= (p_new.input == p->input);
+        can_soft_reload &= (p_new.waveform == p->waveform);
+        can_soft_reload &= (p_new.stereo == p->stereo);
+        can_soft_reload &= (p_new.split_stereo == p->split_stereo);
+        can_soft_reload &= (p_new.reverse == p->reverse);
+        can_soft_reload &= (p_new.orientation == p->orientation);
+        can_soft_reload &= (p_new.fixedbars == p->fixedbars);
+        can_soft_reload &= (p_new.lower_cut_off == p->lower_cut_off);
+        can_soft_reload &= (p_new.upper_cut_off == p->upper_cut_off);
+        can_soft_reload &= (p_new.monstercat == p->monstercat);
+        can_soft_reload &= (p_new.waves == p->waves);
+        can_soft_reload &= (p_new.noise_reduction == p->noise_reduction);
+        can_soft_reload &= (p_new.userEQ_enabled == p->userEQ_enabled);
+        if (p_new.userEQ_enabled)
+            can_soft_reload = false;
+        can_soft_reload &= (p_new.sdl_width == p->sdl_width);
+        can_soft_reload &= (p_new.sdl_height == p->sdl_height);
+        can_soft_reload &= (p_new.sdl_x == p->sdl_x);
+        can_soft_reload &= (p_new.sdl_y == p->sdl_y);
+        can_soft_reload &= (p_new.sdl_full_screen == p->sdl_full_screen);
+        can_soft_reload &= (strcmp(p_new.audio_source, p->audio_source) == 0);
+
+        if (can_soft_reload) {
+            bool layout_changed =
+                (p_new.bar_width != p->bar_width) || (p_new.bar_spacing != p->bar_spacing);
+
+            init_sdl_surface(width, height, p_new.color, p_new.bcolor, p_new.gradient,
+                             p_new.gradient_count, p_new.gradient_colors);
+
+            p->sens = p_new.sens;
+            p->framerate = p_new.framerate;
+            p->bar_width = p_new.bar_width;
+            p->bar_spacing = p_new.bar_spacing;
+            p->gradient = p_new.gradient;
+            p->gradient_count = p_new.gradient_count;
+
+            if (layout_changed)
+                *resizeTerminal = true;
+
+            free_config(&p_new);
+            return true;
+        }
+    } else {
+        fprintf(stderr, "Error loading config. %s", error.message);
+        *has_config_state = false;
+        free_config(&p_new);
+        return true;
+    }
+
+    free_config(&p_new);
+    return false;
+}
+#endif
+#endif
+
 // these variables are used only in main, but making them global
 // will allow us to not free them on exit without ASan complaining
 struct config_params p = {0};
@@ -1078,6 +1242,28 @@ Keys:\n\
                 ch = 0;
 
                 if (should_reload) {
+#if defined(SDL_GLSL) || defined(SDL)
+                    bool soft_reloaded = false;
+#ifdef SDL_GLSL
+                    if (!soft_reloaded && !should_quit && output_mode == OUTPUT_SDL_GLSL)
+                        soft_reloaded =
+                            try_soft_reload_sdl_glsl(configPath, audio_channels, &p, &width,
+                                                     &height, &resizeTerminal, &has_config_state);
+#endif
+#ifdef SDL
+                    if (!soft_reloaded && !should_quit && output_mode == OUTPUT_SDL)
+                        soft_reloaded =
+                            try_soft_reload_sdl(configPath, audio_channels, &p, &width, &height,
+                                                &resizeTerminal, &has_config_state);
+#endif
+                    if (soft_reloaded) {
+                        should_reload = 0;
+                        update_frame_timing(&p, &effective_framerate, &frame_time_ns,
+                                            &frame_time_msec, &framerate_timer);
+                        continue;
+                    }
+#endif
+
                     reloadConf = true;
                     resizeTerminal = true;
                     should_reload = 0;
