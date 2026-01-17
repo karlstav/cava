@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MIT
-// Author: rezky_nightky <with.rezky@gmail.com>
+// SPDX-FileCopyrightText: 2026 rezky_nightky <with.rezky@gmail.com>
+
+// Rotate Orion
+
 #version 330
 
 in vec2 fragCoord;
@@ -21,10 +24,10 @@ uniform vec3 gradient_colors[8];
 
 uniform float shader_time;
 
-uniform sampler2D inputTexture;
-
 vec3 normalize_C(float y, vec3 col_1, vec3 col_2, float y_min, float y_max) {
-    float yr = (y - y_min) / (y_max - y_min);
+    const float EPS = 0.0001;
+    float yr = (y - y_min) / max(y_max - y_min, EPS);
+    yr = clamp(yr, 0.0, 1.0);
     return col_1 * (1.0 - yr) + col_2 * yr;
 }
 
@@ -54,41 +57,72 @@ void main() {
     float a = (theta + pi) / tau;
     a = fract(a);
 
-    if (bars_count <= 0) {
+    int bc = min(bars_count, 512);
+    if (bc <= 0) {
         fragColor = vec4(bg_color, 1.0);
         return;
     }
 
-    float speed = 0.25;
-    float sweep_pos = fract(shader_time * speed);
+    // Note: rotation is achieved by phase-shifting bar sampling, not by rotating geometry.
+    float rotate_speed = 0.10;
+    float t = fract(shader_time * 0.1);
+    float phase = fract(t * (rotate_speed / 0.1));
+
+    float sweep_speed = 0.12;
+    float sweep_pos = fract(t * (sweep_speed / 0.1));
     float da = abs(a - sweep_pos);
     da = min(da, 1.0 - da);
     float sweep = 1.0 - smoothstep(0.0, 0.08 + fwidth(a), da);
 
-    float cell = a * float(bars_count);
+    float a_sample = fract(a + phase);
+
+    float cell = a_sample * float(bc);
     int bar = int(floor(cell));
-    bar = clamp(bar, 0, bars_count - 1);
+    bar = clamp(bar, 0, bc - 1);
+    int bar_next = bar + 1;
+    if (bar_next >= bc) {
+        bar_next = 0;
+    }
     float f = fract(cell);
 
     float fill = float(bar_width) / max(float(bar_width + bar_spacing), 1.0);
     float angular = abs(f - 0.5);
-    float df = fwidth(cell);
+    float px = max(length(dFdx(p)), length(dFdy(p)));
+    float df = 0.35 * (float(bc) * px) / (tau * max(r, px));
+    float gap_half = (1.0 - fill) * 0.5;
+    float eps = 1.0 / (float(bc) * 2048.0);
+    float gap_cap = max(gap_half - eps, 0.0);
+    float df_cap = min(gap_cap, fill * 0.15);
+    df = min(df, max(df_cap, 1e-6));
     float angular_alpha = 1.0 - smoothstep(fill * 0.5 - df, fill * 0.5 + df, angular);
+    angular_alpha *= step(angular, fill * 0.5 + df);
+    angular_alpha *= step(0.01, angular_alpha);
 
-    float y = clamp(bars[bar], 0.0, 1.0);
+    float y0 = clamp(bars[bar], 0.0, 1.0);
+    float y1 = clamp(bars[bar_next], 0.0, 1.0);
+    float y = mix(y0, y1, f);
 
     float amp = y * (1.0 + 0.8 * (1.0 - y));
 
     float min_len = 1.0 / u_resolution.y;
-    float len = max(amp * max_len, min_len);
+    float max_len_cap = max(max_len - min_len, min_len);
+    float len = min(max(amp * max_len, min_len), max_len_cap);
     float act = smoothstep(0.0, min_len / max_len, amp);
 
-    float dr = fwidth(r);
+    float dr = clamp(px, min_len, 2.0 * min_len);
     float inner = smoothstep(base_radius - dr, base_radius + dr, r);
     float outer = 1.0 - smoothstep(base_radius + len - dr, base_radius + len + dr, r);
     float radial_alpha = inner * outer * act;
+    float outer_cap = 1.0 - smoothstep(base_radius + max_len - dr, base_radius + max_len + dr, r);
+    radial_alpha *= outer_cap;
 
     float alpha = angular_alpha * radial_alpha;
+    alpha *= step(0.0035, alpha);
+
+    if (alpha == 0.0) {
+        fragColor = vec4(bg_color, 1.0);
+        return;
+    }
 
     vec3 col;
     if (gradient_count == 0) {

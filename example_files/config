@@ -225,6 +225,10 @@
 # Shaders for sdl_glsl, located in $HOME/.config/cava/shaders
 ; vertex_shader = pass_through.vert
 ; fragment_shader = bar_spectrum.frag
+; fragment_shader = orion_circle.frag
+; fragment_shader = orion_circle_rotate.frag
+; fragment_shader = orion_saturn_subring.frag
+; fragment_shader = orion_saturn_core.frag
 
 # For glsl output mode, keep rendering even if no audio. 1 = on, 0 = off. Default: 0
 # Enable for animated shaders so time-based effects keep updating.
