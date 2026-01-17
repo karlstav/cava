@@ -1,5 +1,8 @@
 config file for cava is created in "%USERPROFILE%\.config\cava" upon first launch
 
+The installation directory has been added to your PATH environment variable.
+You may need to restart your terminal or log out and log back in for the 'cava' command to work.
+
 you need to install Visual C++ redistributable if you do not already have it:
 
 https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist

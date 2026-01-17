@@ -46,6 +46,10 @@ Source: "packages\sdl2.redist.2.0.5\build\native\bin\x64\dynamic\SDL2.dll"; Dest
 [Icons]
 Name: "{group}\cava"; Filename: "{app}\cava.exe"
 
+[Registry]
+; Add installation directory to user PATH environment variable
+Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"
+
 [Run]
 Filename: "{app}\cava.exe"; Description: "{cm:LaunchProgram,cava}"; Flags: nowait postinstall skipifsilent
 
