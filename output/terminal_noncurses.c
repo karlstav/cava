@@ -79,14 +79,28 @@ struct colors parse_color(char *color_string) {
 // general: cleanup
 void free_terminal_noncurses(void) {
     free(frame_buffer);
+    frame_buffer = NULL;
     free(ttyframe_buffer);
+    ttyframe_buffer = NULL;
     free(spacestring);
+    spacestring = NULL;
     free(ttyspacestring);
+    ttyspacestring = NULL;
     for (int i = 0; i < 8; i++) {
         free(barstring[i]);
         free(top_barstring[i]);
         free(ttybarstring[i]);
+        barstring[i] = NULL;
+        top_barstring[i] = NULL;
+        ttybarstring[i] = NULL;
     }
+
+    free(gradient_colors);
+    gradient_colors = NULL;
+    free(horizontal_gradient_colors);
+    horizontal_gradient_colors = NULL;
+    free(twodim_gradient_colors);
+    twodim_gradient_colors = NULL;
 }
 
 int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg_color_string,
@@ -98,22 +112,24 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
 
     free_terminal_noncurses();
 
-    if (gradient)
-        free(gradient_colors);
-    if (horizontal_gradient)
-        free(horizontal_gradient_colors);
-    if (gradient && horizontal_gradient)
-        free(twodim_gradient_colors);
-
     if (tty) {
 
         ttybuf_length = sizeof(char) * width * lines * 10;
         ttyframe_buffer = (char *)malloc(ttybuf_length);
         ttyspacestring = (char *)malloc(sizeof(char) * (bar_width + 1));
 
+        if (ttyframe_buffer == NULL || ttyspacestring == NULL) {
+            perror("malloc");
+            exit(EXIT_FAILURE);
+        }
+
         // clearing barstrings
         for (int n = 0; n < 8; n++) {
             ttybarstring[n] = (char *)malloc(sizeof(char) * (bar_width + 1));
+            if (ttybarstring[n] == NULL) {
+                perror("malloc");
+                exit(EXIT_FAILURE);
+            }
             ttybarstring[n][0] = '\0';
         }
         ttyspacestring[0] = '\0';
@@ -137,11 +153,24 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
         frame_buffer = (wchar_t *)malloc(buf_length);
         spacestring = (wchar_t *)malloc(WCHAR_SIZE * (bar_width + 1));
 
+        if (frame_buffer == NULL || spacestring == NULL) {
+            perror("malloc");
+            exit(EXIT_FAILURE);
+        }
+
         // clearing barstrings
         for (int n = 0; n < 8; n++) {
             barstring[n] = (wchar_t *)malloc(WCHAR_SIZE * (bar_width + 1));
+            if (barstring[n] == NULL) {
+                perror("malloc");
+                exit(EXIT_FAILURE);
+            }
             barstring[n][0] = '\0';
             top_barstring[n] = (wchar_t *)malloc(WCHAR_SIZE * (bar_width + 1));
+            if (top_barstring[n] == NULL) {
+                perror("malloc");
+                exit(EXIT_FAILURE);
+            }
             top_barstring[n][0] = '\0';
         }
         spacestring[0] = '\0';
@@ -231,6 +260,10 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
         }
 
         gradient_colors = (struct colors *)malloc((lines * 2) * sizeof(struct colors));
+        if (gradient_colors == NULL) {
+            perror("malloc");
+            exit(EXIT_FAILURE);
+        }
 
         int individual_size = lines / (gradient_count - 1);
 
@@ -269,6 +302,10 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
 
         horizontal_gradient_colors =
             (struct colors *)malloc((number_of_bars) * sizeof(struct colors));
+        if (horizontal_gradient_colors == NULL) {
+            perror("malloc");
+            exit(EXIT_FAILURE);
+        }
 
         int individual_size = number_of_bars / (horizontal_gradient_count - 1);
 
@@ -303,6 +340,10 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
     if (horizontal_gradient && gradient) {
         twodim_gradient_colors =
             (struct colors *)malloc((number_of_bars * lines) * sizeof(struct colors));
+        if (twodim_gradient_colors == NULL) {
+            perror("malloc");
+            exit(EXIT_FAILURE);
+        }
         for (int i = 0; i < lines; i++) {
             float current_height = i / (float)lines;
             for (int n = 0; n < number_of_bars; n++) {
@@ -394,7 +435,7 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
     for (int current_line = lines - 1; current_line >= 0; current_line--) {
 
         if (orientation == ORIENT_BOTTOM) {
-            if (gradient & !horizontal_gradient) {
+            if (gradient && !horizontal_gradient) {
                 if (tty) {
                     cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[38;2;%d;%d;%dm",
                                    gradient_colors[current_line].rgb[0],
@@ -408,7 +449,7 @@ int draw_terminal_noncurses(int tty, int lines, int width, int number_of_bars, i
                 }
             }
         } else if (orientation == ORIENT_TOP) {
-            if (gradient & !horizontal_gradient) {
+            if (gradient && !horizontal_gradient) {
                 if (tty) {
                     cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "\033[38;2;%d;%d;%dm",
                                    gradient_colors[lines - current_line - 1].rgb[0],

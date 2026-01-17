@@ -241,8 +241,6 @@ int draw_terminal_ncurses(int is_tty, int dimension_value, int dimension_bar, in
         }
         if (LINES != terminal_height || COLS != terminal_width) {
             return TERMINAL_RESIZED;
-            if (x_axis_info)
-                dimension_value--;
         }
     }
 
@@ -252,7 +250,10 @@ int draw_terminal_ncurses(int is_tty, int dimension_value, int dimension_bar, in
         max_update_value = max(max_update_value, max(bars[bar], previous_frame[bar]));
     }
 
-    max_update_value = (max_update_value + num_bar_heights) / num_bar_heights;
+    max_update_value = (max_update_value + num_bar_heights - 1) / num_bar_heights;
+    if (max_update_value > max_value) {
+        max_update_value = max_value;
+    }
 
     for (int line = 0; line < max_update_value; line++) {
         if (gradient) {
