@@ -1141,8 +1141,8 @@ Keys:\n\
                             can_soft_reload &= streq(p_new.audio_source, p.audio_source);
 
                             if (can_soft_reload) {
-                                bool layout_changed =
-                                    (p_new.bar_width != p.bar_width) || (p_new.bar_spacing != p.bar_spacing);
+                                bool layout_changed = (p_new.bar_width != p.bar_width) ||
+                                                      (p_new.bar_spacing != p.bar_spacing);
 
                                 if (!streq(p_new.vertex_shader, p.vertex_shader) ||
                                     !streq(p_new.fragment_shader, p.fragment_shader)) {
@@ -1229,8 +1229,8 @@ Keys:\n\
                             can_soft_reload &= streq(p_new.audio_source, p.audio_source);
 
                             if (can_soft_reload) {
-                                bool layout_changed =
-                                    (p_new.bar_width != p.bar_width) || (p_new.bar_spacing != p.bar_spacing);
+                                bool layout_changed = (p_new.bar_width != p.bar_width) ||
+                                                      (p_new.bar_spacing != p.bar_spacing);
 
                                 init_sdl_surface(&width, &height, p_new.color, p_new.bcolor,
                                                  p_new.gradient, p_new.gradient_count,
