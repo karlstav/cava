@@ -5,6 +5,19 @@ set -eu
 CLANG_FORMAT_BIN=${CLANG_FORMAT_BIN:-}
 USE_DOCKER=0
 
+DOCKER_UID=${SUDO_UID:-}
+DOCKER_GID=${SUDO_GID:-}
+if [ -z "$DOCKER_UID" ]; then
+    DOCKER_UID=$(id -u)
+fi
+if [ -z "$DOCKER_GID" ]; then
+    DOCKER_GID=$(id -g)
+fi
+
+if [ "$(id -u)" -eq 0 ] && [ -n "${SUDO_UID:-}" ]; then
+    echo "Warning: running via sudo can cause files to become owned by root. Prefer running 'make format' without sudo." >&2
+fi
+
 if [ -z "$CLANG_FORMAT_BIN" ]; then
     if command -v clang-format-9 >/dev/null 2>&1; then
         CLANG_FORMAT_BIN=clang-format-9
@@ -34,7 +47,7 @@ if [ -z "$FILES" ]; then
 fi
 
 if [ "$USE_DOCKER" -eq 1 ]; then
-    if docker run --rm --entrypoint sh -v "$(pwd)":/github/workspace -w /github/workspace \
+    if docker run --rm --user "$DOCKER_UID:$DOCKER_GID" --entrypoint sh -v "$(pwd)":/github/workspace -w /github/workspace \
         doozy/clang-format-lint:0.5 -c '/clang-format/clang-format9 -i "$@"' sh $FILES; then
         exit 0
     fi

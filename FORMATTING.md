@@ -59,6 +59,16 @@ If Docker fails to pull the image with something like:
 
 that is a network/registry connectivity problem. In that situation the scripts will fall back to your locally installed `clang-format` and print a warning.
 
+### File ownership
+
+Do not run `make format` with `sudo`. If you do, files may become owned by `root`.
+
+The Docker-based formatter is configured to run as your current user, so running `make format` normally should keep file ownership correct.
+
+If some files already became `root`-owned, from the repo root you can restore ownership with:
+
+`sudo chown -R $USER:$USER .`
+
 ## What does `make: *** ... format-check Error 1` mean?
 
 Exit code `1` means: at least one file is not formatted according to clang-format.

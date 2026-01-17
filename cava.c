@@ -147,7 +147,12 @@ static bool get_file_state(const char *path, uint64_t *mtime_ns, long long *size
 #else
     struct timespec ts;
 #if defined(__APPLE__)
-    ts = st.st_mtimespec;
+#if defined(__DARWIN_C_LEVEL) && __DARWIN_C_LEVEL >= 200809L
+    ts = st.st_mtim;
+#else
+    ts.tv_sec = st.st_mtime;
+    ts.tv_nsec = 0;
+#endif
 #elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
     ts = st.st_mtim;
 #else
