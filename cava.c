@@ -145,21 +145,18 @@ static bool get_file_state(const char *path, uint64_t *mtime_ns, long long *size
 #ifdef _WIN32
     *mtime_ns = (uint64_t)st.st_mtime * 1000000000ULL;
 #else
-    struct timespec ts;
 #if defined(__APPLE__)
-#if defined(__DARWIN_C_LEVEL) && __DARWIN_C_LEVEL >= 200809L
-    ts = st.st_mtim;
+    *mtime_ns = (uint64_t)st.st_mtime * 1000000000ULL;
 #else
-    ts.tv_sec = st.st_mtime;
-    ts.tv_nsec = 0;
-#endif
-#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+    struct timespec ts;
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
     ts = st.st_mtim;
 #else
     ts.tv_sec = st.st_mtime;
     ts.tv_nsec = 0;
 #endif
     *mtime_ns = (uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec;
+#endif
 #endif
 
     *size = (long long)st.st_size;
