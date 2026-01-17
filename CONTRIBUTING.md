@@ -8,6 +8,18 @@ Thank you for wanting to contribute to this project. In order to get the develop
 5. Pull request either gets approved or rejected.
 5. Github task is updated and everyone is notified.
 
+# Formatting
+
+Before opening a pull request, please run:
+
+`make format-check`
+
+If it fails, run:
+
+`make format`
+
+More details: see `FORMATTING.md`.
+
 # Coding conventions
 * 4 spaces for indents
 * curly braces on same line as if, while, for statements
