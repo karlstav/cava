@@ -34,8 +34,8 @@ if [ -z "$FILES" ]; then
 fi
 
 if [ "$USE_DOCKER" -eq 1 ]; then
-    if docker run --rm -v "$(pwd)":/github/workspace -w /github/workspace \
-        doozy/clang-format-lint:0.5 sh -c 'clang-format -i "$@"' sh $FILES; then
+    if docker run --rm --entrypoint sh -v "$(pwd)":/github/workspace -w /github/workspace \
+        doozy/clang-format-lint:0.5 -c '/clang-format/clang-format9 -i "$@"' sh $FILES; then
         exit 0
     fi
 

@@ -28,8 +28,14 @@ if [ -z "$CLANG_FORMAT_BIN" ]; then
 fi
 
 if [ "$USE_DOCKER" -eq 1 ]; then
-    if docker run --rm -v "$(pwd)":/github/workspace -w /github/workspace \
-        doozy/clang-format-lint:0.5 "." "./third_party" "h,c" "9"; then
+    if docker run --rm \
+        -e GITHUB_WORKSPACE=/github/workspace \
+        -e INPUT_SOURCE=. \
+        -e INPUT_EXCLUDE=./third_party \
+        -e INPUT_EXTENSIONS=h,c \
+        -e INPUT_CLANGFORMATVERSION=9 \
+        -v "$(pwd)":/github/workspace -w /github/workspace \
+        doozy/clang-format-lint:0.5; then
         rc=0
     else
         rc=$?
