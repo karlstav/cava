@@ -885,12 +885,14 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     p->sdl_full_screen = iniparser_getint(ini, "output:sdl_full_screen", 0);
 
     if (strcmp(outputMethod, "sdl") == 0 || strcmp(outputMethod, "sdl_glsl") == 0) {
-        if (p->color)
+        if (strcmp(p->color, "default") == 0) {
             free(p->color);
-        if (p->bcolor)
+            p->color = strdup("#33cccc");
+        }
+        if (strcmp(p->bcolor, "default") == 0) {
             free(p->bcolor);
-        p->color = strdup(iniparser_getstring(ini, "color:foreground", "#33cccc"));
-        p->bcolor = strdup(iniparser_getstring(ini, "color:background", "#111111"));
+            p->bcolor = strdup("#111111");
+        }
         p->bar_width = iniparser_getint(ini, "general:bar_width", 20);
         p->bar_spacing = iniparser_getint(ini, "general:bar_spacing", 5);
     }
@@ -1126,8 +1128,12 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     if (strcmp(outputMethod, "sdl") == 0 || strcmp(outputMethod, "sdl_glsl") == 0) {
         p->bar_width = GetPrivateProfileInt("general", "bar_width", 20, configPath);
         p->bar_spacing = GetPrivateProfileInt("general", "bar_spacing", 5, configPath);
-        GetPrivateProfileString("color", "foreground", "#33cccc", p->color, 9, configPath);
-        GetPrivateProfileString("color", "background", "#111111", p->bcolor, 9, configPath);
+        if (strcmp(p->color, "default") == 0) {
+            GetPrivateProfileString("color", "foreground", "#33cccc", p->color, 9, configPath);
+        }
+        if (strcmp(p->bcolor, "default") == 0) {
+            GetPrivateProfileString("color", "background", "#111111", p->bcolor, 9, configPath);
+        }
     }
 
     p->continuous_rendering = GetPrivateProfileInt("output", "continuous_rendering", 0, configPath);
