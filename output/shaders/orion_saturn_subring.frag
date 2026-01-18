@@ -70,11 +70,11 @@ void main() {
 
     float r = sqrt(r2);
 
-    float pi = radians(180.0);
-    float tau = pi * 2.0;
+    const float PI = 3.14159265358979323846;
+    const float TAU = 6.28318530717958647692;
 
     float theta = atan(p.y, p.x);
-    float a = fract((theta + pi) / tau);
+    float a = fract((theta + PI) / TAU);
 
     float cell = a * float(bc);
     int bar = int(floor(cell));
@@ -88,15 +88,14 @@ void main() {
     float fill = float(bar_width) / max(float(bar_width + bar_spacing), 1.0);
     float angular = abs(f - 0.5);
     float px = max(length(dFdx(p)), length(dFdy(p)));
-    float df = 0.35 * (float(bc) * px) / (tau * max(r, px));
+    float df = 0.35 * (float(bc) * px) / (TAU * max(r, px));
     float gap_half = (1.0 - fill) * 0.5;
     float eps = 1.0 / (float(bc) * 2048.0);
     float gap_cap = max(gap_half - eps, 0.0);
     float df_cap = min(gap_cap, fill * 0.15);
     df = min(df, max(df_cap, 1e-6));
     float angular_alpha = 1.0 - smoothstep(fill * 0.5 - df, fill * 0.5 + df, angular);
-    angular_alpha *= step(angular, fill * 0.5 + df);
-    angular_alpha *= step(0.01, angular_alpha);
+    angular_alpha *= smoothstep(0.0, 0.01, angular_alpha);
 
     float y0 = clamp(bars[bar], 0.0, 1.0);
     float y1 = clamp(bars[bar_next], 0.0, 1.0);
@@ -108,7 +107,7 @@ void main() {
     float len = min(max(amp * max_len, min_len), max_len_cap);
     float act = smoothstep(0.0, min_len / max_len, amp);
 
-    float dr = clamp(px, min_len, 2.0 * min_len);
+    float dr = clamp(px, min_len, 2.5 * min_len);
     float inner = smoothstep(base_radius - dr, base_radius + dr, r);
     float outer = 1.0 - smoothstep(base_radius + len - dr, base_radius + len + dr, r);
     float radial_alpha = inner * outer * act;
@@ -116,7 +115,7 @@ void main() {
     radial_alpha *= outer_cap;
 
     float ring_alpha = angular_alpha * radial_alpha;
-    ring_alpha *= step(0.0035, ring_alpha);
+    ring_alpha *= smoothstep(0.0, 0.0035, ring_alpha);
 
     float core_energy = 0.0;
     int core_samples = 0;
@@ -140,7 +139,7 @@ void main() {
                             core_radius + core_half_thickness + dr, r);
     float core_alpha = clamp(core, 0.0, 1.0) * core_act;
 
-    if (ring_alpha == 0.0 && core_alpha == 0.0) {
+    if (ring_alpha < 1e-5 && core_alpha < 1e-5) {
         fragColor = vec4(bg_color, 1.0);
         return;
     }

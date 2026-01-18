@@ -29,6 +29,22 @@ vec3 normalize_C(float y, vec3 col_1, vec3 col_2, float y_min, float y_max) {
     return col_1 * (1.0 - yr) + col_2 * yr;
 }
 
+vec3 gradient_map(float amp) {
+    if (gradient_count == 0) {
+        return fg_color;
+    }
+
+    if (gradient_count == 1) {
+        return gradient_colors[0];
+    }
+
+    int color = int(floor((gradient_count - 1) * amp));
+    color = clamp(color, 0, gradient_count - 2);
+    float y_min = float(color) / (gradient_count - 1.0);
+    float y_max = float(color + 1) / (gradient_count - 1.0);
+    return normalize_C(amp, gradient_colors[color], gradient_colors[color + 1], y_min, y_max);
+}
+
 void main() {
     vec2 p = fragCoord - vec2(0.5);
     p.x *= u_resolution.x / u_resolution.y;
@@ -49,10 +65,10 @@ void main() {
 
     float theta = atan(p.y, p.x);
 
-    float pi = radians(180.0);
-    float tau = pi * 2.0;
+    const float PI = 3.14159265358979323846;
+    const float TAU = 6.28318530717958647692;
 
-    float a = (theta + pi) / tau;
+    float a = (theta + PI) / TAU;
     a = fract(a);
 
     int bc = min(bars_count, 512);
@@ -73,15 +89,14 @@ void main() {
     float fill = float(bar_width) / max(float(bar_width + bar_spacing), 1.0);
     float angular = abs(f - 0.5);
     float px = max(length(dFdx(p)), length(dFdy(p)));
-    float df = 0.35 * (float(bc) * px) / (tau * max(r, px));
+    float df = 0.35 * (float(bc) * px) / (TAU * max(r, px));
     float gap_half = (1.0 - fill) * 0.5;
     float eps = 1.0 / (float(bc) * 2048.0);
     float gap_cap = max(gap_half - eps, 0.0);
     float df_cap = min(gap_cap, fill * 0.15);
     df = min(df, max(df_cap, 1e-6));
     float angular_alpha = 1.0 - smoothstep(fill * 0.5 - df, fill * 0.5 + df, angular);
-    angular_alpha *= step(angular, fill * 0.5 + df);
-    angular_alpha *= step(0.01, angular_alpha);
+    angular_alpha *= smoothstep(0.0, 0.01, angular_alpha);
 
     float y0 = clamp(bars[bar], 0.0, 1.0);
     float y1 = clamp(bars[bar_next], 0.0, 1.0);
@@ -94,7 +109,7 @@ void main() {
     float len = min(max(amp * max_len, min_len), max_len_cap);
     float act = smoothstep(0.0, min_len / max_len, amp);
 
-    float dr = clamp(px, min_len, 2.0 * min_len);
+    float dr = clamp(px, min_len, 2.5 * min_len);
     float inner = smoothstep(base_radius - dr, base_radius + dr, r);
     float outer = 1.0 - smoothstep(base_radius + len - dr, base_radius + len + dr, r);
     float radial_alpha = inner * outer * act;
@@ -102,28 +117,14 @@ void main() {
     radial_alpha *= outer_cap;
 
     float alpha = angular_alpha * radial_alpha;
-    alpha *= step(0.0035, alpha);
+    alpha *= smoothstep(0.0, 0.0035, alpha);
 
-    if (alpha == 0.0) {
+    if (alpha < 1e-5) {
         fragColor = vec4(bg_color, 1.0);
         return;
     }
 
-    vec3 col;
-    if (gradient_count == 0) {
-        col = fg_color;
-    } else {
-        if (gradient_count == 1) {
-            col = gradient_colors[0];
-        } else {
-            int color = int(floor((gradient_count - 1) * amp));
-            color = clamp(color, 0, gradient_count - 2);
-            float y_min = float(color) / (gradient_count - 1.0);
-            float y_max = float(color + 1) / (gradient_count - 1.0);
-            col =
-                normalize_C(amp, gradient_colors[color], gradient_colors[color + 1], y_min, y_max);
-        }
-    }
+    vec3 col = gradient_map(amp);
 
     fragColor = vec4(mix(bg_color, col, alpha), 1.0);
 }
