@@ -1078,6 +1078,173 @@ Keys:\n\
                 ch = 0;
 
                 if (should_reload) {
+#if defined(SDL_GLSL) || defined(SDL)
+                    bool soft_reloaded = false;
+#endif
+#ifdef SDL_GLSL
+                    if (!should_quit && output_mode == OUTPUT_SDL_GLSL) {
+                        struct config_params p_new = {0};
+                        struct error_s error;
+                        error.length = 0;
+                        if (load_config(configPath, &p_new, &error)) {
+                            if (audio_channels == 1) {
+                                p_new.stereo = 0;
+                                p_new.horizontal_stereo = 0;
+                            }
+
+                            bool can_soft_reload = true;
+                            can_soft_reload &= (p_new.output == p.output);
+                            can_soft_reload &= (p_new.input == p.input);
+                            can_soft_reload &= (p_new.waveform == p.waveform);
+                            can_soft_reload &= (p_new.stereo == p.stereo);
+                            can_soft_reload &= (p_new.horizontal_stereo == p.horizontal_stereo);
+                            can_soft_reload &= (p_new.reverse == p.reverse);
+                            can_soft_reload &= (p_new.orientation == p.orientation);
+                            can_soft_reload &= (p_new.fixedbars == p.fixedbars);
+                            can_soft_reload &= (p_new.lower_cut_off == p.lower_cut_off);
+                            can_soft_reload &= (p_new.upper_cut_off == p.upper_cut_off);
+                            can_soft_reload &= (p_new.monstercat == p.monstercat);
+                            can_soft_reload &= (p_new.waves == p.waves);
+                            can_soft_reload &= (p_new.noise_reduction == p.noise_reduction);
+                            can_soft_reload &= (p_new.userEQ_enabled == p.userEQ_enabled);
+                            if (p_new.userEQ_enabled)
+                                can_soft_reload = false;
+                            can_soft_reload &= (p_new.sdl_width == p.sdl_width);
+                            can_soft_reload &= (p_new.sdl_height == p.sdl_height);
+                            can_soft_reload &= (p_new.sdl_x == p.sdl_x);
+                            can_soft_reload &= (p_new.sdl_y == p.sdl_y);
+                            can_soft_reload &= (p_new.sdl_full_screen == p.sdl_full_screen);
+                            can_soft_reload &= (strcmp(p_new.audio_source, p.audio_source) == 0);
+                            can_soft_reload &= (strcmp(p_new.vertex_shader, p.vertex_shader) == 0);
+                            can_soft_reload &=
+                                (strcmp(p_new.fragment_shader, p.fragment_shader) == 0);
+
+                            if (can_soft_reload) {
+                                bool layout_changed = (p_new.bar_width != p.bar_width) ||
+                                                      (p_new.bar_spacing != p.bar_spacing);
+
+                                init_sdl_glsl_surface(&width, &height, p_new.color, p_new.bcolor,
+                                                      p_new.bar_width, p_new.bar_spacing,
+                                                      p_new.gradient, p_new.gradient_count,
+                                                      p_new.gradient_colors);
+
+                                p.sens = p_new.sens;
+                                p.framerate = p_new.framerate;
+                                p.continuous_rendering = p_new.continuous_rendering;
+                                p.bar_width = p_new.bar_width;
+                                p.bar_spacing = p_new.bar_spacing;
+                                p.sdl_glsl_gain = p_new.sdl_glsl_gain;
+                                p.gradient = p_new.gradient;
+                                p.gradient_count = p_new.gradient_count;
+
+                                if (layout_changed)
+                                    resizeTerminal = true;
+
+#if defined(SDL_GLSL) || defined(SDL)
+                                soft_reloaded = true;
+#endif
+                            }
+                        } else {
+                            fprintf(stderr, "Error loading config. %s", error.message);
+                            has_config_state = false;
+#if defined(SDL_GLSL) || defined(SDL)
+                            soft_reloaded = true;
+#endif
+                        }
+                        free_config(&p_new);
+                    }
+#endif
+#ifdef SDL
+                    if (!should_quit && output_mode == OUTPUT_SDL) {
+                        struct config_params p_new = {0};
+                        struct error_s error;
+                        error.length = 0;
+                        if (load_config(configPath, &p_new, &error)) {
+                            if (audio_channels == 1) {
+                                p_new.stereo = 0;
+                                p_new.horizontal_stereo = 0;
+                            }
+
+                            bool can_soft_reload = true;
+                            can_soft_reload &= (p_new.output == p.output);
+                            can_soft_reload &= (p_new.input == p.input);
+                            can_soft_reload &= (p_new.waveform == p.waveform);
+                            can_soft_reload &= (p_new.stereo == p.stereo);
+                            can_soft_reload &= (p_new.horizontal_stereo == p.horizontal_stereo);
+                            can_soft_reload &= (p_new.reverse == p.reverse);
+                            can_soft_reload &= (p_new.orientation == p.orientation);
+                            can_soft_reload &= (p_new.fixedbars == p.fixedbars);
+                            can_soft_reload &= (p_new.lower_cut_off == p.lower_cut_off);
+                            can_soft_reload &= (p_new.upper_cut_off == p.upper_cut_off);
+                            can_soft_reload &= (p_new.monstercat == p.monstercat);
+                            can_soft_reload &= (p_new.waves == p.waves);
+                            can_soft_reload &= (p_new.noise_reduction == p.noise_reduction);
+                            can_soft_reload &= (p_new.userEQ_enabled == p.userEQ_enabled);
+                            if (p_new.userEQ_enabled)
+                                can_soft_reload = false;
+                            can_soft_reload &= (p_new.sdl_width == p.sdl_width);
+                            can_soft_reload &= (p_new.sdl_height == p.sdl_height);
+                            can_soft_reload &= (p_new.sdl_x == p.sdl_x);
+                            can_soft_reload &= (p_new.sdl_y == p.sdl_y);
+                            can_soft_reload &= (p_new.sdl_full_screen == p.sdl_full_screen);
+                            can_soft_reload &= (strcmp(p_new.audio_source, p.audio_source) == 0);
+
+                            if (can_soft_reload) {
+                                bool layout_changed = (p_new.bar_width != p.bar_width) ||
+                                                      (p_new.bar_spacing != p.bar_spacing);
+
+                                init_sdl_surface(&width, &height, p_new.color, p_new.bcolor,
+                                                 p_new.gradient, p_new.gradient_count,
+                                                 p_new.gradient_colors);
+
+                                p.sens = p_new.sens;
+                                p.framerate = p_new.framerate;
+                                p.bar_width = p_new.bar_width;
+                                p.bar_spacing = p_new.bar_spacing;
+                                p.gradient = p_new.gradient;
+                                p.gradient_count = p_new.gradient_count;
+
+                                if (layout_changed)
+                                    resizeTerminal = true;
+
+#if defined(SDL_GLSL) || defined(SDL)
+                                soft_reloaded = true;
+#endif
+                            }
+                        } else {
+                            fprintf(stderr, "Error loading config. %s", error.message);
+                            has_config_state = false;
+#if defined(SDL_GLSL) || defined(SDL)
+                            soft_reloaded = true;
+#endif
+                        }
+                        free_config(&p_new);
+                    }
+#endif
+
+#if defined(SDL_GLSL) || defined(SDL)
+                    if (soft_reloaded) {
+                        should_reload = 0;
+
+                        effective_framerate = p.framerate;
+                        if (effective_framerate <= 0)
+                            effective_framerate = 60;
+
+                        frame_time_ns = (long long)(1000000000.0 / (double)effective_framerate);
+                        if (frame_time_ns < 1)
+                            frame_time_ns = 1;
+
+                        frame_time_msec = (int)(frame_time_ns / 1000000LL);
+                        if (frame_time_msec < 1)
+                            frame_time_msec = 1;
+
+                        framerate_timer.tv_sec = frame_time_ns / 1000000000LL;
+                        framerate_timer.tv_nsec = frame_time_ns % 1000000000LL;
+
+                        continue;
+                    }
+#endif
+
                     reloadConf = true;
                     resizeTerminal = true;
                     should_reload = 0;
