@@ -52,8 +52,8 @@ void *input_shmem(void *data) {
     } else {
         mmap_area = mmap(NULL, sizeof(vis_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
         if ((intptr_t)mmap_area == -1) {
-            fprintf(stderr,
-                    "mmap failed - check if squeezelite is running with visualization enabled\n");
+            fprintf(stderr, "mmap failed - check if squeezelite is running with "
+                            "visualization enabled\n");
             exit(EXIT_FAILURE);
         }
     }

@@ -25,9 +25,10 @@ void *input_sndio(void *data) {
         goto cleanup;
     }
 
-    // The recommended approach to negotiate device parameters is to try to set them with preferred
-    // values and check what sndio returns for actual supported values. If CAVA doesn't support the
-    // final values for rate and channels then it will complain later. We test the resulting format
+    // The recommended approach to negotiate device parameters is to try to set
+    // them with preferred values and check what sndio returns for actual
+    // supported values. If CAVA doesn't support the final values for rate and
+    // channels then it will complain later. We test the resulting format
     // explicitly here.
     sio_initpar(&par);
     par.bits = audio->format;
@@ -66,8 +67,8 @@ void *input_sndio(void *data) {
     // Parameters finalized. Signal main thread.
     signal_threadparams(audio);
 
-    // Get the correct number of bytes per sample. Sndio uses 32 bits for 24bit, thankfully SIO_BPS
-    // handles this.
+    // Get the correct number of bytes per sample. Sndio uses 32 bits for 24bit,
+    // thankfully SIO_BPS handles this.
     bytes = SIO_BPS(audio->format);
     buf_size = audio->input_buffer_size * bytes;
 

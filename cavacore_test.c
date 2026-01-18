@@ -56,7 +56,8 @@ void main() {
     printf("running in simulation mode, no audio input\n\n");
 #endif
 
-    printf("planning visualization with %d bars per channel, %d rate, %d channels, autosens, "
+    printf("planning visualization with %d bars per channel, %d rate, %d "
+           "channels, autosens, "
            "%.2f noise reduction, %d - %d MHz bandwidth.\n",
            bars_per_channel, rate, channels, noise_reduction, low_cut_off, high_cut_off);
 
@@ -96,9 +97,9 @@ void main() {
         pthread_mutex_unlock(&audio.lock);
         nanosleep(&framerate_timer, NULL);
 #else
-        // filling up 512*2 samples at a time, making sure the sinus wave is unbroken
-        // 200MHz in left channel, 2000MHz in right
-        // if we where using a proper audio source this would be replaced by a simple read function
+        // filling up 512*2 samples at a time, making sure the sinus wave is
+        // unbroken 200MHz in left channel, 2000MHz in right if we where using a
+        // proper audio source this would be replaced by a simple read function
         for (int n = 0; n < buffer_size / 2; n++) {
             cava_in[n * 2] = sin(2 * PI * 200 / rate * (n + (k * buffer_size / 2))) * 20000;
             cava_in[n * 2 + 1] = sin(2 * PI * 2000 / rate * (n + (k * buffer_size / 2))) * 20000;
@@ -123,7 +124,8 @@ void main() {
     }
     printf("MHz\n");
 
-    printf("last output right,  max value should be at 2000Hz in simulation mode:\n");
+    printf("last output right,  max value should be at 2000Hz in simulation "
+           "mode:\n");
     for (int i = 0; i < bars_per_channel; i++) {
         printf("%.3f \t", cava_out[i + bars_per_channel]);
     }

@@ -18,7 +18,7 @@
 
 #include <sys/stat.h>
 
-#define NUMBER_OF_SHADERS 8
+#define NUMBER_OF_SHADERS 10
 
 #define NUMBER_OF_THEMES 2
 
@@ -35,6 +35,8 @@
 #define IDR_EYE_OF_PHI_SHADER 107
 #define IDR_ORION_CIRCLE_SHADER 108
 #define IDR_ORION_CIRCLE_ROTATE_SHADER 109
+#define IDR_ORION_SATURN_SHADER 110
+#define IDR_ORION_CORE_SHADER 111
 
 #define IDR_SOLARIZED_DARK_THEME 501
 #define IDR_TRICOLOR_THEME 502
@@ -61,7 +63,8 @@ int default_shader_data[NUMBER_OF_SHADERS] = {
     IDR_NORTHERN_LIGHTS_SHADER, IDR_PASS_THROUGH_SHADER,
     IDR_BAR_SPECTRUM_SHADER,    IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER,
     IDR_SPECTROGRAM_SHADER,     IDR_EYE_OF_PHI_SHADER,
-    IDR_ORION_CIRCLE_SHADER,    IDR_ORION_CIRCLE_ROTATE_SHADER};
+    IDR_ORION_CIRCLE_SHADER,    IDR_ORION_CIRCLE_ROTATE_SHADER,
+    IDR_ORION_SATURN_SHADER,    IDR_ORION_CORE_SHADER};
 
 int default_theme_data[NUMBER_OF_THEMES] = {IDR_SOLARIZED_DARK_THEME, IDR_TRICOLOR_THEME};
 #else
@@ -78,6 +81,8 @@ INCTXT(spectrogram, "output/shaders/spectrogram.frag");
 INCTXT(eye_of_phi, "output/shaders/eye_of_phi.frag");
 INCTXT(orion_circle, "output/shaders/orion_circle.frag");
 INCTXT(orion_circle_rotate, "output/shaders/orion_circle_rotate.frag");
+INCTXT(orion_saturn, "output/shaders/orion_saturn_subring.frag");
+INCTXT(orion_core, "output/shaders/orion_saturn_core.frag");
 
 INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
 
@@ -89,17 +94,20 @@ const char *default_shader_data[NUMBER_OF_SHADERS] = {
     gnorthern_lightsfragData, gpass_throughvertData,
     gbar_spectrumData,        gwinamp_line_style_spectrumData,
     gspectrogramData,         geye_of_phiData,
-    gorion_circleData,        gorion_circle_rotateData};
+    gorion_circleData,        gorion_circle_rotateData,
+    gorion_saturnData,        gorion_coreData};
 
 const char *default_theme_data[NUMBER_OF_THEMES] = {gsolarized_darkData, gtricolorData};
 #endif // _WIN32
 
-// name of the installed shader file, technically does not have to be the same as in the source
+// name of the installed shader file, technically does not have to be the same
+// as in the source
 const char *default_shader_name[NUMBER_OF_SHADERS] = {
-    "northern_lights.frag", "pass_through.vert",
-    "bar_spectrum.frag",    "winamp_line_style_spectrum.frag",
-    "spectrogram.frag",     "eye_of_phi.frag",
-    "orion_circle.frag",    "orion_circle_rotate.frag"};
+    "northern_lights.frag",      "pass_through.vert",
+    "bar_spectrum.frag",         "winamp_line_style_spectrum.frag",
+    "spectrogram.frag",          "eye_of_phi.frag",
+    "orion_circle.frag",         "orion_circle_rotate.frag",
+    "orion_saturn_subring.frag", "orion_saturn_core.frag"};
 const char *default_theme_name[NUMBER_OF_THEMES] = {"solarized_dark", "tricolor"};
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
@@ -270,10 +278,10 @@ bool validate_colors(void *params, void *err) {
 
         for (int i = 0; i < p->gradient_count; i++) {
             if (!validate_color(p->gradient_colors[i], p, error)) {
-                write_errorf(
-                    error,
-                    "Gradient color %d is invalid. It must be HTML color of the form '#xxxxxx'.\n",
-                    i + 1);
+                write_errorf(error,
+                             "Gradient color %d is invalid. It must be HTML color of "
+                             "the form '#xxxxxx'.\n",
+                             i + 1);
                 return false;
             }
         }
@@ -291,10 +299,10 @@ bool validate_colors(void *params, void *err) {
 
         for (int i = 0; i < p->horizontal_gradient_count; i++) {
             if (!validate_color(p->horizontal_gradient_colors[i], p, error)) {
-                write_errorf(
-                    error,
-                    "Gradient color %d is invalid. It must be HTML color of the form '#xxxxxx'.\n",
-                    i + 1);
+                write_errorf(error,
+                             "Gradient color %d is invalid. It must be HTML color of "
+                             "the form '#xxxxxx'.\n",
+                             i + 1);
                 return false;
             }
         }
@@ -393,10 +401,10 @@ bool validate_config(struct config_params *p, struct error_s *error) {
             p->raw_format = FORMAT_BINARY;
             // checking bit format:
             if (p->bit_format != 8 && p->bit_format != 16) {
-                write_errorf(
-                    error,
-                    "bit format  %d is not supported, supported data formats are: '8' and '16'\n",
-                    p->bit_format);
+                write_errorf(error,
+                             "bit format  %d is not supported, supported data formats "
+                             "are: '8' and '16'\n",
+                             p->bit_format);
                 return false;
             }
         } else if (strcmp(p->data_format, "ascii") == 0) {
@@ -407,7 +415,8 @@ bool validate_config(struct config_params *p, struct error_s *error) {
             }
         } else {
             write_errorf(error,
-                         "data format %s is not supported, supported data formats are: 'binary' "
+                         "data format %s is not supported, supported data formats "
+                         "are: 'binary' "
                          "and 'ascii'\n",
                          p->data_format);
             return false;
@@ -475,8 +484,8 @@ bool validate_config(struct config_params *p, struct error_s *error) {
 
     if ((p->orientation != ORIENT_BOTTOM && p->output == OUTPUT_SDL &&
          (p->gradient != 0 || p->horizontal_gradient != 0))) {
-        write_errorf(error,
-                     "gradient in sdl is not supported with top, left or right orientation\n");
+        write_errorf(error, "gradient in sdl is not supported with top, left or "
+                            "right orientation\n");
         return false;
     }
 
@@ -521,10 +530,10 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     if (strcmp(channels, "stereo") == 0)
         p->stereo = 1;
     if (p->stereo == -1) {
-        write_errorf(
-            error,
-            "output channels %s is not supported, supported channels are: 'mono' and 'stereo'\n",
-            channels);
+        write_errorf(error,
+                     "output channels %s is not supported, supported channels are: "
+                     "'mono' and 'stereo'\n",
+                     channels);
         return false;
     }
 
@@ -572,8 +581,8 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     if (p->lower_cut_off == 0)
         p->lower_cut_off++;
     if (p->lower_cut_off > p->upper_cut_off) {
-        write_errorf(error,
-                     "lower cutoff frequency can't be higher than higher cutoff frequency\n");
+        write_errorf(error, "lower cutoff frequency can't be higher than higher "
+                            "cutoff frequency\n");
         return false;
     }
 

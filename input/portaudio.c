@@ -63,7 +63,8 @@ void *input_portaudio(void *audiodata) {
     audio = (struct audio_data *)audiodata;
 
     PaStreamParameters inputParameters;
-    PaStream *stream;
+    memset(&inputParameters, 0, sizeof(inputParameters));
+    PaStream *stream = NULL;
     PaError err = paNoError;
     paTestData data;
 
@@ -76,12 +77,14 @@ void *input_portaudio(void *audiodata) {
 
     // get portaudio device
     int deviceNum = -1, numOfDevices = Pa_GetDeviceCount();
+    if (numOfDevices < 0) {
+        fprintf(stderr, "Error: portaudio was unable to enumerate audio devices (%s)\n",
+                Pa_GetErrorText(numOfDevices));
+        signal_threadparams(audio);
+        signal_terminate(audio);
+        exit(EXIT_FAILURE);
+    }
     if (!strcmp(audio->source, "list")) {
-        if (numOfDevices < 0) {
-            fprintf(stderr, "Error: portaudio was unable to find a audio device! Code: 0x%x\n",
-                    numOfDevices);
-            exit(EXIT_FAILURE);
-        }
         for (int i = 0; i < numOfDevices; i++) {
             const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(i);
             printf("Device #%d: %s\n"
@@ -121,8 +124,16 @@ void *input_portaudio(void *audiodata) {
     }
     inputParameters.device = deviceNum;
     const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(deviceNum);
+    if (!deviceInfo) {
+        fprintf(stderr, "Error: portaudio could not read device info for device index %d\n",
+                deviceNum);
+        signal_threadparams(audio);
+        signal_terminate(audio);
+        exit(EXIT_FAILURE);
+    }
     if (deviceInfo->maxInputChannels == 0) {
-        fprintf(stderr, "Error: selected device has no input channels!\n Use \"list\" as source to "
+        fprintf(stderr, "Error: selected device has no input channels!\n Use "
+                        "\"list\" as source to "
                         "get a list of available sources.\n");
         exit(EXIT_FAILURE);
     }
@@ -139,7 +150,7 @@ void *input_portaudio(void *audiodata) {
         fprintf(stderr, "Error: failure in memory allocation!\n");
         exit(EXIT_FAILURE);
     } else
-        memset(data.recordedSamples, 0x00, 2 * data.maxFrameIndex);
+        memset(data.recordedSamples, 0x00, 2 * data.maxFrameIndex * sizeof(SAMPLE));
 
     double sampleRate = deviceInfo->defaultSampleRate;
     audio->rate = sampleRate;
@@ -170,12 +181,12 @@ void *input_portaudio(void *audiodata) {
         Pa_OpenStream(&stream, &inputParameters, NULL, sampleRate,
                       audio->input_buffer_size / audio->channels, paClipOff, recordCallback, &data);
     if (err != paNoError) {
-        fprintf(
-            stderr,
-            "Error: failure in opening stream (device: %d), (error: %s). Use \"list\" as source "
-            "to get a list of "
-            "available sources.\n",
-            deviceNum + 1, Pa_GetErrorText(err));
+        fprintf(stderr,
+                "Error: failure in opening stream (device: %d), (error: %s). Use "
+                "\"list\" as source "
+                "to get a list of "
+                "available sources.\n",
+                deviceNum + 1, Pa_GetErrorText(err));
         exit(EXIT_FAILURE);
     }
 
@@ -204,10 +215,13 @@ void *input_portaudio(void *audiodata) {
         }
 
         // check if it bailed
-        if (audio->terminate == 1)
+        if (audio->terminate == 1) {
+            Pa_StopStream(stream);
             break;
+        }
     }
     // close stream
+    Pa_StopStream(stream);
     if ((err = Pa_CloseStream(stream)) != paNoError) {
         fprintf(stderr, "Error: failure in closing stream (%s)\n", Pa_GetErrorText(err));
         exit(EXIT_FAILURE);

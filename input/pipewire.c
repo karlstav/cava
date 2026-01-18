@@ -154,7 +154,8 @@ void *input_pipewire(void *audiodata) {
     if (data.loop == NULL) {
         data.cava_audio->terminate = 1;
         sprintf(data.cava_audio->error_message,
-                __FILE__ ": Could not create main loop. Is your system running pipewire? Maybe try "
+                __FILE__ ": Could not create main loop. Is your system running "
+                         "pipewire? Maybe try "
                          "pulse input method instead.");
         return 0;
     }
@@ -241,7 +242,8 @@ void *input_pipewire(void *audiodata) {
     if (status < 0) {
         data.cava_audio->terminate = 1;
         sprintf(data.cava_audio->error_message,
-                __FILE__ ": Could not connect stream. Is your system running pipewire? Maybe try "
+                __FILE__ ": Could not connect stream. Is your system running "
+                         "pipewire? Maybe try "
                          "pulse input method instead.");
         return 0;
     }

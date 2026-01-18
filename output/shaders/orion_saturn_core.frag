@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2026 rezky_nightky <with.rezky@gmail.com>
 
-// Static Orion (non-rotating)
+// Orion Saturn core
 
 #version 330
 
@@ -52,30 +52,28 @@ void main() {
     float base_radius = 0.35;
     float max_len = 0.15;
     float pad = 2.0 / u_resolution.y;
-    float min_r = max(base_radius - pad, 0.0);
+
     float max_r = base_radius + max_len + pad;
 
     float r2 = dot(p, p);
-    if (r2 < min_r * min_r || r2 > max_r * max_r) {
+    if (r2 > max_r * max_r) {
         fragColor = vec4(bg_color, 1.0);
         return;
     }
-
-    float r = sqrt(r2);
-
-    float theta = atan(p.y, p.x);
-
-    const float PI = 3.14159265358979323846;
-    const float TAU = 6.28318530717958647692;
-
-    float a = (theta + PI) / TAU;
-    a = fract(a);
 
     int bc = min(bars_count, 512);
     if (bc <= 0) {
         fragColor = vec4(bg_color, 1.0);
         return;
     }
+
+    float r = sqrt(r2);
+
+    const float PI = 3.14159265358979323846;
+    const float TAU = 6.28318530717958647692;
+
+    float theta = atan(p.y, p.x);
+    float a = fract((theta + PI) / TAU);
 
     float cell = a * float(bc);
     int bar = int(floor(cell));
@@ -88,8 +86,8 @@ void main() {
 
     float fill = float(bar_width) / max(float(bar_width + bar_spacing), 1.0);
     float angular = abs(f - 0.5);
-    float px = max(length(dFdx(p)), length(dFdy(p)));
-    float df = 0.35 * (float(bc) * px) / (TAU * max(r, px));
+    float px_ang = max(length(dFdx(p)), length(dFdy(p)));
+    float df = 0.35 * (float(bc) * px_ang) / (TAU * max(r, px_ang));
     float gap_half = (1.0 - fill) * 0.5;
     float eps = 1.0 / (float(bc) * 2048.0);
     float gap_cap = max(gap_half - eps, 0.0);
@@ -101,7 +99,6 @@ void main() {
     float y0 = clamp(bars[bar], 0.0, 1.0);
     float y1 = clamp(bars[bar_next], 0.0, 1.0);
     float y = mix(y0, y1, f);
-
     float amp = y * (1.0 + 0.8 * (1.0 - y));
 
     float min_len = 1.0 / u_resolution.y;
@@ -109,22 +106,47 @@ void main() {
     float len = min(max(amp * max_len, min_len), max_len_cap);
     float act = smoothstep(0.0, min_len / max_len, amp);
 
-    float dr = clamp(px, min_len, 2.5 * min_len);
+    float dr = clamp(px_ang, min_len, 2.5 * min_len);
     float inner = smoothstep(base_radius - dr, base_radius + dr, r);
     float outer = 1.0 - smoothstep(base_radius + len - dr, base_radius + len + dr, r);
     float radial_alpha = inner * outer * act;
     float outer_cap = 1.0 - smoothstep(base_radius + max_len - dr, base_radius + max_len + dr, r);
     radial_alpha *= outer_cap;
 
-    float alpha = angular_alpha * radial_alpha;
-    alpha *= smoothstep(0.0, 0.0035, alpha);
+    float ring_alpha = angular_alpha * radial_alpha;
+    ring_alpha *= smoothstep(0.0, 0.0035, ring_alpha);
 
-    if (alpha < 1e-5) {
+    float core_energy = 0.0;
+    int core_samples = 0;
+
+    int core_limit = min(bc, 64);
+    for (int i = 0; i < core_limit; i += 2) {
+        core_energy += clamp(bars[i], 0.0, 1.0);
+        core_samples++;
+    }
+    core_energy /= max(float(core_samples), 1.0);
+
+    float core_amp = core_energy * (1.0 + 0.8 * (1.0 - core_energy));
+
+    float core_radius = mix(0.07, 0.25, clamp(core_amp * 1.1, 0.0, 1.0));
+
+    float px = 1.0 / u_resolution.y;
+    float core_edge = max(px * 1.5, 0.0015);
+    float core_act = smoothstep(0.0, 0.04, core_amp);
+
+    float core_feather = max(core_edge, dr);
+    float core_alpha = 1.0 - smoothstep(core_radius - core_feather, core_radius + core_feather, r);
+    core_alpha = clamp(core_alpha, 0.0, 1.0) * core_act;
+
+    if (ring_alpha < 1e-5 && core_alpha < 1e-5) {
         fragColor = vec4(bg_color, 1.0);
         return;
     }
 
-    vec3 col = gradient_map(amp);
+    vec3 col_core = gradient_map(core_amp);
+    vec3 col_ring = gradient_map(amp);
 
-    fragColor = vec4(mix(bg_color, col, alpha), 1.0);
+    vec3 col = mix(bg_color, col_core, core_alpha);
+    col = mix(col, col_ring, ring_alpha);
+    fragColor = vec4(col, 1.0);
 }

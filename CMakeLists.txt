@@ -40,7 +40,7 @@ elseif(WIN32)
 		cava_win/cava/cava.rc
 	)
 
-	target_compile_definitions(cava PRIVATE SDL SDL_GSL NDEBUG)
+	target_compile_definitions(cava PRIVATE SDL SDL_GLSL NDEBUG)
 	target_include_directories(cava PRIVATE ${GLEW_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS})
 	target_link_libraries(cava PRIVATE pthread shlwapi fftw3 GLEW::GLEW SDL2::SDL2)
 else()

@@ -24,8 +24,8 @@ struct jack_data {
 };
 
 static bool set_rate(struct jack_data *jack) {
-    // Query sample rate from JACK server. If CAVA doesn't support the final value then it will
-    // complain later.
+    // Query sample rate from JACK server. If CAVA doesn't support the final value
+    // then it will complain later.
     jack_nframes_t rate = jack_get_sample_rate(jack->client);
 
     if (rate <= 0) {
@@ -46,8 +46,8 @@ static bool set_format(struct jack_data *jack) {
 }
 
 static bool set_channels(struct jack_data *jack) {
-    // Try to create terminal audio-typed input ports for the requested number of channels. These
-    // ports can receive the audio data from other JACK clients.
+    // Try to create terminal audio-typed input ports for the requested number of
+    // channels. These ports can receive the audio data from other JACK clients.
     static const char *port_name[MAX_CHANNELS][MAX_CHANNELS] = {/* mono */ {"M", NULL},
                                                                 /* stereo */ {"L", "R"}};
     static const char port_type[] = JACK_DEFAULT_AUDIO_TYPE;
@@ -57,15 +57,15 @@ static bool set_channels(struct jack_data *jack) {
     int chtype;
     int ch;
 
-    // Limit the requested channels in case CAVA becomes surround-aware and MAX_CHANNELS hasn't
-    // adapted yet.
+    // Limit the requested channels in case CAVA becomes surround-aware and
+    // MAX_CHANNELS hasn't adapted yet.
     channels = jack->audio->channels > MAX_CHANNELS ? MAX_CHANNELS : jack->audio->channels;
 
     // Determines the row in the 'port_name' table, i.e. mono, stereo, etc...
     chtype = channels - 1;
 
-    // Try to create a port for every requested channel. After the for-loop the variable 'ch' holds
-    // the number of actual created ports.
+    // Try to create a port for every requested channel. After the for-loop the
+    // variable 'ch' holds the number of actual created ports.
     for (ch = 0; ch < channels; ++ch) {
         if ((jack->port[ch] = jack_port_register(jack->client, port_name[chtype][ch], port_type,
                                                  flags, 0)) == NULL)
@@ -78,9 +78,10 @@ static bool set_channels(struct jack_data *jack) {
         return false;
     }
 
-    // If less ports were created than channels requested, then the JACK server is probably not
-    // configured for the requested channels, e.g. we requested stereo but the server only provides
-    // mono. In this case we rename the created ports according to the resulting table row.
+    // If less ports were created than channels requested, then the JACK server is
+    // probably not configured for the requested channels, e.g. we requested
+    // stereo but the server only provides mono. In this case we rename the
+    // created ports according to the resulting table row.
     if (ch < channels) {
         int chtype_new;
 
@@ -211,16 +212,17 @@ static bool auto_connect(struct jack_data *jack) {
         goto cleanup;
     }
 
-    // If CAVA is configured for mono, then we connect everything to the one mono port. If we have
-    // more channels, then we limit the number of connection ports to the number of channels.
+    // If CAVA is configured for mono, then we connect everything to the one mono
+    // port. If we have more channels, then we limit the number of connection
+    // ports to the number of channels.
     for (channels = 0; ports[channels] != NULL; ++channels)
         ;
 
     if ((jack->audio->channels > 1) && (channels > jack->audio->channels))
         channels = jack->audio->channels;
 
-    // Visit the physical terminal input-ports, get their connections and apply them to CAVA's
-    // input-ports.
+    // Visit the physical terminal input-ports, get their connections and apply
+    // them to CAVA's input-ports.
     for (unsigned int i = 0; i < channels; ++i) {
         const char **connections;
         jack_port_t *port;

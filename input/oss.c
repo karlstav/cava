@@ -8,11 +8,12 @@
 #include "input/oss.h"
 
 static bool set_format(int fd, struct audio_data *audio) {
-    // CAVA favors signed and little endian (sle) formats. It might actually not work correctly if
-    // we feed it an unsigned or big endian format. Therefore we prefer to select one of the
-    // supported sle formats, if any exist.
+    // CAVA favors signed and little endian (sle) formats. It might actually not
+    // work correctly if we feed it an unsigned or big endian format. Therefore we
+    // prefer to select one of the supported sle formats, if any exist.
 
-    // The favored sle formats. 16bit has priority, followed by "bigger is better".
+    // The favored sle formats. 16bit has priority, followed by "bigger is
+    // better".
     static const int fmts_sle[] = {AFMT_S16_LE, AFMT_S32_LE, AFMT_S24_LE, AFMT_S8};
 
     // Bitmasks of formats categorized by bitlength.
@@ -49,7 +50,8 @@ static bool set_format(int fd, struct audio_data *audio) {
         return false;
     }
 
-    // If the requested format is not available then test for the other sle formats.
+    // If the requested format is not available then test for the other sle
+    // formats.
     if (!(fmts & fmt)) {
         for (size_t i = 0; i < sizeof(fmts_sle) / sizeof(fmts_sle[0]); ++i) {
             if (fmts & fmts_sle[i]) {
@@ -59,7 +61,8 @@ static bool set_format(int fd, struct audio_data *audio) {
         }
     }
 
-    // Set the format of the device. If not supported then OSS will adjust to a supported format.
+    // Set the format of the device. If not supported then OSS will adjust to a
+    // supported format.
     if (ioctl(fd, SNDCTL_DSP_SETFMT, &fmt) == -1) {
         fprintf(stderr, __FILE__ ": ioctl(SNDCTL_DSP_SETFMT) failed: %s\n", strerror(errno));
         return false;
@@ -84,8 +87,8 @@ static bool set_format(int fd, struct audio_data *audio) {
 }
 
 static bool set_channels(int fd, struct audio_data *audio) {
-    // Try to set the requested channels, OSS will adjust to a supported value. If CAVA doesn't
-    // support the final value then it will complain later.
+    // Try to set the requested channels, OSS will adjust to a supported value. If
+    // CAVA doesn't support the final value then it will complain later.
     int channels = audio->channels;
 
     if (ioctl(fd, SNDCTL_DSP_CHANNELS, &channels) == -1) {
@@ -99,8 +102,8 @@ static bool set_channels(int fd, struct audio_data *audio) {
 }
 
 static bool set_rate(int fd, struct audio_data *audio) {
-    // Try to set the requested rate, OSS will adjust to a supported value. If CAVA doesn't support
-    // the final value then it will complain later.
+    // Try to set the requested rate, OSS will adjust to a supported value. If
+    // CAVA doesn't support the final value then it will complain later.
     int rate = audio->rate;
 
     if (ioctl(fd, SNDCTL_DSP_SPEED, &rate) == -1) {

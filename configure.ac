@@ -1,6 +1,7 @@
 AC_INIT([cava], [m4_esyscmd_s([cat version])], [karl@stavestrand.no])
 AM_INIT_AUTOMAKE([subdir-objects -Wall -Werror foreign])
 dnl AC_CONFIG_MACRO_DIRS([m4])
+AC_CONFIG_MACRO_DIRS([m4])
 AM_PROG_AR
 LT_INIT
 AC_PROG_CC
@@ -89,6 +90,72 @@ AS_IF([test "x$enable_ubsan" = "xyes"], [
   LDFLAGS="$LDFLAGS -fsanitize=undefined"
 ])
 
+AC_ARG_ENABLE([cpu-optimizations],
+  AS_HELP_STRING([--enable-cpu-optimizations@<:@=auto|x86-64|x86-64-v2|x86-64-v3|x86-64-v4@:>@],
+    [enable build-time CPU optimizations (opt-in; default is generic)])
+)
+
+cpu_opt="$enable_cpu_optimizations"
+AS_IF([test "x$cpu_opt" = "xyes"], [cpu_opt="auto"])
+AS_IF([test "x$cpu_opt" != "x" -a "x$cpu_opt" != "xno"], [
+  cpu_march=""
+  if test "x$cross_compiling" = "xyes" ; then
+    AC_MSG_NOTICE([cpu optimizations requested but cross-compiling; leaving generic])
+  else
+    case "$host_cpu" in
+      x86_64|amd64)
+        if test "x$cpu_opt" = "xauto" ; then
+          cpu_march="x86-64"
+          if test -r /proc/cpuinfo ; then
+            if grep -qi avx512f /proc/cpuinfo ; then
+              cpu_march="x86-64-v4"
+            elif grep -qi avx2 /proc/cpuinfo ; then
+              cpu_march="x86-64-v3"
+            elif grep -qi sse4_2 /proc/cpuinfo ; then
+              cpu_march="x86-64-v2"
+            fi
+          elif test "x$build_mac" = "xyes" ; then
+            cpu_features=`sysctl -n machdep.cpu.features 2>/dev/null`
+            if echo "$cpu_features" | grep -q AVX512F ; then
+              cpu_march="x86-64-v4"
+            elif echo "$cpu_features" | grep -q AVX2 ; then
+              cpu_march="x86-64-v3"
+            elif echo "$cpu_features" | grep -q 'SSE4\.2' ; then
+              cpu_march="x86-64-v2"
+            fi
+          fi
+        else
+          case "$cpu_opt" in
+            x86-64|x86-64-v2|x86-64-v3|x86-64-v4)
+              cpu_march="$cpu_opt"
+              ;;
+            *)
+              AC_MSG_ERROR([invalid value for --enable-cpu-optimizations: $cpu_opt])
+              ;;
+          esac
+        fi
+        ;;
+      *)
+        AC_MSG_NOTICE([cpu optimizations requested but host_cpu=$host_cpu is not x86_64; leaving generic])
+        ;;
+    esac
+  fi
+
+  if test "x$cpu_march" != "x" ; then
+    saved_CFLAGS="$CFLAGS"
+    CFLAGS="$CFLAGS -march=$cpu_march"
+    AC_MSG_CHECKING([whether $CC supports -march=$cpu_march])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
+      [AC_MSG_RESULT([yes]); CPU_OPT_CFLAGS="-march=$cpu_march"],
+      [AC_MSG_RESULT([no]); CPU_OPT_CFLAGS=""])
+    CFLAGS="$saved_CFLAGS"
+
+    if test "x$CPU_OPT_CFLAGS" != "x" ; then
+      CFLAGS="$CFLAGS $CPU_OPT_CFLAGS"
+      AC_MSG_NOTICE([using CPU optimizations: $CPU_OPT_CFLAGS])
+    fi
+  fi
+ ])
 
 dnl ######################
 dnl checking for pthread
@@ -317,18 +384,39 @@ AC_CHECK_LIB(SDL2,SDL_Init, have_sdl=yes, have_sdl=no)
           [do not include support for output with sdl_glsl])
       )
       AS_IF([test "x$enable_output_sdl_glsl" != "xno"], [
+             have_opengl=no
+             GL_CFLAGS=""
+             GL_LIBS=""
              m4_ifdef([AX_CHECK_GL], [
                        AX_CHECK_GL(have_opengl=yes, have_opengl=no)
                        ], [
-                           AC_MSG_NOTICE([You need to install the autoconf archives to check for opengl. Remember to re-run autogen.sh.])
-                           have_opengl=no
+                           PKG_CHECK_MODULES([GL], [gl], have_opengl=yes, have_opengl=no)
+
+                           if [[ $have_opengl = "no" ]] ; then
+                             AC_CHECK_HEADERS([GL/gl.h OpenGL/gl.h], have_gl_headers=yes, have_gl_headers=no)
+                             if [[ $have_gl_headers = "yes" ]] ; then
+                               AC_CHECK_LIB([GL], [glBegin], have_opengl=yes; GL_LIBS="-lGL", have_opengl=no)
+                             fi
+                           fi
+
+                           if [[ $have_opengl = "no" ]] ; then
+                             if [[ $build_mac = "yes" ]] ; then
+                               saved_LIBS="$LIBS"
+                               LIBS="$LIBS -framework OpenGL"
+                               AC_LINK_IFELSE(
+                                 [AC_LANG_PROGRAM([[#include <OpenGL/gl.h>]], [[glBegin(0);]])],
+                                 [have_opengl=yes; GL_LIBS="-framework OpenGL"],
+                                 [have_opengl=no]
+                               )
+                               LIBS="$saved_LIBS"
+                             fi
+                           fi
                            ])
+
       if [[ $have_opengl = "yes" ]] ; then
         LIBS="$LIBS $GL_LIBS"
         CPPFLAGS="$CPPFLAGS -DSDL_GLSL $GL_CFLAGS"
-      fi
-
-      if [[ $have_opengl = "no" ]] ; then
+      else
         AC_MSG_NOTICE([INFO: building without sdl_glsl (opengl) support])
       fi
       ],

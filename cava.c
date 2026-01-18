@@ -35,6 +35,7 @@
 #endif // _WIN32
 
 #include <signal.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -124,7 +125,13 @@ volatile sig_atomic_t reload_colors = 0;
 volatile sig_atomic_t should_quit = 0;
 volatile sig_atomic_t signal_received = 0;
 
-static bool get_file_state(const char *path, time_t *mtime, long long *size) {
+static bool streq(const char *a, const char *b) {
+    if (a == NULL || b == NULL)
+        return a == b;
+    return strcmp(a, b) == 0;
+}
+
+static bool get_file_state(const char *path, uint64_t *mtime_ns, long long *size) {
 #ifdef _WIN32
     struct _stat st;
     if (_stat(path, &st) != 0)
@@ -134,7 +141,24 @@ static bool get_file_state(const char *path, time_t *mtime, long long *size) {
     if (stat(path, &st) != 0)
         return false;
 #endif
-    *mtime = st.st_mtime;
+
+#ifdef _WIN32
+    *mtime_ns = (uint64_t)st.st_mtime * 1000000000ULL;
+#else
+#if defined(__APPLE__)
+    *mtime_ns = (uint64_t)st.st_mtime * 1000000000ULL;
+#else
+    struct timespec ts;
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+    ts = st.st_mtim;
+#else
+    ts.tv_sec = st.st_mtime;
+    ts.tv_nsec = 0;
+#endif
+    *mtime_ns = (uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec;
+#endif
+#endif
+
     *size = (long long)st.st_size;
     return true;
 }
@@ -341,11 +365,11 @@ Keys:\n\
             exit(EXIT_FAILURE);
         }
 
-        time_t config_mtime = 0;
+        uint64_t config_mtime_ns = 0;
         long long config_size = 0;
         bool has_config_state = false;
         if (p.live_config) {
-            has_config_state = get_file_state(configPath, &config_mtime, &config_size);
+            has_config_state = get_file_state(configPath, &config_mtime_ns, &config_size);
         }
 
         int inAtty = 0;
@@ -476,9 +500,9 @@ Keys:\n\
                 if (directory_exists("/sys/")) {
                     if (!directory_exists("/sys/module/snd_aloop/")) {
                         cleanup();
-                        fprintf(stderr,
-                                "Linux kernel module \"snd_aloop\" does not seem to  be loaded.\n"
-                                "Maybe run \"sudo modprobe snd_aloop\".\n");
+                        fprintf(stderr, "Linux kernel module \"snd_aloop\" does not seem "
+                                        "to  be loaded.\n"
+                                        "Maybe run \"sudo modprobe snd_aloop\".\n");
                         exit(EXIT_FAILURE);
                     }
                 }
@@ -593,7 +617,8 @@ Keys:\n\
         if (p.upper_cut_off > audio.rate / 2) {
             cleanup();
             fprintf(stderr,
-                    "higher cutoff frequency can't be higher than sample rate / 2\nhigher "
+                    "higher cutoff frequency can't be higher than sample rate / "
+                    "2\nhigher "
                     "cutoff frequency is set to: %d, got sample rate: %d\n",
                     p.upper_cut_off, audio.rate);
             exit(EXIT_FAILURE);
@@ -655,7 +680,8 @@ Keys:\n\
 #endif
 
         bool reloadConf = false;
-        while (!reloadConf) { // jumping back to this loop means that you resized the screen
+        while (!reloadConf) { // jumping back to this loop means that you resized
+                              // the screen
 
             // frequencies on x axis require a bar width of four or more
             if (p.xaxis == FREQUENCY && p.bar_width < 4)
@@ -670,8 +696,8 @@ Keys:\n\
                 if (p.xaxis != NONE)
                     lines--;
                 height = lines;
-                *dimension_value *=
-                    8; // we have 8 times as much height due to using 1/8 block characters
+                *dimension_value *= 8; // we have 8 times as much height due to using
+                                       // 1/8 block characters
                 break;
 #endif
 #ifdef SDL
@@ -764,8 +790,8 @@ Keys:\n\
                     exit(1);
                 }
 
-                // width must be hardcoded for raw output. only used to calculate the number of
-                // bars in auto mode
+                // width must be hardcoded for raw output. only used to calculate the
+                // number of bars in auto mode
                 width = 512 * output_channels;
                 p.bar_width = 1;
                 p.bar_spacing = 0;
@@ -871,8 +897,8 @@ Keys:\n\
                 exit(EXIT_FAILURE);
             }
 
-            // if the sample rate is unusual high or low, we need to adjust the input buffer size
-            // after the audio thread has started
+            // if the sample rate is unusual high or low, we need to adjust the input
+            // buffer size after the audio thread has started
             if (plan->input_buffer_size != audio.cava_buffer_size) {
                 pthread_mutex_lock(&audio.lock);
                 audio.cava_buffer_size = plan->input_buffer_size;
@@ -958,10 +984,15 @@ Keys:\n\
             }
 
             bool resizeTerminal = false;
+            int startup_frames = 0;
 
             int effective_framerate = p.framerate;
             if (effective_framerate <= 0)
                 effective_framerate = 60;
+
+            int startup_limit_frames = effective_framerate / 10;
+            if (startup_limit_frames < 1)
+                startup_limit_frames = 1;
 
             long long frame_time_ns = (long long)(1000000000.0 / (double)effective_framerate);
             if (frame_time_ns < 1)
@@ -990,7 +1021,7 @@ Keys:\n\
 
             while (!resizeTerminal) {
 
-// general: keyboard controls
+                // general: keyboard controls
 #ifdef NCURSES
                 if (output_mode == OUTPUT_NCURSES)
                     ch = getch();
@@ -1072,6 +1103,191 @@ Keys:\n\
                 ch = 0;
 
                 if (should_reload) {
+#if defined(SDL_GLSL) || defined(SDL)
+                    bool soft_reloaded = false;
+#endif
+#ifdef SDL_GLSL
+                    if (!should_quit && output_mode == OUTPUT_SDL_GLSL) {
+                        struct config_params p_new = {0};
+                        struct error_s error;
+                        error.length = 0;
+                        if (load_config(configPath, &p_new, &error)) {
+                            if (audio_channels == 1) {
+                                p_new.stereo = 0;
+                                p_new.horizontal_stereo = 0;
+                            }
+                            bool can_soft_reload = true;
+                            can_soft_reload &= (p_new.output == p.output);
+                            can_soft_reload &= (p_new.input == p.input);
+                            can_soft_reload &= (p_new.waveform == p.waveform);
+                            can_soft_reload &= (p_new.stereo == p.stereo);
+                            can_soft_reload &= (p_new.horizontal_stereo == p.horizontal_stereo);
+                            can_soft_reload &= (p_new.reverse == p.reverse);
+                            can_soft_reload &= (p_new.orientation == p.orientation);
+                            can_soft_reload &= (p_new.fixedbars == p.fixedbars);
+                            can_soft_reload &= (p_new.lower_cut_off == p.lower_cut_off);
+                            can_soft_reload &= (p_new.upper_cut_off == p.upper_cut_off);
+                            can_soft_reload &= (p_new.monstercat == p.monstercat);
+                            can_soft_reload &= (p_new.waves == p.waves);
+                            can_soft_reload &= (p_new.noise_reduction == p.noise_reduction);
+                            can_soft_reload &= (p_new.userEQ_enabled == p.userEQ_enabled);
+                            if (p_new.userEQ_enabled)
+                                can_soft_reload = false;
+                            can_soft_reload &= (p_new.sdl_width == p.sdl_width);
+                            can_soft_reload &= (p_new.sdl_height == p.sdl_height);
+                            can_soft_reload &= (p_new.sdl_x == p.sdl_x);
+                            can_soft_reload &= (p_new.sdl_y == p.sdl_y);
+                            can_soft_reload &= (p_new.sdl_full_screen == p.sdl_full_screen);
+                            can_soft_reload &= streq(p_new.audio_source, p.audio_source);
+
+                            if (can_soft_reload) {
+                                bool layout_changed = (p_new.bar_width != p.bar_width) ||
+                                                      (p_new.bar_spacing != p.bar_spacing);
+
+                                if (!streq(p_new.vertex_shader, p.vertex_shader) ||
+                                    !streq(p_new.fragment_shader, p.fragment_shader)) {
+                                    bool shaders_reloaded = reload_sdl_glsl_shaders(
+                                        p_new.vertex_shader, p_new.fragment_shader);
+                                    if (shaders_reloaded) {
+                                        free(p.vertex_shader);
+                                        free(p.fragment_shader);
+                                        p.vertex_shader = p_new.vertex_shader;
+                                        p.fragment_shader = p_new.fragment_shader;
+                                        p_new.vertex_shader = NULL;
+                                        p_new.fragment_shader = NULL;
+                                    } else {
+                                        fprintf(stderr,
+                                                "Error: failed to reload shaders (vertex: '%s', "
+                                                "fragment: '%s')\n",
+                                                p_new.vertex_shader, p_new.fragment_shader);
+                                    }
+                                }
+
+                                init_sdl_glsl_surface(&width, &height, p_new.color, p_new.bcolor,
+                                                      p_new.bar_width, p_new.bar_spacing,
+                                                      p_new.gradient, p_new.gradient_count,
+                                                      p_new.gradient_colors);
+
+                                p.sens = p_new.sens;
+                                p.framerate = p_new.framerate;
+                                p.continuous_rendering = p_new.continuous_rendering;
+                                p.bar_width = p_new.bar_width;
+                                p.bar_spacing = p_new.bar_spacing;
+                                p.sdl_glsl_gain = p_new.sdl_glsl_gain;
+                                p.gradient = p_new.gradient;
+                                p.gradient_count = p_new.gradient_count;
+
+                                if (layout_changed)
+                                    resizeTerminal = true;
+
+#if defined(SDL_GLSL) || defined(SDL)
+                                soft_reloaded = true;
+#endif
+                            }
+                        } else {
+                            fprintf(stderr, "Error loading config. %s", error.message);
+                            has_config_state = false;
+#if defined(SDL_GLSL) || defined(SDL)
+                            soft_reloaded = true;
+#endif
+                        }
+                        free_config(&p_new);
+                    }
+#endif
+#ifdef SDL
+                    if (!should_quit && output_mode == OUTPUT_SDL) {
+                        struct config_params p_new = {0};
+                        struct error_s error;
+                        error.length = 0;
+                        if (load_config(configPath, &p_new, &error)) {
+                            if (audio_channels == 1) {
+                                p_new.stereo = 0;
+                                p_new.horizontal_stereo = 0;
+                            }
+                            bool can_soft_reload = true;
+                            can_soft_reload &= (p_new.output == p.output);
+                            can_soft_reload &= (p_new.input == p.input);
+                            can_soft_reload &= (p_new.waveform == p.waveform);
+                            can_soft_reload &= (p_new.stereo == p.stereo);
+                            can_soft_reload &= (p_new.horizontal_stereo == p.horizontal_stereo);
+                            can_soft_reload &= (p_new.reverse == p.reverse);
+                            can_soft_reload &= (p_new.orientation == p.orientation);
+                            can_soft_reload &= (p_new.fixedbars == p.fixedbars);
+                            can_soft_reload &= (p_new.lower_cut_off == p.lower_cut_off);
+                            can_soft_reload &= (p_new.upper_cut_off == p.upper_cut_off);
+                            can_soft_reload &= (p_new.monstercat == p.monstercat);
+                            can_soft_reload &= (p_new.waves == p.waves);
+                            can_soft_reload &= (p_new.noise_reduction == p.noise_reduction);
+                            can_soft_reload &= (p_new.userEQ_enabled == p.userEQ_enabled);
+                            if (p_new.userEQ_enabled)
+                                can_soft_reload = false;
+                            can_soft_reload &= (p_new.sdl_width == p.sdl_width);
+                            can_soft_reload &= (p_new.sdl_height == p.sdl_height);
+                            can_soft_reload &= (p_new.sdl_x == p.sdl_x);
+                            can_soft_reload &= (p_new.sdl_y == p.sdl_y);
+                            can_soft_reload &= (p_new.sdl_full_screen == p.sdl_full_screen);
+                            can_soft_reload &= streq(p_new.audio_source, p.audio_source);
+
+                            if (can_soft_reload) {
+                                bool layout_changed = (p_new.bar_width != p.bar_width) ||
+                                                      (p_new.bar_spacing != p.bar_spacing);
+
+                                init_sdl_surface(&width, &height, p_new.color, p_new.bcolor,
+                                                 p_new.gradient, p_new.gradient_count,
+                                                 p_new.gradient_colors);
+
+                                p.sens = p_new.sens;
+                                p.framerate = p_new.framerate;
+                                p.bar_width = p_new.bar_width;
+                                p.bar_spacing = p_new.bar_spacing;
+                                p.gradient = p_new.gradient;
+                                p.gradient_count = p_new.gradient_count;
+
+                                if (layout_changed)
+                                    resizeTerminal = true;
+
+#if defined(SDL_GLSL) || defined(SDL)
+                                soft_reloaded = true;
+#endif
+                            }
+                        } else {
+                            fprintf(stderr, "Error loading config. %s", error.message);
+                            has_config_state = false;
+#if defined(SDL_GLSL) || defined(SDL)
+                            soft_reloaded = true;
+#endif
+                        }
+                        free_config(&p_new);
+                    }
+#endif
+
+#if defined(SDL_GLSL) || defined(SDL)
+                    if (soft_reloaded) {
+                        should_reload = 0;
+                        startup_frames = 0;
+
+                        effective_framerate = p.framerate;
+                        if (effective_framerate <= 0)
+                            effective_framerate = 60;
+
+                        startup_limit_frames = effective_framerate / 10;
+                        if (startup_limit_frames < 1)
+                            startup_limit_frames = 1;
+
+                        frame_time_ns = (long long)(1000000000.0 / (double)effective_framerate);
+                        if (frame_time_ns < 1)
+                            frame_time_ns = 1;
+
+                        frame_time_msec = (int)(frame_time_ns / 1000000LL);
+                        if (frame_time_msec < 1)
+                            frame_time_msec = 1;
+
+                        framerate_timer.tv_sec = frame_time_ns / 1000000000LL;
+                        framerate_timer.tv_nsec = frame_time_ns % 1000000000LL;
+
+                        continue;
+                    }
+#endif
                     reloadConf = true;
                     resizeTerminal = true;
                     should_reload = 0;
@@ -1108,14 +1324,26 @@ Keys:\n\
                 pthread_mutex_unlock(&audio.lock);
 
                 // process: check if input is present
-                silence = true;
+                pthread_mutex_lock(&audio.lock);
+                int check_samples = audio.samples_counter;
+                if (check_samples < 1) {
+                    silence = true;
+                } else {
+                    if (check_samples > audio.cava_buffer_size)
+                        check_samples = audio.cava_buffer_size;
+                    int max_check = audio.input_buffer_size * 4;
+                    if (check_samples > max_check)
+                        check_samples = max_check;
 
-                for (int n = 0; n < audio.input_buffer_size * 4; n++) {
-                    if (audio.cava_in[n]) {
-                        silence = false;
-                        break;
+                    silence = true;
+                    for (int n = 0; n < check_samples; n++) {
+                        if (audio.cava_in[n] != 0.0) {
+                            silence = false;
+                            break;
+                        }
                     }
                 }
+                pthread_mutex_unlock(&audio.lock);
 #ifndef _WIN32
 
                 if (output_mode != OUTPUT_SDL) {
@@ -1132,13 +1360,13 @@ Keys:\n\
                         if (sleep_counter > sleep_limit) {
                             nanosleep(&sleep_mode_timer, NULL);
                             if (p.live_config) {
-                                time_t new_mtime = 0;
+                                uint64_t new_mtime_ns = 0;
                                 long long new_size = 0;
-                                if (get_file_state(configPath, &new_mtime, &new_size) &&
-                                    (!has_config_state || new_mtime != config_mtime ||
+                                if (get_file_state(configPath, &new_mtime_ns, &new_size) &&
+                                    (!has_config_state || new_mtime_ns != config_mtime_ns ||
                                      new_size != config_size)) {
                                     should_reload = 1;
-                                    config_mtime = new_mtime;
+                                    config_mtime_ns = new_mtime_ns;
                                     config_size = new_size;
                                     has_config_state = true;
                                 }
@@ -1314,6 +1542,18 @@ Keys:\n\
 #ifdef SDL_GLSL
                 int re_paint = 0;
 #endif
+#ifdef SDL_GLSL
+                if (output_mode == OUTPUT_SDL_GLSL && startup_frames < startup_limit_frames) {
+                    float denom = (startup_limit_frames > 0) ? (float)startup_limit_frames : 1.0f;
+                    float scale = (float)(startup_frames + 1) / denom;
+                    for (int n = 0; n < number_of_bars; n++) {
+                        bars_raw[n] *= scale;
+                    }
+                    re_paint = 1;
+                    startup_frames++;
+                }
+#endif
+
                 for (int n = 0; n < number_of_bars; n++) {
                     bars[n] = bars_raw[n];
                     // show idle bar heads
@@ -1361,10 +1601,11 @@ Keys:\n\
                         // in split horizontal mode we need to draw two times
                         // once for bottom and once for top
                         // ORIENT_BOTTOM will be the top bars and ORIENT_TOP the bottom bars
-                        // since bottom hear means from mid upwards and top is from mid downwards
+                        // since bottom hear means from mid upwards and top is from mid
+                        // downwards
                         if (p.horizontal_stereo) {
-                            // in horizontal stereo mode we need to split the bars array in half
-                            // first half is right channel, second half is left channel
+                            // in horizontal stereo mode we need to split the bars array in
+                            // half first half is right channel, second half is left channel
                             for (int i = 0; i < number_of_bars / 2; i++) {
                                 right_bars[i] = bars[i + number_of_bars / 2];
                                 right_previous_frame[i] = previous_frame[i + number_of_bars / 2];
@@ -1468,13 +1709,13 @@ Keys:\n\
                 }
 
                 if (p.live_config) {
-                    time_t new_mtime = 0;
+                    uint64_t new_mtime_ns = 0;
                     long long new_size = 0;
-                    if (get_file_state(configPath, &new_mtime, &new_size) &&
-                        (!has_config_state || new_mtime != config_mtime ||
+                    if (get_file_state(configPath, &new_mtime_ns, &new_size) &&
+                        (!has_config_state || new_mtime_ns != config_mtime_ns ||
                          new_size != config_size)) {
                         should_reload = 1;
-                        config_mtime = new_mtime;
+                        config_mtime_ns = new_mtime_ns;
                         config_size = new_size;
                         has_config_state = true;
                     }
@@ -1547,8 +1788,8 @@ Keys:\n\
                         total_bar_height);
                 return EXIT_FAILURE;
             } else if (p.non_zero_test && total_bar_height == 0) {
-                fprintf(stderr,
-                        "Test mode: expected total bar height to be non-zero, but was zero\n");
+                fprintf(stderr, "Test mode: expected total bar height to be non-zero, "
+                                "but was zero\n");
                 return EXIT_FAILURE;
             } else {
                 return EXIT_SUCCESS;

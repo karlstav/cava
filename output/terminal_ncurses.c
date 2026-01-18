@@ -147,8 +147,9 @@ void init_terminal_ncurses(char *const fg_color_string, char *const bg_color_str
                    &rgb[col][2]);
         }
 
-        // sscanf(gradient_color_1 + 1, "%02hx%02hx%02hx", &rgb[0][0], &rgb[0][1], &rgb[0][2]);
-        // sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0], &rgb[1][1], &rgb[1][2]);
+        // sscanf(gradient_color_1 + 1, "%02hx%02hx%02hx", &rgb[0][0], &rgb[0][1],
+        // &rgb[0][2]); sscanf(gradient_color_2 + 1, "%02hx%02hx%02hx", &rgb[1][0],
+        // &rgb[1][1], &rgb[1][2]);
 
         int individual_size = gradient_size / (gradient_count - 1);
 
@@ -241,8 +242,6 @@ int draw_terminal_ncurses(int is_tty, int dimension_value, int dimension_bar, in
         }
         if (LINES != terminal_height || COLS != terminal_width) {
             return TERMINAL_RESIZED;
-            if (x_axis_info)
-                dimension_value--;
         }
     }
 
@@ -252,7 +251,10 @@ int draw_terminal_ncurses(int is_tty, int dimension_value, int dimension_bar, in
         max_update_value = max(max_update_value, max(bars[bar], previous_frame[bar]));
     }
 
-    max_update_value = (max_update_value + num_bar_heights) / num_bar_heights;
+    max_update_value = (max_update_value + num_bar_heights - 1) / num_bar_heights;
+    if (max_update_value > max_value) {
+        max_update_value = max_value;
+    }
 
     for (int line = 0; line < max_update_value; line++) {
         if (gradient) {
@@ -326,7 +328,7 @@ void cleanup_terminal_ncurses(void) {
                             the_color_redefinitions[i].B);
             }
     }
-*/
+  */
     standend();
     endwin();
     system("clear");

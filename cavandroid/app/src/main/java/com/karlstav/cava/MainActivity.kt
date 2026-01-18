@@ -78,6 +78,7 @@ private const val  RAW_AUDIO_SOURCE = MediaRecorder.AudioSource.UNPROCESSED
 private const val  CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
 private const val  AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
 private var  BUFFER_SIZE_RECORDING = AudioRecord.getMinBufferSize(RECORDER_SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
+    .let { if (it > 0) it else 4096 }
 private const val  MAX_BARS = 256
 private var cutOffFrequencies = FloatArray(MAX_BARS + 1);
 
@@ -93,7 +94,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var gLView: GLSurfaceView
     private val RECORD_AUDIO_PERMISSION_REQUEST_CODE = 101
     private var RECORD_AUDIO_PERMISSION_DENIED = false
-    private var RECORDING = false
+    @Volatile private var RECORDING = false
     private var settingsMenuIsOpen = false
 
 
@@ -180,45 +181,62 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("MissingPermission")
     private fun startRecording() {
-        audioRecord = AudioRecord(AUDIO_SOURCE, RECORDER_SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, BUFFER_SIZE_RECORDING)
-        if (audioRecord!!.state != AudioRecord.STATE_INITIALIZED) {
+        val recorder = AudioRecord(AUDIO_SOURCE, RECORDER_SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, BUFFER_SIZE_RECORDING)
+        if (recorder.state != AudioRecord.STATE_INITIALIZED) {
             Log.e(TAG, "error initializing AudioRecord");
             return
         }
-        audioRecord.startRecording()
+        audioRecord = recorder
+        recorder.startRecording()
         RECORDING = true
         Thread {
-            writeAudioDataToBuffer()
+            writeAudioDataToBuffer(recorder)
         }.start()
 
     }
 
-    private fun writeAudioDataToBuffer() {
+    private fun writeAudioDataToBuffer(recorder: AudioRecord) {
         while (true) {
-            val read = audioRecord!!.read(audioData, 0, audioData.size)
-            //newSamples=0
-            lock.lock()
-            for (i in 0 until read step 2) {
-                if (i > audioData.size)
+            val read = recorder.read(audioData, 0, audioData.size)
+            if (read <= 0) {
+                if (!RECORDING)
                     break
-                val lowByte = audioData[i].toInt()
-                val highByte = audioData[i + 1].toInt()
-                val pcmValue = (highByte shl 8) or (lowByte and 0xFF)
-                cavaData[newSamples] = pcmValue.toDouble() / 32767.0
-                newSamples++
-                if (newSamples > cavaData.size - 1)
-                    newSamples = 0
+                continue
             }
-            lock.unlock()
+            lock.lock()
+            try {
+                val limit = read - (read % 2)
+                for (i in 0 until limit step 2) {
+                    val lowByte = audioData[i].toInt()
+                    val highByte = audioData[i + 1].toInt()
+                    val pcmValue = (highByte shl 8) or (lowByte and 0xFF)
+                    cavaData[newSamples] = pcmValue.toDouble() / 32767.0
+                    newSamples++
+                    if (newSamples > cavaData.size - 1)
+                        newSamples = 0
+                }
+            } finally {
+                lock.unlock()
+            }
             if (!RECORDING)
                 break
         }
-        audioRecord.stop()
+        try {
+            recorder.stop()
+        } catch (e: IllegalStateException) {
+        }
+        recorder.release()
     }
 
     override fun onPause() {
         super.onPause()
         RECORDING = false
+        if (this::audioRecord.isInitialized) {
+            try {
+                audioRecord.stop()
+            } catch (e: IllegalStateException) {
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -399,14 +417,20 @@ init {
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
 
        //if (newSamples > 0) { //only draw when new data. maybe?
-            lock.lock()
-            var cavaOut = ExecCava(cavaData, newSamples);
-            lock.unlock()
+            val cavaOut = run {
+                lock.lock()
+                try {
+                    val out = ExecCava(cavaData, newSamples)
+                    newSamples = 0
+                    out
+                } finally {
+                    lock.unlock()
+                }
+            }
             for (i in 0 until numberOfBars) {
                 barsData[i] = cavaOut[i].toFloat()
             }
             bars.put(barsData).position(0)
-            newSamples = 0
        // }
         GLES30.glUniform4fv(uniformBars, numberOfBars, bars)
         checkGlError("glGetUniformfv uniform_bars")

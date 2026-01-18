@@ -304,9 +304,7 @@ struct {
     {AUDCLNT_E_UNSUPPORTED_FORMAT, L"Requested sound format unsupported"},
 };
 
-void write_silent_frame(struct audio_data *audio, IAudioCaptureClient *pCapture,
-                        UINT32 numFramesAvailable, UINT32 packetLength) {
-    // Batch silent frames to reduce CPU usage
+void write_silent_frame(struct audio_data *audio, UINT32 numFramesAvailable) {
     int bytes_per_sample = audio->format / 8;
     int silent_channels = audio->channels;
     static LPBYTE silence = NULL;
@@ -316,22 +314,24 @@ void write_silent_frame(struct audio_data *audio, IAudioCaptureClient *pCapture,
         if (silence)
             free(silence);
         silence = (LPBYTE)calloc(1, required_size);
+        if (!silence) {
+            return;
+        }
         silence_size = required_size;
     }
 
-    // Write all silent frames in one batch
     write_to_cava_input_buffers(numFramesAvailable * silent_channels, (unsigned char *)silence,
                                 audio);
-    pCapture->lpVtbl->ReleaseBuffer(pCapture, numFramesAvailable);
-    pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
-    Sleep(1); // Prevent busy loop
 }
 
 void process_multichannel(UINT32 numFramesAvailable, const WAVEFORMATEX format, const void *pData,
-                          struct audio_data *audio, IAudioCaptureClient *pCapture,
-                          UINT32 packetLength, WAVEFORMATEX stereo_format) {
+                          struct audio_data *audio, WAVEFORMATEX stereo_format) {
 
     int16_t *stereo_buffer = (int16_t *)malloc(numFramesAvailable * 2 * sizeof(int16_t));
+    if (!stereo_buffer) {
+        write_silent_frame(audio, numFramesAvailable);
+        return;
+    }
     if (format.wFormatTag == WAVE_FORMAT_IEEE_FLOAT && format.wBitsPerSample == 32) {
         downmix_to_stereo_f32((const float *)pData, stereo_buffer, numFramesAvailable,
                               format.nChannels);
@@ -346,7 +346,8 @@ void process_multichannel(UINT32 numFramesAvailable, const WAVEFORMATEX format, 
                               format.nChannels);
     } else {
         // Unsupported format, handle error
-        write_silent_frame(audio, pCapture, numFramesAvailable, packetLength);
+        write_silent_frame(audio, numFramesAvailable);
+        free(stereo_buffer);
         return;
     }
     write_to_cava_input_buffers(numFramesAvailable * stereo_format.nChannels,
@@ -410,7 +411,7 @@ void get_audio_device_by_name(IMMDeviceEnumerator *pEnumerator, const char *devi
         pDeviceCollection->lpVtbl->Release(pDeviceCollection);
 }
 
-void input_winscap(void *data) {
+void *input_winscap(void *data) {
 
     static const GUID CLSID_MMDeviceEnumerator = {0xBCDE0395, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4,
                                                   0x57,       0x92,   0x91,   0x69, 0x2E};
@@ -422,29 +423,30 @@ void input_winscap(void *data) {
         0xc8adbd64, 0xe71e, 0x48a0, {0xa4, 0xde, 0x18, 0x5c, 0x39, 0x5c, 0xd3, 0x17}};
 
     struct audio_data *audio = (struct audio_data *)data;
-    pthread_mutex_lock(&audio->lock);
 
     HRESULT hr = CoInitialize(0);
     if (FAILED(hr)) {
         fwprintf(stderr, L"CoInitialize failed: 0x%08lx\n", hr);
-        pthread_mutex_unlock(&audio->lock);
-        return;
+        return NULL;
     }
 
     WAVEFORMATEX *wfx = NULL;
-    WAVEFORMATEXTENSIBLE *wfx_ext = NULL;
     IMMDeviceEnumerator *pEnumerator = NULL;
-    IMMDeviceCollection *pDeviceCollection = NULL;
     hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator,
                           (void **)&pEnumerator);
     if (FAILED(hr)) {
         fwprintf(stderr, L"Failed to create device enumerator: 0x%08lx\n", hr);
         CoUninitialize();
-        pthread_mutex_unlock(&audio->lock);
-        return;
+        return NULL;
     }
 
     HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (!hEvent) {
+        fwprintf(stderr, L"CreateEvent failed: %lu\n", GetLastError());
+        pEnumerator->lpVtbl->Release(pEnumerator);
+        CoUninitialize();
+        return NULL;
+    }
 
     volatile BOOL deviceChanged = FALSE;
     DeviceChangeNotification deviceChangeNotification;
@@ -463,22 +465,40 @@ void input_winscap(void *data) {
             if (pDevice == NULL) {
                 // exit with error
                 fwprintf(stderr, L"Could not find audio device with name: %S\n", audio->source);
-                CoUninitialize();
-                pthread_mutex_unlock(&audio->lock);
-                exit(EXIT_FAILURE);
+                signal_threadparams(audio);
+                signal_terminate(audio);
+                break;
             }
         }
         // fallback to default device
         else {
-            pEnumerator->lpVtbl->GetDefaultAudioEndpoint(pEnumerator, eRender, eConsole, &pDevice);
+            hr = pEnumerator->lpVtbl->GetDefaultAudioEndpoint(pEnumerator, eRender, eConsole,
+                                                              &pDevice);
+            if (FAILED(hr) || !pDevice) {
+                fwprintf(stderr, L"GetDefaultAudioEndpoint failed: 0x%08lx\n", hr);
+                Sleep(100);
+                continue;
+            }
         }
         IAudioClient *pClient = NULL;
-        pDevice->lpVtbl->Activate(pDevice, &IID_IAudioClient, CLSCTX_ALL, 0, (void **)&pClient);
+        hr =
+            pDevice->lpVtbl->Activate(pDevice, &IID_IAudioClient, CLSCTX_ALL, 0, (void **)&pClient);
+        if (FAILED(hr) || !pClient) {
+            fwprintf(stderr, L"Activate IAudioClient failed: 0x%08lx\n", hr);
+            if (pDevice)
+                pDevice->lpVtbl->Release(pDevice);
+            Sleep(100);
+            continue;
+        }
 
         hr = pClient->lpVtbl->GetMixFormat(pClient, &wfx);
 
         if (FAILED(hr) || wfx == NULL) {
             fwprintf(stderr, L"Failed to GetMixFormat for client\n");
+            if (pClient)
+                pClient->lpVtbl->Release(pClient);
+            if (pDevice)
+                pDevice->lpVtbl->Release(pDevice);
             continue;
         }
 
@@ -491,12 +511,21 @@ void input_winscap(void *data) {
             //_com_error err(hrInit);
 
             IPropertyStore *pProps = NULL;
-            pDevice->lpVtbl->OpenPropertyStore(pDevice, STGM_READ, &pProps);
+            hr = pDevice->lpVtbl->OpenPropertyStore(pDevice, STGM_READ, &pProps);
 
             PROPVARIANT varName;
             PropVariantInit(&varName);
-            pProps->lpVtbl->GetValue(pProps, &PKEY_Device_FriendlyName, &varName);
-            fwprintf(stderr, L"Failed to open: %s\n", varName.pwszVal);
+            if (SUCCEEDED(hr) && pProps) {
+                hr = pProps->lpVtbl->GetValue(pProps, &PKEY_Device_FriendlyName, &varName);
+                if (SUCCEEDED(hr) && varName.pwszVal) {
+                    fwprintf(stderr, L"Failed to open: %s\n", varName.pwszVal);
+                } else {
+                    fwprintf(stderr, L"Failed to open device (GetValue failed: 0x%08lx)\n", hr);
+                }
+            } else {
+                fwprintf(stderr, L"Failed to open device (OpenPropertyStore failed: 0x%08lx)\n",
+                         hr);
+            }
             PropVariantClear(&varName);
             if (pProps)
                 pProps->lpVtbl->Release(pProps);
@@ -504,7 +533,9 @@ void input_winscap(void *data) {
                 pClient->lpVtbl->Release(pClient);
             if (pDevice)
                 pDevice->lpVtbl->Release(pDevice);
-            WaitForSingleObject(hEvent, INFINITE); // may freeze, need to test on special device
+            CoTaskMemFree(wfx);
+            wfx = NULL;
+            WaitForSingleObject(hEvent, 1000);
             continue;
         }
 
@@ -517,6 +548,8 @@ void input_winscap(void *data) {
                 pClient->lpVtbl->Release(pClient);
             if (pDevice)
                 pDevice->lpVtbl->Release(pDevice);
+            CoTaskMemFree(wfx);
+            wfx = NULL;
             continue;
         }
 
@@ -525,36 +558,67 @@ void input_winscap(void *data) {
 
         IAudioCaptureClient *pCapture = NULL;
 
-        pClient->lpVtbl->GetService(pClient, &IID_IAudioCaptureClient, (void **)&pCapture);
+        hr = pClient->lpVtbl->GetService(pClient, &IID_IAudioCaptureClient, (void **)&pCapture);
+        if (FAILED(hr) || !pCapture) {
+            fwprintf(stderr, L"GetService(IAudioCaptureClient) failed: 0x%08lx\n", hr);
+            pClient->lpVtbl->Stop(pClient);
+            pClient->lpVtbl->Release(pClient);
+            pDevice->lpVtbl->Release(pDevice);
+            CoTaskMemFree(wfx);
+            wfx = NULL;
+            continue;
+        }
 
         WAVEFORMATEX format = *wfx;
 
-        pClient->lpVtbl->Start(pClient);
+        CoTaskMemFree(wfx);
+        wfx = NULL;
+
+        hr = pClient->lpVtbl->Start(pClient);
+        if (FAILED(hr)) {
+            fwprintf(stderr, L"AudioClient Start failed: 0x%08lx\n", hr);
+            pCapture->lpVtbl->Release(pCapture);
+            pClient->lpVtbl->Release(pClient);
+            pDevice->lpVtbl->Release(pDevice);
+            continue;
+        }
 
         WAVEFORMATEX stereo_format;
         make_stereo_waveformatex(&format, &stereo_format);
 
+        int new_channels;
+        int new_rate;
+        int new_format;
+        int new_ieee_float = 0;
         if (format.nChannels > 2) {
-            audio->channels = 2;
-            audio->rate = stereo_format.nSamplesPerSec;
-            audio->format = stereo_format.wBitsPerSample;
-            audio->IEEE_FLOAT = 0;
+            new_channels = 2;
+            new_rate = stereo_format.nSamplesPerSec;
+            new_format = stereo_format.wBitsPerSample;
         } else {
-            audio->channels = format.nChannels;
-            audio->rate = format.nSamplesPerSec;
-            audio->format = format.wBitsPerSample;
+            new_channels = format.nChannels;
+            new_rate = format.nSamplesPerSec;
+            new_format = format.wBitsPerSample;
             if (format.wBitsPerSample == 32)
-                audio->IEEE_FLOAT = 1;
+                new_ieee_float = 1;
         }
 
+        pthread_mutex_lock(&audio->lock);
+        audio->channels = new_channels;
+        audio->rate = new_rate;
+        audio->format = new_format;
+        audio->IEEE_FLOAT = new_ieee_float;
+        audio->threadparams = 0;
         pthread_mutex_unlock(&audio->lock);
 
         // deviceChanged
         while (!audio->terminate) {
-            DWORD waitResult = WaitForSingleObject(hEvent, INFINITE);
+            DWORD waitResult = WaitForSingleObject(hEvent, 200);
+            if (waitResult == WAIT_TIMEOUT) {
+                continue;
+            }
             if (waitResult != WAIT_OBJECT_0) {
                 // Handle error or termination
-                continue;
+                break;
             }
 
             UINT32 packetLength;
@@ -583,16 +647,23 @@ void input_winscap(void *data) {
                 if (deviceChanged)
                     break;
 
-                pCapture->lpVtbl->GetBuffer(pCapture, &pData, &numFramesAvailable, &flags, 0, 0);
+                hr = pCapture->lpVtbl->GetBuffer(pCapture, &pData, &numFramesAvailable, &flags, 0,
+                                                 0);
+                if (FAILED(hr)) {
+                    fwprintf(stderr, L"GetBuffer failed: 0x%08lx\n", hr);
+                    break;
+                }
 
                 if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
-                    write_silent_frame(audio, pCapture, numFramesAvailable, packetLength);
+                    write_silent_frame(audio, numFramesAvailable);
+                    pCapture->lpVtbl->ReleaseBuffer(pCapture, numFramesAvailable);
+                    pCapture->lpVtbl->GetNextPacketSize(pCapture, &packetLength);
+                    ResetEvent(hEvent);
                     continue;
                 }
 
                 if (format.nChannels > 2) {
-                    process_multichannel(numFramesAvailable, format, pData, audio, pCapture,
-                                         packetLength, stereo_format);
+                    process_multichannel(numFramesAvailable, format, pData, audio, stereo_format);
                 } else {
                     write_to_cava_input_buffers(numFramesAvailable * format.nChannels,
                                                 (unsigned char *)pData, audio);
@@ -617,5 +688,8 @@ void input_winscap(void *data) {
             pEnumerator, (IMMNotificationClient *)&deviceChangeNotification);
     if (pEnumerator)
         pEnumerator->lpVtbl->Release(pEnumerator);
+    if (hEvent)
+        CloseHandle(hEvent);
     CoUninitialize();
+    return NULL;
 }

@@ -21,7 +21,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     // sanity checks:
     if (channels < 1 || channels > 2) {
         snprintf(p->error_message, 1024,
-                 "cava_init called with illegal number of channels: %d, number of channels "
+                 "cava_init called with illegal number of channels: %d, number of "
+                 "channels "
                  "supported are "
                  "1 and 2",
                  channels);
@@ -51,7 +52,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
     if (number_of_bars < 1) {
         snprintf(p->error_message, 1024,
-                 "cava_init called with illegal number of bars: %d, number of channels must be "
+                 "cava_init called with illegal number of bars: %d, number of "
+                 "channels must be "
                  "positive integer\n",
                  number_of_bars);
         p->status = -1;
@@ -60,7 +62,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
     if (number_of_bars > fft_buffer_size / 2 + 1) {
         snprintf(p->error_message, 1024,
-                 "cava_init called with illegal number of bars: %d, for %d sample rate number of "
+                 "cava_init called with illegal number of bars: %d, for %d sample "
+                 "rate number of "
                  "bars can't be more than %d\n",
                  number_of_bars, rate, fft_buffer_size / 2 + 1);
         p->status = -1;
@@ -78,7 +81,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     }
     if ((unsigned int)high_cut_off > rate / 2) {
         snprintf(p->error_message, 1024,
-                 "high_cut_off can't be higher than sample rate / 2. (Nyquist Sampling Theorem)\n");
+                 "high_cut_off can't be higher than sample rate / 2. (Nyquist "
+                 "Sampling Theorem)\n");
         p->status = -1;
         return p;
     }
@@ -180,7 +184,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
     int upper_cut_off = high_cut_off;
     int bass_cut_off = 100;
 
-    // calculate frequency constant (used to distribute bars across the frequency band)
+    // calculate frequency constant (used to distribute bars across the frequency
+    // band)
     double frequency_constant = log10((float)lower_cut_off / (float)upper_cut_off) /
                                 (1 / ((float)p->number_of_bars + 1) - 1);
 
@@ -238,8 +243,8 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
             if (!first_bar) {
                 p->FFTbuffer_upper_cut_off[n - 1] = p->FFTbuffer_lower_cut_off[n] - 1;
 
-                // pushing the spectrum up if the exponential function gets "clumped" in the
-                // bass and calculating new cut off frequencies
+                // pushing the spectrum up if the exponential function gets "clumped" in
+                // the bass and calculating new cut off frequencies
                 if (p->FFTbuffer_lower_cut_off[n] <= p->FFTbuffer_lower_cut_off[n - 1]) {
 
                     // check if there is room for more first
