@@ -915,10 +915,8 @@ Keys:\n\
                 memset(right_previous_frame, 0, sizeof(int) * number_of_bars);
             }
 
-            int x_axis_info = 0;
             // process: calculate x axis values
             if (p.xaxis != NONE) {
-                x_axis_info = 1;
                 double cut_off_frequency;
                 if (output_mode == OUTPUT_NONCURSES) {
                     printf("\r\033[%dB", lines + 1);
@@ -1349,7 +1347,7 @@ Keys:\n\
                     fflush(stdout);
                     printf("\033[2026l\033\\");
                 }
-                int rc;
+                int rc = 0;
 #ifdef _WIN32
                 QueryPerformanceCounter(&t1);
 #endif
@@ -1415,8 +1413,8 @@ Keys:\n\
 #ifdef NCURSES
                     rc = draw_terminal_ncurses(inAtty, *dimension_value / 8, *dimension_bar,
                                                number_of_bars, p.bar_width, p.bar_spacing,
-                                               remainder, bars, previous_frame, p.gradient,
-                                               x_axis_info, p.orientation);
+                                               remainder, bars, previous_frame, p.gradient, p.xaxis,
+                                               p.orientation);
                     break;
 #endif
                 case OUTPUT_RAW:

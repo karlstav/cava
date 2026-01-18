@@ -240,8 +240,8 @@ int init_terminal_noncurses(int tty, char *const fg_color_string, char *const bg
         orientation == ORIENT_SPLIT_V) {
         gradient_size = width;
     }
-    struct colors *horizontal_gradient_colors;
-    struct colors *vertical_gradient_colors;
+    struct colors *horizontal_gradient_colors = NULL;
+    struct colors *vertical_gradient_colors = NULL;
 
     if (vertical_gradient) {
         if (orientation == ORIENT_SPLIT_H || orientation == ORIENT_SPLIT_V) {
