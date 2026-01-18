@@ -1199,18 +1199,14 @@ Keys:\n\
                             cava_out[n] = (cava_out[n] + 1.0) / 2.0;
                     }
 
+                    if (p.sdl_glsl_gain != 1.0) {
+                        cava_out[n] *= p.sdl_glsl_gain;
+                    }
+
                     if (cava_out[n] > 1.0)
                         cava_out[n] = 1.0;
                     else if (cava_out[n] < 0.0)
                         cava_out[n] = 0.0;
-
-                    if (p.sdl_glsl_gain != 1.0) {
-                        cava_out[n] *= p.sdl_glsl_gain;
-                        if (cava_out[n] > 1.0)
-                            cava_out[n] = 1.0;
-                        else if (cava_out[n] < 0.0)
-                            cava_out[n] = 0.0;
-                    }
 
                     cava_out[n] *= *dimension_value;
                     if (p.orientation == ORIENT_SPLIT_H || p.orientation == ORIENT_SPLIT_V) {
