@@ -123,6 +123,9 @@ extern struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int ch
 extern void cava_execute(double *cava_in, int new_samples, double *cava_out,
                          struct cava_plan *plan);
 
+extern void cava_execute_with_phase(double *cava_in, int new_samples, double *cava_out,
+                                    float *phase_xy, struct cava_plan *plan);
+
 // cava_destroy, destroys the plan, frees up memory
 extern void cava_destroy(struct cava_plan *plan);
 

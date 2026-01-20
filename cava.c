@@ -691,6 +691,11 @@ Keys:\n\
         float *bars_raw;
         float *previous_bars_raw;
 
+        float *phase_xy_raw = NULL;
+        float *phase_xy = NULL;
+        int *phase_frame = NULL;
+        int *previous_phase_frame = NULL;
+
         int height, lines, width, remainder;
         int *dimension_bar, *dimension_value;
 #ifndef _WIN32
@@ -981,6 +986,19 @@ Keys:\n\
             memset(previous_frame, 0, sizeof(int) * number_of_bars);
             memset(cava_out, 0, sizeof(double) * number_of_bars * audio.channels / output_channels);
 
+#ifdef SDL_GLSL
+            if (output_mode == OUTPUT_SDL_GLSL && !p.waveform) {
+                phase_xy_raw = (float *)malloc(sizeof(float) * 2 * raw_number_of_bars);
+                phase_xy = (float *)malloc(sizeof(float) * 2 * number_of_bars);
+                phase_frame = (int *)malloc(sizeof(int) * number_of_bars);
+                previous_phase_frame = (int *)malloc(sizeof(int) * number_of_bars);
+                memset(phase_xy_raw, 0, sizeof(float) * 2 * raw_number_of_bars);
+                memset(phase_xy, 0, sizeof(float) * 2 * number_of_bars);
+                memset(phase_frame, 0, sizeof(int) * number_of_bars);
+                memset(previous_phase_frame, 0, sizeof(int) * number_of_bars);
+            }
+#endif
+
             if (p.split_stereo) {
                 right_bars = (int *)malloc(number_of_bars * sizeof(int));
                 right_previous_frame = (int *)malloc(number_of_bars * sizeof(int));
@@ -1249,7 +1267,15 @@ Keys:\n\
                         }
                     }
                 } else {
-                    cava_execute(audio.cava_in, audio.samples_counter, cava_out, plan);
+#ifdef SDL_GLSL
+                    if (output_mode == OUTPUT_SDL_GLSL && phase_xy_raw != NULL) {
+                        cava_execute_with_phase(audio.cava_in, audio.samples_counter, cava_out,
+                                                phase_xy_raw, plan);
+                    } else
+#endif
+                    {
+                        cava_execute(audio.cava_in, audio.samples_counter, cava_out, plan);
+                    }
                 }
                 if (audio.samples_counter > 0) {
                     audio.samples_counter = 0;
@@ -1312,6 +1338,10 @@ Keys:\n\
                                 cava_out[n] *=
                                     p.userEQ[(int)floor(((double)n) * userEQ_keys_to_bars_ratio)];
                             bars_raw[n] = cava_out[n];
+                            if (phase_xy != NULL && phase_xy_raw != NULL) {
+                                phase_xy[2 * n + 0] = phase_xy_raw[2 * n + 0];
+                                phase_xy[2 * n + 1] = phase_xy_raw[2 * n + 1];
+                            }
                         }
                     }
 
@@ -1330,6 +1360,12 @@ Keys:\n\
                         }
                     }
                     if (audio_channels == 2) {
+                        float *phase_left_xy = phase_xy_raw;
+                        float *phase_right_xy =
+                            (phase_xy_raw != NULL)
+                                ? (phase_xy_raw + 2 * (number_of_bars / output_channels))
+                                : NULL;
+
                         if (p.stereo) {
                             // mirroring stereo channels
                             if ((p.orientation == ORIENT_SPLIT_H ||
@@ -1339,14 +1375,33 @@ Keys:\n\
                                     if (n < number_of_bars / 2) {
                                         if (p.reverse) {
                                             bars_raw[n] = bars_left[number_of_bars / 2 - n - 1];
+                                            if (phase_xy != NULL && phase_left_xy != NULL) {
+                                                int idx = number_of_bars / 2 - n - 1;
+                                                phase_xy[2 * n + 0] = phase_left_xy[2 * idx + 0];
+                                                phase_xy[2 * n + 1] = phase_left_xy[2 * idx + 1];
+                                            }
                                         } else {
                                             bars_raw[n] = bars_left[n];
+                                            if (phase_xy != NULL && phase_left_xy != NULL) {
+                                                phase_xy[2 * n + 0] = phase_left_xy[2 * n + 0];
+                                                phase_xy[2 * n + 1] = phase_left_xy[2 * n + 1];
+                                            }
                                         }
                                     } else {
                                         if (p.reverse) {
                                             bars_raw[n] = bars_right[number_of_bars - n - 1];
+                                            if (phase_xy != NULL && phase_right_xy != NULL) {
+                                                int idx = number_of_bars - n - 1;
+                                                phase_xy[2 * n + 0] = phase_right_xy[2 * idx + 0];
+                                                phase_xy[2 * n + 1] = phase_right_xy[2 * idx + 1];
+                                            }
                                         } else {
                                             bars_raw[n] = bars_right[n - number_of_bars / 2];
+                                            if (phase_xy != NULL && phase_right_xy != NULL) {
+                                                int idx = n - number_of_bars / 2;
+                                                phase_xy[2 * n + 0] = phase_right_xy[2 * idx + 0];
+                                                phase_xy[2 * n + 1] = phase_right_xy[2 * idx + 1];
+                                            }
                                         }
                                     }
                                 }
@@ -1356,14 +1411,33 @@ Keys:\n\
                                     if (n < number_of_bars / 2) {
                                         if (p.reverse) {
                                             bars_raw[n] = bars_left[n];
+                                            if (phase_xy != NULL && phase_left_xy != NULL) {
+                                                phase_xy[2 * n + 0] = phase_left_xy[2 * n + 0];
+                                                phase_xy[2 * n + 1] = phase_left_xy[2 * n + 1];
+                                            }
                                         } else {
                                             bars_raw[n] = bars_left[number_of_bars / 2 - n - 1];
+                                            if (phase_xy != NULL && phase_left_xy != NULL) {
+                                                int idx = number_of_bars / 2 - n - 1;
+                                                phase_xy[2 * n + 0] = phase_left_xy[2 * idx + 0];
+                                                phase_xy[2 * n + 1] = phase_left_xy[2 * idx + 1];
+                                            }
                                         }
                                     } else {
                                         if (p.reverse) {
                                             bars_raw[n] = bars_right[number_of_bars - n - 1];
+                                            if (phase_xy != NULL && phase_right_xy != NULL) {
+                                                int idx = number_of_bars - n - 1;
+                                                phase_xy[2 * n + 0] = phase_right_xy[2 * idx + 0];
+                                                phase_xy[2 * n + 1] = phase_right_xy[2 * idx + 1];
+                                            }
                                         } else {
                                             bars_raw[n] = bars_right[n - number_of_bars / 2];
+                                            if (phase_xy != NULL && phase_right_xy != NULL) {
+                                                int idx = n - number_of_bars / 2;
+                                                phase_xy[2 * n + 0] = phase_right_xy[2 * idx + 0];
+                                                phase_xy[2 * n + 1] = phase_right_xy[2 * idx + 1];
+                                            }
                                         }
                                     }
                                 }
@@ -1376,18 +1450,59 @@ Keys:\n\
                                     if (p.mono_opt == AVERAGE) {
                                         bars_raw[number_of_bars - n - 1] =
                                             (bars_left[n] + bars_right[n]) / 2;
+                                        if (phase_xy != NULL && phase_left_xy != NULL &&
+                                            phase_right_xy != NULL) {
+                                            int out = number_of_bars - n - 1;
+                                            float x = (phase_left_xy[2 * n + 0] +
+                                                       phase_right_xy[2 * n + 0]) *
+                                                      0.5f;
+                                            float y = (phase_left_xy[2 * n + 1] +
+                                                       phase_right_xy[2 * n + 1]) *
+                                                      0.5f;
+                                            phase_xy[2 * out + 0] = x;
+                                            phase_xy[2 * out + 1] = y;
+                                        }
                                     } else if (p.mono_opt == LEFT) {
                                         bars_raw[number_of_bars - n - 1] = bars_left[n];
+                                        if (phase_xy != NULL && phase_left_xy != NULL) {
+                                            int out = number_of_bars - n - 1;
+                                            phase_xy[2 * out + 0] = phase_left_xy[2 * n + 0];
+                                            phase_xy[2 * out + 1] = phase_left_xy[2 * n + 1];
+                                        }
                                     } else if (p.mono_opt == RIGHT) {
                                         bars_raw[number_of_bars - n - 1] = bars_right[n];
+                                        if (phase_xy != NULL && phase_right_xy != NULL) {
+                                            int out = number_of_bars - n - 1;
+                                            phase_xy[2 * out + 0] = phase_right_xy[2 * n + 0];
+                                            phase_xy[2 * out + 1] = phase_right_xy[2 * n + 1];
+                                        }
                                     }
                                 } else {
                                     if (p.mono_opt == AVERAGE) {
                                         bars_raw[n] = (bars_left[n] + bars_right[n]) / 2;
+                                        if (phase_xy != NULL && phase_left_xy != NULL &&
+                                            phase_right_xy != NULL) {
+                                            float x = (phase_left_xy[2 * n + 0] +
+                                                       phase_right_xy[2 * n + 0]) *
+                                                      0.5f;
+                                            float y = (phase_left_xy[2 * n + 1] +
+                                                       phase_right_xy[2 * n + 1]) *
+                                                      0.5f;
+                                            phase_xy[2 * n + 0] = x;
+                                            phase_xy[2 * n + 1] = y;
+                                        }
                                     } else if (p.mono_opt == LEFT) {
                                         bars_raw[n] = bars_left[n];
+                                        if (phase_xy != NULL && phase_left_xy != NULL) {
+                                            phase_xy[2 * n + 0] = phase_left_xy[2 * n + 0];
+                                            phase_xy[2 * n + 1] = phase_left_xy[2 * n + 1];
+                                        }
                                     } else if (p.mono_opt == RIGHT) {
                                         bars_raw[n] = bars_right[n];
+                                        if (phase_xy != NULL && phase_right_xy != NULL) {
+                                            phase_xy[2 * n + 0] = phase_right_xy[2 * n + 0];
+                                            phase_xy[2 * n + 1] = phase_right_xy[2 * n + 1];
+                                        }
                                     }
                                 }
                             }
@@ -1411,6 +1526,15 @@ Keys:\n\
 
                     if (bars[n] != previous_frame[n])
                         re_paint = 1;
+
+                    if (output_mode == OUTPUT_SDL_GLSL && phase_frame != NULL &&
+                        previous_phase_frame != NULL && phase_xy != NULL) {
+                        int px = (int)(phase_xy[2 * n + 0] * 1000.0f);
+                        int py = (int)(phase_xy[2 * n + 1] * 1000.0f);
+                        phase_frame[n] = px * 31 + py;
+                        if (phase_frame[n] != previous_phase_frame[n])
+                            re_paint = 1;
+                    }
 #endif
                 }
 
@@ -1435,8 +1559,9 @@ Keys:\n\
 #endif
 #ifdef SDL_GLSL
                 case OUTPUT_SDL_GLSL:
-                    rc = draw_sdl_glsl(number_of_bars, bars_raw, previous_bars_raw, frame_time_msec,
-                                       re_paint, p.continuous_rendering);
+                    rc = draw_sdl_glsl_with_phase(number_of_bars, bars_raw, previous_bars_raw,
+                                                  phase_xy, frame_time_msec, re_paint,
+                                                  p.continuous_rendering);
                     break;
 #endif
                 case OUTPUT_NONCURSES:
@@ -1530,6 +1655,9 @@ Keys:\n\
                 memcpy(previous_frame, bars, number_of_bars * sizeof(int));
                 if (p.output == OUTPUT_SDL_GLSL) {
                     memcpy(previous_bars_raw, bars_raw, number_of_bars * sizeof(float));
+                    if (previous_phase_frame != NULL && phase_frame != NULL) {
+                        memcpy(previous_phase_frame, phase_frame, number_of_bars * sizeof(int));
+                    }
                 }
 
 #ifdef _WIN32
@@ -1592,6 +1720,10 @@ Keys:\n\
             free(bars_raw);
             free(previous_bars_raw);
             free(previous_frame);
+            free(phase_xy_raw);
+            free(phase_xy);
+            free(phase_frame);
+            free(previous_phase_frame);
             if (p.split_stereo) {
                 free(right_bars);
                 free(right_previous_frame);

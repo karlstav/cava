@@ -18,7 +18,7 @@
 
 #include <sys/stat.h>
 
-#define NUMBER_OF_SHADERS 10
+#define NUMBER_OF_SHADERS 27
 
 #define NUMBER_OF_THEMES 2
 
@@ -35,9 +35,25 @@
 #define IDR_EYE_OF_PHI_SHADER 107
 #define IDR_ORION_CIRCLE_SHADER 108
 #define IDR_ORION_CIRCLE_ROTATE_SHADER 109
-#define IDR_ORION_SATURN_SUBRING_SHADER 110
-#define IDR_ORION_SATURN_CORE_SHADER 111
-
+#define IDR_ORION_SATURN_SHADER 110
+#define IDR_ORION_CORE_SHADER 111
+#define IDR_ORION_SPIRAL_SHADER 112
+#define IDR_POLAR_FFT_SHADER 113
+#define IDR_POLAR_SMEAR_SHADER 114
+#define IDR_ENERGY_BLOB_SHADER 115
+#define IDR_KALEIDO_TUNNEL_SHADER 116
+#define IDR_LISSAJOUS_RIBBON_SHADER 117
+#define IDR_TOPOLOGICAL_RING_COLLAPSE_SHADER 118
+#define IDR_SPECTRAL_INTERFERENCE_SHADER 119
+#define IDR_PHASE_LOCKED_HARMONIC_FIELD_SHADER 120
+#define IDR_TEMPORAL_BLOOM_SHADER 121
+#define IDR_FIELD_RADIAL_SHADER 122
+#define IDR_SPECTRAL_MASS_SHADER 123
+#define IDR_VOID_RING_SHADER 124
+#define IDR_PHASE_COHERENCE_CONSTELLATION_SHADER 125
+#define IDR_SPECTRAL_MEMORY_IMPRINT_SHADER 126
+#define IDR_HARMONIC_LOCK_SHADER 127
+#define IDR_ENTROPY_DRIVEN_COLLAPSE_SHADER 128
 #define IDR_SOLARIZED_DARK_THEME 501
 #define IDR_TRICOLOR_THEME 502
 
@@ -58,13 +74,33 @@ static void LoadFileInResource(int name, int type, DWORD *size, const char **dat
         *data = (const char *)(LockResource(rcData));
     }
 }
-
-int default_shader_data[NUMBER_OF_SHADERS] = {
-    IDR_NORTHERN_LIGHTS_SHADER,      IDR_PASS_THROUGH_SHADER,
-    IDR_BAR_SPECTRUM_SHADER,         IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER,
-    IDR_SPECTROGRAM_SHADER,          IDR_EYE_OF_PHI_SHADER,
-    IDR_ORION_CIRCLE_SHADER,         IDR_ORION_CIRCLE_ROTATE_SHADER,
-    IDR_ORION_SATURN_SUBRING_SHADER, IDR_ORION_SATURN_CORE_SHADER};
+int default_shader_data[NUMBER_OF_SHADERS] = {IDR_NORTHERN_LIGHTS_SHADER,
+                                              IDR_PASS_THROUGH_SHADER,
+                                              IDR_BAR_SPECTRUM_SHADER,
+                                              IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER,
+                                              IDR_SPECTROGRAM_SHADER,
+                                              IDR_POLAR_FFT_SHADER,
+                                              IDR_POLAR_SMEAR_SHADER,
+                                              IDR_ENERGY_BLOB_SHADER,
+                                              IDR_KALEIDO_TUNNEL_SHADER,
+                                              IDR_LISSAJOUS_RIBBON_SHADER,
+                                              IDR_TOPOLOGICAL_RING_COLLAPSE_SHADER,
+                                              IDR_SPECTRAL_INTERFERENCE_SHADER,
+                                              IDR_PHASE_LOCKED_HARMONIC_FIELD_SHADER,
+                                              IDR_TEMPORAL_BLOOM_SHADER,
+                                              IDR_SPECTRAL_MEMORY_IMPRINT_SHADER,
+                                              IDR_HARMONIC_LOCK_SHADER,
+                                              IDR_ENTROPY_DRIVEN_COLLAPSE_SHADER,
+                                              IDR_FIELD_RADIAL_SHADER,
+                                              IDR_SPECTRAL_MASS_SHADER,
+                                              IDR_VOID_RING_SHADER,
+                                              IDR_PHASE_COHERENCE_CONSTELLATION_SHADER,
+                                              IDR_EYE_OF_PHI_SHADER,
+                                              IDR_ORION_CIRCLE_SHADER,
+                                              IDR_ORION_CIRCLE_ROTATE_SHADER,
+                                              IDR_ORION_SPIRAL_SHADER,
+                                              IDR_ORION_SATURN_SHADER,
+                                              IDR_ORION_CORE_SHADER};
 
 int default_theme_data[NUMBER_OF_THEMES] = {IDR_SOLARIZED_DARK_THEME, IDR_TRICOLOR_THEME};
 #else
@@ -78,11 +114,28 @@ INCTXT(bar_spectrum, "output/shaders/bar_spectrum.frag");
 INCTXT(northern_lightsfrag, "output/shaders/northern_lights.frag");
 INCTXT(winamp_line_style_spectrum, "output/shaders/winamp_line_style_spectrum.frag");
 INCTXT(spectrogram, "output/shaders/spectrogram.frag");
+INCTXT(polar_fft, "output/shaders/polar_fft.frag");
+INCTXT(polar_smear, "output/shaders/polar_smear.frag");
+INCTXT(energy_blob, "output/shaders/energy_blob.frag");
+INCTXT(kaleido_tunnel, "output/shaders/kaleido_tunnel.frag");
+INCTXT(lissajous_ribbon, "output/shaders/lissajous_ribbon.frag");
+INCTXT(topological_ring_collapse, "output/shaders/topological_ring_collapse.frag");
+INCTXT(spectral_interference, "output/shaders/spectral_interference.frag");
+INCTXT(phase_locked_harmonic_field, "output/shaders/phase_locked_harmonic_field.frag");
+INCTXT(temporal_bloom, "output/shaders/temporal_bloom.frag");
+INCTXT(spectral_memory_imprint, "output/shaders/spectral_memory_imprint.frag");
+INCTXT(harmonic_lock, "output/shaders/harmonic_lock.frag");
+INCTXT(entropy_driven_collapse, "output/shaders/entropy_driven_collapse.frag");
+INCTXT(field_radial, "output/shaders/field_radial.frag");
+INCTXT(spectral_mass, "output/shaders/spectral_mass.frag");
+INCTXT(void_ring, "output/shaders/void_ring.frag");
+INCTXT(phase_coherence_constellation, "output/shaders/phase_coherence_constellation.frag");
 INCTXT(eye_of_phi, "output/shaders/eye_of_phi.frag");
 INCTXT(orion_circle, "output/shaders/orion_circle.frag");
 INCTXT(orion_circle_rotate, "output/shaders/orion_circle_rotate.frag");
-INCTXT(orion_saturn_subring, "output/shaders/orion_saturn_subring.frag");
-INCTXT(orion_saturn_core, "output/shaders/orion_saturn_core.frag");
+INCTXT(orion_spiral, "output/shaders/orion_spiral.frag");
+INCTXT(orion_saturn, "output/shaders/orion_saturn_subring.frag");
+INCTXT(orion_core, "output/shaders/orion_saturn_core.frag");
 
 INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
 
@@ -90,23 +143,65 @@ INCTXT(solarized_dark, "output/themes/solarized_dark");
 INCTXT(tricolor, "output/themes/tricolor");
 
 // INCTXT will create a char g<name>Data
-const char *default_shader_data[NUMBER_OF_SHADERS] = {
-    gnorthern_lightsfragData,  gpass_throughvertData,
-    gbar_spectrumData,         gwinamp_line_style_spectrumData,
-    gspectrogramData,          geye_of_phiData,
-    gorion_circleData,         gorion_circle_rotateData,
-    gorion_saturn_subringData, gorion_saturn_coreData};
+const char *default_shader_data[NUMBER_OF_SHADERS] = {gnorthern_lightsfragData,
+                                                      gpass_throughvertData,
+                                                      gbar_spectrumData,
+                                                      gwinamp_line_style_spectrumData,
+                                                      gspectrogramData,
+                                                      gpolar_fftData,
+                                                      gpolar_smearData,
+                                                      genergy_blobData,
+                                                      gkaleido_tunnelData,
+                                                      glissajous_ribbonData,
+                                                      gtopological_ring_collapseData,
+                                                      gspectral_interferenceData,
+                                                      gphase_locked_harmonic_fieldData,
+                                                      gtemporal_bloomData,
+                                                      gspectral_memory_imprintData,
+                                                      gharmonic_lockData,
+                                                      gentropy_driven_collapseData,
+                                                      gfield_radialData,
+                                                      gspectral_massData,
+                                                      gvoid_ringData,
+                                                      gphase_coherence_constellationData,
+                                                      geye_of_phiData,
+                                                      gorion_circleData,
+                                                      gorion_circle_rotateData,
+                                                      gorion_spiralData,
+                                                      gorion_saturnData,
+                                                      gorion_coreData};
 
 const char *default_theme_data[NUMBER_OF_THEMES] = {gsolarized_darkData, gtricolorData};
 #endif // _WIN32
-
-// name of the installed shader file, technically does not have to be the same as in the source
-const char *default_shader_name[NUMBER_OF_SHADERS] = {
-    "northern_lights.frag",      "pass_through.vert",
-    "bar_spectrum.frag",         "winamp_line_style_spectrum.frag",
-    "spectrogram.frag",          "eye_of_phi.frag",
-    "orion_circle.frag",         "orion_circle_rotate.frag",
-    "orion_saturn_subring.frag", "orion_saturn_core.frag"};
+// name of the installed shader file, technically does not have to be the same
+// as in the source
+const char *default_shader_name[NUMBER_OF_SHADERS] = {"northern_lights.frag",
+                                                      "pass_through.vert",
+                                                      "bar_spectrum.frag",
+                                                      "winamp_line_style_spectrum.frag",
+                                                      "spectrogram.frag",
+                                                      "polar_fft.frag",
+                                                      "polar_smear.frag",
+                                                      "energy_blob.frag",
+                                                      "kaleido_tunnel.frag",
+                                                      "lissajous_ribbon.frag",
+                                                      "topological_ring_collapse.frag",
+                                                      "spectral_interference.frag",
+                                                      "phase_locked_harmonic_field.frag",
+                                                      "temporal_bloom.frag",
+                                                      "spectral_memory_imprint.frag",
+                                                      "harmonic_lock.frag",
+                                                      "entropy_driven_collapse.frag",
+                                                      "field_radial.frag",
+                                                      "spectral_mass.frag",
+                                                      "void_ring.frag",
+                                                      "phase_coherence_constellation.frag",
+                                                      "eye_of_phi.frag",
+                                                      "orion_circle.frag",
+                                                      "orion_circle_rotate.frag",
+                                                      "orion_spiral.frag",
+                                                      "orion_saturn_subring.frag",
+                                                      "orion_saturn_core.frag"};
 const char *default_theme_name[NUMBER_OF_THEMES] = {"solarized_dark", "tricolor"};
 
 double smoothDef[5] = {1, 1, 1, 1, 1};

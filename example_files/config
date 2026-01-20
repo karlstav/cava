@@ -232,6 +232,22 @@
 ; fragment_shader = eye_of_phi.frag
 ; fragment_shader = northern_lights.frag
 ; fragment_shader = spectrogram.frag
+; fragment_shader = polar_fft.frag
+; fragment_shader = polar_smear.frag
+; fragment_shader = energy_blob.frag
+; fragment_shader = kaleido_tunnel.frag
+; fragment_shader = lissajous_ribbon.frag
+; fragment_shader = topological_ring_collapse.frag
+; fragment_shader = spectral_interference.frag
+; fragment_shader = phase_locked_harmonic_field.frag
+; fragment_shader = temporal_bloom.frag
+; fragment_shader = spectral_memory_imprint.frag
+; fragment_shader = harmonic_lock.frag
+; fragment_shader = entropy_driven_collapse.frag
+; fragment_shader = field_radial.frag
+; fragment_shader = spectral_mass.frag
+; fragment_shader = void_ring.frag
+; fragment_shader = phase_coherence_constellation.frag
 ; fragment_shader = winamp_line_style_spectrum.frag
 
 # Orion shaders (use with: method = sdl_glsl)
@@ -239,6 +255,8 @@
 ; fragment_shader = orion_circle.frag
 # Rotating Orion
 ; fragment_shader = orion_circle_rotate.frag
+# Orion spiral
+; fragment_shader = orion_spiral.frag
 # Orion saturn subring
 ; fragment_shader = orion_saturn_subring.frag
 # Orion saturn core

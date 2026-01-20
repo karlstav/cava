@@ -452,6 +452,89 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     }
 }
 
+void cava_execute_with_phase(double *cava_in, int new_samples, double *cava_out, float *phase_xy,
+                             struct cava_plan *p) {
+    cava_execute(cava_in, new_samples, cava_out, p);
+
+    if (!phase_xy) {
+        return;
+    }
+
+    int n_bars = p->number_of_bars;
+    double eps = 1e-12;
+
+    for (int n = 0; n < n_bars; n++) {
+        double sum_re_l = 0.0;
+        double sum_im_l = 0.0;
+        double sum_mag_l = 0.0;
+
+        double sum_re_r = 0.0;
+        double sum_im_r = 0.0;
+        double sum_mag_r = 0.0;
+
+        for (int i = p->FFTbuffer_lower_cut_off[n]; i <= p->FFTbuffer_upper_cut_off[n]; i++) {
+            if (n < p->bass_cut_off_bar) {
+                double re_l = p->out_bass_l[i][0];
+                double im_l = p->out_bass_l[i][1];
+                double mag_l = hypot(re_l, im_l);
+
+                sum_re_l += re_l;
+                sum_im_l += im_l;
+                sum_mag_l += mag_l;
+
+                if (p->audio_channels == 2) {
+                    double re_r = p->out_bass_r[i][0];
+                    double im_r = p->out_bass_r[i][1];
+                    double mag_r = hypot(re_r, im_r);
+
+                    sum_re_r += re_r;
+                    sum_im_r += im_r;
+                    sum_mag_r += mag_r;
+                }
+            } else {
+                double re_l = p->out_l[i][0];
+                double im_l = p->out_l[i][1];
+                double mag_l = hypot(re_l, im_l);
+
+                sum_re_l += re_l;
+                sum_im_l += im_l;
+                sum_mag_l += mag_l;
+
+                if (p->audio_channels == 2) {
+                    double re_r = p->out_r[i][0];
+                    double im_r = p->out_r[i][1];
+                    double mag_r = hypot(re_r, im_r);
+
+                    sum_re_r += re_r;
+                    sum_im_r += im_r;
+                    sum_mag_r += mag_r;
+                }
+            }
+        }
+
+        float x_l = 0.0f;
+        float y_l = 0.0f;
+        if (sum_mag_l > eps) {
+            x_l = (float)(sum_re_l / sum_mag_l);
+            y_l = (float)(sum_im_l / sum_mag_l);
+        }
+        phase_xy[2 * n + 0] = x_l;
+        phase_xy[2 * n + 1] = y_l;
+
+        if (p->audio_channels == 2) {
+            float x_r = 0.0f;
+            float y_r = 0.0f;
+            if (sum_mag_r > eps) {
+                x_r = (float)(sum_re_r / sum_mag_r);
+                y_r = (float)(sum_im_r / sum_mag_r);
+            }
+            int off = 2 * (n + n_bars);
+            phase_xy[off + 0] = x_r;
+            phase_xy[off + 1] = y_r;
+        }
+    }
+}
+
 void cava_destroy(struct cava_plan *p) {
 
     free(p->input_buffer);

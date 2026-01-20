@@ -20,9 +20,26 @@ EXTRA_DIST = \
     output/shaders/northern_lights.frag \
     output/shaders/winamp_line_style_spectrum.frag \
     output/shaders/spectrogram.frag \
+    output/shaders/polar_fft.frag \
+    output/shaders/polar_smear.frag \
+    output/shaders/energy_blob.frag \
+    output/shaders/kaleido_tunnel.frag \
+    output/shaders/lissajous_ribbon.frag \
+    output/shaders/topological_ring_collapse.frag \
+    output/shaders/spectral_interference.frag \
+    output/shaders/phase_locked_harmonic_field.frag \
+    output/shaders/temporal_bloom.frag \
+    output/shaders/spectral_memory_imprint.frag \
+    output/shaders/harmonic_lock.frag \
+    output/shaders/entropy_driven_collapse.frag \
+    output/shaders/field_radial.frag \
+    output/shaders/spectral_mass.frag \
+    output/shaders/void_ring.frag \
+    output/shaders/phase_coherence_constellation.frag \
     output/shaders/eye_of_phi.frag \
     output/shaders/orion_circle.frag \
     output/shaders/orion_circle_rotate.frag \
+    output/shaders/orion_spiral.frag \
     output/shaders/orion_saturn_subring.frag \
     output/shaders/orion_saturn_core.frag \
     output/themes/solarized_dark \

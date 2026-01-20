@@ -18,6 +18,7 @@
 SDL_Window *glWindow = NULL;
 GLuint shading_program;
 GLint uniform_bars;
+GLint uniform_phase_xy;
 GLint uniform_previous_bars;
 GLint uniform_bars_count;
 GLint uniform_time;
@@ -112,6 +113,30 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
 
     glUseProgram(shading_program);
 
+    if (gVAO == 0) {
+        glGenVertexArrays(1, &gVAO);
+    }
+    glBindVertexArray(gVAO);
+
+    if (gVBO == 0) {
+        glGenBuffers(1, &gVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, gVBO);
+        const GLfloat vertices[] = {-1.0f, -1.0f, 0.0f, -1.0f, 1.0f,  0.0f,
+                                    1.0f,  1.0f,  0.0f, 1.0f,  -1.0f, 0.0f};
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    } else {
+        glBindBuffer(GL_ARRAY_BUFFER, gVBO);
+    }
+
+    if (gIBO == 0) {
+        glGenBuffers(1, &gIBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
+        const GLuint indices[] = {0, 1, 2, 3};
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    } else {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
+    }
+
     GLint gVertexPos2DLocation = -1;
 
     gVertexPos2DLocation = glGetAttribLocation(shading_program, "vertexPosition_modelspace");
@@ -120,33 +145,14 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
         exit(1);
     }
 
+    glDisable(GL_BLEND);
     glClearColor(0.f, 0.f, 0.f, 1.f);
-
-    GLfloat vertexData[] = {-1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f};
-
-    GLuint indexData[] = {0, 1, 2, 3};
-
-    GLuint gVBO = 0;
-    glGenBuffers(1, &gVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, gVBO);
-    glBufferData(GL_ARRAY_BUFFER, 2 * 4 * sizeof(GLfloat), vertexData, GL_STATIC_DRAW);
-
-    GLuint gIBO = 0;
-    glGenBuffers(1, &gIBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 4 * sizeof(GLuint), indexData, GL_STATIC_DRAW);
-
-    GLuint gVAO = 0;
-    glGenVertexArrays(1, &gVAO);
-    glBindVertexArray(gVAO);
     glEnableVertexAttribArray(gVertexPos2DLocation);
 
-    glBindBuffer(GL_ARRAY_BUFFER, gVBO);
-    glVertexAttribPointer(gVertexPos2DLocation, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), NULL);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
+    glVertexAttribPointer(gVertexPos2DLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), NULL);
 
     uniform_bars = glGetUniformLocation(shading_program, "bars");
+    uniform_phase_xy = glGetUniformLocation(shading_program, "phase_xy");
     uniform_previous_bars = glGetUniformLocation(shading_program, "previous_bars");
     uniform_bars_count = glGetUniformLocation(shading_program, "bars_count");
     uniform_time = glGetUniformLocation(shading_program, "shader_time");
@@ -232,9 +238,78 @@ void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string, char *co
     glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
     SDL_GL_SwapWindow(glWindow);
 }
+bool reload_sdl_glsl_shaders(char *const vertex_shader, char *const fragment_shader) {
+    if (glWindow == NULL || glContext == NULL) {
+        return false;
+    }
 
+    GLuint old_program = shading_program;
+
+    GLuint new_program = custom_shaders(vertex_shader, fragment_shader);
+    glReleaseShaderCompiler();
+    if (new_program == 0) {
+        return false;
+    }
+
+    shading_program = new_program;
+    glUseProgram(shading_program);
+
+    uniform_bars = glGetUniformLocation(shading_program, "bars");
+    uniform_phase_xy = glGetUniformLocation(shading_program, "phase_xy");
+    uniform_previous_bars = glGetUniformLocation(shading_program, "previous_bars");
+    uniform_bars_count = glGetUniformLocation(shading_program, "bars_count");
+    uniform_time = glGetUniformLocation(shading_program, "shader_time");
+    uniform_input_texture = glGetUniformLocation(shading_program, "inputTexture");
+
+    if (uniform_input_texture != -1) {
+        if (fbo == 0 || texture == 0) {
+            int w = 0;
+            int h = 0;
+            SDL_GetWindowSize(glWindow, &w, &h);
+
+            glGenFramebuffers(1, &fbo);
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+
+            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+                fprintf(stderr, "Framebuffer not complete!\n");
+                exit(1);
+            }
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+    } else {
+        if (fbo != 0) {
+            glDeleteFramebuffers(1, &fbo);
+            fbo = 0;
+        }
+        if (texture != 0) {
+            glDeleteTextures(1, &texture);
+            texture = 0;
+        }
+    }
+
+    if (old_program != 0) {
+        glDeleteProgram(old_program);
+    }
+
+    return true;
+}
 int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[], int frame_time,
                   int re_paint, int continuous_rendering) {
+    return draw_sdl_glsl_with_phase(bars_count, bars, previous_bars, NULL, frame_time, re_paint,
+                                    continuous_rendering);
+}
+
+int draw_sdl_glsl_with_phase(int bars_count, const float bars[], const float previous_bars[],
+                             const float phase_xy[], int frame_time, int re_paint,
+                             int continuous_rendering) {
 
     int rc = 0;
     SDL_Event event;
@@ -247,6 +322,8 @@ int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[
         }
         if (uniform_bars != -1)
             glUniform1fv(uniform_bars, bars_count, bars);
+        if (uniform_phase_xy != -1 && phase_xy != NULL)
+            glUniform2fv(uniform_phase_xy, bars_count, phase_xy);
         if (uniform_previous_bars != -1)
             glUniform1fv(uniform_previous_bars, bars_count, previous_bars);
         if (uniform_bars_count != -1)
