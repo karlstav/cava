@@ -40,6 +40,12 @@
 #include <sys/types.h>
 #include <time.h>
 
+#ifdef _WIN32
+static char *cava_strdup(const char *s) { return _strdup(s); }
+#else
+static char *cava_strdup(const char *s) { return strdup(s); }
+#endif
+
 #include "cavacore.h"
 
 #include "config.h"
@@ -180,9 +186,9 @@ static bool try_soft_reload_sdl_glsl(char *configPath, int audio_channels, struc
                 return false;
             }
             free(p->vertex_shader);
-            p->vertex_shader = strdup(p_new.vertex_shader);
+            p->vertex_shader = cava_strdup(p_new.vertex_shader);
             free(p->fragment_shader);
-            p->fragment_shader = strdup(p_new.fragment_shader);
+            p->fragment_shader = cava_strdup(p_new.fragment_shader);
         }
 
         bool layout_changed =
