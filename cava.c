@@ -306,12 +306,13 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
         }
     }
     return bars;
-} // <--- Added closing brace here
+}
 
 // general: entry point
 int main(int argc, char **argv) {
 
     struct config_params p;
+    memset(&p, 0, sizeof(p));
     // handle command-line arguments
     char configPath[PATH_MAX];
     configPath[0] = '\0';
