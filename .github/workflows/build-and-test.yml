@@ -16,6 +16,7 @@ jobs:
           source: .
           exclude: ./third_party
           extensions: h,c
+          clangFormatVersion: 9
 
   build-linux:
     runs-on: ubuntu-latest
