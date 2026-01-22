@@ -89,26 +89,70 @@
 #ifdef _WIN32
 char *optarg = NULL;
 int optind = 1;
+int optopt = 0;
 
 static int getopt(int argc, char *const argv[], const char *optstring) {
     if ((optind >= argc) || (argv[optind][0] != '-') || (argv[optind][0] == 0)) {
         return -1;
     }
 
+    if (argv[optind][0] == '-' && argv[optind][1] == '\0') {
+        return -1;
+    }
+
+    if (strcmp(argv[optind], "--") == 0) {
+        optind++;
+        return -1;
+    }
+
+    if (argv[optind][0] == '-' && argv[optind][1] == '-' && argv[optind][2] != '\0') {
+        const char *longopt = argv[optind] + 2;
+        if (strcmp(longopt, "help") == 0) {
+            optopt = 'h';
+            optind++;
+            return 'h';
+        }
+        if (strcmp(longopt, "version") == 0) {
+            optopt = 'v';
+            optind++;
+            return 'v';
+        }
+        if (strcmp(longopt, "config") == 0) {
+            optopt = 'p';
+            optind++;
+            if (optind >= argc) {
+                return ':';
+            }
+            optarg = argv[optind];
+            optind++;
+            return 'p';
+        }
+        optopt = 0;
+        optind++;
+        return '?';
+    }
+
     int opt = argv[optind][1];
     const char *p = strchr(optstring, opt);
 
     if (p == NULL) {
+        optopt = opt;
+        optind++;
         return '?';
     }
     if (p[1] == ':') {
+        optopt = opt;
         optind++;
         if (optind >= argc) {
-            return '?';
+            return ':';
         }
         optarg = argv[optind];
         optind++;
+        return opt;
     }
+
+    optopt = opt;
+    optind++;
     return opt;
 }
 #endif
@@ -267,12 +311,9 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
 // general: entry point
 int main(int argc, char **argv) {
 
-#ifndef _WIN32
-    // general: console title
-    printf("%c]0;%s%c", '\033', PACKAGE, '\007');
-#endif // !_WIN32
-
-    // general: handle command-line arguments
+    struct config_params p;
+    memset(&p, 0, sizeof(p));
+    // handle command-line arguments
     char configPath[PATH_MAX];
     configPath[0] = '\0';
 #ifdef _WIN32
@@ -291,12 +332,13 @@ int main(int argc, char **argv) {
     sigaction(SIGUSR2, &action, NULL);
 #endif
     char *usage = "\n\
-Usage : " PACKAGE " [options]\n\
-Visualize audio input in terminal. \n\
+Usage: " PACKAGE " [options]\n\
+Visualize audio input in terminal.\n\
 \n\
 Options:\n\
-	-p          path to config file\n\
-	-v          print version\n\
+\t-p, --config <path>    Path to config file\n\
+\t-v, --version          Print version and exit\n\
+\t-h, --help             Show this help and exit\n\
 \n\
 Keys:\n\
         Up        Increase sensitivity\n\
@@ -311,24 +353,55 @@ Keys:\n\
         q         Quit\n\
 \n";
     int c;
-    while ((c = getopt(argc, argv, "p:vh")) != -1) {
+#ifndef _WIN32
+    static struct option long_options[] = {
+        {"config", required_argument, NULL, 'p'},
+        {"version", no_argument, NULL, 'v'},
+        {"help", no_argument, NULL, 'h'},
+        {0, 0, 0, 0},
+    };
+    opterr = 0;
+    while ((c = getopt_long(argc, argv, ":p:vh", long_options, NULL)) != -1) {
+#else
+    while ((c = getopt(argc, argv, ":p:vh")) != -1) {
+#endif
         switch (c) {
         case 'p': // argument: config path
             snprintf(configPath, sizeof(configPath), "%s", optarg);
             break;
         case 'h': // argument: print usage
             printf("%s", usage);
-            return 1;
-        case '?': // argument: print usage
-            printf("%s", usage);
-            return 1;
+            return 0;
         case 'v': // argument: print version
             printf(PACKAGE " " VERSION "\n");
             return 0;
+        case ':': // missing argument
+            fprintf(stderr, PACKAGE ": error: option requires an argument -- '%c'\n", optopt);
+            fprintf(stderr, "Try '%s --help' for more information.\n", PACKAGE);
+            return 1;
+        case '?': // unknown option
+            if (optopt != 0) {
+                fprintf(stderr, PACKAGE ": error: invalid option -- '%c'\n", optopt);
+            } else {
+                fprintf(stderr, PACKAGE ": error: invalid option\n");
+            }
+            fprintf(stderr, "Try '%s --help' for more information.\n", PACKAGE);
+            return 1;
         default: // argument: no arguments; exit
             abort();
         }
     }
+
+    if (optind < argc) {
+        fprintf(stderr, PACKAGE ": error: unknown argument '%s'\n", argv[optind]);
+        fprintf(stderr, "Try '%s --help' for more information.\n", PACKAGE);
+        return 1;
+    }
+
+#ifndef _WIN32
+    // general: console title
+    printf("%c]0;%s%c", '\033', PACKAGE, '\007');
+#endif // !_WIN32
 
     // general: main loop
     while (1) {
