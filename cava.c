@@ -40,14 +40,6 @@
 #include <sys/types.h>
 #include <time.h>
 
-#ifdef SDL_GLSL
-#ifdef _WIN32
-static char *cava_strdup(const char *s) { return _strdup(s); }
-#else
-static char *cava_strdup(const char *s) { return strdup(s); }
-#endif
-#endif
-
 #include "cavacore.h"
 
 #include "config.h"
@@ -147,122 +139,66 @@ static bool get_file_state(const char *path, time_t *mtime, long long *size) {
     return true;
 }
 
-#if defined(SDL_GLSL) || defined(SDL)
-static void update_frame_timing(const struct config_params *p, int *effective_framerate,
-                                long long *frame_time_ns, int *frame_time_msec,
-                                struct timespec *framerate_timer) {
-    *effective_framerate = p->framerate;
-    if (*effective_framerate <= 0)
-        *effective_framerate = 60;
+static void reload_superficial_drawing_params(char *configPath, int audio_channels,
+                                              struct config_params *p, bool *has_config_state) {
+    struct config_params p_new = {0};
+    struct error_s error;
+    error.length = 0;
 
-    *frame_time_ns = (long long)(1000000000.0 / (double)*effective_framerate);
-    if (*frame_time_ns < 1)
-        *frame_time_ns = 1;
+    if (!load_config(configPath, &p_new, &error)) {
+        fprintf(stderr, "Error loading config. %s", error.message);
+        *has_config_state = false;
+        free_config(&p_new);
+        return;
+    }
 
-    *frame_time_msec = (int)(*frame_time_ns / 1000000LL);
-    if (*frame_time_msec < 1)
-        *frame_time_msec = 1;
+    if (audio_channels == 1) {
+        p_new.stereo = 0;
+        p_new.split_stereo = 0;
+    }
 
-    framerate_timer->tv_sec = *frame_time_ns / 1000000000LL;
-    framerate_timer->tv_nsec = *frame_time_ns % 1000000000LL;
-}
+    free(p->theme);
+    p->theme = p_new.theme;
+    p_new.theme = NULL;
+
+    free(p->color);
+    p->color = p_new.color;
+    p_new.color = NULL;
+
+    free(p->bcolor);
+    p->bcolor = p_new.bcolor;
+    p_new.bcolor = NULL;
 
 #ifdef SDL_GLSL
-static bool try_soft_reload_sdl_glsl(char *configPath, int audio_channels, struct config_params *p,
-                                     int *width, int *height, bool *resizeTerminal,
-                                     bool *has_config_state) {
-    struct config_params p_new = {0};
-    struct error_s error;
-    error.length = 0;
-    if (load_config(configPath, &p_new, &error)) {
-        if (audio_channels == 1) {
-            p_new.stereo = 0;
-            p_new.split_stereo = 0;
-        }
-
-        bool shaders_changed = (strcmp(p_new.vertex_shader, p->vertex_shader) != 0) ||
-                               (strcmp(p_new.fragment_shader, p->fragment_shader) != 0);
+    if (p->output == OUTPUT_SDL_GLSL) {
+        bool shaders_changed = (p->vertex_shader && p_new.vertex_shader &&
+                                strcmp(p_new.vertex_shader, p->vertex_shader) != 0) ||
+                               (p->fragment_shader && p_new.fragment_shader &&
+                                strcmp(p_new.fragment_shader, p->fragment_shader) != 0);
         if (shaders_changed) {
-            if (!reload_sdl_glsl_shaders(p_new.vertex_shader, p_new.fragment_shader)) {
-                free_config(&p_new);
-                return false;
+            if (reload_sdl_glsl_shaders(p_new.vertex_shader, p_new.fragment_shader)) {
+                free(p->vertex_shader);
+                p->vertex_shader = p_new.vertex_shader;
+                p_new.vertex_shader = NULL;
+                free(p->fragment_shader);
+                p->fragment_shader = p_new.fragment_shader;
+                p_new.fragment_shader = NULL;
+            } else {
+                fprintf(stderr, "Error loading shaders.\n");
             }
-            free(p->vertex_shader);
-            p->vertex_shader = cava_strdup(p_new.vertex_shader);
-            free(p->fragment_shader);
-            p->fragment_shader = cava_strdup(p_new.fragment_shader);
         }
-
-        bool layout_changed =
-            (p_new.bar_width != p->bar_width) || (p_new.bar_spacing != p->bar_spacing);
-
-        init_sdl_glsl_surface(width, height, p_new.color, p_new.bcolor, p_new.bar_width,
-                              p_new.bar_spacing, p_new.gradient, p_new.gradient_count,
-                              p_new.gradient_colors);
-
-        p->sens = p_new.sens;
-        p->framerate = p_new.framerate;
-        p->continuous_rendering = p_new.continuous_rendering;
-        p->bar_width = p_new.bar_width;
-        p->bar_spacing = p_new.bar_spacing;
-        p->sdl_glsl_gain = p_new.sdl_glsl_gain;
-        p->gradient = p_new.gradient;
-        p->gradient_count = p_new.gradient_count;
-
-        if (layout_changed)
-            *resizeTerminal = true;
-
-        free_config(&p_new);
-        return true;
-    } else {
-        fprintf(stderr, "Error loading config. %s", error.message);
-        *has_config_state = false;
-        free_config(&p_new);
-        return true;
     }
+#endif
+
+    p->sens = p_new.sens;
+    p->framerate = p_new.framerate;
+    p->continuous_rendering = p_new.continuous_rendering;
+    p->bar_width = p_new.bar_width;
+    p->bar_spacing = p_new.bar_spacing;
+    p->sdl_glsl_gain = p_new.sdl_glsl_gain;
+
+    free_config(&p_new);
 }
-#endif
-
-#ifdef SDL
-static bool try_soft_reload_sdl(char *configPath, int audio_channels, struct config_params *p,
-                                int *width, int *height, bool *resizeTerminal,
-                                bool *has_config_state) {
-    struct config_params p_new = {0};
-    struct error_s error;
-    error.length = 0;
-    if (load_config(configPath, &p_new, &error)) {
-        if (audio_channels == 1) {
-            p_new.stereo = 0;
-            p_new.split_stereo = 0;
-        }
-
-        bool layout_changed =
-            (p_new.bar_width != p->bar_width) || (p_new.bar_spacing != p->bar_spacing);
-
-        init_sdl_surface(width, height, p_new.color, p_new.bcolor, p_new.gradient,
-                         p_new.gradient_count, p_new.gradient_colors);
-
-        p->sens = p_new.sens;
-        p->framerate = p_new.framerate;
-        p->bar_width = p_new.bar_width;
-        p->bar_spacing = p_new.bar_spacing;
-        p->gradient = p_new.gradient;
-        p->gradient_count = p_new.gradient_count;
-
-        if (layout_changed)
-            *resizeTerminal = true;
-
-        free_config(&p_new);
-        return true;
-    } else {
-        fprintf(stderr, "Error loading config. %s", error.message);
-        *has_config_state = false;
-        free_config(&p_new);
-        return true;
-    }
-}
-#endif
-#endif
 
 // these variables are used only in main, but making them global
 // will allow us to not free them on exit without ASan complaining
@@ -1204,33 +1140,22 @@ Keys:\n\
 
                 if (should_reload) {
 #if defined(SDL_GLSL) || defined(SDL)
-                    bool soft_reloaded = false;
-#ifdef SDL_GLSL
-                    if (!soft_reloaded && !should_quit && output_mode == OUTPUT_SDL_GLSL)
-                        soft_reloaded =
-                            try_soft_reload_sdl_glsl(configPath, audio_channels, &p, &width,
-                                                     &height, &resizeTerminal, &has_config_state);
-#endif
-#ifdef SDL
-                    if (!soft_reloaded && !should_quit && output_mode == OUTPUT_SDL)
-                        soft_reloaded =
-                            try_soft_reload_sdl(configPath, audio_channels, &p, &width, &height,
-                                                &resizeTerminal, &has_config_state);
-#endif
-                    if (soft_reloaded) {
+                    if (!should_quit &&
+                        (output_mode == OUTPUT_SDL || output_mode == OUTPUT_SDL_GLSL)) {
+                        reload_colors = 1;
                         should_reload = 0;
-                        update_frame_timing(&p, &effective_framerate, &frame_time_ns,
-                                            &frame_time_msec, &framerate_timer);
-                        continue;
-                    }
+                    } else
 #endif
-
-                    reloadConf = true;
-                    resizeTerminal = true;
-                    should_reload = 0;
+                    {
+                        reloadConf = true;
+                        resizeTerminal = true;
+                        should_reload = 0;
+                    }
                 }
 
                 if (reload_colors) {
+                    reload_superficial_drawing_params(configPath, audio_channels, &p,
+                                                      &has_config_state);
                     struct error_s error;
                     char *themeFile;
                     error.length = 0;
