@@ -1,6 +1,6 @@
 AC_INIT([cava], [m4_esyscmd_s([cat version])], [karl@stavestrand.no])
 AM_INIT_AUTOMAKE([subdir-objects -Wall -Werror foreign])
-dnl AC_CONFIG_MACRO_DIRS([m4])
+AC_CONFIG_MACRO_DIRS([m4])
 AM_PROG_AR
 LT_INIT
 AC_PROG_CC
@@ -317,18 +317,40 @@ AC_CHECK_LIB(SDL2,SDL_Init, have_sdl=yes, have_sdl=no)
           [do not include support for output with sdl_glsl])
       )
       AS_IF([test "x$enable_output_sdl_glsl" != "xno"], [
+             have_opengl=no
+             GL_CFLAGS=""
+             GL_LIBS=""
              m4_ifdef([AX_CHECK_GL], [
                        AX_CHECK_GL(have_opengl=yes, have_opengl=no)
                        ], [
-                           AC_MSG_NOTICE([You need to install the autoconf archives to check for opengl. Remember to re-run autogen.sh.])
-                           have_opengl=no
+                           PKG_CHECK_MODULES([GL], [gl], have_opengl=yes, have_opengl=no)
+
+                           if [[ $have_opengl = "no" ]] ; then
+                             have_gl_headers=no
+                             AC_CHECK_HEADERS([GL/gl.h], have_gl_headers=yes)
+                             AC_CHECK_HEADERS([OpenGL/gl.h], have_gl_headers=yes)
+                             if [[ $have_gl_headers = "yes" ]] ; then
+                               AC_CHECK_LIB([GL], [glBegin], have_opengl=yes; GL_LIBS="-lGL", have_opengl=no)
+                             fi
+                           fi
+
+                           if [[ $have_opengl = "no" ]] ; then
+                             if [[ $build_mac = "yes" ]] ; then
+                               saved_LIBS="$LIBS"
+                               LIBS="$LIBS -framework OpenGL"
+                               AC_LINK_IFELSE(
+                                 [AC_LANG_PROGRAM([[#include <OpenGL/gl.h>]], [[glBegin(0);]])],
+                                 [have_opengl=yes; GL_LIBS="-framework OpenGL"],
+                                 [have_opengl=no]
+                               )
+                               LIBS="$saved_LIBS"
+                             fi
+                           fi
                            ])
       if [[ $have_opengl = "yes" ]] ; then
         LIBS="$LIBS $GL_LIBS"
         CPPFLAGS="$CPPFLAGS -DSDL_GLSL $GL_CFLAGS"
-      fi
-
-      if [[ $have_opengl = "no" ]] ; then
+      else
         AC_MSG_NOTICE([INFO: building without sdl_glsl (opengl) support])
       fi
       ],

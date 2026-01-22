@@ -9,6 +9,7 @@ else
 fi
 
 libtoolize
-aclocal
+mkdir -p m4
+aclocal -I m4 # OpenGL (sdl_glsl) build support is now enabled by default when OpenGL is present, without requiring autoconf-archive
 autoconf
 automake --add-missing
