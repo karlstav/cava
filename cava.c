@@ -172,64 +172,46 @@ static bool try_soft_reload_sdl_glsl(char *configPath, int audio_channels, struc
             p_new.split_stereo = 0;
         }
 
-        bool can_soft_reload = true;
-        can_soft_reload &= (p_new.output == p->output);
-        can_soft_reload &= (p_new.input == p->input);
-        can_soft_reload &= (p_new.waveform == p->waveform);
-        can_soft_reload &= (p_new.stereo == p->stereo);
-        can_soft_reload &= (p_new.split_stereo == p->split_stereo);
-        can_soft_reload &= (p_new.reverse == p->reverse);
-        can_soft_reload &= (p_new.orientation == p->orientation);
-        can_soft_reload &= (p_new.fixedbars == p->fixedbars);
-        can_soft_reload &= (p_new.lower_cut_off == p->lower_cut_off);
-        can_soft_reload &= (p_new.upper_cut_off == p->upper_cut_off);
-        can_soft_reload &= (p_new.monstercat == p->monstercat);
-        can_soft_reload &= (p_new.waves == p->waves);
-        can_soft_reload &= (p_new.noise_reduction == p->noise_reduction);
-        can_soft_reload &= (p_new.userEQ_enabled == p->userEQ_enabled);
-        if (p_new.userEQ_enabled)
-            can_soft_reload = false;
-        can_soft_reload &= (p_new.sdl_width == p->sdl_width);
-        can_soft_reload &= (p_new.sdl_height == p->sdl_height);
-        can_soft_reload &= (p_new.sdl_x == p->sdl_x);
-        can_soft_reload &= (p_new.sdl_y == p->sdl_y);
-        can_soft_reload &= (p_new.sdl_full_screen == p->sdl_full_screen);
-        can_soft_reload &= (strcmp(p_new.audio_source, p->audio_source) == 0);
-        can_soft_reload &= (strcmp(p_new.vertex_shader, p->vertex_shader) == 0);
-        can_soft_reload &= (strcmp(p_new.fragment_shader, p->fragment_shader) == 0);
-
-        if (can_soft_reload) {
-            bool layout_changed =
-                (p_new.bar_width != p->bar_width) || (p_new.bar_spacing != p->bar_spacing);
-
-            init_sdl_glsl_surface(width, height, p_new.color, p_new.bcolor, p_new.bar_width,
-                                  p_new.bar_spacing, p_new.gradient, p_new.gradient_count,
-                                  p_new.gradient_colors);
-
-            p->sens = p_new.sens;
-            p->framerate = p_new.framerate;
-            p->continuous_rendering = p_new.continuous_rendering;
-            p->bar_width = p_new.bar_width;
-            p->bar_spacing = p_new.bar_spacing;
-            p->sdl_glsl_gain = p_new.sdl_glsl_gain;
-            p->gradient = p_new.gradient;
-            p->gradient_count = p_new.gradient_count;
-
-            if (layout_changed)
-                *resizeTerminal = true;
-
-            free_config(&p_new);
-            return true;
+        bool shaders_changed = (strcmp(p_new.vertex_shader, p->vertex_shader) != 0) ||
+                               (strcmp(p_new.fragment_shader, p->fragment_shader) != 0);
+        if (shaders_changed) {
+            if (!reload_sdl_glsl_shaders(p_new.vertex_shader, p_new.fragment_shader)) {
+                free_config(&p_new);
+                return false;
+            }
+            free(p->vertex_shader);
+            p->vertex_shader = strdup(p_new.vertex_shader);
+            free(p->fragment_shader);
+            p->fragment_shader = strdup(p_new.fragment_shader);
         }
+
+        bool layout_changed =
+            (p_new.bar_width != p->bar_width) || (p_new.bar_spacing != p->bar_spacing);
+
+        init_sdl_glsl_surface(width, height, p_new.color, p_new.bcolor, p_new.bar_width,
+                              p_new.bar_spacing, p_new.gradient, p_new.gradient_count,
+                              p_new.gradient_colors);
+
+        p->sens = p_new.sens;
+        p->framerate = p_new.framerate;
+        p->continuous_rendering = p_new.continuous_rendering;
+        p->bar_width = p_new.bar_width;
+        p->bar_spacing = p_new.bar_spacing;
+        p->sdl_glsl_gain = p_new.sdl_glsl_gain;
+        p->gradient = p_new.gradient;
+        p->gradient_count = p_new.gradient_count;
+
+        if (layout_changed)
+            *resizeTerminal = true;
+
+        free_config(&p_new);
+        return true;
     } else {
         fprintf(stderr, "Error loading config. %s", error.message);
         *has_config_state = false;
         free_config(&p_new);
         return true;
     }
-
-    free_config(&p_new);
-    return false;
 }
 #endif
 
@@ -246,59 +228,30 @@ static bool try_soft_reload_sdl(char *configPath, int audio_channels, struct con
             p_new.split_stereo = 0;
         }
 
-        bool can_soft_reload = true;
-        can_soft_reload &= (p_new.output == p->output);
-        can_soft_reload &= (p_new.input == p->input);
-        can_soft_reload &= (p_new.waveform == p->waveform);
-        can_soft_reload &= (p_new.stereo == p->stereo);
-        can_soft_reload &= (p_new.split_stereo == p->split_stereo);
-        can_soft_reload &= (p_new.reverse == p->reverse);
-        can_soft_reload &= (p_new.orientation == p->orientation);
-        can_soft_reload &= (p_new.fixedbars == p->fixedbars);
-        can_soft_reload &= (p_new.lower_cut_off == p->lower_cut_off);
-        can_soft_reload &= (p_new.upper_cut_off == p->upper_cut_off);
-        can_soft_reload &= (p_new.monstercat == p->monstercat);
-        can_soft_reload &= (p_new.waves == p->waves);
-        can_soft_reload &= (p_new.noise_reduction == p->noise_reduction);
-        can_soft_reload &= (p_new.userEQ_enabled == p->userEQ_enabled);
-        if (p_new.userEQ_enabled)
-            can_soft_reload = false;
-        can_soft_reload &= (p_new.sdl_width == p->sdl_width);
-        can_soft_reload &= (p_new.sdl_height == p->sdl_height);
-        can_soft_reload &= (p_new.sdl_x == p->sdl_x);
-        can_soft_reload &= (p_new.sdl_y == p->sdl_y);
-        can_soft_reload &= (p_new.sdl_full_screen == p->sdl_full_screen);
-        can_soft_reload &= (strcmp(p_new.audio_source, p->audio_source) == 0);
+        bool layout_changed =
+            (p_new.bar_width != p->bar_width) || (p_new.bar_spacing != p->bar_spacing);
 
-        if (can_soft_reload) {
-            bool layout_changed =
-                (p_new.bar_width != p->bar_width) || (p_new.bar_spacing != p->bar_spacing);
+        init_sdl_surface(width, height, p_new.color, p_new.bcolor, p_new.gradient,
+                         p_new.gradient_count, p_new.gradient_colors);
 
-            init_sdl_surface(width, height, p_new.color, p_new.bcolor, p_new.gradient,
-                             p_new.gradient_count, p_new.gradient_colors);
+        p->sens = p_new.sens;
+        p->framerate = p_new.framerate;
+        p->bar_width = p_new.bar_width;
+        p->bar_spacing = p_new.bar_spacing;
+        p->gradient = p_new.gradient;
+        p->gradient_count = p_new.gradient_count;
 
-            p->sens = p_new.sens;
-            p->framerate = p_new.framerate;
-            p->bar_width = p_new.bar_width;
-            p->bar_spacing = p_new.bar_spacing;
-            p->gradient = p_new.gradient;
-            p->gradient_count = p_new.gradient_count;
+        if (layout_changed)
+            *resizeTerminal = true;
 
-            if (layout_changed)
-                *resizeTerminal = true;
-
-            free_config(&p_new);
-            return true;
-        }
+        free_config(&p_new);
+        return true;
     } else {
         fprintf(stderr, "Error loading config. %s", error.message);
         *has_config_state = false;
         free_config(&p_new);
         return true;
     }
-
-    free_config(&p_new);
-    return false;
 }
 #endif
 #endif
