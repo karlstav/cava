@@ -1,6 +1,7 @@
 ## Configuration file for CAVA.
-# Remove the ; to change parameters.
 
+# Lines starting with ; show config parameters and default values.
+# Remove the ; to change parameters.
 
 [general]
 
