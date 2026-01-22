@@ -5,39 +5,30 @@
 [general]
 
 # Auto reload config if the configuration file has changed. 1 = on, 0 = off.
-# default value: 0
 ; live-config = 0
 
 # Smoothing mode. Can be 'normal', 'scientific' or 'waves'. DEPRECATED as of 0.6.0
 ; mode = normal
 
 # Accepts only non-negative values.
-# default value: 60
 ; framerate = 60
 
 # 'autosens' will attempt to decrease sensitivity if the bars peak. 1 = on, 0 = off
 # new as of 0.6.0 autosens of low values (dynamic range)
 # 'overshoot' allows bars to overshoot (in % of terminal height) without initiating autosens. DEPRECATED as of 0.6.0
-# default value: 1
 ; autosens = 1
-# default value: 20
 ; overshoot = 20
 
 # Manual sensitivity in %. If autosens is enabled, this will only be the initial value.
 # 200 means double height. Accepts only non-negative values.
-# default value: 100
 ; sensitivity = 100
 
 # The number of bars (0-512). 0 sets it to auto (fill up console).
 # Bars' width and space between bars in number of characters.
-# default value: 0
 ; bars = 0
-# default value: 2
 ; bar_width = 2
-# default value: 1
 ; bar_spacing = 1
 # bar_height is only used for output in "noritake" format
-# default value: 32
 ; bar_height = 32
 
 # For SDL width and space between bars is in pixels, defaults are:
@@ -49,25 +40,20 @@
 ; bar_spacing = 0
 
 # ceter bars in terminal, if there is space.
-# default value: 1
 ; center_align = 1
 
 # max height of bars in terminal, in percent of terminal height.
-# default value: 100
 ; max_height = 100
 
 # Lower and higher cutoff frequencies for lowest and highest bars
 # the bandwidth of the visualizer.
 # Note: there is a minimum total bandwidth of 43Mhz x number of bars.
 # Cava will automatically increase the higher cutoff frequency if needed to satisfy the minimum bandwidth.
-# default value: 50
 ; lower_cutoff_freq = 50
-# default value: 8000
-; higher_cutoff_freq = 8000
+; higher_cutoff_freq = 10000
 
 # Seconds with no input before cava goes to sleep mode. Cava will not perform FFT or drawing and
 # only check for input once per second. Cava will wake up once input is detected. 0 = disable.
-# default value: 0
 ; sleep_timer = 0
 
 
@@ -146,19 +132,12 @@
 #   remix: Allow pipewire to remix audio channels to match cava's channel count. Useful for surround sound.
 #   virtual: Set the node to virtual, to avoid recording notifications from the DE.
 #
-# default value: 44100 (pipewire defaults to 48000)
 ; sample_rate = 44100
-# default value: 16
 ; sample_bits = 16
-# default value: 2
 ; channels = 2
-# default value: 2
 ; autoconnect = 2
-# default value: 1
 ; active = 1
-# default value: 1
 ; remix = 1
-# default value: 1
 ; virtual = 1
 
 
@@ -195,68 +174,50 @@
 # 'mono' outputs left to right lowest to highest frequencies.
 # 'mono_option' set mono to either take input from 'left', 'right' or 'average'.
 # set 'reverse' to 1 to display frequencies the other way around.
-# default value: stereo
 ; channels = stereo
-# default value: average
 ; mono_option = average
-# default value: 0
 ; reverse = 0
 
 # Only valid if orientation is set to 'horizontal'.
 # Set 'horizontal_stereo' to 1 to have left channel bars at top and right channel at bottom.
 # Set 'left_bottom' to 0 to have right channel at top and left channel at bottom.
-# default value: 0
 ; horizontal_stereo = 0
-# default value: 0
-; left_bottom = 0
+; left_bottom = 1
 
 # Raw output target.
 # On Linux, a fifo will be created if target does not exist.
 # On Windows, a named pipe will be created if target does not exist.
-# default value: /dev/stdout
 ; raw_target = /dev/stdout
 
 # Raw data format. Can be 'binary' or 'ascii'.
-# default value: binary
 ; data_format = binary
 
 # Binary bit format, can be '8bit' (0-255) or '16bit' (0-65530).
-# default value: 16bit
 ; bit_format = 16bit
 
 # Ascii max value. In 'ascii' mode range will run from 0 to value specified here
-# default value: 1000
 ; ascii_max_range = 1000
 
 # Ascii delimiters. In ascii format each bar and frame is separated by a delimiters.
 # Use decimal value in ascii table (i.e. 59 = ';' and 10 = '\n' (line feed)).
-# default value: 59
 ; bar_delimiter = 59
-# default value: 10
 ; frame_delimiter = 10
 
 # sdl window size and position. -1,-1 is centered.
-# default value: 1024
 ; sdl_width = 1024
-# default value: 512
 ; sdl_height = 512
-# default value: -1
 ; sdl_x = -1
-# default value: -1
 ; sdl_y= -1
-# default value: 0
 ; sdl_full_screen = 0
 
 # set label on bars on the x-axis. Can be 'frequency' or 'none'. Default: 'none'
 # 'frequency' displays the lower cut off frequency of the bar above.
 # Only supported on ncurses and noncurses output.
-# default value: none
 ; xaxis = none
 
 # enable synchronized sync. 1 = on, 0 = off
 # removes flickering in alacritty terminal emulator.
 # defaults to off since the behaviour in other terminal emulators is unknown
-# default value: 0
 ; synchronized_sync = 0
 
 # Shaders for sdl_glsl, located in $HOME/.config/cava/shaders
@@ -283,8 +244,8 @@
 ; fragment_shader = orion_saturn_core.frag
 
 # For glsl output mode, keep rendering even if no audio. 1 = on, 0 = off. Default: 0
-# Enable for animated shaders (e.g. orion_circle_rotate.frag) so time-based effects keep updating.
-; continuous_rendering = 1
+# Enable for animated shaders so time-based effects keep updating.
+; continuous_rendering = 0
 
 # SDL_GLSL only: gain applied to bar amplitudes before sending to shaders, in percent. Default: 100
 # 0 = mute, 100 = unchanged, >100 = amplify (shader input is clamped to the [0..1] range).
@@ -295,11 +256,9 @@
 ; disable_blanking = 0
 
 # show a flat bar at the bottom of the screen when idle, 1 = on, 0 = off
-# default value: 1
 ; show_idle_bar_heads = 1
 
 # show waveform instead of frequency spectrum, 1 = on, 0 = off
-# default value: 0
 ; waveform = 0
 
 
@@ -309,7 +268,6 @@
 # Or defined by hex code '#xxxxxx' (hex code must be within ''). User defined colors requires
 # a terminal that can change color definitions such as Gnome-terminal or rxvt.
 # default is to keep current terminal color
-# default value: current terminal color
 ; background = default
 ; foreground = default
 
@@ -320,7 +278,6 @@
 # Gradient mode, only hex defined colors are supported,
 # background must also be defined in hex or remain commented out. 1 = on, 0 = off.
 # You can define as many as 8 different colors. They range from bottom to top of screen
-# default value: 0
 ; gradient = 0
 ; gradient_color_1 = '#59cc33'
 ; gradient_color_2 = '#80cc33'
@@ -333,7 +290,6 @@
 
 # Horizontal is only supported on noncurses output.
 # Only one color will be calculated per bar.
-# default value: 0
 ; horizontal_gradient = 0
 ; horizontal_gradient_color_1 = '#c45161'
 ; horizontal_gradient_color_2 = '#e094a0'
@@ -348,7 +304,6 @@
 # Can be 'up', 'down', 'left' or 'right'. 'up' means the vertical gradient will be blended in from
 # bottom to top. I.e. the bottom will be only the horizontal
 # and top will be only the color of the vertical gradient.
-# default value: 'up'
 ; blend_direction = 'up'
 
 # use theme file instead of defining colors in this file
@@ -361,23 +316,19 @@
 # Percentage value for integral smoothing. Takes values from 0 - 100.
 # Higher values means smoother, but less precise. 0 to disable.
 # DEPRECATED as of 0.8.0, use noise_reduction instead
-# default value: 77
 ; integral = 77
 
 # Disables or enables the so-called "Monstercat smoothing" with or without "waves". Set to 0 to disable.
-# default value: 0
 ; monstercat = 0
 ; waves = 0
 
 # Set gravity percentage for "drop off". Higher values means bars will drop faster.
 # Accepts only non-negative values. 50 means half gravity, 200 means double. Set to 0 to disable "drop off".
 # DEPRECATED as of 0.8.0, use noise_reduction instead
-# default value: 100
 ; gravity = 100
 
 # In bar height, bars that would have been lower that this will not be drawn.
 # DEPRECATED as of 0.8.0
-# default value: 0
 ; ignore = 0
 
 # Noise reduction, int 0 - 100. default 77
