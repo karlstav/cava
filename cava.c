@@ -40,10 +40,12 @@
 #include <sys/types.h>
 #include <time.h>
 
+#ifdef SDL_GLSL
 #ifdef _WIN32
 static char *cava_strdup(const char *s) { return _strdup(s); }
 #else
 static char *cava_strdup(const char *s) { return strdup(s); }
+#endif
 #endif
 
 #include "cavacore.h"
