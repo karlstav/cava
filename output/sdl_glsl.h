@@ -1,4 +1,5 @@
 #include "../config.h"
+#include <stdbool.h>
 
 void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
                           char *const vertex_shader, char *const fragment_shader);
@@ -7,4 +8,5 @@ void init_sdl_glsl_surface(int *width, int *height, char *const fg_color_string,
                            int gradient, int gradient_count, char **gradient_color_strings);
 int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[], int frame_timer,
                   int re_paint, int continuous_rendering);
+bool reload_sdl_glsl_shaders(const char *vertex_shader, const char *fragment_shader);
 void cleanup_sdl_glsl(void);

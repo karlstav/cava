@@ -31,7 +31,16 @@ EXTRA_DIST = \
     run_all_tests.sh \
     SHADERS.md \
     .clang-format \
+    FORMATTING.md \
+    scripts/clang-format-lint.sh \
+    scripts/clang-format.sh \
     CMakeLists.txt
+
+format-check:
+	sh $(top_srcdir)/scripts/clang-format-lint.sh
+
+format:
+	sh $(top_srcdir)/scripts/clang-format.sh
 
 if OSX
     cava_CFLAGS += -DNORT
