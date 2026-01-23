@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2026 rezky_nightky <with.rezky@gmail.com>
+// Description: Phase coherence constellation (uses phase_xy).
 
 #version 330
 

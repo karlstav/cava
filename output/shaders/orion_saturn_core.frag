@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2026 rezky_nightky <with.rezky@gmail.com>
+// Description: Orion Saturn (core) — Saturn-style inner core ring spectrum.
 
 // Orion Saturn core
 

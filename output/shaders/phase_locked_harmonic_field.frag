@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2026 rezky_nightky <with.rezky@gmail.com>
+// Description: Phase-locked harmonic field (uses phase_xy).
 
 #version 330
 

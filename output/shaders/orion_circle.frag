@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2026 rezky_nightky <with.rezky@gmail.com>
+// Description: Orion family (static) — stationary circular ring spectrum.
 
 // Static Orion (non-rotating)
 

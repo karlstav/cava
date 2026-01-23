@@ -228,38 +228,59 @@
 # default value: bar_spectrum.frag
 ; fragment_shader = bar_spectrum.frag
 
-# other styles shaders
+# Other styles shaders
+# use with: method = sdl_glsl
+
 ; fragment_shader = eye_of_phi.frag
 ; fragment_shader = northern_lights.frag
 ; fragment_shader = spectrogram.frag
+
+# Polar FFT spectrum (radial bars)
 ; fragment_shader = polar_fft.frag
+# Polar spectrum with smearing/trails
 ; fragment_shader = polar_smear.frag
+# Audio-reactive energy blob
 ; fragment_shader = energy_blob.frag
+# Kaleidoscopic tunnel effect
 ; fragment_shader = kaleido_tunnel.frag
+# Lissajous ribbon / curve visualization
 ; fragment_shader = lissajous_ribbon.frag
+# Ring collapse / topology warp
 ; fragment_shader = topological_ring_collapse.frag
+# Spectral interference waves
 ; fragment_shader = spectral_interference.frag
+# Phase-locked harmonic field (uses phase_xy)
 ; fragment_shader = phase_locked_harmonic_field.frag
+# Temporal bloom feedback (uses inputTexture)
 ; fragment_shader = temporal_bloom.frag
+# Spectral memory imprint feedback (uses inputTexture + phase_xy)
 ; fragment_shader = spectral_memory_imprint.frag
+# Harmonic lock feedback (uses inputTexture + phase_xy)
 ; fragment_shader = harmonic_lock.frag
+# Entropy-driven collapse feedback (uses inputTexture + phase_xy)
 ; fragment_shader = entropy_driven_collapse.frag
+# Radial field / wave patterns
 ; fragment_shader = field_radial.frag
+# Spectral mass / gaussian glow
 ; fragment_shader = spectral_mass.frag
+# Void ring / halo
 ; fragment_shader = void_ring.frag
+# Phase coherence constellation (uses phase_xy)
 ; fragment_shader = phase_coherence_constellation.frag
 ; fragment_shader = winamp_line_style_spectrum.frag
 
-# Orion shaders (use with: method = sdl_glsl)
-# Static Orion
+# Orion family shaders
+# use with: method = sdl_glsl
+
+# Stationary circular ring spectrum
 ; fragment_shader = orion_circle.frag
-# Rotating Orion
+# Circular ring spectrum with rotating/sweep highlight
 ; fragment_shader = orion_circle_rotate.frag
-# Orion spiral
+# Spiral ring spectrum (time-animated)
 ; fragment_shader = orion_spiral.frag
-# Orion saturn subring
+# Saturn-style outer subring (ring spectrum)
 ; fragment_shader = orion_saturn_subring.frag
-# Orion saturn core
+# Saturn-style inner core (ring spectrum)
 ; fragment_shader = orion_saturn_core.frag
 
 # For sdl_glsl output mode, keep rendering even if no audio. 1 = on, 0 = off. Default: 0

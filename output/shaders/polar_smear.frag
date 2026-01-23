@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2026 rezky_nightky <with.rezky@gmail.com>
+// Description: Polar spectrum with smearing/trails.
 #version 330
 
 in vec2 fragCoord;

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2026 rezky_nightky <with.rezky@gmail.com>
+// Description: Orion Saturn (subring) — Saturn-style outer subring ring spectrum.
 
 // Orion Saturn subring
 
