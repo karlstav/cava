@@ -262,11 +262,11 @@
 # Orion saturn core
 ; fragment_shader = orion_saturn_core.frag
 
-# For glsl output mode, keep rendering even if no audio. 1 = on, 0 = off. Default: 0
+# For sdl_glsl output mode, keep rendering even if no audio. 1 = on, 0 = off. Default: 0
 # Enable for animated shaders so time-based effects keep updating.
 ; continuous_rendering = 0
 
-# SDL_GLSL only: gain applied to bar amplitudes before sending to shaders, in percent. Default: 100
+# sdl_glsl only: gain applied to bar amplitudes before sending to shaders, in percent. Default: 100
 # 0 = mute, 100 = unchanged, >100 = amplify (shader input is clamped to the [0..1] range).
 ; sdl_glsl_gain = 100
 
