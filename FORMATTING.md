@@ -31,11 +31,11 @@ If you see a warning like:
 
 `Warning: scripts prefer clang-format 9 ...`
 
-you can avoid CI/local differences by installing `clang-format-9` (preferred) or installing `docker`.
+you can avoid version differences by installing `clang-format-9` (preferred) or installing `docker`.
 
 ## Docker notes (Linux)
 
-If you want to use the Docker-based clang-format 9 (CI-matching) path:
+If you want to use the Docker-based clang-format 9 path:
 
 1. Start the Docker daemon:
 
