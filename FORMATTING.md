@@ -1,16 +1,16 @@
 # Local formatting (clang-format)
 
-This repo has local helper targets that match the GitHub Actions formatting check.
+This repo has local helper scripts for clang-format.
 
 ## Commands
 
 - **Format files (modify in-place)**
 
-  `make format`
+  `./scripts/clang-format.sh`
 
 - **Check formatting (no changes; exits non-zero on mismatch)**
 
-  `make format-check`
+  `./scripts/clang-format-lint.sh`
 
 ## What files are included
 
@@ -19,17 +19,17 @@ This repo has local helper targets that match the GitHub Actions formatting chec
 
 ## Which clang-format version is used
 
-CI uses **clang-format 9**.
+Recommended: **clang-format 9**.
 
-Locally, the scripts try to match CI as closely as possible:
+Locally, the scripts try to match clang-format 9 as closely as possible:
 
 - `clang-format-9` if installed.
-- Otherwise, if `docker` is available, run the same `doozy/clang-format-lint:0.5` container used by CI (clang-format 9).
+- Otherwise, if `docker` is available, run a `doozy/clang-format-lint:0.5` container (clang-format 9).
 - Otherwise fall back to whatever `clang-format` is installed on your machine.
 
 If you see a warning like:
 
-`Warning: CI uses clang-format 9 ...`
+`Warning: scripts prefer clang-format 9 ...`
 
 you can avoid CI/local differences by installing `clang-format-9` (preferred) or installing `docker`.
 
@@ -75,8 +75,8 @@ Exit code `1` means: at least one file is not formatted according to clang-forma
 
 To fix:
 
-1. Run `make format`
-2. Re-run `make format-check`
+1. Run `./scripts/clang-format.sh`
+2. Re-run `./scripts/clang-format-lint.sh`
 
 If it still fails, it usually means your local `clang-format` version differs from CI. Install `clang-format-9` or use `docker` so local matches CI.
 

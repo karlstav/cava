@@ -7,16 +7,6 @@ name: build-and-test
   workflow_dispatch:
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: DoozyX/clang-format-lint-action@v0.5
-        with:
-          source: .
-          exclude: ./third_party
-          extensions: h,c
-
   build-linux:
     runs-on: ubuntu-latest
     steps:

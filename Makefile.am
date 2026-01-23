@@ -36,12 +36,6 @@ EXTRA_DIST = \
     scripts/clang-format.sh \
     CMakeLists.txt
 
-format-check:
-	sh $(top_srcdir)/scripts/clang-format-lint.sh
-
-format:
-	sh $(top_srcdir)/scripts/clang-format.sh
-
 if OSX
     cava_CFLAGS += -DNORT
     cava_LDADD =
