@@ -285,23 +285,30 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
             // if (bars[z] < 1) bars[z] = 1;
             for (m_y = z - 1; m_y >= 0; m_y--) {
                 de = z - m_y;
-                bars[m_y] = max(bars[z] - height_normalizer * pow(de, 2), bars[m_y]);
+                bars[m_y] = max(bars[z] - height_normalizer * (float)(de * de), bars[m_y]);
             }
             for (m_y = z + 1; m_y < number_of_bars; m_y++) {
                 de = m_y - z;
-                bars[m_y] = max(bars[z] - height_normalizer * pow(de, 2), bars[m_y]);
+                bars[m_y] = max(bars[z] - height_normalizer * (float)(de * de), bars[m_y]);
             }
         }
     } else if (monstercat > 0) {
+        double base = monstercat * 1.5;
+        if (base < 1.000001)
+            base = 1.000001;
         for (z = 0; z < number_of_bars; z++) {
             // if (bars[z] < 1)bars[z] = 1;
+            double denom = base;
             for (m_y = z - 1; m_y >= 0; m_y--) {
-                de = z - m_y;
-                bars[m_y] = max(bars[z] / pow(monstercat * 1.5, de), bars[m_y]);
+                float candidate = (float)((double)bars[z] / denom);
+                bars[m_y] = max(candidate, bars[m_y]);
+                denom *= base;
             }
+            denom = base;
             for (m_y = z + 1; m_y < number_of_bars; m_y++) {
-                de = m_y - z;
-                bars[m_y] = max(bars[z] / pow(monstercat * 1.5, de), bars[m_y]);
+                float candidate = (float)((double)bars[z] / denom);
+                bars[m_y] = max(candidate, bars[m_y]);
+                denom *= base;
             }
         }
     }
@@ -767,6 +774,7 @@ Keys:\n\
                 init_sdl_glsl_surface(&width, &height, p.color, p.bcolor, p.bar_width,
                                       p.bar_spacing, p.gradient, p.gradient_count,
                                       p.gradient_colors);
+                *dimension_value = 1;
                 break;
 #endif
             case OUTPUT_NONCURSES:

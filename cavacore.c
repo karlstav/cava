@@ -170,7 +170,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
     memset(p->input_buffer, 0, sizeof(double) * p->input_buffer_size);
 
-    memset(p->cava_fall, 0, sizeof(int) * number_of_bars * channels);
+    memset(p->cava_fall, 0, sizeof(double) * number_of_bars * channels);
     memset(p->cava_mem, 0, sizeof(double) * number_of_bars * channels);
     memset(p->cava_peak, 0, sizeof(double) * number_of_bars * channels);
     memset(p->prev_cava_out, 0, sizeof(double) * number_of_bars * channels);
@@ -310,9 +310,8 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
         p->framerate += (double)((p->rate * p->audio_channels * p->frame_skip) / new_samples) / 64;
         p->frame_skip = 1;
         // shifting input buffer
-        for (int n = p->input_buffer_size - 1; n >= new_samples; n--) {
-            p->input_buffer[n] = p->input_buffer[n - new_samples];
-        }
+        memmove(&p->input_buffer[new_samples], p->input_buffer,
+                (p->input_buffer_size - new_samples) * sizeof(double));
 
         // fill the input buffer
         for (int n = 0; n < new_samples; n++) {
@@ -403,7 +402,16 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     }
     // process [smoothing]
     int overshoot = 0;
-    double gravity_mod = pow((60 / p->framerate), 2.5) * 1.54 / p->noise_reduction;
+    double safe_noise_reduction = p->noise_reduction;
+    if (safe_noise_reduction < 1e-6)
+        safe_noise_reduction = 1e-6;
+    double safe_framerate = p->framerate;
+    if (safe_framerate < 1e-3)
+        safe_framerate = 1e-3;
+    double gravity_mod = pow((60.0 / safe_framerate), 2.5) * 1.54 / safe_noise_reduction;
+
+    if (!isfinite(gravity_mod))
+        gravity_mod = 1;
 
     if (gravity_mod < 1)
         gravity_mod = 1;

@@ -317,6 +317,12 @@ int draw_sdl_glsl_with_phase(int bars_count, const float bars[], const float pre
     int rc = 0;
     SDL_Event event;
 
+    int uniform_bars_count_value = bars_count;
+    if (uniform_bars_count_value > 512)
+        uniform_bars_count_value = 512;
+    if (uniform_bars_count_value < 0)
+        uniform_bars_count_value = 0;
+
     if (re_paint || continuous_rendering) {
         if (uniform_input_texture != -1) {
             glActiveTexture(GL_TEXTURE0);
@@ -324,13 +330,13 @@ int draw_sdl_glsl_with_phase(int bars_count, const float bars[], const float pre
             glUniform1i(uniform_input_texture, 0);
         }
         if (uniform_bars != -1)
-            glUniform1fv(uniform_bars, bars_count, bars);
+            glUniform1fv(uniform_bars, uniform_bars_count_value, bars);
         if (uniform_phase_xy != -1 && phase_xy != NULL)
-            glUniform2fv(uniform_phase_xy, bars_count, phase_xy);
+            glUniform2fv(uniform_phase_xy, uniform_bars_count_value, phase_xy);
         if (uniform_previous_bars != -1)
-            glUniform1fv(uniform_previous_bars, bars_count, previous_bars);
+            glUniform1fv(uniform_previous_bars, uniform_bars_count_value, previous_bars);
         if (uniform_bars_count != -1)
-            glUniform1i(uniform_bars_count, bars_count);
+            glUniform1i(uniform_bars_count, uniform_bars_count_value);
         if (uniform_time != -1) {
             uint64_t now = SDL_GetPerformanceCounter();
             double elapsed = (double)(now - start_counter) / perf_freq;
