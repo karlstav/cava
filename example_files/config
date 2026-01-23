@@ -234,6 +234,7 @@
 ; fragment_shader = eye_of_phi.frag
 ; fragment_shader = northern_lights.frag
 ; fragment_shader = spectrogram.frag
+; fragment_shader = winamp_line_style_spectrum.frag
 
 # Polar FFT spectrum (radial bars)
 ; fragment_shader = polar_fft.frag
@@ -267,7 +268,6 @@
 ; fragment_shader = void_ring.frag
 # Phase coherence constellation (uses phase_xy)
 ; fragment_shader = phase_coherence_constellation.frag
-; fragment_shader = winamp_line_style_spectrum.frag
 
 # Orion family shaders
 # use with: method = sdl_glsl
