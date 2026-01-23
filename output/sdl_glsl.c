@@ -25,6 +25,9 @@ GLint uniform_time;
 GLint uniform_input_texture;
 GLuint fbo;
 GLuint texture;
+static GLuint gVAO = 0;
+static GLuint gVBO = 0;
+static GLuint gIBO = 0;
 uint64_t start_counter;
 double perf_freq;
 
@@ -381,6 +384,18 @@ void cleanup_sdl_glsl(void) {
     if (texture != 0) {
         glDeleteTextures(1, &texture);
         texture = 0;
+    }
+    if (gIBO != 0) {
+        glDeleteBuffers(1, &gIBO);
+        gIBO = 0;
+    }
+    if (gVBO != 0) {
+        glDeleteBuffers(1, &gVBO);
+        gVBO = 0;
+    }
+    if (gVAO != 0) {
+        glDeleteVertexArrays(1, &gVAO);
+        gVAO = 0;
     }
     if (glContext != NULL) {
         SDL_GL_DeleteContext(glContext);
