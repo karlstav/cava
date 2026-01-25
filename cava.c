@@ -308,6 +308,55 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
     return bars;
 }
 
+#ifndef _WIN32
+static int validate_cli_long_options(int argc, char **argv) {
+    for (int i = 1; i < argc; i++) {
+        const char *arg = argv[i];
+
+        if (arg == NULL) {
+            continue;
+        }
+
+        if (strcmp(arg, "--") == 0) {
+            break;
+        }
+
+        if (arg[0] == '-' && arg[1] == '-' && arg[2] != '\0') {
+            const char *name = arg + 2;
+            const char *eq = strchr(name, '=');
+            size_t len = (eq == NULL) ? strlen(name) : (size_t)(eq - name);
+
+            if ((len == 4 && strncmp(name, "help", len) == 0) ||
+                (len == 7 && strncmp(name, "version", len) == 0) ||
+                (len == 6 && strncmp(name, "config", len) == 0)) {
+                if (len == 6 && strncmp(name, "config", len) == 0 && eq == NULL) {
+                    if (i + 1 < argc) {
+                        i++;
+                    }
+                }
+                continue;
+            }
+            return 0;
+        }
+
+        if (arg[0] == '-' && arg[1] != '\0' && arg[1] != '-') {
+            for (int j = 1; arg[j] != '\0'; j++) {
+                if (arg[j] == 'p') {
+                    if (arg[j + 1] == '\0') {
+                        if (i + 1 < argc) {
+                            i++;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    return 1;
+}
+#endif
+
 // general: entry point
 int main(int argc, char **argv) {
 
@@ -354,6 +403,11 @@ Keys:\n\
 \n";
     int c;
 #ifndef _WIN32
+    if (!validate_cli_long_options(argc, argv)) {
+        fprintf(stderr, PACKAGE ": error: invalid option\n");
+        fprintf(stderr, "Try '%s --help' for more information.\n", PACKAGE);
+        return 1;
+    }
     static struct option long_options[] = {
         {"config", required_argument, NULL, 'p'},
         {"version", no_argument, NULL, 'v'},
