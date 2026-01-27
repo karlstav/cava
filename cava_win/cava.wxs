@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package
+    Name="cava"
+    Version="$(var.CavaVersion)"
+    Manufacturer="karlstav"
+    UpgradeCode="{B8D2AE6A-71E4-42E3-8C9F-33245C657272}"
+    InstallerVersion="500"
+    Scope="perUser"
+    Compressed="yes">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of cava is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="cava_win\license.rtf" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/karlstav/cava" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/karlstav/cava" />
+    <Property Id="ARPSUPPORTURL" Value="https://github.com/karlstav/cava" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="INSTALLFOLDER" Name="cava">
+        <Component Id="cmpCavaExe" Guid="*">
+          <File Id="filCavaExe" Source="cava_win\cava\x64\Release\cava.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="cmpFftw" Guid="*">
+          <File Id="filFftw" Source="cava_win\packages\fftw_339.3.3.9.202108273\lib\native\fftw-release\bin\fftw3.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="cmpGlew" Guid="*">
+          <File Id="filGlew" Source="cava_win\packages\glew.redist.1.9.0.1\build\native\bin\v110\x64\Release\dynamic\glew.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="cmpPthread" Guid="*">
+          <File Id="filPthread" Source="cava_win\packages\pthreads.redist.2.9.1.4\build\native\bin\v110\x64\Release\dynamic\cdecl\libpthread.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="cmpSDL2" Guid="*">
+          <File Id="filSDL2" Source="cava_win\packages\sdl2.redist.2.0.5\build\native\bin\x64\dynamic\SDL2.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="cmpEnv" Guid="{2A6E1E10-36A0-4B0A-8B72-5C9B4A2E67C5}">
+          <Environment Id="envPath" Name="PATH" Value="[INSTALLFOLDER]" Action="set" System="no" Part="last" Permanent="no" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    <Feature Id="ProductFeature" Title="cava" Level="1">
+      <ComponentRef Id="cmpCavaExe" />
+      <ComponentRef Id="cmpFftw" />
+      <ComponentRef Id="cmpGlew" />
+      <ComponentRef Id="cmpPthread" />
+      <ComponentRef Id="cmpSDL2" />
+      <ComponentRef Id="cmpEnv" />
+    </Feature>
+  </Package>
+</Wix>

@@ -97,7 +97,23 @@ jobs:
       - name: Install dependencies
         run: nuget restore cava_win\cava_win.sln
       - name: Run msbuild
-        run: msbuild /p:Configuration=Debug cava_win\cava_win.sln
+        run: msbuild /p:Configuration=Release cava_win\cava_win.sln
+      - name: Install WiX Toolset
+        run: dotnet tool install --global wix
+      - name: Install WiX extensions
+        run: |
+          wix extension add WixToolset.UI.wixext
+          wix extension add WixToolset.Util.wixext
+      - name: Build MSI installer
+        run: |
+          $versionLine = Select-String -Path cava_win\setup.iss -Pattern '^AppVersion=' | Select-Object -First 1
+          $cavaVersion = $versionLine.Line.Split('=')[1].Trim()
+          wix build -arch x64 cava_win\cava.wxs -d CavaVersion=$cavaVersion -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -o cava_win\cava_win_x64_install.msi
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cava-msi
+          path: cava_win\cava_win_x64_install.msi
 
   build-mingw:
     runs-on: windows-latest
