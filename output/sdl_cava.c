@@ -1,10 +1,8 @@
 #ifdef _WIN32
 #define _CRT_SECURE_NO_WARNINGS 1
-#include <SDL.h>
-#else
-#include <SDL2/SDL.h>
 #endif
 
+#include <SDL2/SDL.h>
 #include "sdl_cava.h"
 
 #include <stdbool.h>
