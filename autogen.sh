@@ -5,7 +5,7 @@ set -e
 if [ -d .git ]; then
   git describe --always --tags --dirty > version # get version from git
 else
-  echo 0.10.6 > version # hard coded versions
+  echo 0.10.7 > version # hard coded versions
 fi
 
 libtoolize

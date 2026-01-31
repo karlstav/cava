@@ -6,8 +6,8 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{B8D2AE6A-71E4-42E3-8C9F-33245C657272}
 AppName=cava
-AppVersion=0.10.6
-;AppVerName=cava 0.10.6
+AppVersion=0.10.7
+;AppVerName=cava 0.10.7
 AppPublisher=karlstav
 AppPublisherURL=https://github.com/karlstav/cava
 AppSupportURL=https://github.com/karlstav/cava

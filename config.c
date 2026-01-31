@@ -18,7 +18,7 @@
 
 #include <sys/stat.h>
 
-#define NUMBER_OF_SHADERS 6
+#define NUMBER_OF_SHADERS 10
 
 #define NUMBER_OF_THEMES 2
 
@@ -33,6 +33,10 @@
 #define IDR_SPECTROGRAM_SHADER 105
 #define IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER 106
 #define IDR_EYE_OF_PHI_SHADER 107
+#define IDR_ORION_CIRCLE_SHADER 108
+#define IDR_ORION_CIRCLE_ROTATE_SHADER 109
+#define IDR_ORION_SATURN_SUBRING_SHADER 110
+#define IDR_ORION_SATURN_CORE_SHADER 111
 
 #define IDR_SOLARIZED_DARK_THEME 501
 #define IDR_TRICOLOR_THEME 502
@@ -56,9 +60,11 @@ static void LoadFileInResource(int name, int type, DWORD *size, const char **dat
 }
 
 int default_shader_data[NUMBER_OF_SHADERS] = {
-    IDR_NORTHERN_LIGHTS_SHADER, IDR_PASS_THROUGH_SHADER,
-    IDR_BAR_SPECTRUM_SHADER,    IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER,
-    IDR_SPECTROGRAM_SHADER,     IDR_EYE_OF_PHI_SHADER};
+    IDR_NORTHERN_LIGHTS_SHADER,      IDR_PASS_THROUGH_SHADER,
+    IDR_BAR_SPECTRUM_SHADER,         IDR_WINAMP_LINE_STYLE_SPECTRUM_SHADER,
+    IDR_SPECTROGRAM_SHADER,          IDR_EYE_OF_PHI_SHADER,
+    IDR_ORION_CIRCLE_SHADER,         IDR_ORION_CIRCLE_ROTATE_SHADER,
+    IDR_ORION_SATURN_SUBRING_SHADER, IDR_ORION_SATURN_CORE_SHADER};
 
 int default_theme_data[NUMBER_OF_THEMES] = {IDR_SOLARIZED_DARK_THEME, IDR_TRICOLOR_THEME};
 #else
@@ -73,6 +79,10 @@ INCTXT(northern_lightsfrag, "output/shaders/northern_lights.frag");
 INCTXT(winamp_line_style_spectrum, "output/shaders/winamp_line_style_spectrum.frag");
 INCTXT(spectrogram, "output/shaders/spectrogram.frag");
 INCTXT(eye_of_phi, "output/shaders/eye_of_phi.frag");
+INCTXT(orion_circle, "output/shaders/orion_circle.frag");
+INCTXT(orion_circle_rotate, "output/shaders/orion_circle_rotate.frag");
+INCTXT(orion_saturn_subring, "output/shaders/orion_saturn_subring.frag");
+INCTXT(orion_saturn_core, "output/shaders/orion_saturn_core.frag");
 
 INCTXT(pass_throughvert, "output/shaders/pass_through.vert");
 
@@ -81,17 +91,22 @@ INCTXT(tricolor, "output/themes/tricolor");
 
 // INCTXT will create a char g<name>Data
 const char *default_shader_data[NUMBER_OF_SHADERS] = {
-    gnorthern_lightsfragData,        gpass_throughvertData, gbar_spectrumData,
-    gwinamp_line_style_spectrumData, gspectrogramData,      geye_of_phiData};
+    gnorthern_lightsfragData,  gpass_throughvertData,
+    gbar_spectrumData,         gwinamp_line_style_spectrumData,
+    gspectrogramData,          geye_of_phiData,
+    gorion_circleData,         gorion_circle_rotateData,
+    gorion_saturn_subringData, gorion_saturn_coreData};
 
 const char *default_theme_data[NUMBER_OF_THEMES] = {gsolarized_darkData, gtricolorData};
 #endif // _WIN32
 
 // name of the installed shader file, technically does not have to be the same as in the source
 const char *default_shader_name[NUMBER_OF_SHADERS] = {
-    "northern_lights.frag", "pass_through.vert",
-    "bar_spectrum.frag",    "winamp_line_style_spectrum.frag",
-    "spectrogram.frag",     "eye_of_phi.frag"};
+    "northern_lights.frag",      "pass_through.vert",
+    "bar_spectrum.frag",         "winamp_line_style_spectrum.frag",
+    "spectrogram.frag",          "eye_of_phi.frag",
+    "orion_circle.frag",         "orion_circle_rotate.frag",
+    "orion_saturn_subring.frag", "orion_saturn_core.frag"};
 const char *default_theme_name[NUMBER_OF_THEMES] = {"solarized_dark", "tricolor"};
 
 double smoothDef[5] = {1, 1, 1, 1, 1};
@@ -451,9 +466,26 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         }
         p->orientation = ORIENT_SPLIT_H;
     }
+    if (strcmp(orientation, "vertical") == 0) {
+        if (p->output != OUTPUT_NONCURSES) {
+            write_errorf(error, "only noncurses output supports vertical orientation\n");
+            return false;
+        }
+        p->orientation = ORIENT_SPLIT_V;
+        p->left_bottom = 1; // this setting is used to flip channels in horizonal split mode, makes
+                            // no sense here. forcing this to 1 puts left on left and right on right
+    }
+    if (p->orientation != ORIENT_SPLIT_V && p->orientation != ORIENT_SPLIT_H) {
+        p->split_stereo = 0;
+    }
+    if (p->orientation == ORIENT_LEFT || p->orientation == ORIENT_RIGHT ||
+        p->orientation == ORIENT_SPLIT_V) {
+        p->reverse = 1 - p->reverse;
+    }
     if ((p->orientation == ORIENT_LEFT || p->orientation == ORIENT_RIGHT) &&
-        !(p->output == OUTPUT_SDL || p->output == OUTPUT_NCURSES)) {
-        write_errorf(error, "only ncurses and sdl supports left/right orientation\n");
+        !(p->output == OUTPUT_SDL || p->output == OUTPUT_NCURSES ||
+          p->output == OUTPUT_NONCURSES)) {
+        write_errorf(error, "only noncurses, ncurses and sdl supports left/right orientation\n");
         return false;
     }
     if ((p->orientation == ORIENT_TOP) &&
@@ -490,6 +522,10 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     p->stereo = -1;
     if (strcmp(channels, "mono") == 0) {
         p->stereo = 0;
+        if (p->split_stereo) {
+            write_errorf(error, "split stereo is not supported in mono mode\n");
+            return false;
+        }
     }
     if (strcmp(monoOption, "average") == 0) {
         p->mono_opt = AVERAGE;
@@ -569,6 +605,13 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         return false;
     }
     p->sens = p->sens / 100;
+
+    // validate: sdl_glsl_gain
+    if (p->sdl_glsl_gain < 0) {
+        write_errorf(error, "sdl_glsl_gain can't be negative\n");
+        return false;
+    }
+    p->sdl_glsl_gain = p->sdl_glsl_gain / 100;
 
     // validate: channels
     if (p->channels <= 1)
@@ -809,6 +852,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     p->lower_cut_off = iniparser_getint(ini, "general:lower_cutoff_freq", 50);
     p->upper_cut_off = iniparser_getint(ini, "general:higher_cutoff_freq", 8000);
     p->sleep_timer = iniparser_getint(ini, "general:sleep_timer", 0);
+    p->live_config = iniparser_getint(ini, "general:live-config", 0);
     int max_height = iniparser_getint(ini, "general:max_height", 100);
     p->max_height = max_height / 100.0;
     p->center_align = iniparser_getint(ini, "general:center_align", 1);
@@ -831,6 +875,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     channels = strdup(iniparser_getstring(ini, "output:channels", "stereo"));
     monoOption = strdup(iniparser_getstring(ini, "output:mono_option", "average"));
     p->reverse = iniparser_getint(ini, "output:reverse", 0);
+    p->split_stereo = iniparser_getint(ini, "output:split_stereo", 0);
+    p->left_bottom = iniparser_getint(ini, "output:left_bottom", 0);
     p->raw_target = strdup(iniparser_getstring(ini, "output:raw_target", "/dev/stdout"));
     p->data_format = strdup(iniparser_getstring(ini, "output:data_format", "binary"));
     p->bar_delim = (char)iniparser_getint(ini, "output:bar_delimiter", 59);
@@ -846,17 +892,21 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     p->sdl_full_screen = iniparser_getint(ini, "output:sdl_full_screen", 0);
 
     if (strcmp(outputMethod, "sdl") == 0 || strcmp(outputMethod, "sdl_glsl") == 0) {
-        if (p->color)
+        if (strcmp(p->color, "default") == 0) {
             free(p->color);
-        if (p->bcolor)
+            p->color = strdup("#33cccc");
+        }
+        if (strcmp(p->bcolor, "default") == 0) {
             free(p->bcolor);
-        p->color = strdup(iniparser_getstring(ini, "color:foreground", "#33cccc"));
-        p->bcolor = strdup(iniparser_getstring(ini, "color:background", "#111111"));
+            p->bcolor = strdup("#111111");
+        }
         p->bar_width = iniparser_getint(ini, "general:bar_width", 20);
         p->bar_spacing = iniparser_getint(ini, "general:bar_spacing", 5);
     }
 
     p->continuous_rendering = iniparser_getint(ini, "output:continuous_rendering", 0);
+
+    p->sdl_glsl_gain = iniparser_getdouble(ini, "output:sdl_glsl_gain", 100);
 
     p->disable_blanking = iniparser_getint(ini, "output:disable_blanking", 0);
 
@@ -1004,6 +1054,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     p->lower_cut_off = GetPrivateProfileInt("general", "lower_cutoff_freq", 50, configPath);
     p->upper_cut_off = GetPrivateProfileInt("general", "higher_cutoff_freq", 10000, configPath);
     p->sleep_timer = GetPrivateProfileInt("general", "sleep_timer", 0, configPath);
+    p->live_config = GetPrivateProfileInt("general", "live-config", 0, configPath);
     p->max_height = GetPrivateProfileInt("general", "max_height", 100, configPath) / 100.0;
     p->center_align = GetPrivateProfileInt("general", "center_align", 1, configPath);
 
@@ -1084,11 +1135,17 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     if (strcmp(outputMethod, "sdl") == 0 || strcmp(outputMethod, "sdl_glsl") == 0) {
         p->bar_width = GetPrivateProfileInt("general", "bar_width", 20, configPath);
         p->bar_spacing = GetPrivateProfileInt("general", "bar_spacing", 5, configPath);
-        GetPrivateProfileString("color", "foreground", "#33cccc", p->color, 9, configPath);
-        GetPrivateProfileString("color", "background", "#111111", p->bcolor, 9, configPath);
+        if (strcmp(p->color, "default") == 0) {
+            GetPrivateProfileString("color", "foreground", "#33cccc", p->color, 9, configPath);
+        }
+        if (strcmp(p->bcolor, "default") == 0) {
+            GetPrivateProfileString("color", "background", "#111111", p->bcolor, 9, configPath);
+        }
     }
 
     p->continuous_rendering = GetPrivateProfileInt("output", "continuous_rendering", 0, configPath);
+
+    p->sdl_glsl_gain = GetPrivateProfileInt("output", "sdl_glsl_gain", 100, configPath);
 
     GetPrivateProfileString("output", "vertex_shader", "pass_through.vert", vertexShader, 64,
                             configPath);

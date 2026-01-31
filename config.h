@@ -107,7 +107,7 @@ struct config_params {
         **horizontal_gradient_colors, *data_format, *vertex_shader, *fragment_shader, *theme;
 
     char bar_delim, frame_delim;
-    double monstercat, integral, gravity, ignore, sens, noise_reduction, max_height;
+    double monstercat, integral, gravity, ignore, sens, noise_reduction, max_height, sdl_glsl_gain;
 
     unsigned int lower_cut_off, upper_cut_off;
     double *userEQ;
@@ -121,9 +121,16 @@ struct config_params {
         bit_format, gradient, gradient_count, horizontal_gradient, horizontal_gradient_count,
         fixedbars, framerate, bar_width, bar_spacing, bar_height, autosens, overshoot, waves,
         active, remix, virtual_node, samplerate, samplebits, channels, autoconnect, sleep_timer,
-        sdl_width, sdl_height, sdl_x, sdl_y, sdl_full_screen, draw_and_quit, zero_test,
+        live_config, sdl_width, sdl_height, sdl_x, sdl_y, sdl_full_screen, draw_and_quit, zero_test,
         non_zero_test, reverse, sync_updates, continuous_rendering, disable_blanking,
-        show_idle_bar_heads, waveform, center_align;
+        show_idle_bar_heads, waveform, center_align, split_stereo, left_bottom;
+
+    // non config params, used internally
+    int number_of_bars;
+    int terminal_width;
+    int terminal_lines;
+    int is_tty;
+    int terminal_remainder;
 };
 
 struct error_s {

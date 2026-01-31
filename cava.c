@@ -30,7 +30,7 @@
 #include <windows.h>
 #define PATH_MAX 260
 #define PACKAGE "cava"
-#define VERSION "0.10.6"
+#define VERSION "0.10.7"
 #define _CRT_SECURE_NO_WARNINGS 1
 #endif // _WIN32
 
@@ -89,26 +89,70 @@
 #ifdef _WIN32
 char *optarg = NULL;
 int optind = 1;
+int optopt = 0;
 
 static int getopt(int argc, char *const argv[], const char *optstring) {
     if ((optind >= argc) || (argv[optind][0] != '-') || (argv[optind][0] == 0)) {
         return -1;
     }
 
+    if (argv[optind][0] == '-' && argv[optind][1] == '\0') {
+        return -1;
+    }
+
+    if (strcmp(argv[optind], "--") == 0) {
+        optind++;
+        return -1;
+    }
+
+    if (argv[optind][0] == '-' && argv[optind][1] == '-' && argv[optind][2] != '\0') {
+        const char *longopt = argv[optind] + 2;
+        if (strcmp(longopt, "help") == 0) {
+            optopt = 'h';
+            optind++;
+            return 'h';
+        }
+        if (strcmp(longopt, "version") == 0) {
+            optopt = 'v';
+            optind++;
+            return 'v';
+        }
+        if (strcmp(longopt, "config") == 0) {
+            optopt = 'p';
+            optind++;
+            if (optind >= argc) {
+                return ':';
+            }
+            optarg = argv[optind];
+            optind++;
+            return 'p';
+        }
+        optopt = 0;
+        optind++;
+        return '?';
+    }
+
     int opt = argv[optind][1];
     const char *p = strchr(optstring, opt);
 
     if (p == NULL) {
+        optopt = opt;
+        optind++;
         return '?';
     }
     if (p[1] == ':') {
+        optopt = opt;
         optind++;
         if (optind >= argc) {
-            return '?';
+            return ':';
         }
         optarg = argv[optind];
         optind++;
+        return opt;
     }
+
+    optopt = opt;
+    optind++;
     return opt;
 }
 #endif
@@ -117,12 +161,27 @@ static int getopt(int argc, char *const argv[], const char *optstring) {
 // needs to know output mode in order to clean up terminal
 int output_mode;
 // whether we should reload the config or not
-int should_reload = 0;
+volatile sig_atomic_t should_reload = 0;
 // whether we should only reload colors or not
-int reload_colors = 0;
+volatile sig_atomic_t reload_colors = 0;
 // whether we should quit
-int should_quit = 0;
-int signal_received = 0;
+volatile sig_atomic_t should_quit = 0;
+volatile sig_atomic_t signal_received = 0;
+
+static bool get_file_state(const char *path, time_t *mtime, long long *size) {
+#ifdef _WIN32
+    struct _stat st;
+    if (_stat(path, &st) != 0)
+        return false;
+#else
+    struct stat st;
+    if (stat(path, &st) != 0)
+        return false;
+#endif
+    *mtime = st.st_mtime;
+    *size = (long long)st.st_size;
+    return true;
+}
 
 // these variables are used only in main, but making them global
 // will allow us to not free them on exit without ASan complaining
@@ -252,12 +311,9 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
 // general: entry point
 int main(int argc, char **argv) {
 
-#ifndef _WIN32
-    // general: console title
-    printf("%c]0;%s%c", '\033', PACKAGE, '\007');
-#endif // !_WIN32
-
-    // general: handle command-line arguments
+    struct config_params p;
+    memset(&p, 0, sizeof(p));
+    // handle command-line arguments
     char configPath[PATH_MAX];
     configPath[0] = '\0';
 #ifdef _WIN32
@@ -276,12 +332,13 @@ int main(int argc, char **argv) {
     sigaction(SIGUSR2, &action, NULL);
 #endif
     char *usage = "\n\
-Usage : " PACKAGE " [options]\n\
-Visualize audio input in terminal. \n\
+Usage: " PACKAGE " [options]\n\
+Visualize audio input in terminal.\n\
 \n\
 Options:\n\
-	-p          path to config file\n\
-	-v          print version\n\
+\t-p, --config <path>    Path to config file\n\
+\t-v, --version          Print version and exit\n\
+\t-h, --help             Show this help and exit\n\
 \n\
 Keys:\n\
         Up        Increase sensitivity\n\
@@ -296,24 +353,55 @@ Keys:\n\
         q         Quit\n\
 \n";
     int c;
-    while ((c = getopt(argc, argv, "p:vh")) != -1) {
+#ifndef _WIN32
+    static struct option long_options[] = {
+        {"config", required_argument, NULL, 'p'},
+        {"version", no_argument, NULL, 'v'},
+        {"help", no_argument, NULL, 'h'},
+        {0, 0, 0, 0},
+    };
+    opterr = 0;
+    while ((c = getopt_long(argc, argv, ":p:vh", long_options, NULL)) != -1) {
+#else
+    while ((c = getopt(argc, argv, ":p:vh")) != -1) {
+#endif
         switch (c) {
         case 'p': // argument: config path
             snprintf(configPath, sizeof(configPath), "%s", optarg);
             break;
         case 'h': // argument: print usage
             printf("%s", usage);
-            return 1;
-        case '?': // argument: print usage
-            printf("%s", usage);
-            return 1;
+            return 0;
         case 'v': // argument: print version
             printf(PACKAGE " " VERSION "\n");
             return 0;
+        case ':': // missing argument
+            fprintf(stderr, PACKAGE ": error: option requires an argument -- '%c'\n", optopt);
+            fprintf(stderr, "Try '%s --help' for more information.\n", PACKAGE);
+            return 1;
+        case '?': // unknown option
+            if (optopt != 0) {
+                fprintf(stderr, PACKAGE ": error: invalid option -- '%c'\n", optopt);
+            } else {
+                fprintf(stderr, PACKAGE ": error: invalid option\n");
+            }
+            fprintf(stderr, "Try '%s --help' for more information.\n", PACKAGE);
+            return 1;
         default: // argument: no arguments; exit
             abort();
         }
     }
+
+    if (optind < argc) {
+        fprintf(stderr, PACKAGE ": error: unknown argument '%s'\n", argv[optind]);
+        fprintf(stderr, "Try '%s --help' for more information.\n", PACKAGE);
+        return 1;
+    }
+
+#ifndef _WIN32
+    // general: console title
+    printf("%c]0;%s%c", '\033', PACKAGE, '\007');
+#endif // !_WIN32
 
     // general: main loop
     while (1) {
@@ -324,6 +412,13 @@ Keys:\n\
         if (!load_config(configPath, &p, &error)) {
             fprintf(stderr, "Error loading config. %s", error.message);
             exit(EXIT_FAILURE);
+        }
+
+        time_t config_mtime = 0;
+        long long config_size = 0;
+        bool has_config_state = false;
+        if (p.live_config) {
+            has_config_state = get_file_state(configPath, &config_mtime, &config_size);
         }
 
         int inAtty = 0;
@@ -431,7 +526,7 @@ Keys:\n\
                                         // adjusted later if sample rate is unusual
 
         audio.cava_in = (double *)malloc(audio.cava_buffer_size * sizeof(double));
-        memset(audio.cava_in, 0, sizeof(int) * audio.cava_buffer_size);
+        memset(audio.cava_in, 0, sizeof(double) * audio.cava_buffer_size);
 
         audio.threadparams = 0; // most input threads don't adjust the parameters
         audio.terminate = 0;
@@ -588,18 +683,27 @@ Keys:\n\
         int *bars;
         int *previous_frame;
 
+        int *right_bars = NULL;
+        int *right_previous_frame = NULL;
+
         float *bars_left, *bars_right;
         double *cava_out;
         float *bars_raw;
         float *previous_bars_raw;
 
-        int height, lines, width, remainder, fp;
+        int height, lines, width, remainder;
         int *dimension_bar, *dimension_value;
+#ifndef _WIN32
+        int fp = -1;
+        int keepalive_fd = -1;
+        bool close_output_fd = false;
+#endif
 #ifdef _WIN32
         HANDLE hFile = NULL;
 #endif
 
-        if (p.orientation == ORIENT_LEFT || p.orientation == ORIENT_RIGHT) {
+        if (p.orientation == ORIENT_LEFT || p.orientation == ORIENT_RIGHT ||
+            p.orientation == ORIENT_SPLIT_V) {
             dimension_bar = &height;
             dimension_value = &width;
         } else {
@@ -621,6 +725,7 @@ Keys:\n\
                                  p.vertex_shader, p.fragment_shader);
             height = p.sdl_height;
             width = p.sdl_width;
+            *dimension_value = 1;
         }
 #endif
 
@@ -665,19 +770,27 @@ Keys:\n\
                 if (p.xaxis != NONE)
                     lines--;
 
-                height = lines * 8 * p.max_height;
+                height = lines;
                 break;
             case OUTPUT_RAW:
             case OUTPUT_NORITAKE:
                 if (strcmp(p.raw_target, "/dev/stdout") != 0) {
 #ifndef _WIN32
-                    int fptest;
+                    if (close_output_fd && fp != -1) {
+                        close(fp);
+                        fp = -1;
+                        close_output_fd = false;
+                    }
+                    if (keepalive_fd != -1) {
+                        close(keepalive_fd);
+                        keepalive_fd = -1;
+                    }
                     // checking if file exists
                     if (access(p.raw_target, F_OK) != -1) {
                         // file exists, testopening in case it's a fifo
-                        fptest = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644);
+                        keepalive_fd = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644);
 
-                        if (fptest == -1) {
+                        if (keepalive_fd == -1) {
                             fprintf(stderr, "could not open file %s for writing\n", p.raw_target);
                             exit(1);
                         }
@@ -688,9 +801,14 @@ Keys:\n\
                             exit(1);
                         }
                         // fifo needs to be open for reading in order to write to it
-                        fptest = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644);
+                        keepalive_fd = open(p.raw_target, O_RDONLY | O_NONBLOCK, 0644);
+                        if (keepalive_fd == -1) {
+                            fprintf(stderr, "could not open file %s for writing\n", p.raw_target);
+                            exit(1);
+                        }
                     }
                     fp = open(p.raw_target, O_WRONLY | O_NONBLOCK | O_CREAT, 0644);
+                    close_output_fd = true;
 #else
                     int pipeLength = strlen("\\\\.\\pipe\\") + strlen(p.raw_target) + 1;
                     char *pipePath = malloc(pipeLength);
@@ -785,11 +903,6 @@ Keys:\n\
                     number_of_bars--; // stereo must have even numbers of bars
             }
 
-            int raw_number_of_bars = (number_of_bars / output_channels) * audio_channels;
-            if (p.waveform) {
-                raw_number_of_bars = number_of_bars;
-            }
-
             // checks if there is still extra room, will use this to center
             if (p.center_align) {
                 remainder = (*dimension_bar - number_of_bars * p.bar_width -
@@ -808,7 +921,20 @@ Keys:\n\
                                         number_of_bars, width, lines, p.bar_width, p.orientation,
                                         p.blendDirection);
             }
+            if ((p.orientation == ORIENT_SPLIT_H || p.orientation == ORIENT_SPLIT_V) &&
+                p.split_stereo) {
+                number_of_bars *= 2;
+            }
+            p.number_of_bars = number_of_bars;
+            p.terminal_lines = lines;
+            p.terminal_width = width;
+            p.terminal_remainder = remainder;
+            p.is_tty = inAtty;
 
+            int raw_number_of_bars = (number_of_bars / output_channels) * audio_channels;
+            if (p.waveform) {
+                raw_number_of_bars = number_of_bars;
+            }
             double userEQ_keys_to_bars_ratio;
 
             if (p.userEQ_enabled && (number_of_bars / output_channels > 0)) {
@@ -855,10 +981,15 @@ Keys:\n\
             memset(previous_frame, 0, sizeof(int) * number_of_bars);
             memset(cava_out, 0, sizeof(double) * number_of_bars * audio.channels / output_channels);
 
-            int x_axis_info = 0;
+            if (p.split_stereo) {
+                right_bars = (int *)malloc(number_of_bars * sizeof(int));
+                right_previous_frame = (int *)malloc(number_of_bars * sizeof(int));
+                memset(right_bars, 0, sizeof(int) * number_of_bars);
+                memset(right_previous_frame, 0, sizeof(int) * number_of_bars);
+            }
+
             // process: calculate x axis values
             if (p.xaxis != NONE) {
-                x_axis_info = 1;
                 double cut_off_frequency;
                 if (output_mode == OUTPUT_NONCURSES) {
                     printf("\r\033[%dB", lines + 1);
@@ -907,14 +1038,20 @@ Keys:\n\
 
             bool resizeTerminal = false;
 
-            int frame_time_msec = (1 / (float)p.framerate) * 1000;
-            struct timespec framerate_timer = {.tv_sec = 0, .tv_nsec = 0};
-            if (p.framerate <= 1) {
-                framerate_timer.tv_sec = frame_time_msec / 1000;
-            } else {
-                framerate_timer.tv_sec = 0;
-                framerate_timer.tv_nsec = frame_time_msec * 1e6;
-            }
+            int effective_framerate = p.framerate;
+            if (effective_framerate <= 0)
+                effective_framerate = 60;
+
+            long long frame_time_ns = (long long)(1000000000.0 / (double)effective_framerate);
+            if (frame_time_ns < 1)
+                frame_time_ns = 1;
+
+            int frame_time_msec = (int)(frame_time_ns / 1000000LL);
+            if (frame_time_msec < 1)
+                frame_time_msec = 1;
+
+            struct timespec framerate_timer = {.tv_sec = frame_time_ns / 1000000000LL,
+                                               .tv_nsec = frame_time_ns % 1000000000LL};
 #ifdef _WIN32
             LARGE_INTEGER frequency; // ticks per second
             LARGE_INTEGER t1, t2;    // ticks
@@ -980,27 +1117,27 @@ Keys:\n\
                     resizeTerminal = true;
                     break;
                 case 'o': // change orientation
-                    if (output_mode == OUTPUT_NCURSES) {
-                        if (p.orientation == ORIENT_BOTTOM) {
-                            p.orientation = ORIENT_RIGHT;
-                        } else if (p.orientation == ORIENT_RIGHT) {
-                            p.orientation = ORIENT_TOP;
-                        } else if (p.orientation == ORIENT_TOP) {
-                            p.orientation = ORIENT_LEFT;
-                        } else {
+                    p.orientation++;
+                    if (output_mode == OUTPUT_NONCURSES) {
+                        if (p.orientation > ORIENT_SPLIT_V) {
                             p.orientation = ORIENT_BOTTOM;
                         }
-
-                        if (p.orientation == ORIENT_LEFT || p.orientation == ORIENT_RIGHT) {
-                            dimension_bar = &height;
-                            dimension_value = &width;
-                        } else {
-                            dimension_bar = &width;
-                            dimension_value = &height;
+                    } else if (output_mode == OUTPUT_NCURSES) {
+                        if (p.orientation > ORIENT_RIGHT) {
+                            p.orientation = ORIENT_BOTTOM;
                         }
                     } else {
                         p.orientation =
                             (p.orientation == ORIENT_BOTTOM) ? ORIENT_TOP : ORIENT_BOTTOM;
+                    }
+
+                    if (p.orientation == ORIENT_LEFT || p.orientation == ORIENT_RIGHT ||
+                        p.orientation == ORIENT_SPLIT_V) {
+                        dimension_bar = &height;
+                        dimension_value = &width;
+                    } else {
+                        dimension_bar = &width;
+                        dimension_value = &height;
                     }
 
                     resizeTerminal = true;
@@ -1040,6 +1177,9 @@ Keys:\n\
                     break;
                 }
 
+                if (resizeTerminal)
+                    break;
+
                 // checking if audio thread has exited unexpectedly
                 pthread_mutex_lock(&audio.lock);
                 if (audio.terminate == 1) {
@@ -1062,13 +1202,29 @@ Keys:\n\
 
                 if (output_mode != OUTPUT_SDL) {
                     if (p.sleep_timer) {
-                        if (silence && sleep_counter <= p.framerate * p.sleep_timer)
+                        int effective_framerate = p.framerate;
+                        if (effective_framerate <= 0)
+                            effective_framerate = 60;
+                        int sleep_limit = effective_framerate * p.sleep_timer;
+                        if (silence && sleep_counter <= sleep_limit)
                             sleep_counter++;
                         else if (!silence)
                             sleep_counter = 0;
 
-                        if (sleep_counter > p.framerate * p.sleep_timer) {
+                        if (sleep_counter > sleep_limit) {
                             nanosleep(&sleep_mode_timer, NULL);
+                            if (p.live_config) {
+                                time_t new_mtime = 0;
+                                long long new_size = 0;
+                                if (get_file_state(configPath, &new_mtime, &new_size) &&
+                                    (!has_config_state || new_mtime != config_mtime ||
+                                     new_size != config_size)) {
+                                    should_reload = 1;
+                                    config_mtime = new_mtime;
+                                    config_size = new_size;
+                                    has_config_state = true;
+                                }
+                            }
                             continue;
                         }
                     }
@@ -1114,21 +1270,28 @@ Keys:\n\
                             cava_out[n] = (cava_out[n] + 1.0) / 2.0;
                     }
 
-                    if (output_mode == OUTPUT_SDL_GLSL) {
-                        if (cava_out[n] > 1.0)
-                            cava_out[n] = 1.0;
-                        else if (cava_out[n] < 0.0)
-                            cava_out[n] = 0.0;
-                    } else {
-                        cava_out[n] *= *dimension_value;
-                        if (p.orientation == ORIENT_SPLIT_H || p.orientation == ORIENT_SPLIT_V) {
-                            cava_out[n] /= 2;
-                        }
+                    if (p.sdl_glsl_gain != 1.0) {
+                        cava_out[n] *= p.sdl_glsl_gain;
                     }
+
+                    if (cava_out[n] > 1.0)
+                        cava_out[n] = 1.0;
+                    else if (cava_out[n] < 0.0)
+                        cava_out[n] = 0.0;
+
+                    cava_out[n] *= *dimension_value;
+                    if (p.orientation == ORIENT_SPLIT_H || p.orientation == ORIENT_SPLIT_V) {
+                        cava_out[n] /= 2;
+                    }
+                    if (output_mode == OUTPUT_NONCURSES) {
+                        cava_out[n] *= 8 * p.max_height;
+                    }
+
                     if (p.waveform) {
                         bars_raw[n] = cava_out[n];
                     }
                 }
+
                 if (!p.waveform) {
                     if (audio_channels == 2) {
                         for (int n = 0; n < number_of_bars / output_channels; n++) {
@@ -1169,22 +1332,44 @@ Keys:\n\
                     if (audio_channels == 2) {
                         if (p.stereo) {
                             // mirroring stereo channels
-                            for (int n = 0; n < number_of_bars; n++) {
-                                if (n < number_of_bars / 2) {
-                                    if (p.reverse) {
-                                        bars_raw[n] = bars_left[n];
+                            if ((p.orientation == ORIENT_SPLIT_H ||
+                                 p.orientation == ORIENT_SPLIT_V) &&
+                                p.split_stereo) {
+                                for (int n = 0; n < number_of_bars; n++) {
+                                    if (n < number_of_bars / 2) {
+                                        if (p.reverse) {
+                                            bars_raw[n] = bars_left[number_of_bars / 2 - n - 1];
+                                        } else {
+                                            bars_raw[n] = bars_left[n];
+                                        }
                                     } else {
-                                        bars_raw[n] = bars_left[number_of_bars / 2 - n - 1];
+                                        if (p.reverse) {
+                                            bars_raw[n] = bars_right[number_of_bars - n - 1];
+                                        } else {
+                                            bars_raw[n] = bars_right[n - number_of_bars / 2];
+                                        }
                                     }
-                                } else {
-                                    if (p.reverse) {
-                                        bars_raw[n] = bars_right[number_of_bars - n - 1];
+                                }
+
+                            } else {
+                                for (int n = 0; n < number_of_bars; n++) {
+                                    if (n < number_of_bars / 2) {
+                                        if (p.reverse) {
+                                            bars_raw[n] = bars_left[n];
+                                        } else {
+                                            bars_raw[n] = bars_left[number_of_bars / 2 - n - 1];
+                                        }
                                     } else {
-                                        bars_raw[n] = bars_right[n - number_of_bars / 2];
+                                        if (p.reverse) {
+                                            bars_raw[n] = bars_right[number_of_bars - n - 1];
+                                        } else {
+                                            bars_raw[n] = bars_right[n - number_of_bars / 2];
+                                        }
                                     }
                                 }
                             }
                         } else {
+
                             // stereo mono output
                             for (int n = 0; n < number_of_bars; n++) {
                                 if (p.reverse) {
@@ -1235,7 +1420,7 @@ Keys:\n\
                     fflush(stdout);
                     printf("\033[2026l\033\\");
                 }
-                int rc;
+                int rc = 0;
 #ifdef _WIN32
                 QueryPerformanceCounter(&t1);
 #endif
@@ -1255,28 +1440,54 @@ Keys:\n\
                     break;
 #endif
                 case OUTPUT_NONCURSES:
-                    if (p.orientation == ORIENT_SPLIT_H) {
-                        rc = draw_terminal_noncurses(
-                            inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
-                            remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
-                            x_axis_info, ORIENT_BOTTOM, 1);
-                        rc = draw_terminal_noncurses(
-                            inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
-                            remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
-                            x_axis_info, ORIENT_TOP, 1);
+                    if (p.orientation == ORIENT_SPLIT_H || p.orientation == ORIENT_SPLIT_V) {
+                        // in split horizontal mode we need to draw two times
+                        // once for bottom and once for top
+                        // ORIENT_BOTTOM will be the top bars and ORIENT_TOP the bottom bars
+                        // since bottom hear means from mid upwards and top is from mid downwards
+
+                        if (p.split_stereo) {
+                            // in horizontal stereo mode we need to split the bars array in half
+                            // first half is right channel, second half is left channel
+                            for (int i = 0; i < number_of_bars / 2; i++) {
+                                right_bars[i] = bars[i + number_of_bars / 2];
+                                right_previous_frame[i] = previous_frame[i + number_of_bars / 2];
+                            }
+                            if (p.orientation == ORIENT_SPLIT_H) {
+                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_BOTTOM,
+                                                             &p);
+                                rc = draw_terminal_noncurses(right_bars, right_previous_frame,
+                                                             ORIENT_TOP, &p);
+                            }
+                            if (p.orientation == ORIENT_SPLIT_V) {
+                                rc = draw_terminal_noncurses(right_bars, right_previous_frame,
+                                                             ORIENT_LEFT, &p);
+                                rc =
+                                    draw_terminal_noncurses(bars, previous_frame, ORIENT_RIGHT, &p);
+                            }
+
+                        } else {
+                            // pure mirrored split, same bars for both sides
+                            if (p.orientation == ORIENT_SPLIT_H) {
+                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_BOTTOM,
+                                                             &p);
+                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_TOP, &p);
+                            } else if (p.orientation == ORIENT_SPLIT_V) {
+                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_LEFT, &p);
+                                rc =
+                                    draw_terminal_noncurses(bars, previous_frame, ORIENT_RIGHT, &p);
+                            }
+                        }
                     } else {
-                        rc = draw_terminal_noncurses(
-                            inAtty, lines, width, number_of_bars, p.bar_width, p.bar_spacing,
-                            remainder, bars, previous_frame, p.gradient, p.horizontal_gradient,
-                            x_axis_info, p.orientation, 0);
+                        rc = draw_terminal_noncurses(bars, previous_frame, p.orientation, &p);
                     }
                     break;
                 case OUTPUT_NCURSES:
 #ifdef NCURSES
                     rc = draw_terminal_ncurses(inAtty, *dimension_value / 8, *dimension_bar,
                                                number_of_bars, p.bar_width, p.bar_spacing,
-                                               remainder, bars, previous_frame, p.gradient,
-                                               x_axis_info, p.orientation);
+                                               remainder, bars, previous_frame, p.gradient, p.xaxis,
+                                               p.orientation);
                     break;
 #endif
                 case OUTPUT_RAW:
@@ -1340,6 +1551,19 @@ Keys:\n\
 #endif
                 }
 
+                if (p.live_config) {
+                    time_t new_mtime = 0;
+                    long long new_size = 0;
+                    if (get_file_state(configPath, &new_mtime, &new_size) &&
+                        (!has_config_state || new_mtime != config_mtime ||
+                         new_size != config_size)) {
+                        should_reload = 1;
+                        config_mtime = new_mtime;
+                        config_size = new_size;
+                        has_config_state = true;
+                    }
+                }
+
                 if (p.draw_and_quit > 0) {
                     total_frames++;
                     if (total_frames >= p.draw_and_quit) {
@@ -1368,6 +1592,25 @@ Keys:\n\
             free(bars_raw);
             free(previous_bars_raw);
             free(previous_frame);
+            if (p.split_stereo) {
+                free(right_bars);
+                free(right_previous_frame);
+            }
+
+#ifndef _WIN32
+            if ((output_mode == OUTPUT_RAW || output_mode == OUTPUT_NORITAKE) &&
+                strcmp(p.raw_target, "/dev/stdout") != 0) {
+                if (close_output_fd && fp != -1) {
+                    close(fp);
+                    fp = -1;
+                    close_output_fd = false;
+                }
+                if (keepalive_fd != -1) {
+                    close(keepalive_fd);
+                    keepalive_fd = -1;
+                }
+            }
+#endif
         } // reloading config
 
         //**telling audio thread to terminate**//
@@ -1375,6 +1618,8 @@ Keys:\n\
         audio.terminate = 1;
         pthread_mutex_unlock(&audio.lock);
         pthread_join(p_thread, NULL);
+
+        pthread_mutex_destroy(&audio.lock);
 
         free(audio.source);
         free(audio.cava_in);
