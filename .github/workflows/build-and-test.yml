@@ -100,7 +100,12 @@ jobs:
           .\vcpkg\bootstrap-vcpkg.bat
       - name: Set VCPKG_ROOT
         run: |
-          echo "VCPKG_ROOT=$(pwd)\\vcpkg" >> $env:GITHUB_ENV
+          echo "VCPKG_ROOT=$(pwd)\vcpkg" >> $env:GITHUB_ENV
+      - name: Install vcpkg dependencies
+        run: |
+          cd cava_win
+          $env:VCPKG_ROOT\vcpkg install
+          cd ..
       - name: Run msbuild with vcpkg
         run: |
           msbuild /p:Configuration=Release /p:VcpkgEnabled=true /p:VcpkgRoot=$env:VCPKG_ROOT /p:VcpkgTriplet=x64-windows cava_win\cava_win.sln
