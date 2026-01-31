@@ -104,7 +104,7 @@ jobs:
       - name: Install vcpkg dependencies
         run: |
           cd cava_win
-          $env:VCPKG_ROOT\vcpkg install
+          & $env:VCPKG_ROOT\\vcpkg install
           cd ..
       - name: Run msbuild with vcpkg
         run: |
