@@ -2,8 +2,8 @@
 #define _CRT_SECURE_NO_WARNINGS 1
 #endif
 
-#include <SDL2/SDL.h>
 #include "sdl_cava.h"
+#include <SDL2/SDL.h>
 
 #include <stdbool.h>
 #include <stdlib.h>

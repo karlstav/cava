@@ -4,8 +4,8 @@
 #else
 #include <SDL2/SDL_opengl.h>
 #endif
-#include <SDL2/SDL.h>
 #include "sdl_glsl.h"
+#include <SDL2/SDL.h>
 
 #include <math.h>
 #include <stdbool.h>
