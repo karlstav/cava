@@ -100,10 +100,10 @@ jobs:
           .\vcpkg\bootstrap-vcpkg.bat
       - name: Set VCPKG_ROOT
         run: |
-          echo "VCPKG_ROOT=$(pwd)\\vcpkg" >> $GITHUB_ENV
+          echo "VCPKG_ROOT=$(pwd)\\vcpkg" >> $env:GITHUB_ENV
       - name: Run msbuild with vcpkg
         run: |
-          msbuild /p:Configuration=Release /p:VcpkgEnabled=true /p:VcpkgRoot=$(VCPKG_ROOT) /p:VcpkgTriplet=x64-windows cava_win\cava_win.sln
+          msbuild /p:Configuration=Release /p:VcpkgEnabled=true /p:VcpkgRoot=$env:VCPKG_ROOT /p:VcpkgTriplet=x64-windows cava_win\cava_win.sln
       - name: Install WiX Toolset
         run: dotnet tool install --global wix
       - name: Install WiX extensions
