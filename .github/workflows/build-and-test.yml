@@ -94,10 +94,21 @@ jobs:
       - uses: actions/checkout@v4
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
-      - name: Install dependencies
-        run: nuget restore cava_win\cava_win.sln
-      - name: Run msbuild
-        run: msbuild /p:Configuration=Release cava_win\cava_win.sln
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+      - name: Set VCPKG_ROOT
+        run: |
+          echo "VCPKG_ROOT=$(pwd)\vcpkg" >> $env:GITHUB_ENV
+      - name: Install vcpkg dependencies
+        run: |
+          cd cava_win
+          & $env:VCPKG_ROOT\\vcpkg install
+          cd ..
+      - name: Run msbuild with vcpkg
+        run: |
+          msbuild /p:Configuration=Release /p:VcpkgEnabled=true /p:VcpkgRoot=$env:VCPKG_ROOT /p:VcpkgTriplet=x64-windows cava_win\cava_win.sln
       - name: Install WiX Toolset
         run: dotnet tool install --global wix
       - name: Install WiX extensions
