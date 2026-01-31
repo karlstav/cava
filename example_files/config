@@ -135,7 +135,7 @@
 ; sample_bits = 16
 ; channels = 2
 ; autoconnect = 2
-; active = 0
+; active = 1
 ; remix = 1
 ; virtual = 1
 

@@ -433,7 +433,7 @@ void input_winscap(void *data) {
                 pClient->lpVtbl->Release(pClient);
             if (pDevice)
                 pDevice->lpVtbl->Release(pDevice);
-            WaitForSingleObject(hEvent, INFINITE); // may freeze, need to test on spacial device
+            WaitForSingleObject(hEvent, INFINITE); // may freeze, need to test on special device
             continue;
         }
 
@@ -508,6 +508,9 @@ void input_winscap(void *data) {
                 LPBYTE pData;
                 UINT32 numFramesAvailable;
                 DWORD flags;
+
+                if (deviceChanged)
+                    break;
 
                 pCapture->lpVtbl->GetBuffer(pCapture, &pData, &numFramesAvailable, &flags, 0, 0);
 

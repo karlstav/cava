@@ -17,7 +17,7 @@ In my case both the computer and the terminal had Data Terminal Equipment (DTE) 
 
 # Step 3: Login
 Most of the documentation I could find was for some strange reason very much outdated.
-But I was able to find some modern [documentaion](https://0pointer.de/blog/projects/serial-console.html).
+But I was able to find some modern [documentation](https://0pointer.de/blog/projects/serial-console.html).
 When using a USB adapter I had to add `--autologin username` in order to log in, or it would stall forever on the password prompt.
 It would actually also cause some strange behavior in my gui session that would not fix itself until i unplugged the USB adapter.
 All this was no issue when connecting directly to the motherboard
@@ -44,7 +44,7 @@ bars = 20
 
 # Troubleshooting
 ## Font
-If you are seing this:
+If you are seeing this:
 
 ![font_terminal_issue](https://github.com/karlstav/cava/blob/master/example_files/font_terminal_issue.jpg "font_terminal_issue")
 
@@ -52,7 +52,7 @@ It means the font did not load. Cava uses something called [Down-Line-Loadable C
 to create its own font on the terminal at runtime.
 Maybe your terminal does not support this feature?
 ## Bit errors
-If you are seing this:
+If you are seeing this:
 
 ![bit_error_issue](https://github.com/karlstav/cava/blob/master/example_files/bit_error_issue.jpg "bit_error_issue")
 
@@ -68,4 +68,3 @@ got latency? try optimizing more:
 * fewer bars
 * narrower bars
 * less or no bar spacing
-

@@ -44,7 +44,6 @@
 
 #include "config.h"
 
-#include "debug.h"
 #include "util.h"
 
 #ifdef SDL
@@ -127,7 +126,7 @@ int signal_received = 0;
 
 // these variables are used only in main, but making them global
 // will allow us to not free them on exit without ASan complaining
-struct config_params p;
+struct config_params p = {0};
 
 // general: cleanup
 void cleanup(void) {
@@ -315,16 +314,14 @@ Keys:\n\
             abort();
         }
     }
-    int reload = 0;
 
     // general: main loop
     while (1) {
 
-        debug("loading config\n");
         // config: load
         struct error_s error;
         error.length = 0;
-        if (!load_config(configPath, &p, 0, &error, reload)) {
+        if (!load_config(configPath, &p, &error)) {
             fprintf(stderr, "Error loading config. %s", error.message);
             exit(EXIT_FAILURE);
         }
@@ -348,7 +345,7 @@ Keys:\n\
                 strncmp(ttyname(0), "/dev/ttyUSB", 11) == 0)
                 inAterminal = 1;
 
-            // in macos vitual terminals are called ttys(xyz) and there are no ttys
+            // in macos virtual terminals are called ttys(xyz) and there are no ttys
             if (strncmp(ttyname(0), "/dev/ttys", 9) == 0)
                 inAtty = 0;
 
@@ -438,8 +435,6 @@ Keys:\n\
 
         audio.threadparams = 0; // most input threads don't adjust the parameters
         audio.terminate = 0;
-
-        debug("starting audio thread\n");
 
         pthread_t p_thread;
         int timeout_counter = 0;
@@ -535,7 +530,7 @@ Keys:\n\
             audio.channels = p.channels;
             audio.active = p.active;
             audio.remix = p.remix;
-            audio.virtual = p.virtual;
+            audio.virtual_node = p.virtual_node;
             thr_id = pthread_create(&p_thread, NULL, input_pipewire, (void *)&audio);
             break;
 #endif
@@ -570,7 +565,6 @@ Keys:\n\
             }
         }
         pthread_mutex_unlock(&audio.lock);
-        debug("got format: %d and rate %d\n", audio.format, audio.rate);
 
         int audio_channels = audio.channels;
 
@@ -727,10 +721,6 @@ Keys:\n\
                     exit(1);
                 }
 
-#ifndef NDEBUG
-                debug("open file %s for writing raw output\n", p.raw_target);
-#endif
-
                 // width must be hardcoded for raw output. only used to calculate the number of
                 // bars in auto mode
                 width = 512 * output_channels;
@@ -761,9 +751,10 @@ Keys:\n\
                     audio.terminate = 1;
                     exit(EXIT_FAILURE);
                 }
-                if (number_of_bars <= 1) {
+                if (number_of_bars < output_channels) {
                     cleanup();
-                    fprintf(stderr, "fixed number of bars must be at least 1\n");
+                    fprintf(stderr, "fixed number of bars must be at least 1 with mono output and "
+                                    "2 with stereo output\n");
                     exit(EXIT_FAILURE);
                 }
                 if (output_channels == 2 && number_of_bars % 2 != 0) {
@@ -776,11 +767,11 @@ Keys:\n\
 
                 if (output_mode == OUTPUT_SDL_GLSL) {
                     if (number_of_bars > 512)
-                        number_of_bars = 512; // cant have more than 512 bars in glsl due to shader
+                        number_of_bars = 512; // can't have more than 512 bars in glsl due to shader
                                               // program implementation limitations
                 } else {
                     if (number_of_bars / output_channels > 512)
-                        number_of_bars = 512 * output_channels; // cant have more than 512 bars on
+                        number_of_bars = 512 * output_channels; // can't have more than 512 bars on
                                                                 // 44100 rate per channel
                 }
 
@@ -799,7 +790,7 @@ Keys:\n\
                 raw_number_of_bars = number_of_bars;
             }
 
-            // checks if there is stil extra room, will use this to center
+            // checks if there is still extra room, will use this to center
             if (p.center_align) {
                 remainder = (*dimension_bar - number_of_bars * p.bar_width -
                              number_of_bars * p.bar_spacing + p.bar_spacing) /
@@ -817,13 +808,6 @@ Keys:\n\
                                         number_of_bars, width, lines, p.bar_width, p.orientation,
                                         p.blendDirection);
             }
-
-#ifndef NDEBUG
-            debug("height: %d width: %d dimension_bar: %d dimension_value: %d bars:%d bar width: "
-                  "%d remainder: %d\n",
-                  height, width, *dimension_bar, *dimension_value, number_of_bars, p.bar_width,
-                  remainder);
-#endif
 
             double userEQ_keys_to_bars_ratio;
 
@@ -942,11 +926,6 @@ Keys:\n\
             bool silence = false;
             char ch = '\0';
 
-#ifndef NDEBUG
-            int maxvalue = 0;
-            int minvalue = 0;
-#endif
-
             struct timespec sleep_mode_timer = {.tv_sec = 1, .tv_nsec = 0};
 
             int total_frames = 0;
@@ -986,14 +965,14 @@ Keys:\n\
                 case 'c': // reload colors
                     reload_colors = 1;
                     break;
-                case 'f': // change forground color
+                case 'f': // change foreground color
                     if (p.col < 7)
                         p.col++;
                     else
                         p.col = 0;
                     resizeTerminal = true;
                     break;
-                case 'b': // change backround color
+                case 'b': // change background color
                     if (p.bgcol < 7)
                         p.bgcol++;
                     else
@@ -1035,7 +1014,6 @@ Keys:\n\
                 ch = 0;
 
                 if (should_reload) {
-
                     reloadConf = true;
                     resizeTerminal = true;
                     should_reload = 0;
@@ -1043,22 +1021,33 @@ Keys:\n\
 
                 if (reload_colors) {
                     struct error_s error;
+                    char *themeFile;
                     error.length = 0;
-                    if (!load_config(configPath, (void *)&p, 1, &error, reload)) {
+                    bool result = get_themeFile(configPath, &p, NULL, &error, &themeFile);
+                    if (!result) {
                         cleanup();
+                        exit(EXIT_FAILURE);
+                    }
+                    if (!load_colors(themeFile, (void *)&p, &error)) {
+                        cleanup();
+                        free(themeFile);
                         fprintf(stderr, "Error loading config. %s", error.message);
                         exit(EXIT_FAILURE);
                     }
                     resizeTerminal = true;
                     reload_colors = 0;
+                    free(themeFile);
+                    break;
                 }
 
-#ifndef NDEBUG
-                // clear();
-#ifndef _WIN32
-                refresh();
-#endif
-#endif
+                // checking if audio thread has exited unexpectedly
+                pthread_mutex_lock(&audio.lock);
+                if (audio.terminate == 1) {
+                    cleanup();
+                    fprintf(stderr, "Audio thread exited unexpectedly. %s\n", audio.error_message);
+                    exit(EXIT_FAILURE);
+                }
+                pthread_mutex_unlock(&audio.lock);
 
                 // process: check if input is present
                 silence = true;
@@ -1079,9 +1068,6 @@ Keys:\n\
                             sleep_counter = 0;
 
                         if (sleep_counter > p.framerate * p.sleep_timer) {
-#ifndef NDEBUG
-                            printw("no sound detected for 30 sec, going to sleep mode\n");
-#endif
                             nanosleep(&sleep_mode_timer, NULL);
                             continue;
                         }
@@ -1241,42 +1227,9 @@ Keys:\n\
                     if (bars[n] != previous_frame[n])
                         re_paint = 1;
 #endif
-
-#ifndef NDEBUG
-                    mvprintw(n, 0, "%d: f:%f->%f (%d->%d), eq:\
-						%15e, peak:%d \n",
-                             n, plan->cut_off_frequency[n], plan->cut_off_frequency[n + 1],
-                             plan->FFTbuffer_lower_cut_off[n], plan->FFTbuffer_upper_cut_off[n],
-                             plan->eq[n], bars[n]);
-
-                    if (bars[n] < minvalue) {
-                        minvalue = bars[n];
-                        debug("min value: %d\n", minvalue); // checking maxvalue 10000
-                    }
-                    if (bars[n] > maxvalue) {
-                        maxvalue = bars[n];
-                    }
-                    if (bars[n] < 0) {
-                        debug("negative bar value!! %d\n", bars[n]);
-                        //    exit(EXIT_FAILURE); // Can't happen.
-                    }
-
-#endif
                 }
 
-#ifndef NDEBUG
-                mvprintw(number_of_bars + 1, 0, "sensitivity %.10e", p.sens);
-                mvprintw(number_of_bars + 2, 0, "min value: %d\n",
-                         minvalue); // checking maxvalue 10000
-                mvprintw(number_of_bars + 3, 0, "max value: %d\n",
-                         maxvalue); // checking maxvalue 10000
-#ifndef _WIN32
-                (void)x_axis_info;
-#endif // !_WIN32
-#endif
-
-// output: draw processed input
-#ifdef NDEBUG
+                // output: draw processed input
                 if (p.sync_updates) {
                     printf("\033[2026h\033\\");
                     fflush(stdout);
@@ -1363,21 +1316,11 @@ Keys:\n\
                     should_quit = true;
                 }
 
-#endif
-
                 memcpy(previous_frame, bars, number_of_bars * sizeof(int));
                 if (p.output == OUTPUT_SDL_GLSL) {
                     memcpy(previous_bars_raw, bars_raw, number_of_bars * sizeof(float));
                 }
 
-                // checking if audio thread has exited unexpectedly
-                pthread_mutex_lock(&audio.lock);
-                if (audio.terminate == 1) {
-                    cleanup();
-                    fprintf(stderr, "Audio thread exited unexpectedly. %s\n", audio.error_message);
-                    exit(EXIT_FAILURE);
-                }
-                pthread_mutex_unlock(&audio.lock);
 #ifdef _WIN32
                 QueryPerformanceCounter(&t2);
                 elapsedTime = (t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart;
@@ -1433,13 +1376,9 @@ Keys:\n\
         pthread_mutex_unlock(&audio.lock);
         pthread_join(p_thread, NULL);
 
-        if (p.userEQ_enabled)
-            free(p.userEQ);
-
         free(audio.source);
         free(audio.cava_in);
         cleanup();
-        reload = 1;
 
         if (should_quit && signal_received == 0) {
             if (p.zero_test && total_bar_height > 0) {

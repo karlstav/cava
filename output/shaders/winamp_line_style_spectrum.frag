@@ -36,7 +36,7 @@ uniform float bars[512];
 
 uniform int bars_count;    // number of bars (left + right) (configurable)
 uniform int bar_width;    // bar width (configurable), not used here
-uniform int bar_spacing;    // space bewteen bars (configurable)
+uniform int bar_spacing;    // space between bars (configurable)
 
 uniform vec3 u_resolution; // window resolution
 

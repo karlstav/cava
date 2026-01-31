@@ -1,1 +1,5 @@
 config file for cava is created in "%USERPROFILE%\.config\cava" upon first launch
+
+you need to install Visual C++ redistributable if you do not already have it:
+
+https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist

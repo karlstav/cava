@@ -131,7 +131,7 @@ void *input_oss(void *data) {
         goto cleanup;
     }
 
-    // For OSS it's adviced to determine format, channels and rate in this order.
+    // For OSS it's advised to determine format, channels and rate in this order.
     if (!set_format(fd, audio) || !set_channels(fd, audio) || !set_rate(fd, audio))
         goto cleanup;
 
