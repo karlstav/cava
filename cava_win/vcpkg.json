@@ -1,0 +1,8 @@
+{
+  "dependencies": [
+    "fftw3",
+    "pthreads",
+    "sdl2",
+    "glew"
+  ]
+}
