@@ -1,12 +1,11 @@
 #define GL_GLEXT_PROTOTYPES 0
 #ifdef _WIN32
 #include <GL/glew.h>
-#include <SDL.h>
 #else
-#include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 #endif
 #include "sdl_glsl.h"
+#include <SDL2/SDL.h>
 
 #include <math.h>
 #include <stdbool.h>
