@@ -5,11 +5,10 @@ set -e
 # sudo modprobe snd-aloop
 # arecord -D hw:Loopback,1 -c 2 -r 44100 > /tmp/fifo &
 TESTCFGS="example_files/test_configs/*"
-for f in $TESTCFGS
-do
-    echo "testing $f"
-    ./cava -p "$f" > /dev/null
-    echo "OK!"
+for f in $TESTCFGS; do
+	echo "testing $f"
+	./cava -p "$f" >/dev/null
+	echo "OK!"
 done
 echo "all tests completed successfully"
 ## clean up:

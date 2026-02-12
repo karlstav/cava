@@ -629,12 +629,12 @@ int draw_terminal_noncurses(int bars[], int previous_frame[], enum orientation o
         // in "vertical" orientations frequency is vertical, amplitude is horizontal
         // drawing the bars from top to bottom
         // "vertical_gradient" is horizontal and "horizontal vertical_gradient" is vertical
-        // tty not implemented, lacks special unicode charachters
+        // tty not implemented, lacks special unicode characters
 
         if (offset)
             width /= 2;
 
-        // asuminng no changes
+        // assuming no changes
         same_line = lines;
         for (int i = 0; i < number_of_bars; i++) {
             if (bars[i] != previous_frame[i]) {
@@ -694,7 +694,7 @@ int draw_terminal_noncurses(int bars[], int previous_frame[], enum orientation o
                             int x_pos = bars[i] / 8 + 1 + (offset * width);
                             int color_x_pos = x_pos - (offset * width) - 1;
 
-                            // move crusor
+                            // move cursor
                             cx += swprintf(frame_buffer + cx, buf_length - cx, L"\033[%d;%dH",
                                            y_pos, x_pos);
 
@@ -711,7 +711,7 @@ int draw_terminal_noncurses(int bars[], int previous_frame[], enum orientation o
                                 }
                                 cx += swprintf(frame_buffer + cx, buf_length - cx,
                                                left_barchars[fragment]);
-                                // we drew fragmnet, one leas bar to clear
+                                // we drew fragment, one least bar to clear
                                 chars_to_clear--;
                             }
 
