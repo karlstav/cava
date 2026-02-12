@@ -472,7 +472,7 @@ bool validate_config(struct config_params *p, struct error_s *error) {
             return false;
         }
         p->orientation = ORIENT_SPLIT_V;
-        p->left_bottom = 1; // this setting is used to flip channels in horizonal split mode, makes
+        p->left_bottom = 1; // this setting is used to flip channels in horizontal split mode, makes
                             // no sense here. forcing this to 1 puts left on left and right on right
     }
     if (p->orientation != ORIENT_SPLIT_V && p->orientation != ORIENT_SPLIT_H) {
