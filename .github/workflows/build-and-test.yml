@@ -113,8 +113,8 @@ jobs:
         run: dotnet tool install --global wix --version 6.0.2
       - name: Install WiX extensions
         run: |
-          wix extension add WixToolset.UI.wixext --version 6.0.2
-          wix extension add WixToolset.Util.wixext --version 6.0.2
+          dotnet add package WixToolset.UI.wixext --version 6.0.2
+          dotnet add package WixToolset.Util.wixext --version 6.0.2
       - name: Build MSI installer
         run: |
           $versionLine = Select-String -Path cava_win\setup.iss -Pattern '^AppVersion=' | Select-Object -First 1
