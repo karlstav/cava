@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-**READ CAREFULLY AND DELETE THIS TEXT BEFORE CREATING NEW ISSUE**
+## READ CAREFULLY AND DELETE THIS TEXT BEFORE CREATING NEW ISSUE
 
 Go through the [troubleshooting](https://github.com/karlstav/cava/blob/master/README.md#troubleshooting) guide in the readme first.
 
@@ -17,7 +17,7 @@ If so, clone the master branch from here, build and run. Is your issue already r
 
 Don't know how to clone or compile source code? Learn before posting issues here.
 
-**ALWAYS TRY TO BUILD AND RUN FROM THE SOURCE BEFORE POSTING ISSUES**
+## ALWAYS TRY TO BUILD AND RUN FROM THE SOURCE BEFORE POSTING ISSUES
 
 If the issue is resolved when building from source, do not post issues here.
 
@@ -25,38 +25,37 @@ If the issue is still not resolved you can proceed with the bug report.
 
 Make sure the bug report contains the following:
 
-**Describe the bug**
+## Describe the bug
 
 A clear and concise description of what the bug is.
 
-
-**To Reproduce**
+## To Reproduce
 
 Steps to reproduce the behavior:
+
 1. Set config parameter to
 2. run
 3. do something
 4. See error
 
-
-**Expected behavior**
+## Expected behavior
 
 A clear and concise description of what you expected to happen.
 
-
-**Screenshots**
+## Screenshots
 
 If applicable, add screenshots to help explain your problem.
 
+## Desktop (please complete the following information)
 
-**Desktop (please complete the following information):**
+- OS: [e.g. macOS, Ubuntu]
+- Version [e.g. 22]
 
- - OS: [e.g. macOS, Ubuntu]
- - Version [e.g. 22]
+## Terminal emulator
 
-**Terminal emulator**
 - name
 - version
 
-**Additional context**
+## Additional context
+
 Add any other context about the problem if relevant.
