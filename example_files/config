@@ -40,7 +40,7 @@
 ; bar_width = 1
 ; bar_spacing = 0
 
-# ceter bars in terminal, if there is space.
+# center bars in terminal, if there is space.
 ; center_align = 1
 
 # max height of bars in terminal, in percent of terminal height.
@@ -63,9 +63,9 @@
 # Audio capturing method. Possible methods are: 'fifo', 'portaudio', 'pipewire', 'alsa', 'pulse', 'sndio', 'oss', 'jack' or 'shmem'
 # Defaults to 'oss', 'pipewire', 'sndio', 'jack', 'pulse', 'alsa', 'portaudio' or 'fifo', in that order, dependent on what support cava was built with.
 # On Mac it defaults to 'portaudio' or 'fifo'
-# On windows this is automatic and no input settings are needed.
+# On Windows this is automatic and no input settings are needed.
 #
-# All input methods uses the same config variable 'source'
+# Each input methods uses the same config variable 'source'
 # to define where it should get the audio.
 #
 # For pulseaudio and pipewire 'source' will be the source. Default: 'auto', which uses the monitor source of the default sink
@@ -155,7 +155,7 @@
 # 'raw' defaults to 1024 bars stereo (512 bars mono), which can be adjusted in the 'bars' option above.
 #
 # 'noritake' outputs a bitmap in the format expected by a Noritake VFD display
-#  in graphic mode. It only support the 3000 series graphical VFDs for now.
+# in graphic mode. It only support the 3000 series graphical VFDs for now.
 #
 # 'sdl' uses the Simple DirectMedia Layer to render in a graphical context.
 # 'sdl_glsl' uses SDL to create an OpenGL context. Write your own shaders or
@@ -164,7 +164,7 @@
 
 # Orientation of the visualization. Can be 'bottom', 'top', 'left', 'right' or
 # 'horizontal'. Default is 'bottom'. 'left and 'right' are only supported on sdl
-# and ncruses output. 'horizontal' (bars go up and down from center) is only supported
+# and ncurses output. 'horizontal' (bars go up and down from center) is only supported
 # on noncurses output.
 # Note: many fonts have weird or missing glyphs for characters used in orientations
 # other than 'bottom', which can make output not look right.
@@ -199,7 +199,7 @@
 # Ascii max value. In 'ascii' mode range will run from 0 to value specified here
 ; ascii_max_range = 1000
 
-# Ascii delimiters. In ascii format each bar and frame is separated by a delimiters.
+# Ascii delimiters. In ascii format each bar and frame is separated by a delimiter.
 # Use decimal value in ascii table (i.e. 59 = ';' and 10 = '\n' (line feed)).
 ; bar_delimiter = 59
 ; frame_delimiter = 10
@@ -266,7 +266,7 @@
 [color]
 
 # Colors can be one of seven predefined: black, blue, cyan, green, magenta, red, white, yellow.
-# Or defined by hex code '#xxxxxx' (hex code must be within ''). User defined colors requires
+# Or defined by hex code '#xxxxxx' (hex code must be within ''). User defined colors require
 # a terminal that can change color definitions such as Gnome-terminal or rxvt.
 # default is to keep current terminal color
 ; background = default
@@ -278,7 +278,7 @@
 
 # Gradient mode, only hex defined colors are supported,
 # background must also be defined in hex or remain commented out. 1 = on, 0 = off.
-# You can define as many as 8 different colors. They range from bottom to top of screen
+# You can define as many as 8 different colors. They range from bottom to top of the screen
 ; gradient = 0
 ; gradient_color_1 = '#59cc33'
 ; gradient_color_2 = '#80cc33'
@@ -301,10 +301,10 @@
 ; horizontal_gradient_color_7 = '#5e62a9'
 ; horizontal_gradient_color_8 = '#434279'
 
-# If both vertical and horizontal gradient is enabled, vertical will be blended in this direction.
+# If both vertical and horizontal gradients are enabled, the vertical one will be blended in this direction.
 # Can be 'up', 'down', 'left' or 'right'. 'up' means the vertical gradient will be blended in from
-# bottom to top. I.e. the bottom will be only the horizontal
-# and top will be only the color of the vertical gradient.
+# bottom to top. I.e. the bottom will only be the horizontal
+# and top will only be the vertical color of the gradient.
 ; blend_direction = 'up'
 
 # use theme file instead of defining colors in this file
@@ -323,12 +323,12 @@
 ; monstercat = 0
 ; waves = 0
 
-# Set gravity percentage for "drop off". Higher values means bars will drop faster.
+# Set gravity percentage for "drop off". Higher values mean bars will drop faster.
 # Accepts only non-negative values. 50 means half gravity, 200 means double. Set to 0 to disable "drop off".
 # DEPRECATED as of 0.8.0, use noise_reduction instead
 ; gravity = 100
 
-# In bar height, bars that would have been lower that this will not be drawn.
+# In bar height, bars that would have been lower than this will not be drawn.
 # DEPRECATED as of 0.8.0
 ; ignore = 0
 
@@ -340,7 +340,7 @@
 
 [eq]
 
-# This one is tricky. You can have as much keys as you want.
+# This one is tricky. You can have as many keys as you want.
 # Remember to uncomment more than one key! More keys = more precision.
 # Look at readme.md on github for further explanations and examples.
 ; 1 = 1 # bass
