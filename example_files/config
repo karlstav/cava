@@ -65,7 +65,7 @@
 # On Mac it defaults to 'portaudio' or 'fifo'
 # On Windows this is automatic and no input settings are needed.
 #
-# Each input methods uses the same config variable 'source'
+# Each input method uses the same config variable 'source'
 # to define where it should get the audio.
 #
 # For pulseaudio and pipewire 'source' will be the source. Default: 'auto', which uses the monitor source of the default sink
