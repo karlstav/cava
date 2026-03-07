@@ -1279,7 +1279,9 @@ Keys:\n\
                     else if (cava_out[n] < 0.0)
                         cava_out[n] = 0.0;
 
-                    cava_out[n] *= *dimension_value;
+                    if (output_mode != OUTPUT_SDL_GLSL) {
+                        cava_out[n] *= *dimension_value;
+                    }
                     if (p.orientation == ORIENT_SPLIT_H || p.orientation == ORIENT_SPLIT_V) {
                         cava_out[n] /= 2;
                     }
