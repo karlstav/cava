@@ -558,8 +558,8 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         p->bar_width = 1;
 
     // validate: framerate
-    if (p->framerate < 0) {
-        write_errorf(error, "framerate can't be negative!\n");
+    if (p->framerate < 1) {
+        write_errorf(error, "framerate can't be less than 1!\n");
         return false;
     }
 

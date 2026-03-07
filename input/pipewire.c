@@ -147,7 +147,8 @@ void *input_pipewire(void *audiodata) {
     struct pw_properties *props;
     struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
     uint32_t nom;
-    nom = next_power_of_2((512 * data.cava_audio->rate / 48000));
+    nom =
+        next_power_of_2(((data.cava_audio->input_buffer_size / 2) * data.cava_audio->rate / 48000));
     pw_init(0, 0);
 
     data.loop = pw_main_loop_new(NULL);
