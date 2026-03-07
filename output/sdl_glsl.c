@@ -96,7 +96,7 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
 #endif
 
     // Use Vsync
-    if (SDL_GL_SetSwapInterval(1) < 0) {
+    if (SDL_GL_SetSwapInterval(0) < 0) {
         printf("Warning: Unable to set VSync! SDL Error: %s\n", SDL_GetError());
     }
 
