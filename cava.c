@@ -1192,7 +1192,7 @@ Keys:\n\
                 // process: check if input is present
                 silence = true;
 
-                for (int n = 0; n < audio.input_buffer_size * 4; n++) {
+                for (int n = 0; n < audio.samples_counter; n++) {
                     if (audio.cava_in[n]) {
                         silence = false;
                         break;
