@@ -11,6 +11,8 @@ int write_to_cava_input_buffers(int16_t samples, unsigned char *buf, void *data)
     int bytes_per_sample = audio->format / 8;
     if (audio->samples_counter + samples > audio->cava_buffer_size) {
         // buffer overflow, discard what ever is in the buffer and start over
+        // fprintf(stderr, "warning: buffer overflow, discarding %d samples!\n",
+        //        audio->samples_counter + samples - audio->cava_buffer_size);
         for (uint16_t n = 0; n < audio->cava_buffer_size; n++) {
             audio->cava_in[n] = 0;
         }
