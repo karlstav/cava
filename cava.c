@@ -1263,21 +1263,21 @@ Keys:\n\
                 }
 
                 // fprintf(stderr, "samples per frame: %d, samples left in buffer: %d!\n",
-                //        samples_per_frame, audio.samples_counter / audio.channels);
+                //         samples_per_frame, audio.samples_counter / audio.channels);
 
-                if (audio.samples_counter == 0) {
+                if (audio.samples_counter < samples_per_frame * audio_channels) {
                     fprintf(stderr, "warning: buffer underrun, samples per frame: %d!\n",
                             samples_per_frame);
                     samples_per_frame *= 0.9;
                 }
 
-                audio.samples_counter -= samples_to_use;
-
-                if (audio.samples_counter > audio.input_buffer_size) {
+                if (audio.samples_counter > samples_per_frame * audio_channels * 2) {
                     fprintf(stderr, "waring: buffer overflow, samples per frame: %d!\n",
                             samples_per_frame);
                     samples_per_frame *= 1.1;
                 }
+
+                audio.samples_counter -= samples_to_use;
 
                 for (int n = 0; n < audio.samples_counter; n++) {
                     audio.cava_in[n] = audio.cava_in[n + samples_to_use];
