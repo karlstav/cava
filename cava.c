@@ -1067,6 +1067,9 @@ Keys:\n\
 
             int total_frames = 0;
             int samples_per_frame = audio.rate / p.framerate;
+            int audio_frame_rate = (audio.rate / (audio.input_buffer_size / audio_channels));
+            int under_run_buffer = p.framerate / audio_frame_rate + 1;
+
             pthread_mutex_lock(&audio.lock);
             audio.samples_counter = 0;
             pthread_mutex_unlock(&audio.lock);
@@ -1241,6 +1244,9 @@ Keys:\n\
 
                 int samples_to_use = samples_per_frame * audio_channels;
                 if (samples_to_use > audio.samples_counter) {
+                    fprintf(stderr, "warning: buffer underrun! expected at least: %d, got: %d\n",
+                            samples_to_use / audio_channels,
+                            audio.samples_counter / audio_channels);
                     samples_to_use = audio.samples_counter;
                 }
 
@@ -1267,22 +1273,22 @@ Keys:\n\
 
                 audio.samples_counter -= samples_to_use;
 
-                if (audio.samples_counter < samples_per_frame * audio_channels) {
-                    fprintf(
-                        stderr,
-                        "warning: buffer underrun, samples per frame: %d, samples in buffer: %d!\n",
-                        samples_per_frame, audio.samples_counter / audio_channels);
+                if (audio.samples_counter < samples_per_frame * audio_channels * under_run_buffer) {
+                    fprintf(stderr,
+                            "buffer underrun correction, samples per frame: %d, samples in buffer: "
+                            "%d!\n",
+                            samples_per_frame, audio.samples_counter / audio_channels);
                     samples_per_frame *= 0.9;
                 }
 
-                if (audio.samples_counter > samples_per_frame * audio_channels * 1.5) {
-                    fprintf(
-                        stderr,
-                        "waring: buffer overflow, samples per frame: %d, samples in buffer: %d!\n",
-                        samples_per_frame, audio.samples_counter / audio_channels);
+                if (audio.samples_counter >
+                    samples_per_frame * audio_channels * under_run_buffer * 1.5) {
+                    fprintf(stderr,
+                            "buffer overflow correction, samples per frame: %d, samples in buffer: "
+                            "%d!\n",
+                            samples_per_frame, audio.samples_counter / audio_channels);
                     samples_per_frame *= 1.1;
                 }
-
                 for (int n = 0; n < audio.samples_counter; n++) {
                     audio.cava_in[n] = audio.cava_in[n + samples_to_use];
                 }
