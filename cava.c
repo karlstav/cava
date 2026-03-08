@@ -1066,7 +1066,10 @@ Keys:\n\
             struct timespec sleep_mode_timer = {.tv_sec = 1, .tv_nsec = 0};
 
             int total_frames = 0;
-            int samples_per_frame = 512;
+            int samples_per_frame = audio.rate / p.framerate;
+            pthread_mutex_lock(&audio.lock);
+            audio.samples_counter = 0;
+            pthread_mutex_unlock(&audio.lock);
 
             while (!resizeTerminal) {
 
@@ -1236,8 +1239,8 @@ Keys:\n\
                 // process: execute cava
                 pthread_mutex_lock(&audio.lock);
 
-                int samples_to_use = samples_per_frame;
-                if (samples_per_frame > audio.samples_counter) {
+                int samples_to_use = samples_per_frame * audio_channels;
+                if (samples_to_use > audio.samples_counter) {
                     samples_to_use = audio.samples_counter;
                 }
 
@@ -1259,29 +1262,26 @@ Keys:\n\
                     cava_execute(audio.cava_in, samples_to_use, cava_out, plan);
                 }
 
+                // fprintf(stderr, "samples per frame: %d, samples left in buffer: %d!\n",
+                //        samples_per_frame, audio.samples_counter / audio.channels);
+
                 if (audio.samples_counter == 0) {
-                    //    fprintf(stderr, "warning: buffer underrun, samples per frame: %d!\n",
-                    //            samples_per_frame);
+                    fprintf(stderr, "warning: buffer underrun, samples per frame: %d!\n",
+                            samples_per_frame);
                     samples_per_frame *= 0.9;
                 }
-                if (audio.samples_counter < 0)
-                    audio.samples_counter = 0;
 
                 audio.samples_counter -= samples_to_use;
 
                 if (audio.samples_counter > audio.input_buffer_size) {
-                    //    fprintf(stderr, "waring: buffer overflow, samples per frame: %d!\n",
-                    //            samples_per_frame);
+                    fprintf(stderr, "waring: buffer overflow, samples per frame: %d!\n",
+                            samples_per_frame);
                     samples_per_frame *= 1.1;
                 }
-                if (samples_per_frame % 2 != 0)
-                    samples_per_frame++;
+
                 for (int n = 0; n < audio.samples_counter; n++) {
                     audio.cava_in[n] = audio.cava_in[n + samples_to_use];
                 }
-
-                // fprintf(stderr, "samples per frame: %d, samples left in buffer: %d!\n",
-                //         samples_per_frame, audio.samples_counter);
 
                 pthread_mutex_unlock(&audio.lock);
 
