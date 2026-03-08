@@ -1067,8 +1067,8 @@ Keys:\n\
 
             int total_frames = 0;
             int samples_per_frame = audio.rate / p.framerate;
-            int audio_frame_rate = (audio.rate / (audio.input_buffer_size / audio_channels));
-            int under_run_buffer = p.framerate / audio_frame_rate + 1;
+            int new_samples_rate = (audio.rate / (audio.input_buffer_size / audio_channels));
+            int under_run_buffer = p.framerate / new_samples_rate + 1;
 
             pthread_mutex_lock(&audio.lock);
             audio.samples_counter = 0;
@@ -1270,9 +1270,6 @@ Keys:\n\
 
                 // fprintf(stderr, "samples per frame: %d, samples left in buffer: %d!\n",
                 //         samples_per_frame, audio.samples_counter / audio.channels);
-
-                audio.samples_counter -= samples_to_use;
-
                 if (audio.samples_counter < samples_per_frame * audio_channels * under_run_buffer) {
                     fprintf(stderr,
                             "buffer underrun correction, samples per frame: %d, samples in buffer: "
@@ -1289,6 +1286,8 @@ Keys:\n\
                             samples_per_frame, audio.samples_counter / audio_channels);
                     samples_per_frame *= 1.1;
                 }
+                audio.samples_counter -= samples_to_use;
+
                 for (int n = 0; n < audio.samples_counter; n++) {
                     audio.cava_in[n] = audio.cava_in[n + samples_to_use];
                 }
