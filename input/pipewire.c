@@ -38,6 +38,7 @@ static void on_process(void *userdata) {
         return;
 
     n_samples = buf->datas[0].chunk->size / (data->cava_audio->format / 8);
+    /*  fprintf(stderr, "got %u samples\n", n_samples / 2); */
 
     write_to_cava_input_buffers(n_samples, buf->datas[0].data, data->cava_audio);
 

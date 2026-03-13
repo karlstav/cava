@@ -1065,7 +1065,22 @@ Keys:\n\
             int total_frames = 0;
             int samples_per_frame = audio.rate / p.framerate;
             int new_samples_rate = (audio.rate / (audio.input_buffer_size / audio_channels));
-            int under_run_buffer = p.framerate / new_samples_rate + 1;
+            float underrun_buffers = (float)p.framerate / (float)new_samples_rate;
+
+            // on sdl we use SDL_delay instead of our own sleep and it is in whole milliseconds, so
+            // we need to adjust a little
+            if (output_mode == OUTPUT_SDL_GLSL || output_mode == OUTPUT_SDL) {
+                float actual_framerate = 1000.0 / (float)frame_time_msec;
+                samples_per_frame = audio.rate / actual_framerate;
+                underrun_buffers = actual_framerate / (float)new_samples_rate;
+            }
+
+            int underrun_buffer_limit = samples_per_frame * audio_channels;
+            int underrun_buffer_size = samples_per_frame * audio_channels * (underrun_buffers + 1);
+            if (audio_channels == 2 && underrun_buffer_size % 2 != 0) {
+                underrun_buffer_size++;
+            }
+            int under_run = 0;
 
             pthread_mutex_lock(&audio.lock);
             audio.samples_counter = 0;
@@ -1244,32 +1259,68 @@ Keys:\n\
                 // process: execute cava
                 pthread_mutex_lock(&audio.lock);
 
-                int samples_to_use = samples_per_frame * audio_channels;
-                if (samples_to_use > audio.samples_counter) {
-                    fprintf(stderr, "warning: buffer underrun! expected at least: %d, got: %d\n",
-                            samples_to_use / audio_channels,
-                            audio.samples_counter / audio_channels);
+                int samples_to_use = 0;
+
+                if (underrun_buffers == 0) {
+                    // we dont need buffers and use all available samples.
                     samples_to_use = audio.samples_counter;
-                } else if (audio.samples_counter <
-                           samples_per_frame * audio_channels * under_run_buffer) {
-                    fprintf(stderr,
-                            "buffer underrun correction, samples per frame: %d, samples in buffer: "
-                            "%d!\n",
-                            samples_per_frame, audio.samples_counter / audio_channels);
-                    samples_per_frame--;
-                }
+                } else {
+                    // we are running with higher framerates and need buffers!
 
-                if (audio.samples_counter >
-                    samples_per_frame * audio_channels * under_run_buffer * 2) {
-                    fprintf(stderr,
-                            "buffer overflow correction, samples per frame: %d, samples in buffer: "
-                            "%d!\n",
-                            samples_per_frame, audio.samples_counter / audio_channels);
-                    samples_per_frame++;
-                }
+                    // only use the calcualted samples per frame
+                    samples_to_use = samples_per_frame * audio_channels;
 
-                // fprintf(stderr, "samples per frame: %d, samples left in buffer: %d!\n",
-                //         samples_per_frame, audio.samples_counter / audio_channels);
+                    // check if we have enough samples in buffer, if not we are in under run and
+                    // need to skip until we have enough buffered
+                    if (audio.samples_counter < underrun_buffer_limit) {
+                        /*                         fprintf(stderr,
+                                                        "buffer underrun!! samples in buffer: %d,
+                           skipping until buffer " "large enough! samples " "needed in buffer :
+                           %d\n", audio.samples_counter / audio_channels, underrun_buffer_limit /
+                           audio_channels); */
+                        under_run = 1;
+                    }
+
+                    // we are in underrun, check if we have buffered enough now to stop underrun
+                    if (under_run && audio.samples_counter >= underrun_buffer_size) {
+                        /*                         fprintf(stderr, "buffering completed, samples in
+                           buffer: %d\n", audio.samples_counter / audio_channels); */
+                        under_run = 0;
+                    }
+
+                    // we are in underrun and we dont have enough buffered, skip all available
+                    // samples and wait for next frame
+                    if (under_run) {
+                        samples_to_use = 0;
+                    }
+
+                    // we have more samples than we need just use them.
+                    if (!under_run && audio.samples_counter > underrun_buffer_size) {
+                        /*                         fprintf(stderr,
+                                                        "buffer overflow correction, samples"
+                                                        " in buffer : %d,  underrun "
+                                                        " buffer needed : % d,"
+                                                        " eating the extra % d, \n",
+                                                        audio.samples_counter / audio_channels,
+                                                        underrun_buffer_size / audio_channels,
+                                                        (audio.samples_counter -
+                           underrun_buffer_size) / audio_channels); */
+                        samples_to_use += audio.samples_counter - underrun_buffer_size;
+                    } else if (!under_run) {
+                        /*                         fprintf(stderr,
+                                                        "normal read, samples in buffer: %d, samples
+                           needed: "
+                                                        "%d, reading %d, \n",
+                                                        audio.samples_counter / audio_channels,
+                                                        underrun_buffer_limit / audio_channels,
+                           samples_per_frame); */
+                    }
+
+                    // can't happen, but just in case
+                    if (samples_to_use > audio.samples_counter) {
+                        samples_to_use = audio.samples_counter;
+                    }
+                }
 
                 if (p.waveform) {
                     for (int n = 0; n < samples_to_use; n++) {
@@ -1291,8 +1342,11 @@ Keys:\n\
 
                 audio.samples_counter -= samples_to_use;
 
-                for (int n = 0; n < audio.samples_counter; n++) {
-                    audio.cava_in[n] = audio.cava_in[n + samples_to_use];
+                if (audio.samples_counter != 0) {
+                    // shift the input buffer
+                    for (int n = 0; n < audio.samples_counter; n++) {
+                        audio.cava_in[n] = audio.cava_in[n + samples_to_use];
+                    }
                 }
 
                 pthread_mutex_unlock(&audio.lock);
@@ -1484,7 +1538,8 @@ Keys:\n\
                         // in split horizontal mode we need to draw two times
                         // once for bottom and once for top
                         // ORIENT_BOTTOM will be the top bars and ORIENT_TOP the bottom bars
-                        // since bottom hear means from mid upwards and top is from mid downwards
+                        // since bottom hear means from mid upwards and top is from mid
+                        // downwards
 
                         if (p.split_stereo) {
                             // in horizontal stereo mode we need to split the bars array in half
