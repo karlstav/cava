@@ -1685,13 +1685,38 @@ Keys:\n\
 #else
                     clock_gettime(CLOCK_MONOTONIC, &t2);
                     elapsedTimens =
-                        (t2.tv_sec - t1.tv_sec) * 1000000000LL + (t2.tv_nsec - t1.tv_nsec);
+                        (t2.tv_sec - t1.tv_sec) * 1000000000.0 + (t2.tv_nsec - t1.tv_nsec);
+
                     int sleep_time_ns = frame_time_ns - (int)elapsedTimens;
-                    if (sleep_time_ns < 1)
-                        sleep_time_ns = 1;
-                    struct timespec sleep_timer = {.tv_sec = sleep_time_ns / 1000000000LL,
-                                                   .tv_nsec = (sleep_time_ns % 1000000000LL)};
-                    nanosleep(&sleep_timer, NULL);
+
+                    if (sleep_time_ns > 1) {
+                        if (high_framerate) {
+                            clock_gettime(CLOCK_MONOTONIC, &t1);
+
+                            sleep_timer.tv_sec = (sleep_time_ns - 1000000) / 1000000000;
+                            sleep_timer.tv_nsec = (sleep_time_ns - 1000000) % 1000000000;
+                            nanosleep(&sleep_timer, NULL);
+                            clock_gettime(CLOCK_MONOTONIC, &t2);
+                            elapsedTimens =
+                                (t2.tv_sec - t1.tv_sec) * 1000000000.0 + (t2.tv_nsec - t1.tv_nsec);
+                            sleep_time_ns -= elapsedTimens;
+                            struct timespec spinstart, spinstop;
+                            clock_gettime(CLOCK_MONOTONIC, &spinstart);
+                            while (1) {
+                                clock_gettime(CLOCK_MONOTONIC, &spinstop);
+                                long long elapsedSpinTime =
+                                    (spinstop.tv_sec - spinstart.tv_sec) * 1000000000.0 +
+                                    (spinstop.tv_nsec - spinstart.tv_nsec);
+                                if (elapsedSpinTime >= sleep_time_ns)
+                                    break;
+                            }
+                        } else {
+                            sleep_timer.tv_sec = sleep_time_ns / 1000000000;
+                            sleep_timer.tv_nsec = sleep_time_ns % 1000000000;
+                            nanosleep(&sleep_timer, NULL);
+                        }
+                    }
+
 #endif
                 }
             } // resize terminal
