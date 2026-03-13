@@ -1041,7 +1041,8 @@ Keys:\n\
             long long frame_time_ns = (long long)(1000000000.0 / (double)p.framerate);
             if (frame_time_ns < 1)
                 frame_time_ns = 1;
-
+            struct timespec sleep_timer = {.tv_sec = frame_time_ns / 1000000000,
+                                           .tv_nsec = frame_time_ns % 1000000000};
             int frame_time_msec = (int)(frame_time_ns / 1000000LL);
             if (frame_time_msec < 1)
                 frame_time_msec = 1;
@@ -1064,15 +1065,21 @@ Keys:\n\
 
             int total_frames = 0;
             int samples_per_frame = audio.rate / p.framerate;
-            int new_samples_rate = (audio.rate / (audio.input_buffer_size / audio_channels));
-            float underrun_buffers = (float)p.framerate / (float)new_samples_rate;
+            float new_samples_rate =
+                ((float)audio.rate / ((float)audio.input_buffer_size / audio_channels));
+            float underrun_buffers = (float)p.framerate / new_samples_rate;
+
+            int high_framerate = 0;
+            if (underrun_buffers > 1.0) {
+                high_framerate = 1;
+            }
 
             // on sdl we use SDL_delay instead of our own sleep and it is in whole milliseconds, so
             // we need to adjust a little
             if (output_mode == OUTPUT_SDL_GLSL || output_mode == OUTPUT_SDL) {
                 float actual_framerate = 1000.0 / (float)frame_time_msec;
                 samples_per_frame = audio.rate / actual_framerate;
-                underrun_buffers = actual_framerate / (float)new_samples_rate;
+                underrun_buffers = actual_framerate / new_samples_rate;
             }
 
             int underrun_buffer_limit = samples_per_frame * audio_channels;
@@ -1261,7 +1268,7 @@ Keys:\n\
 
                 int samples_to_use = 0;
 
-                if (underrun_buffers == 0) {
+                if (!high_framerate) {
                     // we dont need buffers and use all available samples.
                     samples_to_use = audio.samples_counter;
                 } else {
