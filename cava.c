@@ -1279,19 +1279,24 @@ Keys:\n\
 
                     // check if we have enough samples in buffer, if not we are in under run and
                     // need to skip until we have enough buffered
+#define DEBUGPRINT 0
                     if (audio.samples_counter < underrun_buffer_limit) {
-                        /*                         fprintf(stderr,
-                                                        "buffer underrun!! samples in buffer: %d,
-                           skipping until buffer " "large enough! samples " "needed in buffer :
-                           %d\n", audio.samples_counter / audio_channels, underrun_buffer_limit /
-                           audio_channels); */
+#if (DEBUGPRINT == 1)
+                        fprintf(stderr,
+                                "buffer underrun!! samples in buffer: %d, skipping until buffer "
+                                "large enough!samples needed in buffer: %d\n",
+                                audio.samples_counter / audio_channels,
+                                underrun_buffer_limit / audio_channels);
+#endif
                         under_run = 1;
                     }
 
                     // we are in underrun, check if we have buffered enough now to stop underrun
                     if (under_run && audio.samples_counter >= underrun_buffer_size) {
-                        /*                         fprintf(stderr, "buffering completed, samples in
-                           buffer: %d\n", audio.samples_counter / audio_channels); */
+#if (DEBUGPRINT == 1)
+                        fprintf(stderr, "buffering completed, samples in buffer: %d\n",
+                                audio.samples_counter / audio_channels);
+#endif
                         under_run = 0;
                     }
 
@@ -1303,24 +1308,24 @@ Keys:\n\
 
                     // we have more samples than we need just use them.
                     if (!under_run && audio.samples_counter > underrun_buffer_size) {
-                        /*                         fprintf(stderr,
-                                                        "buffer overflow correction, samples"
-                                                        " in buffer : %d,  underrun "
-                                                        " buffer needed : % d,"
-                                                        " eating the extra % d, \n",
-                                                        audio.samples_counter / audio_channels,
-                                                        underrun_buffer_size / audio_channels,
-                                                        (audio.samples_counter -
-                           underrun_buffer_size) / audio_channels); */
+#if (DEBUGPRINT == 1)
+                        fprintf(stderr,
+                                "buffer overflow correction, samples  in  buffer : %d,  underrun "
+                                " buffer needed : % d, eating the extra % d, \n",
+                                audio.samples_counter / audio_channels,
+                                underrun_buffer_size / audio_channels,
+                                (audio.samples_counter - underrun_buffer_size) / audio_channels);
+#endif
                         samples_to_use += audio.samples_counter - underrun_buffer_size;
                     } else if (!under_run) {
-                        /*                         fprintf(stderr,
-                                                        "normal read, samples in buffer: %d, samples
-                           needed: "
-                                                        "%d, reading %d, \n",
-                                                        audio.samples_counter / audio_channels,
-                                                        underrun_buffer_limit / audio_channels,
-                           samples_per_frame); */
+#if (DEBUGPRINT == 1)
+
+                        fprintf(stderr,
+                                "normal read, samples in buffer: %d, samples needed : "
+                                "%d, reading %d\n",
+                                audio.samples_counter / audio_channels,
+                                underrun_buffer_limit / audio_channels, samples_per_frame);
+#endif
                     }
 
                     // can't happen, but just in case
