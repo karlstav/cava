@@ -1038,11 +1038,7 @@ Keys:\n\
 
             bool resizeTerminal = false;
 
-            int effective_framerate = p.framerate;
-            if (effective_framerate <= 0)
-                effective_framerate = 60;
-
-            long long frame_time_ns = (long long)(1000000000.0 / (double)effective_framerate);
+            long long frame_time_ns = (long long)(1000000000.0 / (double)p.framerate);
             if (frame_time_ns < 1)
                 frame_time_ns = 1;
 
@@ -1050,13 +1046,14 @@ Keys:\n\
             if (frame_time_msec < 1)
                 frame_time_msec = 1;
 
-            struct timespec framerate_timer = {.tv_sec = frame_time_ns / 1000000000LL,
-                                               .tv_nsec = frame_time_ns % 1000000000LL};
 #ifdef _WIN32
             LARGE_INTEGER frequency; // ticks per second
             LARGE_INTEGER t1, t2;    // ticks
             double elapsedTime;
             QueryPerformanceFrequency(&frequency);
+#else
+            struct timespec t1, t2;
+            double elapsedTimens;
 #endif // _WIN32
 
             int sleep_counter = 0;
@@ -1075,6 +1072,11 @@ Keys:\n\
             pthread_mutex_unlock(&audio.lock);
 
             while (!resizeTerminal) {
+#ifdef _WIN32
+                QueryPerformanceCounter(&t1);
+#else
+                clock_gettime(CLOCK_MONOTONIC, &t1);
+#endif
 
 // general: keyboard controls
 #ifdef NCURSES
@@ -1462,9 +1464,6 @@ Keys:\n\
                     printf("\033[2026l\033\\");
                 }
                 int rc = 0;
-#ifdef _WIN32
-                QueryPerformanceCounter(&t1);
-#endif
                 switch (output_mode) {
 #ifdef SDL
                 case OUTPUT_SDL:
@@ -1573,25 +1572,6 @@ Keys:\n\
                     memcpy(previous_bars_raw, bars_raw, number_of_bars * sizeof(float));
                 }
 
-#ifdef _WIN32
-                QueryPerformanceCounter(&t2);
-                elapsedTime = (t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart;
-                int fps_sync_time = frame_time_msec;
-                if (elapsedTime < 1.0)
-                    fps_sync_time = frame_time_msec;
-                else if ((int)elapsedTime > frame_time_msec)
-                    fps_sync_time = 0;
-                else
-                    fps_sync_time = (frame_time_msec - (int)elapsedTime) / 2;
-#endif
-                if (output_mode != OUTPUT_SDL && output_mode != OUTPUT_SDL_GLSL) {
-#ifdef _WIN32
-                    Sleep(fps_sync_time);
-#else
-                    nanosleep(&framerate_timer, NULL);
-#endif
-                }
-
                 if (p.live_config) {
                     time_t new_mtime = 0;
                     long long new_size = 0;
@@ -1620,6 +1600,32 @@ Keys:\n\
                         should_quit = true;
                         break;
                     }
+                }
+#ifdef _WIN32
+                QueryPerformanceCounter(&t2);
+                elapsedTime = (t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart;
+                int fps_sync_time = frame_time_msec;
+                if (elapsedTime < 1.0)
+                    fps_sync_time = frame_time_msec;
+                else if ((int)elapsedTime > frame_time_msec)
+                    fps_sync_time = 0;
+                else
+                    fps_sync_time = (frame_time_msec - (int)elapsedTime) / 2;
+#endif
+                if (output_mode != OUTPUT_SDL && output_mode != OUTPUT_SDL_GLSL) {
+#ifdef _WIN32
+                    Sleep(fps_sync_time);
+#else
+                    clock_gettime(CLOCK_MONOTONIC, &t2);
+                    elapsedTimens =
+                        (t2.tv_sec - t1.tv_sec) * 1000000000LL + (t2.tv_nsec - t1.tv_nsec);
+                    int sleep_time_ns = frame_time_ns - (int)elapsedTimens;
+                    if (sleep_time_ns < 1)
+                        sleep_time_ns = 1;
+                    struct timespec sleep_timer = {.tv_sec = sleep_time_ns / 1000000000LL,
+                                                   .tv_nsec = (sleep_time_ns % 1000000000LL)};
+                    nanosleep(&sleep_timer, NULL);
+#endif
                 }
             } // resize terminal
             cava_destroy(plan);
