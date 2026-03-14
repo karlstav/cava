@@ -524,9 +524,23 @@ Keys:\n\
         // this works reliably on pipewire, on some input methods the samplerate might be
         // determined by the device and we get issues if it is very high. On others it is
         // hardcoded to 44100 or 48k and we should be fine most of the time.
-        int input_buffer_modifier = pow(2, p.framerate / (p.samplerate / BUFFER_SIZE));
+        int max_buffer_size = p.samplerate / p.framerate;
+        audio.input_buffer_size = 512;
 
-        audio.input_buffer_size = BUFFER_SIZE * audio.channels / input_buffer_modifier;
+        for (int i = 0; i < 12; i++) {
+            int buffer_size = pow(2, i);
+            if (buffer_size >= max_buffer_size) {
+                audio.input_buffer_size = pow(2, i - 1);
+                break;
+            }
+        }
+        if (audio.input_buffer_size < 128) {
+            audio.input_buffer_size = 128;
+        } else if (audio.input_buffer_size > 1024) {
+            audio.input_buffer_size = 1024;
+        }
+
+        audio.input_buffer_size *= audio.channels;
         audio.cava_buffer_size = 16384; // this is the size at rates of 44100 or 48k, will be
                                         // adjusted later if sample rate is unusual
 
