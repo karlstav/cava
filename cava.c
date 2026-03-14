@@ -1053,8 +1053,9 @@ Keys:\n\
             double elapsedTime;
             QueryPerformanceFrequency(&frequency);
 #else
-            struct timespec t1, t2;
+            struct timespec t1, t2, t3;
             double elapsedTimens;
+            double wakeupTimens = 0.0;
 #endif // _WIN32
 
             int sleep_counter = 0;
@@ -1687,34 +1688,19 @@ Keys:\n\
                     elapsedTimens =
                         (t2.tv_sec - t1.tv_sec) * 1000000000.0 + (t2.tv_nsec - t1.tv_nsec);
 
-                    int sleep_time_ns = frame_time_ns - (int)elapsedTimens;
+                    int sleep_time_ns = frame_time_ns - (int)elapsedTimens - (int)wakeupTimens;
 
                     if (sleep_time_ns > 1) {
-                        if (high_framerate) {
-                            clock_gettime(CLOCK_MONOTONIC, &t1);
 
-                            sleep_timer.tv_sec = (sleep_time_ns - 1000000) / 1000000000;
-                            sleep_timer.tv_nsec = (sleep_time_ns - 1000000) % 1000000000;
-                            nanosleep(&sleep_timer, NULL);
-                            clock_gettime(CLOCK_MONOTONIC, &t2);
-                            elapsedTimens =
-                                (t2.tv_sec - t1.tv_sec) * 1000000000.0 + (t2.tv_nsec - t1.tv_nsec);
-                            sleep_time_ns -= elapsedTimens;
-                            struct timespec spinstart, spinstop;
-                            clock_gettime(CLOCK_MONOTONIC, &spinstart);
-                            while (1) {
-                                clock_gettime(CLOCK_MONOTONIC, &spinstop);
-                                long long elapsedSpinTime =
-                                    (spinstop.tv_sec - spinstart.tv_sec) * 1000000000.0 +
-                                    (spinstop.tv_nsec - spinstart.tv_nsec);
-                                if (elapsedSpinTime >= sleep_time_ns)
-                                    break;
-                            }
-                        } else {
-                            sleep_timer.tv_sec = sleep_time_ns / 1000000000;
-                            sleep_timer.tv_nsec = sleep_time_ns % 1000000000;
-                            nanosleep(&sleep_timer, NULL);
-                        }
+                        sleep_timer.tv_sec = sleep_time_ns / 1000000000;
+                        sleep_timer.tv_nsec = sleep_time_ns % 1000000000;
+                        nanosleep(&sleep_timer, NULL);
+                        clock_gettime(CLOCK_MONOTONIC, &t3);
+                        double actualSleeptime =
+                            (t3.tv_sec - t2.tv_sec) * 1000000000.0 + (t3.tv_nsec - t2.tv_nsec);
+                        wakeupTimens = actualSleeptime - sleep_time_ns;
+                    } else {
+                        wakeupTimens = 0;
                     }
 
 #endif
