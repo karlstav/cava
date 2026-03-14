@@ -521,7 +521,12 @@ Keys:\n\
         audio.IEEE_FLOAT = 0;
         audio.autoconnect = 0;
 
-        audio.input_buffer_size = BUFFER_SIZE * audio.channels;
+        // this works reliably on pipewire, on some input methods the samplerate might be
+        // determined by the device and we get issues if it is very high. On others it is
+        // hardcoded to 44100 or 48k and we should be fine most of the time.
+        int input_buffer_modifier = pow(2, p.framerate / (p.samplerate / BUFFER_SIZE));
+
+        audio.input_buffer_size = BUFFER_SIZE * audio.channels / input_buffer_modifier;
         audio.cava_buffer_size = 16384; // this is the size at rates of 44100 or 48k, will be
                                         // adjusted later if sample rate is unusual
 
@@ -1064,30 +1069,6 @@ Keys:\n\
             struct timespec sleep_mode_timer = {.tv_sec = 1, .tv_nsec = 0};
 
             int total_frames = 0;
-            int samples_per_frame = audio.rate / p.framerate;
-            float new_samples_rate =
-                ((float)audio.rate / ((float)audio.input_buffer_size / audio_channels));
-            float underrun_buffers = (float)p.framerate / new_samples_rate;
-
-            int high_framerate = 0;
-            if (underrun_buffers > 1.0) {
-                high_framerate = 1;
-            }
-
-            // on sdl we use SDL_delay instead of our own sleep and it is in whole milliseconds, so
-            // we need to adjust a little
-            if (output_mode == OUTPUT_SDL_GLSL || output_mode == OUTPUT_SDL) {
-                float actual_framerate = 1000.0 / (float)frame_time_msec;
-                samples_per_frame = audio.rate / actual_framerate;
-                underrun_buffers = actual_framerate / new_samples_rate;
-            }
-
-            int underrun_buffer_limit = samples_per_frame * audio_channels;
-            int underrun_buffer_size = samples_per_frame * audio_channels * (underrun_buffers + 1);
-            if (audio_channels == 2 && underrun_buffer_size % 2 != 0) {
-                underrun_buffer_size++;
-            }
-            int under_run = 0;
 
             pthread_mutex_lock(&audio.lock);
             audio.samples_counter = 0;
@@ -1265,77 +1246,16 @@ Keys:\n\
 
                 // process: execute cava
                 pthread_mutex_lock(&audio.lock);
-
-                int samples_to_use = 0;
-
-                if (!high_framerate) {
-                    // we dont need buffers and use all available samples.
-                    samples_to_use = audio.samples_counter;
-                } else {
-                    // we are running with higher framerates and need buffers!
-
-                    // only use the calcualted samples per frame
-                    samples_to_use = samples_per_frame * audio_channels;
-
-                    // check if we have enough samples in buffer, if not we are in under run and
-                    // need to skip until we have enough buffered
 #define DEBUGPRINT 0
-                    if (audio.samples_counter < underrun_buffer_limit) {
+
 #if (DEBUGPRINT == 1)
-                        fprintf(stderr,
-                                "buffer underrun!! samples in buffer: %d, skipping until buffer "
-                                "large enough!samples needed in buffer: %d\n",
-                                audio.samples_counter / audio_channels,
-                                underrun_buffer_limit / audio_channels);
-#endif
-                        under_run = 1;
-                    }
-
-                    // we are in underrun, check if we have buffered enough now to stop underrun
-                    if (under_run && audio.samples_counter >= underrun_buffer_size) {
-#if (DEBUGPRINT == 1)
-                        fprintf(stderr, "buffering completed, samples in buffer: %d\n",
-                                audio.samples_counter / audio_channels);
-#endif
-                        under_run = 0;
-                    }
-
-                    // we are in underrun and we dont have enough buffered, skip all available
-                    // samples and wait for next frame
-                    if (under_run) {
-                        samples_to_use = 0;
-                    }
-
-                    // we have more samples than we need just use them.
-                    if (!under_run && audio.samples_counter > underrun_buffer_size) {
-#if (DEBUGPRINT == 1)
-                        fprintf(stderr,
-                                "buffer overflow correction, samples  in  buffer : %d,  underrun "
-                                " buffer needed : % d, eating the extra % d, \n",
-                                audio.samples_counter / audio_channels,
-                                underrun_buffer_size / audio_channels,
-                                (audio.samples_counter - underrun_buffer_size) / audio_channels);
-#endif
-                        samples_to_use += audio.samples_counter - underrun_buffer_size;
-                    } else if (!under_run) {
-#if (DEBUGPRINT == 1)
-
-                        fprintf(stderr,
-                                "normal read, samples in buffer: %d, samples needed : "
-                                "%d, reading %d\n",
-                                audio.samples_counter / audio_channels,
-                                underrun_buffer_limit / audio_channels, samples_per_frame);
-#endif
-                    }
-
-                    // can't happen, but just in case
-                    if (samples_to_use > audio.samples_counter) {
-                        samples_to_use = audio.samples_counter;
-                    }
+                if (audio.samples_counter == 0) {
+                    fprintf(stderr, "buffer underrun!!");
                 }
+#endif
 
                 if (p.waveform) {
-                    for (int n = 0; n < samples_to_use; n++) {
+                    for (int n = 0; n < audio.samples_counter; n++) {
 
                         for (int i = number_of_bars - 1; i > 0; i--) {
                             cava_out[i] = cava_out[i - 1];
@@ -1349,17 +1269,10 @@ Keys:\n\
                         }
                     }
                 } else {
-                    cava_execute(audio.cava_in, samples_to_use, cava_out, plan);
+                    cava_execute(audio.cava_in, audio.samples_counter, cava_out, plan);
                 }
 
-                audio.samples_counter -= samples_to_use;
-
-                if (audio.samples_counter != 0) {
-                    // shift the input buffer
-                    for (int n = 0; n < audio.samples_counter; n++) {
-                        audio.cava_in[n] = audio.cava_in[n + samples_to_use];
-                    }
-                }
+                audio.samples_counter = 0;
 
                 pthread_mutex_unlock(&audio.lock);
 
@@ -1689,33 +1602,9 @@ Keys:\n\
 
                     int sleep_time_ns = frame_time_ns - (int)elapsedTimens;
 
-                    if (sleep_time_ns > 1) {
-                        if (high_framerate) {
-                            clock_gettime(CLOCK_MONOTONIC, &t1);
-
-                            sleep_timer.tv_sec = (sleep_time_ns - 1000000) / 1000000000;
-                            sleep_timer.tv_nsec = (sleep_time_ns - 1000000) % 1000000000;
-                            nanosleep(&sleep_timer, NULL);
-                            clock_gettime(CLOCK_MONOTONIC, &t2);
-                            elapsedTimens =
-                                (t2.tv_sec - t1.tv_sec) * 1000000000.0 + (t2.tv_nsec - t1.tv_nsec);
-                            sleep_time_ns -= elapsedTimens;
-                            struct timespec spinstart, spinstop;
-                            clock_gettime(CLOCK_MONOTONIC, &spinstart);
-                            while (1) {
-                                clock_gettime(CLOCK_MONOTONIC, &spinstop);
-                                long long elapsedSpinTime =
-                                    (spinstop.tv_sec - spinstart.tv_sec) * 1000000000.0 +
-                                    (spinstop.tv_nsec - spinstart.tv_nsec);
-                                if (elapsedSpinTime >= sleep_time_ns)
-                                    break;
-                            }
-                        } else {
-                            sleep_timer.tv_sec = sleep_time_ns / 1000000000;
-                            sleep_timer.tv_nsec = sleep_time_ns % 1000000000;
-                            nanosleep(&sleep_timer, NULL);
-                        }
-                    }
+                    sleep_timer.tv_sec = sleep_time_ns / 1000000000;
+                    sleep_timer.tv_nsec = sleep_time_ns % 1000000000;
+                    nanosleep(&sleep_timer, NULL);
 
 #endif
                 }
