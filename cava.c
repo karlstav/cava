@@ -1088,6 +1088,7 @@ Keys:\n\
             if (audio_channels == 2 && underrun_buffer_size % 2 != 0) {
                 underrun_buffer_size++;
             }
+            int under_run = 0;
 
             pthread_mutex_lock(&audio.lock);
             audio.samples_counter = 0;
@@ -1288,15 +1289,26 @@ Keys:\n\
                                 audio.samples_counter / audio_channels,
                                 underrun_buffer_limit / audio_channels);
 #endif
-                        pthread_mutex_unlock(&audio.lock);
-                        int sleep_time_ns = 10000;
-                        sleep_timer.tv_sec = sleep_time_ns / 1000000000;
-                        sleep_timer.tv_nsec = sleep_time_ns % 1000000000;
-                        continue;
+                        under_run = 1;
+                    }
+
+                    // we are in underrun, check if we have buffered enough now to stop underrun
+                    if (under_run && audio.samples_counter >= underrun_buffer_size) {
+#if (DEBUGPRINT == 1)
+                        fprintf(stderr, "buffering completed, samples in buffer: %d\n",
+                                audio.samples_counter / audio_channels);
+#endif
+                        under_run = 0;
+                    }
+
+                    // we are in underrun and we dont have enough buffered, skip all available
+                    // samples and wait for next frame
+                    if (under_run) {
+                        samples_to_use = 0;
                     }
 
                     // we have more samples than we need just use them.
-                    if (audio.samples_counter > underrun_buffer_size) {
+                    if (!under_run && audio.samples_counter > underrun_buffer_size) {
 #if (DEBUGPRINT == 1)
                         fprintf(stderr,
                                 "buffer overflow correction, samples  in  buffer : %d,  underrun "
@@ -1306,7 +1318,7 @@ Keys:\n\
                                 (audio.samples_counter - underrun_buffer_size) / audio_channels);
 #endif
                         samples_to_use += audio.samples_counter - underrun_buffer_size;
-                    } else {
+                    } else if (!under_run) {
 #if (DEBUGPRINT == 1)
 
                         fprintf(stderr,
