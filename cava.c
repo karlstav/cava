@@ -1301,10 +1301,16 @@ Keys:\n\
                         under_run = 0;
                     }
 
-                    // we are in underrun and we dont have enough buffered, skip all available
-                    // samples and wait for next frame
+                    // we are in underrun and we dont have enough buffered, unlock audio thread
+                    // and sleep a bit to wait for more samples to be buffered, then continue to
+                    // next loop
                     if (under_run) {
-                        samples_to_use = 0;
+                        int sleep_time_ns = 100000;
+                        sleep_timer.tv_sec = sleep_time_ns / 1000000000;
+                        sleep_timer.tv_nsec = sleep_time_ns % 1000000000;
+                        pthread_mutex_unlock(&audio.lock);
+                        nanosleep(&sleep_timer, NULL);
+                        continue;
                     }
 
                     // we have more samples than we need just use them.
