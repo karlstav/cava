@@ -170,7 +170,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
 
     memset(p->input_buffer, 0, sizeof(double) * p->input_buffer_size);
 
-    memset(p->cava_fall, 0, sizeof(int) * number_of_bars * channels);
+    memset(p->cava_fall, 0, sizeof(double) * number_of_bars * channels);
     memset(p->cava_mem, 0, sizeof(double) * number_of_bars * channels);
     memset(p->cava_peak, 0, sizeof(double) * number_of_bars * channels);
     memset(p->prev_cava_out, 0, sizeof(double) * number_of_bars * channels);
