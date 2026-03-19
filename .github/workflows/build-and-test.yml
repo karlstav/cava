@@ -107,7 +107,7 @@ jobs:
       - name: build
         run: |
           cd build
-          cmake --build .
+          cmake --build . --config Release
       - name: Install WiX Toolset
         run: dotnet tool install --global wix --version 6.0.2
       - name: Install WiX extensions
