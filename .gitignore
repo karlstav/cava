@@ -39,3 +39,4 @@ cava_win/meson-private
 !.codespellrc
 !.github/
 !.github/**
+build_win/*
