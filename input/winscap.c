@@ -492,8 +492,7 @@ void input_winscap(void *data) {
 
         DWORD strFlags = loopFlags | AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
 
-        HRESULT hrInit = pClient->lpVtbl->Initialize(pClient, AUDCLNT_SHAREMODE_SHARED,
-                                                     strFlags,
+        HRESULT hrInit = pClient->lpVtbl->Initialize(pClient, AUDCLNT_SHAREMODE_SHARED,strFlags,
                                                      16 * REFTIMES_PER_MILLISEC, 0, wfx, 0);
 
         if (FAILED(hrInit)) {
