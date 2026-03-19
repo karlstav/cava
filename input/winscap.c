@@ -355,9 +355,9 @@ void process_multichannel(UINT32 numFramesAvailable, const WAVEFORMATEX format, 
 }
 
 void get_audio_device_by_name(IMMDeviceEnumerator *pEnumerator, const char *device_name,
-                              IMMDevice **ppDevice) {
+                              IMMDevice **ppDevice, EDataFlow *pFlow) {
     IMMDeviceCollection *pDeviceCollection = NULL;
-    HRESULT hr = pEnumerator->lpVtbl->EnumAudioEndpoints(pEnumerator, eAll, DEVICE_STATE_ACTIVE,
+    HRESULT hr = pEnumerator->lpVtbl->EnumAudioEndpoints(pEnumerator, *pFlow, DEVICE_STATE_ACTIVE,
                                                          &pDeviceCollection);
     if (FAILED(hr)) {
         fwprintf(stderr, L"Failed to enumerate audio endpoints: 0x%08lx\n", hr);
@@ -456,10 +456,18 @@ void input_winscap(void *data) {
         ResetEvent(hEvent);
 
         IMMDevice *pDevice = NULL;
+        DWORD loopFlags = AUDCLNT_STREAMFLAGS_LOOPBACK;
         // TODO: allow selection of other than default device
         if (*audio->source != '\0' && strcmp(audio->source, "auto") != 0) {
             // obtain device ID from name
-            get_audio_device_by_name(pEnumerator, audio->source, &pDevice);
+            for (int i = 0; i < 2; i++) {
+                EDataFlow flow = (i == 0) ? eRender : eCapture;
+                loopFlags = (flow == eRender) ? AUDCLNT_STREAMFLAGS_LOOPBACK : 0;
+                get_audio_device_by_name(pEnumerator, audio->source, &pDevice, &flow);
+                if (pDevice) {
+                    break;
+                }
+            }
             if (pDevice == NULL) {
                 // exit with error
                 fwprintf(stderr, L"Could not find audio device with name: %S\n", audio->source);
@@ -482,9 +490,10 @@ void input_winscap(void *data) {
             continue;
         }
 
+        DWORD strFlags = loopFlags | AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
+
         HRESULT hrInit = pClient->lpVtbl->Initialize(pClient, AUDCLNT_SHAREMODE_SHARED,
-                                                     AUDCLNT_STREAMFLAGS_LOOPBACK |
-                                                         AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+                                                     strFlags,
                                                      16 * REFTIMES_PER_MILLISEC, 0, wfx, 0);
 
         if (FAILED(hrInit)) {
