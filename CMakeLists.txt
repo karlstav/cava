@@ -1,8 +1,5 @@
-# This is only for the cavacore lib, see CAVACORE.md for details
-# to build cava don't use this, use the automake stuff
-
 cmake_minimum_required(VERSION 3.13.0)
-project(cavacore)
+project(cava)
 if (ANDROID)
 	add_library(cavacore SHARED cavacore.c)
 	if (NOT DEFINED FFTW_DIR)
@@ -21,10 +18,14 @@ if (ANDROID)
 	target_link_directories(cavacore PRIVATE "${FFTW_DIR}/obj/local/${CMAKE_ANDROID_ARCH_ABI}/")
 	target_link_libraries(cavacore fftw3)
 elseif(WIN32)
-	find_package(FFTW3)
-	find_package(GLEW)
-	find_package(SDL2)
-	find_package(Threads)
+	find_package(FFTW3 CONFIG REQUIRED)
+	find_package(GLEW CONFIG REQUIRED)
+	find_package(SDL2 CONFIG REQUIRED)
+	if (USING_VCPKG)
+		find_package(PThreads4W REQUIRED)
+	else()
+		find_package(Threads REQUIRED)
+	endif()
 
 	add_executable(cava
 		cava.c
@@ -37,16 +38,23 @@ elseif(WIN32)
 		output/terminal_noncurses.c
 		output/raw.c
 		output/noritake.c
-		cava_win/cava/cava.rc
+		cava_win/cava.rc
 	)
 
-	target_compile_definitions(cava PRIVATE SDL SDL_GSL NDEBUG)
+	target_compile_definitions(cava PRIVATE SDL SDL_GLSL NDEBUG)
 	target_include_directories(cava PRIVATE ${GLEW_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS})
-	target_link_libraries(cava PRIVATE pthread shlwapi fftw3 GLEW::GLEW SDL2::SDL2)
+	if (USING_VCPKG)
+		find_package(PThreads4W REQUIRED)
+		target_link_libraries(cava PRIVATE PThreads4W::PThreads4W shlwapi FFTW3::fftw3 GLEW::GLEW SDL2::SDL2)
+	else()
+		target_link_libraries(cava PRIVATE Threads::Threads shlwapi fftw3 GLEW::GLEW SDL2::SDL2)
+		find_package(Threads REQUIRED)
+	endif()
 else()
+	message(STATUS "building cavacore lib only, to build cava executable use autogen.sh, ./configure and make")
 	add_library(cavacore STATIC)
-	target_include_directories(cavacore PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 	target_sources(cavacore PRIVATE cavacore.c)
+	target_include_directories(cavacore PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 	if(INPUT_PIPEWIRE)
 		target_compile_definitions(cavacore PRIVATE PIPEWIRE)
 		set(AUDIO_INPUT ON)

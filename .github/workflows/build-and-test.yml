@@ -101,14 +101,13 @@ jobs:
       - name: Set VCPKG_ROOT
         run: |
           echo "VCPKG_ROOT=$(pwd)\vcpkg" >> $env:GITHUB_ENV
-      - name: Install vcpkg dependencies
+      - name: configure cmake with vcpkg
         run: |
-          cd cava_win
-          & $env:VCPKG_ROOT\\vcpkg install
-          cd ..
-      - name: Run msbuild with vcpkg
+          cmake --preset vcpkg
+      - name: build
         run: |
-          msbuild /p:Configuration=Release /p:VcpkgEnabled=true /p:VcpkgRoot=$env:VCPKG_ROOT /p:VcpkgTriplet=x64-windows cava_win\cava_win.sln
+          cd build
+          cmake --build . --config Release
       - name: Install WiX Toolset
         run: dotnet tool install --global wix --version 6.0.2
       - name: Install WiX extensions

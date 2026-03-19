@@ -154,7 +154,17 @@ Apple Silicon instructions tested on macOS Ventura.
 
 Windows:
 
-see separate readme in `cava_win` folder.
+Dependencies can be resolved with vcpkg in the cmake
+
+    cmake --preset vcpkg
+    cd build
+    cmake --build . --config Release
+
+pacman (msys2/mingw) can also be used
+    pacboy cc cmake fftw glew ninja SDL2
+    cmake -bin
+    cmake --build bin
+1
 
 #### Building
  First of all clone this repo and cd in to it, then run:
@@ -572,6 +582,8 @@ Note: Cava doesn't render correctly within the default macOS terminal. In order 
 ### Windows
 
 Should capture the audio from the default output device automatically. No config needed.
+
+Different `source` can be set in config.
 
 
 Running via ssh
