@@ -403,14 +403,16 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     }
     // process [smoothing]
     int overshoot = 0;
-    double framerate_mod = (60 / p->framerate);
-    double noise_reduction = p->noise_reduction + (0.1 * (1 - framerate_mod));
-    double gravity_mod = pow((60 / p->framerate), 2.5) * 1.54 / noise_reduction;
+    double gravity_mod = pow((60 / p->framerate), 2.5) * 1.54 / p->noise_reduction;
+
+    if (gravity_mod < 1)
+        gravity_mod = 1;
 
     for (int n = 0; n < p->number_of_bars * p->audio_channels; n++) {
+
         // process [smoothing]: falloff
 
-        if (cava_out[n] < p->prev_cava_out[n] && noise_reduction > 0.1) {
+        if (cava_out[n] < p->prev_cava_out[n] && p->noise_reduction > 0.1) {
             cava_out[n] =
                 p->cava_peak[n] * (1.0 - (p->cava_fall[n] * p->cava_fall[n] * gravity_mod));
 
@@ -424,7 +426,7 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
         p->prev_cava_out[n] = cava_out[n];
 
         // process [smoothing]: integral
-        cava_out[n] = p->cava_mem[n] * noise_reduction + cava_out[n];
+        cava_out[n] = p->cava_mem[n] * p->noise_reduction + cava_out[n];
         p->cava_mem[n] = cava_out[n];
         if (p->autosens) {
             // check if we overshoot target height
@@ -438,13 +440,13 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     // calculating automatic sense adjustment
     if (p->autosens) {
         if (overshoot) {
-            p->sens = p->sens * (1 - (0.02 * framerate_mod));
+            p->sens = p->sens * 0.98;
             p->sens_init = 0;
         } else {
             if (!silence) {
-                p->sens = p->sens * (1 + (0.01 * framerate_mod));
+                p->sens = p->sens * 1.001;
                 if (p->sens_init)
-                    p->sens = p->sens * (1 + (0.1 * framerate_mod));
+                    p->sens = p->sens * 1.1;
             }
         }
     }
