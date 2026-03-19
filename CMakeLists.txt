@@ -2,7 +2,7 @@
 # to build cava don't use this, use the automake stuff
 
 cmake_minimum_required(VERSION 3.13.0)
-project(cavacore)
+project(cava)
 if (ANDROID)
 	add_library(cavacore SHARED cavacore.c)
 	if (NOT DEFINED FFTW_DIR)
@@ -21,10 +21,10 @@ if (ANDROID)
 	target_link_directories(cavacore PRIVATE "${FFTW_DIR}/obj/local/${CMAKE_ANDROID_ARCH_ABI}/")
 	target_link_libraries(cavacore fftw3)
 elseif(WIN32)
-	find_package(FFTW3)
-	find_package(GLEW)
-	find_package(SDL2)
-	find_package(Threads)
+	find_package(FFTW3 CONFIG REQUIRED)
+	find_package(GLEW CONFIG REQUIRED)
+	find_package(SDL2 CONFIG REQUIRED)
+	find_package(PThreads4W REQUIRED)
 
 	add_executable(cava
 		cava.c
@@ -37,18 +37,33 @@ elseif(WIN32)
 		output/terminal_noncurses.c
 		output/raw.c
 		output/noritake.c
-		cava_win/cava/cava.rc
+		cava_win/cava.rc
 	)
 
-	target_compile_definitions(cava PRIVATE SDL SDL_GSL NDEBUG)
+	target_compile_definitions(cava PRIVATE SDL SDL_GLSL NDEBUG)
 	target_include_directories(cava PRIVATE ${GLEW_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS})
-	target_link_libraries(cava PRIVATE pthread shlwapi fftw3 GLEW::GLEW SDL2::SDL2)
+	target_link_libraries(cava PRIVATE PThreads4W::PThreads4W shlwapi FFTW3::fftw3 GLEW::GLEW SDL2::SDL2)
 else()
-	add_library(cavacore STATIC)
-	target_include_directories(cavacore PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-	target_sources(cavacore PRIVATE cavacore.c)
+	if (CAVACORE_LIB_ONLY)
+		set (TARGET_NAME "cavacore")
+		add_library(${TARGET_NAME} STATIC)
+		target_sources(${TARGET_NAME} PRIVATE cavacore.c)
+	else()
+		set (TARGET_NAME "cava")
+		add_executable(${TARGET_NAME}
+			cava.c
+			cavacore.c
+			config.c
+			input/common.c
+			output/terminal_noncurses.c
+			output/raw.c
+			output/noritake.c
+			cava_win/cava/cava.rc
+			)
+	endif()
+	target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 	if(INPUT_PIPEWIRE)
-		target_compile_definitions(cavacore PRIVATE PIPEWIRE)
+		target_compile_definitions(${TARGET_NAME} PRIVATE PIPEWIRE)
 		set(AUDIO_INPUT ON)
 		target_sources(cavacore PRIVATE input/pipewire.c)
 		find_package(PkgConfig REQUIRED)
@@ -66,12 +81,12 @@ else()
 		endif()
 	endif()
 	if(INPUT_ALSA)
-		target_compile_definitions(cavacore PRIVATE ALSA)
+		target_compile_definitions(${TARGET_NAME} PRIVATE ALSA)
 		set(AUDIO_INPUT ON)
-		target_sources(cavacore PRIVATE input/alsa.c)
+		target_sources(${TARGET_NAME} PRIVATE input/alsa.c)
 	endif()
 	if(AUDIO_INPUT)
 		target_compile_definitions(cavacore PRIVATE AUDIO_INPUT)
-		target_sources(cavacore PRIVATE input/common.c)
+		target_sources(${TARGET_NAME} PRIVATE input/common.c)
 	endif()
 endif()
