@@ -101,6 +101,9 @@ jobs:
       - name: Set VCPKG_ROOT
         run: |
           echo "VCPKG_ROOT=$(pwd)\vcpkg" >> $env:GITHUB_ENV
+      - name: Install dependencies with vcpkg
+        run: |
+          .\vcpkg\vcpkg install
       - name: configure cmake with vcpkg
         run: |
           cmake --preset vcpkg
