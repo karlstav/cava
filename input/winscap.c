@@ -357,7 +357,7 @@ void process_multichannel(UINT32 numFramesAvailable, const WAVEFORMATEX format, 
 void get_audio_device_by_name(IMMDeviceEnumerator *pEnumerator, const char *device_name,
                               IMMDevice **ppDevice) {
     IMMDeviceCollection *pDeviceCollection = NULL;
-    HRESULT hr = pEnumerator->lpVtbl->EnumAudioEndpoints(pEnumerator, eRender, DEVICE_STATE_ACTIVE,
+    HRESULT hr = pEnumerator->lpVtbl->EnumAudioEndpoints(pEnumerator, eAll, DEVICE_STATE_ACTIVE,
                                                          &pDeviceCollection);
     if (FAILED(hr)) {
         fwprintf(stderr, L"Failed to enumerate audio endpoints: 0x%08lx\n", hr);
