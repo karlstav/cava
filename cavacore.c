@@ -407,7 +407,8 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     double fall_step = 0.0;
     double integral_multiplier = 1.0;
     double integral_weight = 0.0;
-    double gravity_mod = pow((60 / p->framerate), 2.5) * 1.54 / p->noise_reduction;
+    double framerate_mod = 60 / p->framerate;
+    double gravity_mod = pow((framerate_mod), 2.5) * 1.54 / p->noise_reduction;
 
     if (new_samples > 0) {
         smoothing_time = (double)new_samples * 44100.0 / (512.0 * p->rate * p->audio_channels);
@@ -458,13 +459,13 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     // calculating automatic sense adjustment
     if (p->autosens) {
         if (overshoot) {
-            p->sens = p->sens * 0.98;
+            p->sens = p->sens * (1 - (0.02 * framerate_mod));
             p->sens_init = 0;
         } else {
             if (!silence) {
-                p->sens = p->sens * 1.001;
+                p->sens = p->sens * (1 + (0.01 * framerate_mod));
                 if (p->sens_init)
-                    p->sens = p->sens * 1.1;
+                    p->sens = p->sens * (1 + (0.1 * framerate_mod));
             }
         }
     }
