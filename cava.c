@@ -1305,11 +1305,15 @@ Keys:\n\
                     // and sleep a bit to wait for more samples to be buffered, then continue to
                     // next loop
                     if (under_run) {
+                        pthread_mutex_unlock(&audio.lock);
                         int sleep_time_ns = 100000;
+#ifdef _WIN32
+                        Sleep((DWORD)1);
+#else
                         sleep_timer.tv_sec = sleep_time_ns / 1000000000;
                         sleep_timer.tv_nsec = sleep_time_ns % 1000000000;
-                        pthread_mutex_unlock(&audio.lock);
                         nanosleep(&sleep_timer, NULL);
+#endif
                         continue;
                     }
 
