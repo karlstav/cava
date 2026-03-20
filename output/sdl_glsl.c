@@ -1,9 +1,3 @@
-#define GL_GLEXT_PROTOTYPES 0
-#ifdef _WIN32
-#include <GL/glew.h>
-#else
-#include <SDL2/SDL_opengl.h>
-#endif
 #include "sdl_glsl.h"
 #include <SDL2/SDL.h>
 
@@ -21,8 +15,10 @@ GLint uniform_previous_bars;
 GLint uniform_bars_count;
 GLint uniform_time;
 GLint uniform_input_texture;
+GLint uniform_gradient_texture;
 GLuint fbo;
 GLuint texture;
+GLuint gradient_texture;
 uint64_t start_counter;
 double perf_freq;
 
@@ -180,6 +176,57 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
     }
 }
 
+GLuint create_gradient_texture(int gradient_count, char **gradient_color_strings) {
+    if (gradient_count <= 0) {
+        return 0;
+    }
+
+    int texture_width = 256;
+    float *texture_data = malloc(texture_width * 3 * sizeof(float));
+
+    struct colors color = {0};
+
+    for (int i = 0; i < texture_width; i++) {
+        float t = (float)i / (texture_width - 1);
+        float segment_pos = t * (gradient_count - 1);
+        int lower_idx = (int)segment_pos;
+        int upper_idx = lower_idx + 1;
+        float blend = segment_pos - lower_idx;
+
+        // clamp
+        if (upper_idx >= gradient_count) {
+            upper_idx = gradient_count - 1;
+        }
+
+        // reparse
+        parse_color(gradient_color_strings[lower_idx], &color);
+        float r1 = (float)color.R / 255.0;
+        float g1 = (float)color.G / 255.0;
+        float b1 = (float)color.B / 255.0;
+
+        parse_color(gradient_color_strings[upper_idx], &color);
+        float r2 = (float)color.R / 255.0;
+        float g2 = (float)color.G / 255.0;
+        float b2 = (float)color.B / 255.0;
+
+        // interpolate colours
+        texture_data[i * 3 + 0] = r1 * (1.0f - blend) + r2 * blend;
+        texture_data[i * 3 + 1] = g1 * (1.0f - blend) + g2 * blend;
+        texture_data[i * 3 + 2] = b1 * (1.0f - blend) + b2 * blend;
+    }
+
+    GLuint tex;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_1D, tex);
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, texture_width, 0, GL_RGB, GL_FLOAT, texture_data);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+
+    free(texture_data);
+    return tex;
+}
+
 void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string, char *const bg_color_string,
                            int bar_width, int bar_spacing, int gradient, int gradient_count,
                            char **gradient_color_strings) {
@@ -216,16 +263,20 @@ void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string, char *co
         gradient_count = 0;
     glUniform1i(uniform_gradient_count, gradient_count);
 
-    GLint uniform_gradient_colors;
-    uniform_gradient_colors = glGetUniformLocation(shading_program, "gradient_colors");
-    float gradient_colors[8][3] = {0};
-    for (int i = 0; i < gradient_count; i++) {
-        parse_color(gradient_color_strings[i], &color);
-        gradient_colors[i][0] = (float)color.R / 255.0;
-        gradient_colors[i][1] = (float)color.G / 255.0;
-        gradient_colors[i][2] = (float)color.B / 255.0;
+    // generate texture
+    if (gradient_count > 0) {
+        if (gradient_texture != 0) {
+            glDeleteTextures(1, &gradient_texture);
+        }
+        gradient_texture = create_gradient_texture(gradient_count, gradient_color_strings);
+
+        uniform_gradient_texture = glGetUniformLocation(shading_program, "gradient_texture");
+        if (uniform_gradient_texture != -1) {
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_1D, gradient_texture);
+            glUniform1i(uniform_gradient_texture, 1);
+        }
     }
-    glUniform3fv(uniform_gradient_colors, 8, (const GLfloat *)gradient_colors);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
@@ -296,6 +347,10 @@ int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[
 
 // general: cleanup
 void cleanup_sdl_glsl(void) {
+    if (gradient_texture != 0) {
+        glDeleteTextures(1, &gradient_texture);
+        gradient_texture = 0;
+    }
     if (fbo != 0) {
         glDeleteFramebuffers(1, &fbo);
         fbo = 0;
