@@ -185,13 +185,15 @@ GLuint create_gradient_texture(int gradient_count, char **gradient_color_strings
     float *texture_data = malloc(texture_width * 3 * sizeof(float));
 
     struct colors color = {0};
+    float t, segment_pos, blend, r1, g1, b1, r2, g2, b2;
+    int lower_idx, upper_idx;
 
     for (int i = 0; i < texture_width; i++) {
-        float t = (float)i / (texture_width - 1);
-        float segment_pos = t * (gradient_count - 1);
-        int lower_idx = (int)segment_pos;
-        int upper_idx = lower_idx + 1;
-        float blend = segment_pos - lower_idx;
+        t = (float)i / (texture_width - 1);
+        segment_pos = t * (gradient_count - 1);
+        lower_idx = (int)segment_pos;
+        upper_idx = lower_idx + 1;
+        blend = segment_pos - lower_idx;
 
         // clamp
         if (upper_idx >= gradient_count) {
@@ -200,14 +202,14 @@ GLuint create_gradient_texture(int gradient_count, char **gradient_color_strings
 
         // reparse
         parse_color(gradient_color_strings[lower_idx], &color);
-        float r1 = (float)color.R / 255.0;
-        float g1 = (float)color.G / 255.0;
-        float b1 = (float)color.B / 255.0;
+        r1 = (float)color.R / 255.0;
+        g1 = (float)color.G / 255.0;
+        b1 = (float)color.B / 255.0;
 
         parse_color(gradient_color_strings[upper_idx], &color);
-        float r2 = (float)color.R / 255.0;
-        float g2 = (float)color.G / 255.0;
-        float b2 = (float)color.B / 255.0;
+        r2 = (float)color.R / 255.0;
+        g2 = (float)color.G / 255.0;
+        b2 = (float)color.B / 255.0;
 
         // interpolate colours
         texture_data[i * 3 + 0] = r1 * (1.0f - blend) + r2 * blend;
