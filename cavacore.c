@@ -306,10 +306,14 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
 
     int silence = 1;
     if (new_samples > 0) {
-        p->framerate -= p->framerate / 64;
+        // process: approximate actual framerate. This will be off by +10% at 60 fps, but should be
+        // good enough for the autosens and smoothing algorithms to be adjusted accordingly if
+        // framerate is a lot more or less.
+        p->framerate -= p->framerate / 64.0;
         p->framerate +=
-            (double)((p->rate * p->frame_skip) / (new_samples / p->audio_channels)) / 64;
+            (double)(p->rate * p->frame_skip) / (new_samples / p->audio_channels) / 64.0;
         p->frame_skip = 1;
+
         // shifting input buffer
         for (int n = p->input_buffer_size - 1; n >= new_samples; n--) {
             p->input_buffer[n] = p->input_buffer[n - new_samples];
@@ -405,7 +409,7 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     // process [smoothing]
     int overshoot = 0;
 
-    double framerate_mod = 60 / p->framerate;
+    double framerate_mod = 66 / p->framerate;
     double gravity_mod = pow((framerate_mod), 2.5) * 2 / p->noise_reduction;
     double integral_mod = pow((framerate_mod), 0.1);
     double autosens_mod = pow((framerate_mod), 2);
