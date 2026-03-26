@@ -412,7 +412,6 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     double framerate_mod = 66 / p->framerate;
     double gravity_mod = pow((framerate_mod), 2.5) * 2 / p->noise_reduction;
     double integral_mod = pow((framerate_mod), 0.1);
-    double autosens_mod = pow((framerate_mod), 2);
 
     for (int n = 0; n < p->number_of_bars * p->audio_channels; n++) {
 
@@ -447,13 +446,13 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
     // calculating automatic sense adjustment
     if (p->autosens) {
         if (overshoot) {
-            p->sens = p->sens * (1 - (0.02 * autosens_mod));
+            p->sens = p->sens * (1 - (0.02 * framerate_mod));
             p->sens_init = 0;
         } else {
             if (!silence) {
-                p->sens = p->sens * (1 + (0.01 * autosens_mod));
+                p->sens = p->sens * (1 + (0.001 * framerate_mod));
                 if (p->sens_init)
-                    p->sens = p->sens * (1 + (0.1 * autosens_mod));
+                    p->sens = p->sens * (1 + (0.1 * framerate_mod));
             }
         }
     }
