@@ -43,7 +43,7 @@ static void on_process(void *userdata) {
     pw_stream_queue_buffer(data->stream, b);
 }
 
-static void on_timeout(void *userdata, uint64_t expirations) {
+static void on_timeout(void *userdata, [[maybe_unused]] uint64_t expirations) {
     struct pw_data *data = userdata;
 
     if (data->cava_audio->terminate)
