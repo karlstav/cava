@@ -11,8 +11,12 @@
     <MajorUpgrade DowngradeErrorMessage="A newer version of cava is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
+    <Icon Id="CavaIcon" SourceFile="cava_win\app.ico" />
+    <Property Id="ARPPRODUCTICON" Value="CavaIcon" />
+
     <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
     <WixVariable Id="WixUILicenseRtf" Value="cava_win\license.rtf" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT" Value="Config file for cava is created in &quot;%USERPROFILE%\.config\cava&quot; upon first launch." />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/karlstav/cava" />
     <Property Id="ARPURLUPDATEINFO" Value="https://github.com/karlstav/cava" />
     <Property Id="ARPSUPPORTURL" Value="https://github.com/karlstav/cava" />
@@ -22,30 +26,31 @@
         <Component Id="cmpCavaExe" Guid="*">
           <File Id="filCavaExe" Source="build\Release\cava.exe" KeyPath="yes" />
         </Component>
-        <Component Id="cmpFftw" Guid="*">
-          <File Id="filFftw" Source="build\Release\fftw3.dll" KeyPath="yes" />
-        </Component>
-        <Component Id="cmpGlew" Guid="*">
-          <File Id="filGlew" Source="build\Release\glew32.dll" KeyPath="yes" />
-        </Component>
-        <Component Id="cmpPthread" Guid="*">
-          <File Id="filPthread" Source="build\Release\pthreadVC3.dll" KeyPath="yes" />
-        </Component>
-        <Component Id="cmpSDL2" Guid="*">
-          <File Id="filSDL2" Source="build\Release\SDL2.dll" KeyPath="yes" />
-        </Component>
         <Component Id="cmpEnv" Guid="{2A6E1E10-36A0-4B0A-8B72-5C9B4A2E67C5}">
           <Environment Id="envPath" Name="PATH" Value="[INSTALLFOLDER]" Action="set" System="no" Part="last" Permanent="no" />
         </Component>
       </Directory>
     </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder">
+      <Component Id="cmpDesktopShortcut" Guid="{4F6F82EF-69B5-4726-A66E-E50531EB0F1F}">
+        <Shortcut Id="DesktopShortcut" Name="cava" Target="[INSTALLFOLDER]cava.exe" Icon="CavaIcon" />
+        <RegistryValue Root="HKCU" Key="Software\karlstav\cava" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="cmpStartMenuShortcut" Guid="{0EA6C13E-2F5E-465B-81B0-8DAFB8AF20AB}">
+        <Shortcut Id="StartMenuShortcut" Name="cava" Target="[INSTALLFOLDER]cava.exe" Icon="CavaIcon" />
+        <RegistryValue Root="HKCU" Key="Software\karlstav\cava" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
     <Feature Id="ProductFeature" Title="cava" Level="1">
       <ComponentRef Id="cmpCavaExe" />
-      <ComponentRef Id="cmpFftw" />
-      <ComponentRef Id="cmpGlew" />
-      <ComponentRef Id="cmpPthread" />
-      <ComponentRef Id="cmpSDL2" />
       <ComponentRef Id="cmpEnv" />
+      <ComponentRef Id="cmpDesktopShortcut" />
+      <ComponentRef Id="cmpStartMenuShortcut" />
     </Feature>
   </Package>
 </Wix>

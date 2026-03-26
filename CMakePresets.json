@@ -6,7 +6,9 @@
 			"binaryDir": "${sourceDir}/build",
 			"cacheVariables": {
 				"CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-				"USING_VCPKG": "ON"
+				"USING_VCPKG": "ON",
+				"VCPKG_TARGET_TRIPLET": "x64-windows-static",
+				"CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded"
 			}
 		}
 	]
