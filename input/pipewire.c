@@ -11,7 +11,6 @@ struct pw_data {
     struct pw_main_loop *loop;
     struct spa_source *timer;
     struct pw_stream *stream;
-    bool idle;
 
     struct spa_audio_info format;
     unsigned move : 1;
@@ -44,27 +43,11 @@ static void on_process(void *userdata) {
     pw_stream_queue_buffer(data->stream, b);
 }
 
-static void on_timeout(void *userdata, uint64_t expirations) {
+static void on_timeout(void *userdata, [[maybe_unused]] uint64_t expirations) {
     struct pw_data *data = userdata;
 
     if (data->cava_audio->terminate)
         pw_main_loop_quit(data->loop);
-
-    if (!data->idle) {
-        if (expirations < 10) {
-            reset_output_buffers(data->cava_audio);
-        } else {
-            struct timespec timeout, interval;
-            data->idle = true;
-            timeout.tv_sec = 0;
-            timeout.tv_nsec = 500 * SPA_NSEC_PER_MSEC;
-            interval.tv_sec = 0;
-            interval.tv_nsec = 500 * SPA_NSEC_PER_MSEC;
-
-            pw_loop_update_timer(pw_main_loop_get_loop(data->loop), data->timer, &timeout,
-                                 &interval, false);
-        }
-    }
 }
 
 static void on_stream_state_changed(void *_data, [[maybe_unused]] enum pw_stream_state old,
@@ -72,15 +55,16 @@ static void on_stream_state_changed(void *_data, [[maybe_unused]] enum pw_stream
                                     [[maybe_unused]] const char *error) {
     struct pw_data *data = _data;
 
-    data->idle = false;
     switch (state) {
     case PW_STREAM_STATE_PAUSED: {
         struct timespec timeout, interval;
 
         timeout.tv_sec = 0;
-        timeout.tv_nsec = 10 * SPA_NSEC_PER_MSEC;
+        timeout.tv_nsec = 500 * SPA_NSEC_PER_MSEC;
         interval.tv_sec = 0;
-        interval.tv_nsec = 10 * SPA_NSEC_PER_MSEC;
+        interval.tv_nsec = 500 * SPA_NSEC_PER_MSEC;
+
+        reset_output_buffers(data->cava_audio);
 
         pw_loop_update_timer(pw_main_loop_get_loop(data->loop), data->timer, &timeout, &interval,
                              false);
