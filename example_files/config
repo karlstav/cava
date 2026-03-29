@@ -8,17 +8,13 @@
 # Auto reload config if the configuration file has changed. 1 = on, 0 = off.
 ; live-config = 0
 
-# Smoothing mode. Can be 'normal', 'scientific' or 'waves'. DEPRECATED as of 0.6.0
-; mode = normal
-
 # Accepts only non-negative values.
 ; framerate = 60
 
-# 'autosens' will attempt to decrease sensitivity if the bars peak. 1 = on, 0 = off
-# new as of 0.6.0 autosens of low values (dynamic range)
-# 'overshoot' allows bars to overshoot (in % of terminal height) without initiating autosens. DEPRECATED as of 0.6.0
+# 'autosens' will attempt to decrease sensitivity if the bars peak and increase slowly as
+# long as the bars don't peak. 0 = off, 1 = normal, 2..n = more aggressive.
+# increase to make sensitivity increase even faster.
 ; autosens = 1
-; overshoot = 20
 
 # Manual sensitivity in %. If autosens is enabled, this will only be the initial value.
 # 200 means double height. Accepts only non-negative values.

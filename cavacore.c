@@ -450,7 +450,7 @@ void cava_execute(double *cava_in, int new_samples, double *cava_out, struct cav
             p->sens_init = 0;
         } else {
             if (!silence) {
-                p->sens = p->sens * (1 + (0.001 * framerate_mod));
+                p->sens = p->sens * (1 + (0.001 * framerate_mod * p->autosens));
                 if (p->sens_init)
                     p->sens = p->sens * (1 + (0.1 * framerate_mod));
             }
