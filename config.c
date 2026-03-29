@@ -568,20 +568,6 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         return false;
     }
 
-    // validate: gravity
-    p->gravity = p->gravity / 100;
-    if (p->gravity < 0) {
-        p->gravity = 0;
-    }
-
-    // validate: integral
-    p->integral = p->integral / 100;
-    if (p->integral < 0) {
-        p->integral = 0;
-    } else if (p->integral > 1) {
-        p->integral = 1;
-    }
-
     // validate: noise_reduction
     p->noise_reduction /= 100;
     if (p->noise_reduction < 0) {
@@ -832,9 +818,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     xaxisScale = strdup(iniparser_getstring(ini, "output:xaxis", "none"));
     p->monstercat = iniparser_getdouble(ini, "smoothing:monstercat", 0);
     p->waves = iniparser_getint(ini, "smoothing:waves", 0);
-    p->integral = iniparser_getdouble(ini, "smoothing:integral", 77);
-    p->gravity = iniparser_getdouble(ini, "smoothing:gravity", 100);
-    p->ignore = iniparser_getdouble(ini, "smoothing:ignore", 0);
     p->noise_reduction = iniparser_getdouble(ini, "smoothing:noise_reduction", 77);
 
     p->fixedbars = iniparser_getint(ini, "general:bars", 0);
@@ -1046,7 +1029,6 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     p->framerate = GetPrivateProfileInt("general", "framerate", 60, configPath);
     p->sens = GetPrivateProfileInt("general", "sensitivity", 100, configPath);
     p->autosens = GetPrivateProfileInt("general", "autosens", 1, configPath);
-    p->overshoot = GetPrivateProfileInt("general", "overshoot", 20, configPath);
     p->lower_cut_off = GetPrivateProfileInt("general", "lower_cutoff_freq", 50, configPath);
     p->upper_cut_off = GetPrivateProfileInt("general", "higher_cutoff_freq", 10000, configPath);
     p->sleep_timer = GetPrivateProfileInt("general", "sleep_timer", 0, configPath);
