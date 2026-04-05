@@ -555,7 +555,16 @@ source = list
 Then select a device by name, by 1-based device index, or keep `source = auto` for the default output device.
 Use `source = auto_input` if you want the default input device instead.
 
-macOS still does not expose system output mix directly to applications, so you typically need a loopback device to visualize speaker output. The same loopback options used with portaudio also work with coreaudio:
+On macOS 14.2+ (when built with CoreAudio tap support), you can capture system output directly without creating a loopback interface:
+
+```
+method = coreaudio
+source = tap
+```
+
+Use `source = tap_mono` for a mono mixdown.
+
+On systems without CoreAudio tap support, macOS does not expose system output mix directly to applications, so you need a loopback device to visualize speaker output. The same loopback options used with portaudio also work with coreaudio:
 
 **Background Music**
 

@@ -78,6 +78,10 @@
 #   'auto' (default output device), 'auto_input' (default input device), 'list',
 #   a 1-based device index from 'list', or an exact device name.
 #
+# On macOS 14.2+ with tap support compiled in, coreaudio can capture system output
+# without a loopback interface using:
+#   'tap' (stereo system mix) or 'tap_mono' (mono system mix)
+#
 # For sndio 'source' will be a raw recording audio descriptor or a monitoring sub-device, e.g. 'rsnd/2' or 'snd/1'. Default: 'default'.
 # README.md contains further information on how to setup CAVA for sndio.
 #

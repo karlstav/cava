@@ -5,6 +5,7 @@ AM_PROG_AR
 LT_INIT
 AC_PROG_CC
 AC_PROG_CC_STDC
+AC_PROG_OBJC
 
 AM_PROG_LIBTOOL
 
@@ -217,6 +218,37 @@ AS_IF([test "x$enable_input_coreaudio" != "xno"], [
 )
 
 AM_CONDITIONAL([COREAUDIO], [test "x$have_coreaudio" = "xyes"])
+
+dnl ######################
+dnl checking for coreaudio taps (macOS 14.2+)
+dnl ######################
+AC_ARG_ENABLE([input_coreaudio_tap],
+  AS_HELP_STRING([--disable-input-coreaudio-tap],
+    [do not include support for input from coreaudio process taps])
+)
+
+AS_IF([test "x$enable_input_coreaudio_tap" != "xno"], [
+  if test "x$build_mac" = "xyes" && test "x$have_coreaudio" = "xyes" ; then
+    AC_CHECK_HEADER([CoreAudio/AudioHardwareTapping.h], have_coreaudio_tap=yes, have_coreaudio_tap=no)
+    AC_CHECK_HEADER([CoreAudio/CATapDescription.h],,
+      [have_coreaudio_tap=no])
+    if test "x$have_coreaudio_tap" = "xyes" && test "x$OBJC" != "xno" ; then
+      LIBS="$LIBS -framework Foundation"
+      CPPFLAGS="$CPPFLAGS -DCOREAUDIO_TAP"
+    else
+      have_coreaudio_tap=no
+    fi
+    if test "x$have_coreaudio_tap" = "xno" ; then
+      AC_MSG_NOTICE([No Core Audio tap support found building without coreaudio tap support])
+    fi
+  else
+    have_coreaudio_tap=no
+  fi
+],
+  [have_coreaudio_tap=no]
+)
+
+AM_CONDITIONAL([COREAUDIO_TAP], [test "x$have_coreaudio_tap" = "xyes"])
 
 dnl ######################
 dnl checking for sndio dev

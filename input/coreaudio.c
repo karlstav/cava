@@ -309,6 +309,9 @@ void *input_coreaudio(void *audiodata) {
     if (strcmp(audio->source, "list") == 0) {
         list_input_devices();
         printf("Use 'source = auto' for the default output device, 'auto_input' for the default input device, an index from this list, or an exact device name.\n");
+#ifdef COREAUDIO_TAP
+        printf("Use 'source = tap' (or 'tap_mono') to capture system output directly via CoreAudio taps (macOS 14.2+).\n");
+#endif
         exit(EXIT_SUCCESS);
     }
 
