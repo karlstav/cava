@@ -68,6 +68,7 @@
 #endif
 
 #include "input/alsa.h"
+#include "input/coreaudio.h"
 #include "input/fifo.h"
 #include "input/jack.h"
 #include "input/oss.h"
@@ -76,7 +77,6 @@
 #include "input/pulse.h"
 #include "input/shmem.h"
 #include "input/sndio.h"
-#include "input/coreaudio.h"
 #ifdef COREAUDIO_TAP
 #include "input/coreaudio_tap.h"
 #endif

@@ -63,7 +63,8 @@ static bool copy_device_name(AudioDeviceID device, char *name, size_t name_size)
 
     CFStringRef cf_name = NULL;
     UInt32 property_size = sizeof(cf_name);
-    OSStatus status = AudioObjectGetPropertyData(device, &address, 0, NULL, &property_size, &cf_name);
+    OSStatus status =
+        AudioObjectGetPropertyData(device, &address, 0, NULL, &property_size, &cf_name);
     if (status != noErr || cf_name == NULL) {
         return false;
     }
@@ -82,8 +83,8 @@ static bool get_devices(AudioDeviceID **devices_out, UInt32 *count_out, bool inc
     };
 
     UInt32 property_size = 0;
-    OSStatus status = AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &address, 0, NULL,
-                                                     &property_size);
+    OSStatus status =
+        AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &address, 0, NULL, &property_size);
     if (status != noErr || property_size == 0) {
         return false;
     }
@@ -140,10 +141,10 @@ static void list_input_devices(void) {
 
         printf("Device #%u: %s\n", i + 1, name);
         printf("\tCoreAudioID: %u\n", (unsigned int)devices[i]);
-         printf("\tInput Channels: %d\n",
-             get_channel_count(devices[i], kAudioDevicePropertyScopeInput));
-         printf("\tOutput Channels: %d\n",
-             get_channel_count(devices[i], kAudioDevicePropertyScopeOutput));
+        printf("\tInput Channels: %d\n",
+               get_channel_count(devices[i], kAudioDevicePropertyScopeInput));
+        printf("\tOutput Channels: %d\n",
+               get_channel_count(devices[i], kAudioDevicePropertyScopeOutput));
     }
 
     free(devices);
@@ -174,8 +175,8 @@ static bool select_input_device(const char *source, AudioDeviceID *device_out) {
             kAudioObjectPropertyElementMain,
         };
         UInt32 size = sizeof(AudioDeviceID);
-        OSStatus status =
-            AudioObjectGetPropertyData(kAudioObjectSystemObject, &address, 0, NULL, &size, device_out);
+        OSStatus status = AudioObjectGetPropertyData(kAudioObjectSystemObject, &address, 0, NULL,
+                                                     &size, device_out);
         return status == noErr && *device_out != kAudioObjectUnknown;
     }
 
@@ -242,8 +243,8 @@ static OSStatus input_callback(void *inRefCon, AudioUnitRenderActionFlags *ioAct
     input.mBuffers[0].mDataByteSize = bytes_needed;
     input.mBuffers[0].mData = state->buffer;
 
-    OSStatus status = AudioUnitRender(state->audio_unit, ioActionFlags, inTimeStamp, 1,
-                                      inNumberFrames, &input);
+    OSStatus status =
+        AudioUnitRender(state->audio_unit, ioActionFlags, inTimeStamp, 1, inNumberFrames, &input);
     if (status != noErr) {
         return status;
     }
@@ -272,12 +273,13 @@ static bool configure_stream_format(struct coreaudio_state *state) {
     state->format.mBitsPerChannel = (UInt32)audio->format;
     state->format.mChannelsPerFrame = (UInt32)audio->channels;
     state->format.mFramesPerPacket = 1;
-    state->format.mBytesPerFrame = (state->format.mBitsPerChannel / 8) * state->format.mChannelsPerFrame;
+    state->format.mBytesPerFrame =
+        (state->format.mBitsPerChannel / 8) * state->format.mChannelsPerFrame;
     state->format.mBytesPerPacket = state->format.mBytesPerFrame;
 
-    OSStatus status = AudioUnitSetProperty(
-        state->audio_unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1,
-        &state->format, sizeof(state->format));
+    OSStatus status =
+        AudioUnitSetProperty(state->audio_unit, kAudioUnitProperty_StreamFormat,
+                             kAudioUnitScope_Output, 1, &state->format, sizeof(state->format));
     if (status == noErr) {
         audio->IEEE_FLOAT = 0;
         return true;
@@ -289,8 +291,7 @@ static bool configure_stream_format(struct coreaudio_state *state) {
     state->format.mBytesPerPacket = state->format.mBytesPerFrame;
 
     status = AudioUnitSetProperty(state->audio_unit, kAudioUnitProperty_StreamFormat,
-                                  kAudioUnitScope_Output, 1, &state->format,
-                                  sizeof(state->format));
+                                  kAudioUnitScope_Output, 1, &state->format, sizeof(state->format));
     if (status != noErr) {
         return false;
     }
@@ -308,16 +309,20 @@ void *input_coreaudio(void *audiodata) {
 
     if (strcmp(audio->source, "list") == 0) {
         list_input_devices();
-        printf("Use 'source = auto' for the default output device, 'auto_input' for the default input device, an index from this list, or an exact device name.\n");
+        printf("Use 'source = auto' for the default output device, 'auto_input' for the default "
+               "input device, an index from this list, or an exact device name.\n");
 #ifdef COREAUDIO_TAP
-        printf("Use 'source = tap' (or 'tap_mono') to capture system output directly via CoreAudio taps (macOS 14.2+).\n");
+        printf("Use 'source = tap' (or 'tap_mono') to capture system output directly via CoreAudio "
+               "taps (macOS 14.2+).\n");
 #endif
         exit(EXIT_SUCCESS);
     }
 
     AudioDeviceID device = kAudioObjectUnknown;
     if (!select_input_device(audio->source, &device)) {
-        fprintf(stderr, "Error: could not find Core Audio device '%s'. Use source='list' to inspect available devices.\n",
+        fprintf(stderr,
+                "Error: could not find Core Audio device '%s'. Use source='list' to inspect "
+                "available devices.\n",
                 audio->source);
         exit(EXIT_FAILURE);
     }
@@ -326,7 +331,8 @@ void *input_coreaudio(void *audiodata) {
     if (device_input_channels == 0) {
         if (device_has_output_channels(device)) {
             fprintf(stderr,
-                    "Error: selected Core Audio device has output channels but no capture stream. On macOS, output mix capture still requires a loopback-capable device.\n");
+                    "Error: selected Core Audio device has output channels but no capture stream. "
+                    "On macOS, output mix capture still requires a loopback-capable device.\n");
         } else {
             fprintf(stderr, "Error: selected Core Audio device has no input channels.\n");
         }
@@ -351,7 +357,8 @@ void *input_coreaudio(void *audiodata) {
     UInt32 nominal_size = sizeof(Float64);
     Float64 nominal_rate = 0;
     if (AudioObjectGetPropertyData(device, &nominal_rate_address, 0, NULL, &nominal_size,
-                                   &nominal_rate) == noErr && nominal_rate > 0) {
+                                   &nominal_rate) == noErr &&
+        nominal_rate > 0) {
         audio->rate = (unsigned int)nominal_rate;
     }
 
@@ -376,8 +383,7 @@ void *input_coreaudio(void *audiodata) {
     UInt32 enable_input = 1;
     UInt32 disable_output = 0;
     status = AudioUnitSetProperty(state.audio_unit, kAudioOutputUnitProperty_EnableIO,
-                                  kAudioUnitScope_Input, 1, &enable_input,
-                                  sizeof(enable_input));
+                                  kAudioUnitScope_Input, 1, &enable_input, sizeof(enable_input));
     if (status == noErr) {
         status = AudioUnitSetProperty(state.audio_unit, kAudioOutputUnitProperty_EnableIO,
                                       kAudioUnitScope_Output, 0, &disable_output,
@@ -392,7 +398,8 @@ void *input_coreaudio(void *audiodata) {
     status = AudioUnitSetProperty(state.audio_unit, kAudioOutputUnitProperty_CurrentDevice,
                                   kAudioUnitScope_Global, 0, &device, sizeof(device));
     if (status != noErr) {
-        fprintf(stderr, "Error: could not select Core Audio input device (status %d)\n", (int)status);
+        fprintf(stderr, "Error: could not select Core Audio input device (status %d)\n",
+                (int)status);
         AudioComponentInstanceDispose(state.audio_unit);
         exit(EXIT_FAILURE);
     }
@@ -409,7 +416,8 @@ void *input_coreaudio(void *audiodata) {
     status = AudioUnitSetProperty(state.audio_unit, kAudioOutputUnitProperty_SetInputCallback,
                                   kAudioUnitScope_Global, 0, &callback, sizeof(callback));
     if (status != noErr) {
-        fprintf(stderr, "Error: could not set Core Audio input callback (status %d)\n", (int)status);
+        fprintf(stderr, "Error: could not set Core Audio input callback (status %d)\n",
+                (int)status);
         AudioComponentInstanceDispose(state.audio_unit);
         exit(EXIT_FAILURE);
     }

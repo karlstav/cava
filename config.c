@@ -112,24 +112,25 @@ const char *default_theme_name[NUMBER_OF_THEMES] = {"solarized_dark", "tricolor"
 double smoothDef[5] = {1, 1, 1, 1, 1};
 
 enum input_method default_methods[] = {
-    INPUT_FIFO,  INPUT_PORTAUDIO, INPUT_ALSA,    INPUT_SNDIO, INPUT_JACK,
+    INPUT_FIFO,      INPUT_PORTAUDIO, INPUT_ALSA,    INPUT_SNDIO, INPUT_JACK,
 #ifdef __APPLE__
     INPUT_COREAUDIO,
 #endif
-    INPUT_PULSE, INPUT_PIPEWIRE,  INPUT_WINSCAP, INPUT_OSS,
+    INPUT_PULSE,     INPUT_PIPEWIRE,  INPUT_WINSCAP, INPUT_OSS,
 };
 
 char *outputMethod, *orientation, *channels, *xaxisScale, *monoOption, *fragmentShader,
     *vertexShader, *blendDirection;
 
 const char *input_method_names[] = {
-    "fifo", "portaudio", "coreaudio", "pipewire", "alsa", "pulse", "sndio", "oss", "jack", "shmem", "winscap",
+    "fifo",  "portaudio", "coreaudio", "pipewire", "alsa",    "pulse",
+    "sndio", "oss",       "jack",      "shmem",    "winscap",
 };
 
 const bool has_input_method[] = {
     HAS_FIFO, /** Always have at least FIFO and shmem input. */
-    HAS_PORTAUDIO, HAS_COREAUDIO, HAS_PIPEWIRE, HAS_ALSA,  HAS_PULSE,   HAS_SNDIO,
-    HAS_OSS,       HAS_JACK,      HAS_SHMEM,    HAS_WINSCAP,
+    HAS_PORTAUDIO, HAS_COREAUDIO, HAS_PIPEWIRE, HAS_ALSA,  HAS_PULSE,
+    HAS_SNDIO,     HAS_OSS,       HAS_JACK,     HAS_SHMEM, HAS_WINSCAP,
 };
 
 enum input_method input_method_by_name(const char *str) {
