@@ -190,6 +190,35 @@ AS_IF([test "x$enable_input_portaudio" != "xno"], [
 AM_CONDITIONAL([PORTAUDIO], [test "x$have_portaudio" = "xyes"])
 
 dnl ######################
+dnl checking for coreaudio framework (macOS)
+dnl ######################
+AC_ARG_ENABLE([input_coreaudio],
+  AS_HELP_STRING([--disable-input-coreaudio],
+    [do not include support for input from coreaudio])
+)
+
+AS_IF([test "x$enable_input_coreaudio" != "xno"], [
+  if [[ $build_mac = "yes" ]] ; then
+    AC_CHECK_HEADER([CoreAudio/CoreAudio.h], have_coreaudio=yes, have_coreaudio=no)
+    AC_CHECK_HEADER([AudioUnit/AudioUnit.h],,
+      [have_coreaudio=no])
+    if [[ $have_coreaudio = "yes" ]] ; then
+      LIBS="$LIBS -framework CoreAudio -framework AudioUnit -framework CoreFoundation"
+      CPPFLAGS="$CPPFLAGS -DCOREAUDIO"
+    fi
+    if [[ $have_coreaudio = "no" ]] ; then
+      AC_MSG_NOTICE([No Core Audio headers found building without coreaudio support])
+    fi
+  else
+    have_coreaudio=no
+  fi
+],
+  [have_coreaudio=no]
+)
+
+AM_CONDITIONAL([COREAUDIO], [test "x$have_coreaudio" = "xyes"])
+
+dnl ######################
 dnl checking for sndio dev
 dnl ######################
 AC_ARG_ENABLE([input_sndio],

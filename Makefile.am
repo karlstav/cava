@@ -62,6 +62,10 @@ if PORTAUDIO
     cava_SOURCES += input/portaudio.c input/portaudio.h
 endif
 
+if COREAUDIO
+    cava_SOURCES += input/coreaudio.c input/coreaudio.h
+endif
+
 if PIPEWIRE
     cava_SOURCES += input/pipewire.c input/pipewire.h
 endif

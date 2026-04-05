@@ -113,6 +113,9 @@ double smoothDef[5] = {1, 1, 1, 1, 1};
 
 enum input_method default_methods[] = {
     INPUT_FIFO,  INPUT_PORTAUDIO, INPUT_ALSA,    INPUT_SNDIO, INPUT_JACK,
+#ifdef __APPLE__
+    INPUT_COREAUDIO,
+#endif
     INPUT_PULSE, INPUT_PIPEWIRE,  INPUT_WINSCAP, INPUT_OSS,
 };
 
@@ -120,13 +123,13 @@ char *outputMethod, *orientation, *channels, *xaxisScale, *monoOption, *fragment
     *vertexShader, *blendDirection;
 
 const char *input_method_names[] = {
-    "fifo", "portaudio", "pipewire", "alsa", "pulse", "sndio", "oss", "jack", "shmem", "winscap",
+    "fifo", "portaudio", "coreaudio", "pipewire", "alsa", "pulse", "sndio", "oss", "jack", "shmem", "winscap",
 };
 
 const bool has_input_method[] = {
     HAS_FIFO, /** Always have at least FIFO and shmem input. */
-    HAS_PORTAUDIO, HAS_PIPEWIRE, HAS_ALSA,  HAS_PULSE,   HAS_SNDIO,
-    HAS_OSS,       HAS_JACK,     HAS_SHMEM, HAS_WINSCAP,
+    HAS_PORTAUDIO, HAS_COREAUDIO, HAS_PIPEWIRE, HAS_ALSA,  HAS_PULSE,   HAS_SNDIO,
+    HAS_OSS,       HAS_JACK,      HAS_SHMEM,    HAS_WINSCAP,
 };
 
 enum input_method input_method_by_name(const char *str) {
@@ -980,6 +983,11 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
         break;
 #ifdef PORTAUDIO
     case INPUT_PORTAUDIO:
+        p->audio_source = strdup(iniparser_getstring(ini, "input:source", "auto"));
+        break;
+#endif
+#ifdef COREAUDIO
+    case INPUT_COREAUDIO:
         p->audio_source = strdup(iniparser_getstring(ini, "input:source", "auto"));
         break;
 #endif
