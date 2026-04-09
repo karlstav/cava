@@ -1,3 +1,4 @@
+#include <CoreFoundation/CFBase.h>
 #import <Foundation/Foundation.h>
 
 #include <CoreAudio/AudioHardware.h>
@@ -9,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <dlfcn.h>
 
 #include "input/common.h"
 #include "input/coreaudio_tap.h"
@@ -79,6 +81,19 @@ static bool source_is(const char *source, const char *value) {
 }
 
 int coreaudio_tap_source_enabled(const char *source) {
+    void* TCC = dlopen("/System/Library/PrivateFrameworks/TCC.framework/Versions/A/TCC", RTLD_NOW);
+    int (*TCCAccessPreflight)(CFStringRef, CFDictionaryRef) = dlsym(TCC, "TCCAccessPreflight");
+    dlclose(TCC);
+
+    CFStringRef kTCCServiceAudioCapture = cfstring_from_cstr("kTCCServiceAudioCapture");
+
+    if (TCCAccessPreflight(kTCCServiceAudioCapture, NULL) != 0) {
+      fprintf(stderr, "ERROR: AudioTap permissions missing! requesting...\n");
+      fprintf(stderr, "       Please add \"%s\" to the \"System Audio Recording Only\" section.\n", getenv("TERM_PROGRAM"));
+      system("/usr/bin/open x-apple.systempreferences:com.apple.settings.PrivacySecurity?Privacy_ScreenCapture");
+      exit(EXIT_FAILURE);
+    }
+
     if (source == NULL) {
         return 0;
     }
