@@ -1,4 +1,3 @@
-#include <CoreFoundation/CFBase.h>
 #import <Foundation/Foundation.h>
 
 #include <CoreAudio/AudioHardware.h>
@@ -81,27 +80,6 @@ static bool source_is(const char *source, const char *value) {
 }
 
 int coreaudio_tap_source_enabled(const char *source) {
-    void* TCC = dlopen("/System/Library/PrivateFrameworks/TCC.framework/Versions/A/TCC", RTLD_NOW);
-    if (TCC == NULL) {
-        fprintf(stderr, "ERROR: Could not open TCC.framework");
-        exit(EXIT_FAILURE);
-    }
-    int (*TCCAccessPreflight)(CFStringRef, CFDictionaryRef) = dlsym(TCC, "TCCAccessPreflight");
-    if (TCCAccessPreflight == NULL) {
-        fprintf(stderr, "ERROR: Could not get function TCCAccessPreflight");
-        exit(EXIT_FAILURE);
-    }
-    dlclose(TCC);
-
-    CFStringRef kTCCServiceAudioCapture = cfstring_from_cstr("kTCCServiceAudioCapture");
-
-    if (TCCAccessPreflight(kTCCServiceAudioCapture, NULL) != 0) {
-        fprintf(stderr, "ERROR: AudioTap permissions missing! requesting...\n");
-        fprintf(stderr, "       Please add \"%s\" to the \"System Audio Recording Only\" section.\n", getenv("TERM_PROGRAM"));
-        system("/usr/bin/open x-apple.systempreferences:com.apple.settings.PrivacySecurity?Privacy_ScreenCapture");
-        exit(EXIT_FAILURE);
-    }
-
     if (source == NULL) {
         return 0;
     }
@@ -112,6 +90,30 @@ int coreaudio_tap_source_enabled(const char *source) {
 }
 
 static CATapDescription *build_tap_description(const char *source) {
+    void* TCC = dlopen("/System/Library/PrivateFrameworks/TCC.framework/Versions/A/TCC", RTLD_NOW);
+    if (TCC == NULL) {
+        fprintf(stderr, "Warning: Unable to load TCC.framework! Cannot check permissions...");
+    }
+    int (*TCCAccessPreflight)(CFStringRef, CFDictionaryRef) = dlsym(TCC, "TCCAccessPreflight");
+    if (TCCAccessPreflight == NULL) {
+        fprintf(stderr, "Warning: Could not get function TCCAccessPreflight! Cannot check permissions...");
+    }
+    dlclose(TCC);
+
+    CFStringRef kTCCServiceAudioCapture = cfstring_from_cstr("kTCCServiceAudioCapture");
+
+    if (TCCAccessPreflight != NULL && TCCAccessPreflight(kTCCServiceAudioCapture, NULL) != 0) {
+        fprintf(stderr, "ERROR: AudioTap permissions missing! requesting...\n");
+        char* term = getenv("TERM_PROGRAM");
+        if (term == NULL) {
+          fprintf(stderr, "       Please add your terminal emulator to the \"System Audio Recording Only\" section.\n");
+        } else {
+          fprintf(stderr, "       Please add \"%s\" to the \"System Audio Recording Only\" section.\n", term);
+        }
+        system("/usr/bin/open x-apple.systempreferences:com.apple.settings.PrivacySecurity?Privacy_ScreenCapture");
+        exit(EXIT_FAILURE);
+    }
+
     NSArray<NSNumber *> *excluded = @[];
 
     if (source_is(source, "tap_mono") || source_is(source, "tap_system_mono")) {
