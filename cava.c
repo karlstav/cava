@@ -1266,7 +1266,7 @@ Keys:\n\
                     samples_to_use = audio.samples_counter;
                 } else {
                     // we are running with higher framerates and need buffers!
-                    // only use the calcualted samples per frame
+                    // only use the calculated samples per frame
                     samples_to_use = samples_per_frame * audio_channels;
 
                     // buffer underrun! only use what we have
