@@ -13,6 +13,18 @@
 #define HAS_PORTAUDIO false
 #endif
 
+#ifdef COREAUDIO
+#define HAS_COREAUDIO true
+#else
+#define HAS_COREAUDIO false
+#endif
+
+#ifdef COREAUDIO_TAP
+#define HAS_COREAUDIO_TAP true
+#else
+#define HAS_COREAUDIO_TAP false
+#endif
+
 #ifdef ALSA
 #define HAS_ALSA true
 #else
@@ -67,6 +79,7 @@
 enum input_method {
     INPUT_FIFO,
     INPUT_PORTAUDIO,
+    INPUT_COREAUDIO,
     INPUT_PIPEWIRE,
     INPUT_ALSA,
     INPUT_PULSE,

@@ -5,6 +5,7 @@ AM_PROG_AR
 LT_INIT
 AC_PROG_CC
 AC_PROG_CC_STDC
+AC_PROG_OBJC
 
 AM_PROG_LIBTOOL
 
@@ -45,16 +46,6 @@ AM_CONDITIONAL([FREEBSD], [test "$build_freebsd" = "yes"])
 dnl ############################
 dnl checking if debug is enabled
 dnl ############################
-
-AC_ARG_ENABLE([debug-output],
-  AS_HELP_STRING([--enable-debug-output],
-    [enable debug messages and frequency table output])
-)
-
-AS_IF([test "x$enable_debug_output" != "xyes"], [
-  dnl enabling debug output mode
-  CPPFLAGS="$CPPFLAGS -DNDEBUG"
-])
 
 AC_ARG_ENABLE([asan],
   AS_HELP_STRING([--enable-asan],
@@ -122,7 +113,7 @@ AS_IF([test "x$enable_input_alsa" != "xno"], [
     CPPFLAGS="$CPPFLAGS -DALSA"
   fi
   if [[ $have_alsa = "no" ]] ; then
-    AC_MSG_NOTICE([WARNING: No alsa dev files found building without alsa support])
+    AC_MSG_NOTICE([No alsa dev files found building without alsa support])
   fi],
   [have_alsa=no]
 )
@@ -145,7 +136,7 @@ AS_IF([test "x$enable_input_pipewire" != "xno"], [
   fi
 
   if [[ $have_pipewire = "no" ]] ; then
-    AC_MSG_NOTICE([WARNING: No pipewire dev files found building without pipewire support])
+    AC_MSG_NOTICE([No pipewire dev files found building without pipewire support])
   fi],
   [have_pipewire=no]
 )
@@ -169,7 +160,7 @@ AS_IF([test "x$enable_input_pulse" != "xno"], [
   fi
 
   if [[ $have_pulse = "no" ]] ; then
-    AC_MSG_NOTICE([WARNING: No pulseaudio dev files found building without pulseaudio support])
+    AC_MSG_NOTICE([No pulseaudio dev files found building without pulseaudio support])
   fi],
   [have_pulse=no]
 )
@@ -192,12 +183,72 @@ AS_IF([test "x$enable_input_portaudio" != "xno"], [
   fi
 
   if [[ $have_portaudio = "no" ]] ; then
-    AC_MSG_NOTICE([WARNING: No portaudio dev files found building without portaudio support])
+    AC_MSG_NOTICE([No portaudio dev files found building without portaudio support])
   fi],
   [have_portaudio=no]
 )
 
 AM_CONDITIONAL([PORTAUDIO], [test "x$have_portaudio" = "xyes"])
+
+dnl ######################
+dnl checking for coreaudio framework (macOS)
+dnl ######################
+AC_ARG_ENABLE([input_coreaudio],
+  AS_HELP_STRING([--disable-input-coreaudio],
+    [do not include support for input from coreaudio])
+)
+
+AS_IF([test "x$enable_input_coreaudio" != "xno"], [
+  if [[ $build_mac = "yes" ]] ; then
+    AC_CHECK_HEADER([CoreAudio/CoreAudio.h], have_coreaudio=yes, have_coreaudio=no)
+    AC_CHECK_HEADER([AudioUnit/AudioUnit.h],,
+      [have_coreaudio=no])
+    if [[ $have_coreaudio = "yes" ]] ; then
+      LIBS="$LIBS -framework CoreAudio -framework AudioUnit -framework CoreFoundation"
+      CPPFLAGS="$CPPFLAGS -DCOREAUDIO"
+    fi
+    if [[ $have_coreaudio = "no" ]] ; then
+      AC_MSG_NOTICE([No Core Audio headers found building without coreaudio support])
+    fi
+  else
+    have_coreaudio=no
+  fi
+],
+  [have_coreaudio=no]
+)
+
+AM_CONDITIONAL([COREAUDIO], [test "x$have_coreaudio" = "xyes"])
+
+dnl ######################
+dnl checking for coreaudio taps (macOS 14.2+)
+dnl ######################
+AC_ARG_ENABLE([input_coreaudio_tap],
+  AS_HELP_STRING([--disable-input-coreaudio-tap],
+    [do not include support for input from coreaudio process taps])
+)
+
+AS_IF([test "x$enable_input_coreaudio_tap" != "xno"], [
+  if test "x$build_mac" = "xyes" && test "x$have_coreaudio" = "xyes" ; then
+    AC_CHECK_HEADER([CoreAudio/AudioHardwareTapping.h], have_coreaudio_tap=yes, have_coreaudio_tap=no)
+    AC_CHECK_HEADER([CoreAudio/CATapDescription.h],,
+      [have_coreaudio_tap=no])
+    if test "x$have_coreaudio_tap" = "xyes" && test "x$OBJC" != "xno" ; then
+      LIBS="$LIBS -framework Foundation"
+      CPPFLAGS="$CPPFLAGS -DCOREAUDIO_TAP"
+    else
+      have_coreaudio_tap=no
+    fi
+    if test "x$have_coreaudio_tap" = "xno" ; then
+      AC_MSG_NOTICE([No Core Audio tap support found building without coreaudio tap support])
+    fi
+  else
+    have_coreaudio_tap=no
+  fi
+],
+  [have_coreaudio_tap=no]
+)
+
+AM_CONDITIONAL([COREAUDIO_TAP], [test "x$have_coreaudio_tap" = "xyes"])
 
 dnl ######################
 dnl checking for sndio dev
@@ -215,7 +266,7 @@ AS_IF([test "x$enable_input_sndio" != "xno"], [
   fi
 
   if [[ $have_sndio = "no" ]] ; then
-    AC_MSG_NOTICE([WARNING: No sndio dev files found building without sndio support])
+    AC_MSG_NOTICE([No sndio dev files found building without sndio support])
   fi],
   [have_sndio=no]
 )
@@ -240,7 +291,7 @@ AS_IF([test "x$enable_input_oss" != "xno"], [
     fi
 
     if [[ $have_oss = "no" ]] ; then
-      AC_MSG_NOTICE([WARNING: No oss dev files found building without oss support])
+      AC_MSG_NOTICE([No oss dev files found building without oss support])
     fi
   fi],
   [have_oss=no]
@@ -264,7 +315,7 @@ AS_IF([test "x$enable_input_jack" != "xno"], [
   fi
 
   if [[ $have_jack = "no" ]] ; then
-    AC_MSG_NOTICE([WARNING: No jack dev files found building without jack support])
+    AC_MSG_NOTICE([No jack dev files found building without jack support])
   fi],
   [have_jack=no]
 )
@@ -354,7 +405,7 @@ AC_CHECK_LIB(SDL2,SDL_Init, have_sdl=yes, have_sdl=no)
     fi
 
     if [[ $have_sdl = "no" ]] ; then
-      AC_MSG_NOTICE([INFO: building without sdl support])
+      AC_MSG_NOTICE([Building without sdl support])
     fi
 ],
   [have_sdl=no]
@@ -393,7 +444,7 @@ AS_IF([test "x$enable_output_ncurses" != "xno"], [
     AC_CHECK_HEADERS([curses.h], , AC_MSG_ERROR([missing curses.h header]))
     have_ncurses=yes,
 
-    AC_MSG_NOTICE([WARNING: building without ncursesw support ncursesw is recommended!])
+    AC_MSG_NOTICE([Building without ncurses support])
     have_ncurses=no
   )],
   [have_ncurses=no]
@@ -416,16 +467,16 @@ AS_IF([test "x$enable_cava_font" != "xno"], [
   if [[ $build_freebsd = "yes" ]] ; then
     AC_PATH_PROG(VTFONTCVT, vtfontcvt)
     if [[ -z "$VTFONTCVT" ]] ; then
-      AC_MSG_NOTICE([WARNING: vtfontcvt not found])
+      AC_MSG_NOTICE([vtfontcvt not found])
       have_cava_font=no
     fi
     AC_PATH_PROG(PSF2BDF, psf2bdf)
     if [[ -z "$PSF2BDF" ]] ; then
-      AC_MSG_NOTICE([WARNING: psf2bdf not found])
+      AC_MSG_NOTICE([psf2bdf not found])
       have_cava_font=no
     fi
     if [[ $have_cava_font = "no" ]] ; then
-      AC_MSG_NOTICE([WARNING: Font conversion tool missing. Building without cava font supported!])
+      AC_MSG_NOTICE([Font conversion tool missing. Building without cava font supported (needed for rendering in ttys)])
     fi
   fi],
   [have_cava_font=no]

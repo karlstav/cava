@@ -68,6 +68,7 @@
 #endif
 
 #include "input/alsa.h"
+#include "input/coreaudio.h"
 #include "input/fifo.h"
 #include "input/jack.h"
 #include "input/oss.h"
@@ -76,6 +77,9 @@
 #include "input/pulse.h"
 #include "input/shmem.h"
 #include "input/sndio.h"
+#ifdef COREAUDIO_TAP
+#include "input/coreaudio_tap.h"
+#endif
 #endif
 
 #ifdef __GNUC__
@@ -615,6 +619,23 @@ Keys:\n\
                 input_portaudio((void *)&audio);
             } else {
                 thr_id = pthread_create(&p_thread, NULL, input_portaudio, (void *)&audio);
+            }
+            break;
+#endif
+#ifdef COREAUDIO
+        case INPUT_COREAUDIO:
+            audio.format = p.samplebits;
+            audio.rate = p.samplerate;
+            audio.channels = p.channels;
+            audio.threadparams = 1;
+            if (!strcmp(audio.source, "list")) {
+                input_coreaudio((void *)&audio);
+#ifdef COREAUDIO_TAP
+            } else if (coreaudio_tap_source_enabled(audio.source)) {
+                thr_id = pthread_create(&p_thread, NULL, input_coreaudio_tap, (void *)&audio);
+#endif
+            } else {
+                thr_id = pthread_create(&p_thread, NULL, input_coreaudio, (void *)&audio);
             }
             break;
 #endif
