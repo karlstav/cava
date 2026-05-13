@@ -75,13 +75,13 @@ static void on_stream_state_changed(void *_data, [[maybe_unused]] enum pw_stream
         break;
     case PW_STREAM_STATE_ERROR:
         sprintf(data->cava_audio->error_message,
-            __FILE__ ": Pipewire stream error. Is pipewire running?");
+                __FILE__ ": Pipewire stream error. Is pipewire running?");
         data->cava_audio->terminate = 1;
         pw_main_loop_quit(data->loop);
         break;
     case PW_STREAM_STATE_UNCONNECTED:
         sprintf(data->cava_audio->error_message,
-            __FILE__ ": Pipewire stream not connected. Is pipewire running?");
+                __FILE__ ": Pipewire stream not connected. Is pipewire running?");
         data->cava_audio->terminate = 1;
         pw_main_loop_quit(data->loop);
         break;
