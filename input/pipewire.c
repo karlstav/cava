@@ -74,7 +74,14 @@ static void on_stream_state_changed(void *_data, [[maybe_unused]] enum pw_stream
         pw_loop_update_timer(pw_main_loop_get_loop(data->loop), data->timer, NULL, NULL, false);
         break;
     case PW_STREAM_STATE_ERROR:
+        sprintf(data->cava_audio->error_message,
+            __FILE__ ": Pipewire stream error.");
+        data->cava_audio->terminate = 1;
+        pw_main_loop_quit(data->loop);
+        break;
     case PW_STREAM_STATE_UNCONNECTED:
+        sprintf(data->cava_audio->error_message,
+            __FILE__ ": Pipewire stream not connected.");
         data->cava_audio->terminate = 1;
         pw_main_loop_quit(data->loop);
         break;
