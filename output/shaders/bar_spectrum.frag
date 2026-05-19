@@ -17,7 +17,7 @@ uniform vec3 bg_color; // background color
 uniform vec3 fg_color; // foreground color
 
 uniform int gradient_count;
-uniform vec3 gradient_colors[8]; // gradient colors
+uniform sampler1D gradientTexture; // gradient colors
 
 uniform float shader_time; // shader execution time s (not used here)
 
@@ -54,17 +54,11 @@ void main() {
             if (gradient_count == 0) {
                 fragColor = vec4(fg_color, 1.0);
             } else {
-                // find which color in the configured gradient we are at
-                int color = int((gradient_count - 1) * fragCoord.y);
-
-                // find where on y this and next color is supposed to be
-                float y_min = color / (gradient_count - 1.0);
-                float y_max = (color + 1.0) / (gradient_count - 1.0);
+                // sample the texture for which color in the configured gradient
+                vec3 color = texture(gradientTexture, fragCoord.y).rgb;
 
                 // make color
-                fragColor = vec4(normalize_C(fragCoord.y, gradient_colors[color],
-                                             gradient_colors[color + 1], y_min, y_max),
-                                 1.0);
+                fragColor = vec4(color, 1.0);
             }
         }
     } else {
