@@ -405,6 +405,90 @@ static void setup_signal_handlers() {
 #endif
 }
 
+static void setup_tty_environment(struct config_params *cfg, int *inAtty, int *inAterminal) {
+#ifndef _WIN32
+  if ((output_mode == OUTPUT_NCURSES || output_mode == OUTPUT_NONCURSES) &&
+      ttyname(0) != NULL) {
+      // Check if we're running in a tty
+      if (strncmp(ttyname(0), "/dev/tty", 8) == 0 ||
+          strcmp(ttyname(0), "/dev/console") == 0 ||
+          strncmp(ttyname(0), "/dev/ttyS", 9) == 0 ||
+          strncmp(ttyname(0), "/dev/ttyUSB", 11) == 0)
+        inAtty = 1;
+
+             // Check if we are running in a dumb terminal
+      if (strncmp(ttyname(0), "/dev/ttyS", 9) == 0 ||
+          strncmp(ttyname(0), "/dev/ttyUSB", 11) == 0)
+        inAterminal = 1;
+
+             // in macos virtual terminals are called ttys(xyz) and there are no ttys
+      if (strncmp(ttyname(0), "/dev/ttys", 9) == 0)
+        inAtty = 0;
+
+      if (inAtty) {
+          if (inAterminal) {
+              printf("\033P 1;32;1;0;0;2 { sp @ "
+                      "\?\?\?\?\?\?\?\?/GGGGGGGG;"
+                      "\?\?\?\?\?\?\?\?/GGGGGGGG;"
+                      "\?\?\?\?\?\?\?\?/KKKKKKKK;"
+                      "\?\?\?\?\?\?\?\?/MMMMMMMM;"
+                      "\?\?\?\?\?\?\?\?/NNNNNNNN;"
+                      "oooooooo/NNNNNNNN;"
+                      "wwwwwwww/NNNNNNNN;"
+                      "}}}}}}}}/NNNNNNNN;"
+                      "~~~~~~~~/NNNNNNNN");
+
+              printf("\033( sp @ ");
+            } else {
+#ifdef CAVAFONT
+                // checking if cava psf font is installed in FONTDIR
+              FILE *font_file;
+              font_file = fopen(FONTDIR "/" FONTFILE, "r");
+              if (font_file) {
+                  fclose(font_file);
+#ifdef __FreeBSD__
+                  system("vidcontrol -f " FONTDIR "/" FONTFILE " >/dev/null 2>&1");
+#else
+                  system("setfont " FONTDIR "/" FONTFILE " >/dev/null 2>&1");
+#endif
+                } else {
+                  // if not it might still be available, we dont know, must try
+#ifdef __FreeBSD__
+                  system("vidcontrol -f " FONTFILE " >/dev/null 2>&1");
+#else
+                  system("setfont " FONTFILE " >/dev/null 2>&1");
+#endif
+                }
+#endif // CAVAFONT
+#ifndef __FreeBSD__
+              if (cfg.disable_blanking)
+                system("setterm -blank 0");
+#endif
+            }
+          if (cfg.orientation != ORIENT_BOTTOM) {
+              cleanup();
+              fprintf(stderr, "only default bottom orientation is supported in tty\n");
+              exit(EXIT_FAILURE);
+            }
+        }
+
+             // We use unicode block characters to draw the bars and
+             // the locale var LANG must be set to use unicode chars.
+             // For some reason this var can't be retrieved with
+             // setlocale(LANG, NULL), so we get it with getenv.
+             // Also we can't set it with setlocale(LANG "") so we
+             // must set LC_ALL instead.
+             // Attempting to set to en_US if not set, if that lang
+             // is not installed and LANG is not set there will be
+             // no output, for more info see #109 #344
+      if (!getenv("LANG"))
+        setlocale(LC_ALL, "en_US.utf8");
+      else
+        setlocale(LC_ALL, "");
+    }
+#endif
+}
+
 // general: entry point
 int main(int argc, char **argv) {
 
@@ -443,88 +527,8 @@ int main(int argc, char **argv) {
         int inAterminal = 0;
 
         output_mode = cfg.output;
-#ifndef _WIN32
-        if ((output_mode == OUTPUT_NCURSES || output_mode == OUTPUT_NONCURSES) &&
-            ttyname(0) != NULL) {
-            // Check if we're running in a tty
-            if (strncmp(ttyname(0), "/dev/tty", 8) == 0 ||
-                strcmp(ttyname(0), "/dev/console") == 0 ||
-                strncmp(ttyname(0), "/dev/ttyS", 9) == 0 ||
-                strncmp(ttyname(0), "/dev/ttyUSB", 11) == 0)
-                inAtty = 1;
 
-            // Check if we are running in a dumb terminal
-            if (strncmp(ttyname(0), "/dev/ttyS", 9) == 0 ||
-                strncmp(ttyname(0), "/dev/ttyUSB", 11) == 0)
-                inAterminal = 1;
-
-            // in macos virtual terminals are called ttys(xyz) and there are no ttys
-            if (strncmp(ttyname(0), "/dev/ttys", 9) == 0)
-                inAtty = 0;
-
-            if (inAtty) {
-                if (inAterminal) {
-                    printf("\033P 1;32;1;0;0;2 { sp @ "
-                           "\?\?\?\?\?\?\?\?/GGGGGGGG;"
-                           "\?\?\?\?\?\?\?\?/GGGGGGGG;"
-                           "\?\?\?\?\?\?\?\?/KKKKKKKK;"
-                           "\?\?\?\?\?\?\?\?/MMMMMMMM;"
-                           "\?\?\?\?\?\?\?\?/NNNNNNNN;"
-                           "oooooooo/NNNNNNNN;"
-                           "wwwwwwww/NNNNNNNN;"
-                           "}}}}}}}}/NNNNNNNN;"
-                           "~~~~~~~~/NNNNNNNN");
-
-                    printf("\033( sp @ ");
-                } else {
-#ifdef CAVAFONT
-                    // checking if cava psf font is installed in FONTDIR
-                    FILE *font_file;
-                    font_file = fopen(FONTDIR "/" FONTFILE, "r");
-                    if (font_file) {
-                        fclose(font_file);
-#ifdef __FreeBSD__
-                        system("vidcontrol -f " FONTDIR "/" FONTFILE " >/dev/null 2>&1");
-#else
-                        system("setfont " FONTDIR "/" FONTFILE " >/dev/null 2>&1");
-#endif
-                    } else {
-                        // if not it might still be available, we dont know, must try
-#ifdef __FreeBSD__
-                        system("vidcontrol -f " FONTFILE " >/dev/null 2>&1");
-#else
-                        system("setfont " FONTFILE " >/dev/null 2>&1");
-#endif
-                    }
-#endif // CAVAFONT
-#ifndef __FreeBSD__
-                    if (cfg.disable_blanking)
-                        system("setterm -blank 0");
-#endif
-                }
-                if (cfg.orientation != ORIENT_BOTTOM) {
-                    cleanup();
-                    fprintf(stderr, "only default bottom orientation is supported in tty\n");
-                    exit(EXIT_FAILURE);
-                }
-            }
-
-            // We use unicode block characters to draw the bars and
-            // the locale var LANG must be set to use unicode chars.
-            // For some reason this var can't be retrieved with
-            // setlocale(LANG, NULL), so we get it with getenv.
-            // Also we can't set it with setlocale(LANG "") so we
-            // must set LC_ALL instead.
-            // Attempting to set to en_US if not set, if that lang
-            // is not installed and LANG is not set there will be
-            // no output, for more info see #109 #344
-            if (!getenv("LANG"))
-                setlocale(LC_ALL, "en_US.utf8");
-            else
-                setlocale(LC_ALL, "");
-        }
-#endif
-        // input: init
+        setup_tty_environment(&cfg, &inAtty, &inAterminal);
 
         struct audio_data audio;
         memset(&audio, 0, sizeof(audio));
