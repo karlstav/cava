@@ -414,19 +414,19 @@ static void setup_tty_environment(struct config_params *cfg, int *inAtty, int *i
           strcmp(ttyname(0), "/dev/console") == 0 ||
           strncmp(ttyname(0), "/dev/ttyS", 9) == 0 ||
           strncmp(ttyname(0), "/dev/ttyUSB", 11) == 0)
-        inAtty = 1;
+        *inAtty = 1;
 
              // Check if we are running in a dumb terminal
       if (strncmp(ttyname(0), "/dev/ttyS", 9) == 0 ||
           strncmp(ttyname(0), "/dev/ttyUSB", 11) == 0)
-        inAterminal = 1;
+        *inAterminal = 1;
 
              // in macos virtual terminals are called ttys(xyz) and there are no ttys
       if (strncmp(ttyname(0), "/dev/ttys", 9) == 0)
-        inAtty = 0;
+        *inAtty = 0;
 
-      if (inAtty) {
-          if (inAterminal) {
+      if (*inAtty) {
+          if (*inAterminal) {
               printf("\033P 1;32;1;0;0;2 { sp @ "
                       "\?\?\?\?\?\?\?\?/GGGGGGGG;"
                       "\?\?\?\?\?\?\?\?/GGGGGGGG;"
@@ -461,11 +461,11 @@ static void setup_tty_environment(struct config_params *cfg, int *inAtty, int *i
                 }
 #endif // CAVAFONT
 #ifndef __FreeBSD__
-              if (cfg.disable_blanking)
+              if (cfg->disable_blanking)
                 system("setterm -blank 0");
 #endif
             }
-          if (cfg.orientation != ORIENT_BOTTOM) {
+          if (cfg->orientation != ORIENT_BOTTOM) {
               cleanup();
               fprintf(stderr, "only default bottom orientation is supported in tty\n");
               exit(EXIT_FAILURE);
