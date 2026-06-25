@@ -489,6 +489,151 @@ static void setup_tty_environment(struct config_params *cfg, int *inAtty, int *i
 #endif
 }
 
+
+static void start_audio_thread(struct config_params *cfg, struct audio_data *audio, pthread_t *p_thread) {
+  int timeout_counter = 0;
+  struct timespec timeout_timer = {.tv_sec = 0, .tv_nsec = 1000000};
+  int thr_id GCC_UNUSED;
+
+  switch (cfg->input) {
+#ifndef _WIN32
+
+#ifdef ALSA
+    case INPUT_ALSA:
+      if (is_loop_device_for_sure(audio->source)) {
+          if (directory_exists("/sys/")) {
+              if (!directory_exists("/sys/module/snd_aloop/")) {
+                  cleanup();
+                  fprintf(stderr,
+                           "Linux kernel module \"snd_aloop\" does not seem to  be loaded.\n"
+                           "Maybe run \"sudo modprobe snd_aloop\".\n");
+                  exit(EXIT_FAILURE);
+                }
+            }
+        }
+
+      thr_id = pthread_create(p_thread, NULL, input_alsa, (void *)audio);
+      break;
+#endif
+
+    case INPUT_FIFO:
+      audio->rate = cfg->samplerate;
+      audio->format = cfg->samplebits;
+      thr_id = pthread_create(p_thread, NULL, input_fifo, (void *)audio);
+      break;
+#ifdef PULSE
+    case INPUT_PULSE:
+      audio->format = 16;
+      audio->rate = 44100;
+      if (strcmp(audio->source, "auto") == 0) {
+          getPulseDefaultSink((void *)audio);
+        }
+      thr_id = pthread_create(p_thread, NULL, input_pulse, (void *)audio);
+      break;
+#endif
+#ifdef SNDIO
+    case INPUT_SNDIO:
+      audio->format = cfg->samplebits;
+      audio->rate = cfg->samplerate;
+      audio->channels = cfg->channels;
+      audio->threadparams = 1; // Sndio can adjust parameters
+      thr_id = pthread_create(p_thread, NULL, input_sndio, (void *)audio);
+      break;
+#endif
+#ifdef OSS
+    case INPUT_OSS:
+      audio->format = cfg->samplebits;
+      audio->rate = cfg->samplerate;
+      audio->channels = cfg->channels;
+      audio->threadparams = 1; // OSS can adjust parameters
+      thr_id = pthread_create(p_thread, NULL, input_oss, (void *)audio);
+      break;
+#endif
+#ifdef JACK
+    case INPUT_JACK:
+      audio->channels = cfg->channels;
+      audio->autoconnect = cfg->autoconnect;
+      audio->threadparams = 1; // JACK server provides parameters
+      thr_id = pthread_create(p_thread, NULL, input_jack, (void *)audio);
+      break;
+#endif
+    case INPUT_SHMEM:
+      audio->format = 16;
+      thr_id = pthread_create(p_thread, NULL, input_shmem, (void *)audio);
+      break;
+#ifdef PORTAUDIO
+    case INPUT_PORTAUDIO:
+      audio->format = 16;
+      audio->rate = 44100;
+      audio->threadparams = 1;
+      if (!strcmp(audio->source, "list")) {
+          input_portaudio((void *)audio);
+        } else {
+          thr_id = pthread_create(p_thread, NULL, input_portaudio, (void *)audio);
+        }
+      break;
+#endif
+#ifdef COREAUDIO
+    case INPUT_COREAUDIO:
+      audio->format = cfg->samplebits;
+      audio->rate = cfg->samplerate;
+      audio->channels = cfg->channels;
+      audio->threadparams = 1;
+      if (!strcmp(audio->source, "list")) {
+          input_coreaudio((void *)audio);
+#ifdef COREAUDIO_TAP
+        } else if (coreaudio_tap_source_enabled(audio->source)) {
+          thr_id = pthread_create(p_thread, NULL, input_coreaudio_tap, (void *)audio);
+#endif
+        } else {
+          thr_id = pthread_create(p_thread, NULL, input_coreaudio, (void *)audio);
+        }
+      break;
+#endif
+#ifdef PIPEWIRE
+    case INPUT_PIPEWIRE:
+      audio->format = cfg->samplebits;
+      audio->rate = cfg->samplerate;
+      audio->channels = cfg->channels;
+      audio->active = cfg->active;
+      audio->remix = cfg->remix;
+      audio->virtual_node = cfg->virtual_node;
+      thr_id = pthread_create(p_thread, NULL, input_pipewire, (void *)audio);
+      break;
+#endif
+#endif
+#ifdef _WIN32
+    case INPUT_WINSCAP:
+      thr_id = pthread_create(p_thread, NULL, input_winscap, (void *)audio);
+      break;
+#endif
+    default:
+      exit(EXIT_FAILURE); // Can't happen.
+    }
+
+  timeout_counter = 0;
+  while (true) {
+#ifdef _WIN32
+      Sleep(1);
+#else
+      nanosleep(&timeout_timer, NULL);
+#endif
+      pthread_mutex_lock(&audio->lock);
+      if ((audio->threadparams == 0) && (audio->format != -1) && (audio->rate != 0))
+        break;
+
+      pthread_mutex_unlock(&audio->lock);
+      timeout_counter++;
+      if (timeout_counter > 5000) {
+          cleanup();
+          fprintf(stderr, "could not get rate and/or format, problems with audio thread? "
+                           "quitting...\n");
+          exit(EXIT_FAILURE);
+        }
+    }
+  pthread_mutex_unlock(&audio->lock);
+}
+
 // general: entry point
 int main(int argc, char **argv) {
 
@@ -553,152 +698,12 @@ int main(int argc, char **argv) {
         audio.threadparams = 0; // most input threads don't adjust the parameters
         audio.terminate = 0;
 
-        pthread_t p_thread;
-        int timeout_counter = 0;
         int total_bar_height = 0;
 
-        struct timespec timeout_timer = {.tv_sec = 0, .tv_nsec = 1000000};
-        int thr_id GCC_UNUSED;
-
+        pthread_t p_thread;
         pthread_mutex_init(&audio.lock, NULL);
 
-        switch (cfg.input) {
-#ifndef _WIN32
-
-#ifdef ALSA
-        case INPUT_ALSA:
-            if (is_loop_device_for_sure(audio.source)) {
-                if (directory_exists("/sys/")) {
-                    if (!directory_exists("/sys/module/snd_aloop/")) {
-                        cleanup();
-                        fprintf(stderr,
-                                "Linux kernel module \"snd_aloop\" does not seem to  be loaded.\n"
-                                "Maybe run \"sudo modprobe snd_aloop\".\n");
-                        exit(EXIT_FAILURE);
-                    }
-                }
-            }
-
-            thr_id = pthread_create(&p_thread, NULL, input_alsa, (void *)&audio);
-            break;
-#endif
-
-        case INPUT_FIFO:
-            audio.rate = cfg.samplerate;
-            audio.format = cfg.samplebits;
-            thr_id = pthread_create(&p_thread, NULL, input_fifo, (void *)&audio);
-            break;
-#ifdef PULSE
-        case INPUT_PULSE:
-            audio.format = 16;
-            audio.rate = 44100;
-            if (strcmp(audio.source, "auto") == 0) {
-                getPulseDefaultSink((void *)&audio);
-            }
-            thr_id = pthread_create(&p_thread, NULL, input_pulse, (void *)&audio);
-            break;
-#endif
-#ifdef SNDIO
-        case INPUT_SNDIO:
-            audio.format = cfg.samplebits;
-            audio.rate = cfg.samplerate;
-            audio.channels = cfg.channels;
-            audio.threadparams = 1; // Sndio can adjust parameters
-            thr_id = pthread_create(&p_thread, NULL, input_sndio, (void *)&audio);
-            break;
-#endif
-#ifdef OSS
-        case INPUT_OSS:
-            audio.format = cfg.samplebits;
-            audio.rate = cfg.samplerate;
-            audio.channels = cfg.channels;
-            audio.threadparams = 1; // OSS can adjust parameters
-            thr_id = pthread_create(&p_thread, NULL, input_oss, (void *)&audio);
-            break;
-#endif
-#ifdef JACK
-        case INPUT_JACK:
-            audio.channels = cfg.channels;
-            audio.autoconnect = cfg.autoconnect;
-            audio.threadparams = 1; // JACK server provides parameters
-            thr_id = pthread_create(&p_thread, NULL, input_jack, (void *)&audio);
-            break;
-#endif
-        case INPUT_SHMEM:
-            audio.format = 16;
-            thr_id = pthread_create(&p_thread, NULL, input_shmem, (void *)&audio);
-            break;
-#ifdef PORTAUDIO
-        case INPUT_PORTAUDIO:
-            audio.format = 16;
-            audio.rate = 44100;
-            audio.threadparams = 1;
-            if (!strcmp(audio.source, "list")) {
-                input_portaudio((void *)&audio);
-            } else {
-                thr_id = pthread_create(&p_thread, NULL, input_portaudio, (void *)&audio);
-            }
-            break;
-#endif
-#ifdef COREAUDIO
-        case INPUT_COREAUDIO:
-            audio.format = cfg.samplebits;
-            audio.rate = cfg.samplerate;
-            audio.channels = cfg.channels;
-            audio.threadparams = 1;
-            if (!strcmp(audio.source, "list")) {
-                input_coreaudio((void *)&audio);
-#ifdef COREAUDIO_TAP
-            } else if (coreaudio_tap_source_enabled(audio.source)) {
-                thr_id = pthread_create(&p_thread, NULL, input_coreaudio_tap, (void *)&audio);
-#endif
-            } else {
-                thr_id = pthread_create(&p_thread, NULL, input_coreaudio, (void *)&audio);
-            }
-            break;
-#endif
-#ifdef PIPEWIRE
-        case INPUT_PIPEWIRE:
-            audio.format = cfg.samplebits;
-            audio.rate = cfg.samplerate;
-            audio.channels = cfg.channels;
-            audio.active = cfg.active;
-            audio.remix = cfg.remix;
-            audio.virtual_node = cfg.virtual_node;
-            thr_id = pthread_create(&p_thread, NULL, input_pipewire, (void *)&audio);
-            break;
-#endif
-#endif
-#ifdef _WIN32
-        case INPUT_WINSCAP:
-            thr_id = pthread_create(&p_thread, NULL, input_winscap, (void *)&audio);
-            break;
-#endif
-        default:
-            exit(EXIT_FAILURE); // Can't happen.
-        }
-
-        timeout_counter = 0;
-        while (true) {
-#ifdef _WIN32
-            Sleep(1);
-#else
-            nanosleep(&timeout_timer, NULL);
-#endif
-            pthread_mutex_lock(&audio.lock);
-            if ((audio.threadparams == 0) && (audio.format != -1) && (audio.rate != 0))
-                break;
-
-            pthread_mutex_unlock(&audio.lock);
-            timeout_counter++;
-            if (timeout_counter > 5000) {
-                cleanup();
-                fprintf(stderr, "could not get rate and/or format, problems with audio thread? "
-                                "quitting...\n");
-                exit(EXIT_FAILURE);
-            }
-        }
-        pthread_mutex_unlock(&audio.lock);
+        start_audio_thread(&cfg, &audio, &p_thread);
 
         int audio_channels = audio.channels;
 
