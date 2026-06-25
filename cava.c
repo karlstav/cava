@@ -137,14 +137,14 @@ static int getopt(int argc, char *const argv[], const char *optstring) {
     }
 
     int opt = argv[optind][1];
-    const char *p = strchr(optstring, opt);
+    const char *opt_position = strchr(optstring, opt);
 
-    if (p == NULL) {
+    if (opt_position == NULL) {
         optopt = opt;
         optind++;
         return '?';
     }
-    if (p[1] == ':') {
+    if (opt_position[1] == ':') {
         optopt = opt;
         optind++;
         if (optind >= argc) {
