@@ -312,6 +312,81 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
     return bars;
 }
 
+static void parse_arguments(int argc, char **argv, char *configPath) {
+  char *usage = "\n\
+                Usage: " PACKAGE " [options]\n\
+                        Visualize audio input in terminal.\n\
+\n\
+                        Options:\n\
+\t-p, --config <path>    Path to config file\n\
+\t-v, --version          Print version and exit\n\
+\t-h, --help             Show this help and exit\n\
+\n\
+                                   Keys:\n\
+      Up        Increase sensitivity\n\
+      Down      Decrease sensitivity\n\
+      Left      Decrease number of bars\n\
+      Right     Increase number of bars\n\
+      r         Reload config\n\
+      c         Reload colors only\n\
+      f         Cycle foreground color\n\
+      b         Cycle background color\n\
+      o         Change orientation bottom -> right -> top -> left (ncurses), top <-> bottom (other modes)\n\
+            q         Quit\n\
+\n";
+
+    int c;
+#ifndef _WIN32
+  static struct option long_options[] = {
+    {"config", required_argument, NULL, 'p'},
+    {"version", no_argument, NULL, 'v'},
+    {"help", no_argument, NULL, 'h'},
+    {0, 0, 0, 0},
+  };
+  opterr = 0;
+  while ((c = getopt_long(argc, argv, ":p:vh", long_options, NULL)) != -1) {
+#else
+  while ((c = getopt(argc, argv, ":p:vh")) != -1) {
+#endif
+      switch (c) {
+        case 'p': // argument: config path
+          snprintf(configPath, sizeof(configPath), "%s", optarg);
+          break;
+        case 'h': // argument: print usage
+          printf("%s", usage);
+          exit(0);
+        case 'v': // argument: print version
+          printf(PACKAGE " " VERSION "\n");
+          exit(0);
+        case ':': // missing argument
+          fprintf(stderr, PACKAGE ": error: option requires an argument -- '%c'\n", optopt);
+          fprintf(stderr, "Try '%s --help' for more information.\n", PACKAGE);
+          exit(1);
+        case '?': // unknown option
+          if (optopt != 0) {
+              fprintf(stderr, PACKAGE ": error: invalid option -- '%c'\n", optopt);
+            } else {
+              fprintf(stderr, PACKAGE ": error: invalid option\n");
+            }
+          fprintf(stderr, "Try '%s --help' for more information.\n", PACKAGE);
+          exit(1);
+        default: // argument: no arguments; exit
+          abort();
+        }
+    }
+
+  if (optind < argc) {
+      fprintf(stderr, PACKAGE ": error: unknown argument '%s'\n", argv[optind]);
+      fprintf(stderr, "Try '%s --help' for more information.\n", PACKAGE);
+      exit(1);
+    }
+}
+
+static void set_console_title(){
+    // general: console title
+    printf("%c]0;%s%c", '\033', PACKAGE, '\007');
+}
+
 // general: entry point
 int main(int argc, char **argv) {
 
@@ -335,76 +410,12 @@ int main(int argc, char **argv) {
     sigaction(SIGUSR1, &action, NULL);
     sigaction(SIGUSR2, &action, NULL);
 #endif
-    char *usage = "\n\
-Usage: " PACKAGE " [options]\n\
-Visualize audio input in terminal.\n\
-\n\
-Options:\n\
-\t-p, --config <path>    Path to config file\n\
-\t-v, --version          Print version and exit\n\
-\t-h, --help             Show this help and exit\n\
-\n\
-Keys:\n\
-        Up        Increase sensitivity\n\
-        Down      Decrease sensitivity\n\
-        Left      Decrease number of bars\n\
-        Right     Increase number of bars\n\
-        r         Reload config\n\
-        c         Reload colors only\n\
-        f         Cycle foreground color\n\
-        b         Cycle background color\n\
-        o         Change orientation bottom -> right -> top -> left (ncurses), top <-> bottom (other modes)\n\
-        q         Quit\n\
-\n";
-    int c;
-#ifndef _WIN32
-    static struct option long_options[] = {
-        {"config", required_argument, NULL, 'p'},
-        {"version", no_argument, NULL, 'v'},
-        {"help", no_argument, NULL, 'h'},
-        {0, 0, 0, 0},
-    };
-    opterr = 0;
-    while ((c = getopt_long(argc, argv, ":p:vh", long_options, NULL)) != -1) {
-#else
-    while ((c = getopt(argc, argv, ":p:vh")) != -1) {
-#endif
-        switch (c) {
-        case 'p': // argument: config path
-            snprintf(configPath, sizeof(configPath), "%s", optarg);
-            break;
-        case 'h': // argument: print usage
-            printf("%s", usage);
-            return 0;
-        case 'v': // argument: print version
-            printf(PACKAGE " " VERSION "\n");
-            return 0;
-        case ':': // missing argument
-            fprintf(stderr, PACKAGE ": error: option requires an argument -- '%c'\n", optopt);
-            fprintf(stderr, "Try '%s --help' for more information.\n", PACKAGE);
-            return 1;
-        case '?': // unknown option
-            if (optopt != 0) {
-                fprintf(stderr, PACKAGE ": error: invalid option -- '%c'\n", optopt);
-            } else {
-                fprintf(stderr, PACKAGE ": error: invalid option\n");
-            }
-            fprintf(stderr, "Try '%s --help' for more information.\n", PACKAGE);
-            return 1;
-        default: // argument: no arguments; exit
-            abort();
-        }
-    }
 
-    if (optind < argc) {
-        fprintf(stderr, PACKAGE ": error: unknown argument '%s'\n", argv[optind]);
-        fprintf(stderr, "Try '%s --help' for more information.\n", PACKAGE);
-        return 1;
-    }
+
+    parse_arguments(argc, argv, configPath);
 
 #ifndef _WIN32
-    // general: console title
-    printf("%c]0;%s%c", '\033', PACKAGE, '\007');
+    set_console_title();
 #endif // !_WIN32
 
     // general: main loop
