@@ -90,6 +90,18 @@
 #define GCC_UNUSED /* nothing */
 #endif
 
+struct cava_buffers {
+  int *bars;
+  int *previous_frame;
+  int *right_bars;
+  int *right_previous_frame;
+  float *bars_left;
+  float *bars_right;
+  double *cava_out;
+  float *bars_raw;
+  float *previous_bars_raw;
+};
+
 #ifdef _WIN32
 char *optarg = NULL;
 int optind = 1;
@@ -383,8 +395,10 @@ static void parse_arguments(int argc, char **argv, char *configPath) {
 }
 
 static void set_console_title(){
+#ifndef _WIN32
     // general: console title
     printf("%c]0;%s%c", '\033', PACKAGE, '\007');
+#endif // !_WIN32
 }
 
 static void setup_signal_handlers() {
@@ -634,6 +648,52 @@ static void start_audio_thread(struct config_params *cfg, struct audio_data *aud
   pthread_mutex_unlock(&audio->lock);
 }
 
+static void init_cava_buffers(struct cava_buffers *buf, int number_of_bars, int output_channels, int audio_channels, bool split_stereo){
+  buf->bars_left = (float *)malloc(number_of_bars / output_channels * sizeof(float));
+  buf->bars_right = (float *)malloc(number_of_bars / output_channels * sizeof(float));
+  memset(buf->bars_left, 0, sizeof(float) * number_of_bars / output_channels);
+  memset(buf->bars_right, 0, sizeof(float) * number_of_bars / output_channels);
+
+  buf->bars = (int *)malloc(number_of_bars * sizeof(int));
+  buf->bars_raw = (float *)malloc(number_of_bars * sizeof(float));
+  buf->previous_bars_raw = (float *)malloc(number_of_bars * sizeof(float));
+  buf->previous_frame = (int *)malloc(number_of_bars * sizeof(int));
+  buf->cava_out = (double *)malloc(number_of_bars * audio_channels / output_channels *
+                               sizeof(double));
+
+  memset(buf->bars, 0, sizeof(int) * number_of_bars);
+  memset(buf->bars_raw, 0, sizeof(float) * number_of_bars);
+  memset(buf->previous_bars_raw, 0, sizeof(float) * number_of_bars);
+  memset(buf->previous_frame, 0, sizeof(int) * number_of_bars);
+  memset(buf->cava_out, 0, sizeof(double) * number_of_bars * audio_channels / output_channels);
+
+  if (split_stereo) {
+      buf->right_bars = (int *)malloc(number_of_bars * sizeof(int));
+      buf->right_previous_frame = (int *)malloc(number_of_bars * sizeof(int));
+      memset(buf->right_bars, 0, sizeof(int) * number_of_bars);
+      memset(buf->right_previous_frame, 0, sizeof(int) * number_of_bars);
+    }else {
+      buf->right_bars = NULL;
+      buf->right_previous_frame = NULL;
+    }
+}
+
+static void free_cava_buffers(struct cava_buffers *buf, int audio_channels, bool split_stereo) {
+  if (audio_channels == 2) {
+      free(buf->bars_left);
+      free(buf->bars_right);
+    }
+  free(buf->cava_out);
+  free(buf->bars);
+  free(buf->bars_raw);
+  free(buf->previous_bars_raw);
+  free(buf->previous_frame);
+  if (split_stereo) {
+      free(buf->right_bars);
+      free(buf->right_previous_frame);
+    }
+}
+
 // general: entry point
 int main(int argc, char **argv) {
 
@@ -645,10 +705,7 @@ int main(int argc, char **argv) {
 
     setup_signal_handlers();
     parse_arguments(argc, argv, configPath);
-
-#ifndef _WIN32
     set_console_title();
-#endif // !_WIN32
 
     // general: main loop
     while (1) {
@@ -724,16 +781,7 @@ int main(int argc, char **argv) {
         if (cfg.stereo)
             output_channels = 2;
 
-        int *bars;
-        int *previous_frame;
-
-        int *right_bars = NULL;
-        int *right_previous_frame = NULL;
-
-        float *bars_left, *bars_right;
-        double *cava_out;
-        float *bars_raw;
-        float *previous_bars_raw;
+        struct cava_buffers buf;
 
         int height, lines, width, remainder;
         int *dimension_bar, *dimension_value;
@@ -1007,30 +1055,7 @@ int main(int argc, char **argv) {
                 pthread_mutex_unlock(&audio.lock);
             }
 
-            bars_left = (float *)malloc(number_of_bars / output_channels * sizeof(float));
-            bars_right = (float *)malloc(number_of_bars / output_channels * sizeof(float));
-            memset(bars_left, 0, sizeof(float) * number_of_bars / output_channels);
-            memset(bars_right, 0, sizeof(float) * number_of_bars / output_channels);
-
-            bars = (int *)malloc(number_of_bars * sizeof(int));
-            bars_raw = (float *)malloc(number_of_bars * sizeof(float));
-            previous_bars_raw = (float *)malloc(number_of_bars * sizeof(float));
-            previous_frame = (int *)malloc(number_of_bars * sizeof(int));
-            cava_out = (double *)malloc(number_of_bars * audio.channels / output_channels *
-                                        sizeof(double));
-
-            memset(bars, 0, sizeof(int) * number_of_bars);
-            memset(bars_raw, 0, sizeof(float) * number_of_bars);
-            memset(previous_bars_raw, 0, sizeof(float) * number_of_bars);
-            memset(previous_frame, 0, sizeof(int) * number_of_bars);
-            memset(cava_out, 0, sizeof(double) * number_of_bars * audio.channels / output_channels);
-
-            if (cfg.split_stereo) {
-                right_bars = (int *)malloc(number_of_bars * sizeof(int));
-                right_previous_frame = (int *)malloc(number_of_bars * sizeof(int));
-                memset(right_bars, 0, sizeof(int) * number_of_bars);
-                memset(right_previous_frame, 0, sizeof(int) * number_of_bars);
-            }
+            init_cava_buffers(&buf, number_of_bars, output_channels, audio_channels, cfg.split_stereo);
 
             // process: calculate x axis values
             if (cfg.xaxis != NONE) {
@@ -1328,18 +1353,18 @@ int main(int argc, char **argv) {
                     for (int n = 0; n < samples_to_use; n++) {
 
                         for (int i = number_of_bars - 1; i > 0; i--) {
-                            cava_out[i] = cava_out[i - 1];
+                            buf.cava_out[i] = buf.cava_out[i - 1];
                         }
                         if (audio_channels == 2) {
-                            cava_out[0] =
+                            buf.cava_out[0] =
                                 cfg.sens * (audio.cava_in[n] / 2 + audio.cava_in[n + 1] / 2);
                             n++;
                         } else {
-                            cava_out[0] = cfg.sens * audio.cava_in[n];
+                            buf.cava_out[0] = cfg.sens * audio.cava_in[n];
                         }
                     }
                 } else {
-                    cava_execute(audio.cava_in, samples_to_use, cava_out, plan);
+                    cava_execute(audio.cava_in, samples_to_use, buf.cava_out, plan);
                 }
 
                 audio.samples_counter -= samples_to_use;
@@ -1356,38 +1381,38 @@ int main(int argc, char **argv) {
                 for (int n = 0; n < raw_number_of_bars; n++) {
 
                     if (!cfg.waveform) {
-                        cava_out[n] *= cfg.sens;
+                        buf.cava_out[n] *= cfg.sens;
                     } else {
-                        if (cava_out[n] > 1.0)
+                        if (buf.cava_out[n] > 1.0)
                             cfg.sens *= 0.999;
                         else
                             cfg.sens *= 1.00001;
 
                         if (cfg.orientation != ORIENT_SPLIT_H)
-                            cava_out[n] = (cava_out[n] + 1.0) / 2.0;
+                            buf.cava_out[n] = (buf.cava_out[n] + 1.0) / 2.0;
                     }
 
                     if (cfg.sdl_glsl_gain != 1.0) {
-                        cava_out[n] *= cfg.sdl_glsl_gain;
+                      buf.cava_out[n] *= cfg.sdl_glsl_gain;
                     }
 
-                    if (cava_out[n] > 1.0)
-                        cava_out[n] = 1.0;
-                    else if (cava_out[n] < 0.0)
-                        cava_out[n] = 0.0;
+                    if (buf.cava_out[n] > 1.0)
+                        buf.cava_out[n] = 1.0;
+                    else if (buf.cava_out[n] < 0.0)
+                        buf.cava_out[n] = 0.0;
 
                     if (output_mode != OUTPUT_SDL_GLSL) {
-                        cava_out[n] *= *dimension_value;
+                        buf.cava_out[n] *= *dimension_value;
                     }
                     if (cfg.orientation == ORIENT_SPLIT_H || cfg.orientation == ORIENT_SPLIT_V) {
-                        cava_out[n] /= 2;
+                        buf.cava_out[n] /= 2;
                     }
                     if (output_mode == OUTPUT_NONCURSES) {
-                        cava_out[n] *= 8 * cfg.max_height;
+                        buf.cava_out[n] *= 8 * cfg.max_height;
                     }
 
                     if (cfg.waveform) {
-                        bars_raw[n] = cava_out[n];
+                        buf.bars_raw[n] = buf.cava_out[n];
                     }
                 }
 
@@ -1395,36 +1420,36 @@ int main(int argc, char **argv) {
                     if (audio_channels == 2) {
                         for (int n = 0; n < number_of_bars / output_channels; n++) {
                             if (cfg.userEQ_enabled)
-                                cava_out[n] *=
+                                buf.cava_out[n] *=
                                     cfg.userEQ[(int)floor(((double)n) * userEQ_keys_to_bars_ratio)];
-                            bars_left[n] = cava_out[n];
+                            buf.bars_left[n] = buf.cava_out[n];
                         }
                         for (int n = 0; n < number_of_bars / output_channels; n++) {
                             if (cfg.userEQ_enabled)
-                                cava_out[n + number_of_bars / output_channels] *=
+                                buf.cava_out[n + number_of_bars / output_channels] *=
                                     cfg.userEQ[(int)floor(((double)n) * userEQ_keys_to_bars_ratio)];
-                            bars_right[n] = cava_out[n + number_of_bars / output_channels];
+                            buf.bars_right[n] = buf.cava_out[n + number_of_bars / output_channels];
                         }
                     } else {
                         for (int n = 0; n < number_of_bars; n++) {
                             if (cfg.userEQ_enabled)
-                                cava_out[n] *=
+                                buf.cava_out[n] *=
                                     cfg.userEQ[(int)floor(((double)n) * userEQ_keys_to_bars_ratio)];
-                            bars_raw[n] = cava_out[n];
+                            buf.bars_raw[n] = buf.cava_out[n];
                         }
                     }
 
                     // process [filter]
                     if (cfg.monstercat) {
                         if (audio_channels == 2) {
-                            bars_left =
-                                monstercat_filter(bars_left, number_of_bars / output_channels,
+                            buf.bars_left =
+                                monstercat_filter(buf.bars_left, number_of_bars / output_channels,
                                                   cfg.waves, cfg.monstercat, *dimension_value);
-                            bars_right =
-                                monstercat_filter(bars_right, number_of_bars / output_channels,
+                            buf.bars_right =
+                                monstercat_filter(buf.bars_right, number_of_bars / output_channels,
                                                   cfg.waves, cfg.monstercat, *dimension_value);
                         } else {
-                            bars_raw = monstercat_filter(bars_raw, number_of_bars, cfg.waves,
+                            buf.bars_raw = monstercat_filter(buf.bars_raw, number_of_bars, cfg.waves,
                                                          cfg.monstercat, *dimension_value);
                         }
                     }
@@ -1437,15 +1462,15 @@ int main(int argc, char **argv) {
                                 for (int n = 0; n < number_of_bars; n++) {
                                     if (n < number_of_bars / 2) {
                                         if (cfg.reverse) {
-                                            bars_raw[n] = bars_left[number_of_bars / 2 - n - 1];
+                                            buf.bars_raw[n] = buf.bars_left[number_of_bars / 2 - n - 1];
                                         } else {
-                                            bars_raw[n] = bars_left[n];
+                                            buf.bars_raw[n] = buf.bars_left[n];
                                         }
                                     } else {
                                         if (cfg.reverse) {
-                                            bars_raw[n] = bars_right[number_of_bars - n - 1];
+                                            buf.bars_raw[n] = buf.bars_right[number_of_bars - n - 1];
                                         } else {
-                                            bars_raw[n] = bars_right[n - number_of_bars / 2];
+                                            buf.bars_raw[n] = buf.bars_right[n - number_of_bars / 2];
                                         }
                                     }
                                 }
@@ -1454,15 +1479,15 @@ int main(int argc, char **argv) {
                                 for (int n = 0; n < number_of_bars; n++) {
                                     if (n < number_of_bars / 2) {
                                         if (cfg.reverse) {
-                                            bars_raw[n] = bars_left[n];
+                                            buf.bars_raw[n] = buf.bars_left[n];
                                         } else {
-                                            bars_raw[n] = bars_left[number_of_bars / 2 - n - 1];
+                                            buf.bars_raw[n] = buf.bars_left[number_of_bars / 2 - n - 1];
                                         }
                                     } else {
                                         if (cfg.reverse) {
-                                            bars_raw[n] = bars_right[number_of_bars - n - 1];
+                                            buf.bars_raw[n] = buf.bars_right[number_of_bars - n - 1];
                                         } else {
-                                            bars_raw[n] = bars_right[n - number_of_bars / 2];
+                                            buf.bars_raw[n] = buf.bars_right[n - number_of_bars / 2];
                                         }
                                     }
                                 }
@@ -1473,20 +1498,20 @@ int main(int argc, char **argv) {
                             for (int n = 0; n < number_of_bars; n++) {
                                 if (cfg.reverse) {
                                     if (cfg.mono_opt == AVERAGE) {
-                                        bars_raw[number_of_bars - n - 1] =
-                                            (bars_left[n] + bars_right[n]) / 2;
+                                        buf.bars_raw[number_of_bars - n - 1] =
+                                            (buf.bars_left[n] + buf.bars_right[n]) / 2;
                                     } else if (cfg.mono_opt == LEFT) {
-                                        bars_raw[number_of_bars - n - 1] = bars_left[n];
+                                        buf.bars_raw[number_of_bars - n - 1] = buf.bars_left[n];
                                     } else if (cfg.mono_opt == RIGHT) {
-                                        bars_raw[number_of_bars - n - 1] = bars_right[n];
+                                        buf.bars_raw[number_of_bars - n - 1] = buf.bars_right[n];
                                     }
                                 } else {
                                     if (cfg.mono_opt == AVERAGE) {
-                                        bars_raw[n] = (bars_left[n] + bars_right[n]) / 2;
+                                        buf.bars_raw[n] = (buf.bars_left[n] + buf.bars_right[n]) / 2;
                                     } else if (cfg.mono_opt == LEFT) {
-                                        bars_raw[n] = bars_left[n];
+                                        buf.bars_raw[n] = buf.bars_left[n];
                                     } else if (cfg.mono_opt == RIGHT) {
-                                        bars_raw[n] = bars_right[n];
+                                        buf.bars_raw[n] = buf.bars_right[n];
                                     }
                                 }
                             }
@@ -1497,18 +1522,18 @@ int main(int argc, char **argv) {
                 int re_paint = 0;
 #endif
                 for (int n = 0; n < number_of_bars; n++) {
-                    bars[n] = bars_raw[n];
+                    buf.bars[n] = buf.bars_raw[n];
                     // show idle bar heads
                     if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE &&
-                        bars[n] < 1 && cfg.waveform == 0 && cfg.show_idle_bar_heads == 1)
-                        bars[n] = 1;
+                        buf.bars[n] < 1 && cfg.waveform == 0 && cfg.show_idle_bar_heads == 1)
+                        buf.bars[n] = 1;
 #ifdef SDL_GLSL
 
                     if (output_mode == OUTPUT_SDL_GLSL)
-                        bars[n] =
-                            bars_raw[n] * 1000; // values are 0-1, only used to check for changes
+                        buf.bars[n] =
+                            buf.bars_raw[n] * 1000; // values are 0-1, only used to check for changes
 
-                    if (bars[n] != previous_frame[n])
+                    if (buf.bars[n] != buf.previous_frame[n])
                         re_paint = 1;
 #endif
                 }
@@ -1524,14 +1549,14 @@ int main(int argc, char **argv) {
 #ifdef SDL
                 case OUTPUT_SDL:
                     rc = draw_sdl(number_of_bars, cfg.bar_width, cfg.bar_spacing, remainder,
-                                  *dimension_value, bars, previous_frame, frame_time_msec,
+                                  *dimension_value, buf.bars, buf.previous_frame, frame_time_msec,
                                   cfg.orientation, cfg.gradient);
 
                     break;
 #endif
 #ifdef SDL_GLSL
                 case OUTPUT_SDL_GLSL:
-                    rc = draw_sdl_glsl(number_of_bars, bars_raw, previous_bars_raw, frame_time_msec,
+                    rc = draw_sdl_glsl(number_of_bars, buf.bars_raw, buf.previous_bars_raw, frame_time_msec,
                                        re_paint, cfg.continuous_rendering);
                     break;
 #endif
@@ -1547,62 +1572,62 @@ int main(int argc, char **argv) {
                             // in horizontal stereo mode we need to split the bars array in half
                             // first half is right channel, second half is left channel
                             for (int i = 0; i < number_of_bars / 2; i++) {
-                                right_bars[i] = bars[i + number_of_bars / 2];
-                                right_previous_frame[i] = previous_frame[i + number_of_bars / 2];
+                                buf.right_bars[i] = buf.bars[i + number_of_bars / 2];
+                                buf.right_previous_frame[i] = buf.previous_frame[i + number_of_bars / 2];
                             }
                             if (cfg.orientation == ORIENT_SPLIT_H) {
-                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_BOTTOM,
+                                rc = draw_terminal_noncurses(buf.bars, buf.previous_frame, ORIENT_BOTTOM,
                                                              &cfg);
-                                rc = draw_terminal_noncurses(right_bars, right_previous_frame,
+                                rc = draw_terminal_noncurses(buf.right_bars, buf.right_previous_frame,
                                                              ORIENT_TOP, &cfg);
                             }
                             if (cfg.orientation == ORIENT_SPLIT_V) {
-                                rc = draw_terminal_noncurses(right_bars, right_previous_frame,
+                                rc = draw_terminal_noncurses(buf.right_bars, buf.right_previous_frame,
                                                              ORIENT_LEFT, &cfg);
                                 rc =
-                                    draw_terminal_noncurses(bars, previous_frame, ORIENT_RIGHT, &cfg);
+                                    draw_terminal_noncurses(buf.bars, buf.previous_frame, ORIENT_RIGHT, &cfg);
                             }
 
                         } else {
                             // pure mirrored split, same bars for both sides
                             if (cfg.orientation == ORIENT_SPLIT_H) {
-                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_BOTTOM,
+                                rc = draw_terminal_noncurses(buf.bars, buf.previous_frame, ORIENT_BOTTOM,
                                                              &cfg);
-                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_TOP, &cfg);
+                                rc = draw_terminal_noncurses(buf.bars, buf.previous_frame, ORIENT_TOP, &cfg);
                             } else if (cfg.orientation == ORIENT_SPLIT_V) {
-                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_LEFT, &cfg);
+                                rc = draw_terminal_noncurses(buf.bars, buf.previous_frame, ORIENT_LEFT, &cfg);
                                 rc =
-                                    draw_terminal_noncurses(bars, previous_frame, ORIENT_RIGHT, &cfg);
+                                    draw_terminal_noncurses(buf.bars, buf.previous_frame, ORIENT_RIGHT, &cfg);
                             }
                         }
                     } else {
-                        rc = draw_terminal_noncurses(bars, previous_frame, cfg.orientation, &cfg);
+                        rc = draw_terminal_noncurses(buf.bars, buf.previous_frame, cfg.orientation, &cfg);
                     }
                     break;
                 case OUTPUT_NCURSES:
 #ifdef NCURSES
                     rc = draw_terminal_ncurses(inAtty, *dimension_value / 8, *dimension_bar,
                                                number_of_bars, cfg.bar_width, cfg.bar_spacing,
-                                               remainder, bars, previous_frame, cfg.gradient, cfg.xaxis,
+                                               remainder, buf.bars, buf.previous_frame, cfg.gradient, cfg.xaxis,
                                                cfg.orientation);
                     break;
 #endif
                 case OUTPUT_RAW:
 #ifndef _WIN32
                     rc = print_raw_out(number_of_bars, fp, cfg.raw_format, cfg.bit_format,
-                                       cfg.ascii_range, cfg.bar_delim, cfg.frame_delim, bars);
+                                       cfg.ascii_range, cfg.bar_delim, cfg.frame_delim, buf.bars);
 #else
                     rc = print_raw_out(number_of_bars, hFile, cfg.raw_format, cfg.bit_format,
-                                       cfg.ascii_range, cfg.bar_delim, cfg.frame_delim, bars);
+                                       cfg.ascii_range, cfg.bar_delim, cfg.frame_delim, buf.bars);
 #endif
                     break;
                 case OUTPUT_NORITAKE:
 #ifndef _WIN32
                     rc = print_ntk_out(number_of_bars, fp, cfg.bit_format, cfg.bar_width, cfg.bar_spacing,
-                                       cfg.bar_height, bars);
+                                       cfg.bar_height, buf.bars);
 #else
                     rc = print_ntk_out(number_of_bars, hFile, cfg.bit_format, cfg.bar_width,
-                                       cfg.bar_spacing, cfg.bar_height, bars);
+                                       cfg.bar_spacing, cfg.bar_height, buf.bars);
 #endif
                     break;
                 default:
@@ -1624,9 +1649,9 @@ int main(int argc, char **argv) {
                     should_quit = true;
                 }
 
-                memcpy(previous_frame, bars, number_of_bars * sizeof(int));
+                memcpy(buf.previous_frame, buf.bars, number_of_bars * sizeof(int));
                 if (cfg.output == OUTPUT_SDL_GLSL) {
-                    memcpy(previous_bars_raw, bars_raw, number_of_bars * sizeof(float));
+                    memcpy(buf.previous_bars_raw, buf.bars_raw, number_of_bars * sizeof(float));
                 }
 
                 if (cfg.live_config) {
@@ -1647,10 +1672,10 @@ int main(int argc, char **argv) {
                     if (total_frames >= cfg.draw_and_quit) {
                         for (int n = 0; n < number_of_bars; n++) {
                             if (output_mode != OUTPUT_RAW && output_mode != OUTPUT_NORITAKE &&
-                                bars[n] == 1) {
-                                bars[n] = 0;
+                                buf.bars[n] == 1) {
+                                buf.bars[n] = 0;
                             }
-                            total_bar_height += bars[n];
+                            total_bar_height += buf.bars[n];
                         }
                         resizeTerminal = true;
                         reloadConf = true;
@@ -1697,19 +1722,7 @@ int main(int argc, char **argv) {
             } // resize terminal
             cava_destroy(plan);
             free(plan);
-            if (audio_channels == 2) {
-                free(bars_left);
-                free(bars_right);
-            }
-            free(cava_out);
-            free(bars);
-            free(bars_raw);
-            free(previous_bars_raw);
-            free(previous_frame);
-            if (cfg.split_stereo) {
-                free(right_bars);
-                free(right_previous_frame);
-            }
+            free_cava_buffers(&buf, audio_channels, cfg.split_stereo);
 
 #ifndef _WIN32
             if ((output_mode == OUTPUT_RAW || output_mode == OUTPUT_NORITAKE) &&
