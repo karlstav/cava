@@ -387,6 +387,24 @@ static void set_console_title(){
     printf("%c]0;%s%c", '\033', PACKAGE, '\007');
 }
 
+static void setup_signal_handlers() {
+#ifdef _WIN32
+  if (!SetConsoleCtrlHandler(sig_handler, TRUE)) {
+      fprintf(stderr, "ERROR: Could not set control handler");
+      exit(EXIT_FAILURE);
+    }
+#else
+  // general: handle Ctrl+C
+  struct sigaction action;
+  memset(&action, 0, sizeof(action));
+  action.sa_handler = &sig_handler;
+  sigaction(SIGINT, &action, NULL);
+  sigaction(SIGTERM, &action, NULL);
+  sigaction(SIGUSR1, &action, NULL);
+  sigaction(SIGUSR2, &action, NULL);
+#endif
+}
+
 // general: entry point
 int main(int argc, char **argv) {
 
@@ -395,23 +413,8 @@ int main(int argc, char **argv) {
     // handle command-line arguments
     char configPath[PATH_MAX];
     configPath[0] = '\0';
-#ifdef _WIN32
-    if (!SetConsoleCtrlHandler(sig_handler, TRUE)) {
-        fprintf(stderr, "ERROR: Could not set control handler");
-        exit(EXIT_FAILURE);
-    }
-#else
-    // general: handle Ctrl+C
-    struct sigaction action;
-    memset(&action, 0, sizeof(action));
-    action.sa_handler = &sig_handler;
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-    sigaction(SIGUSR1, &action, NULL);
-    sigaction(SIGUSR2, &action, NULL);
-#endif
 
-
+    setup_signal_handlers();
     parse_arguments(argc, argv, configPath);
 
 #ifndef _WIN32
