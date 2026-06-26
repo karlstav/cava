@@ -960,6 +960,17 @@ static int render_output(int output_mode, struct config_params *cfg, struct cava
   return rc;
 }
 
+
+static void exit_if_audio_thread_unexpectedly_terminated(struct audio_data *audio) {
+  pthread_mutex_lock(&audio->lock);
+  if (audio->terminate == 1) {
+      cleanup();
+      fprintf(stderr, "Audio thread exited unexpectedly. %s\n", audio->error_message);
+      exit(EXIT_FAILURE);
+    }
+  pthread_mutex_unlock(&audio->lock);
+}
+
 // general: entry point
 int main(int argc, char **argv) {
 
@@ -1390,14 +1401,7 @@ int main(int argc, char **argv) {
                 if (resizeTerminal)
                     break;
 
-                // checking if audio thread has exited unexpectedly
-                pthread_mutex_lock(&audio.lock);
-                if (audio.terminate == 1) {
-                    cleanup();
-                    fprintf(stderr, "Audio thread exited unexpectedly. %s\n", audio.error_message);
-                    exit(EXIT_FAILURE);
-                }
-                pthread_mutex_unlock(&audio.lock);
+                exit_if_audio_thread_unexpectedly_terminated(&audio);
 
                 // process: check if input is present
                 silence = true;
