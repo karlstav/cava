@@ -102,6 +102,13 @@ struct cava_buffers {
   float *previous_bars_raw;
 };
 
+struct terminal_dimensions {
+  int width;
+  int height;
+  int *dim_bar;
+  int *dim_val;
+};
+
 #ifdef _WIN32
 char *optarg = NULL;
 int optind = 1;
@@ -695,8 +702,7 @@ static void free_cava_buffers(struct cava_buffers *buf, int audio_channels, bool
 }
 
 static void handle_keyboard_input(char *ch, struct config_params *cfg, char *configPath,
-                       int **dimension_bar, int **dimension_value,
-                       int *height, int *width,
+                       struct terminal_dimensions *termDim,
                        bool *resizeTerminal, bool *reloadConf) {
 
 #ifdef NCURSES
@@ -762,11 +768,11 @@ static void handle_keyboard_input(char *ch, struct config_params *cfg, char *con
 
       if (cfg->orientation == ORIENT_LEFT || cfg->orientation == ORIENT_RIGHT ||
           cfg->orientation == ORIENT_SPLIT_V) {
-          dimension_bar = &height;
-          dimension_value = &width;
+          termDim->dim_bar = &termDim->height;
+          termDim->dim_val = &termDim->width;
         } else {
-          dimension_bar = &width;
-          dimension_value = &height;
+          termDim->dim_bar = &termDim->width;
+          termDim->dim_val = &termDim->height;
         }
 
       *resizeTerminal = true;
@@ -1060,8 +1066,10 @@ int main(int argc, char **argv) {
 
         struct cava_buffers buf;
 
-        int height, lines, width, remainder;
-        int *dimension_bar, *dimension_value;
+        int lines, remainder;
+        struct terminal_dimensions termDim;
+        termDim.width = 0;
+        termDim.height = 0;
 #ifndef _WIN32
         int fp = -1;
         int keepalive_fd = -1;
@@ -1073,28 +1081,28 @@ int main(int argc, char **argv) {
 
         if (cfg.orientation == ORIENT_LEFT || cfg.orientation == ORIENT_RIGHT ||
             cfg.orientation == ORIENT_SPLIT_V) {
-            dimension_bar = &height;
-            dimension_value = &width;
+            termDim.dim_bar = &termDim.height;
+            termDim.dim_val = &termDim.width;
         } else {
-            dimension_bar = &width;
-            dimension_value = &height;
+            termDim.dim_bar = &termDim.width;
+            termDim.dim_val = &termDim.height;
         }
 
 #ifdef SDL
         // output: start sdl mode
         if (output_mode == OUTPUT_SDL) {
             init_sdl_window(cfg.sdl_width, cfg.sdl_height, cfg.sdl_x, cfg.sdl_y, cfg.sdl_full_screen);
-            height = cfg.sdl_height;
-            width = cfg.sdl_width;
+            termDim.height = cfg.sdl_height;
+            termDim.width = cfg.sdl_width;
         }
 #endif
 #ifdef SDL_GLSL
         if (output_mode == OUTPUT_SDL_GLSL) {
             init_sdl_glsl_window(cfg.sdl_width, cfg.sdl_height, cfg.sdl_x, cfg.sdl_y, cfg.sdl_full_screen,
                                  cfg.vertex_shader, cfg.fragment_shader);
-            height = cfg.sdl_height;
-            width = cfg.sdl_width;
-            *dimension_value = 1;
+            termDim.height = cfg.sdl_height;
+            termDim.width = cfg.sdl_width;
+            *termDim.dim_val = 1;
         }
 #endif
 
@@ -1110,36 +1118,36 @@ int main(int argc, char **argv) {
             // output: start ncurses mode
             case OUTPUT_NCURSES:
                 init_terminal_ncurses(cfg.color, cfg.bcolor, cfg.col, cfg.bgcol, cfg.gradient,
-                                      cfg.gradient_count, cfg.gradient_colors, &width, &lines);
+                                      cfg.gradient_count, cfg.gradient_colors, &termDim.width, &lines);
                 if (cfg.xaxis != NONE)
                     lines--;
-                height = lines;
-                *dimension_value *=
+                termDim.height = lines;
+                *termDim.dim_val *=
                     8; // we have 8 times as much height due to using 1/8 block characters
                 break;
 #endif
 #ifdef SDL
             // output: get sdl window size
             case OUTPUT_SDL:
-                init_sdl_surface(&width, &height, cfg.color, cfg.bcolor, cfg.gradient, cfg.gradient_count,
+                init_sdl_surface(&termDim.width, &termDim.height, cfg.color, cfg.bcolor, cfg.gradient, cfg.gradient_count,
                                  cfg.gradient_colors);
                 break;
 #endif
 #ifdef SDL_GLSL
             // output: get sdl window size
             case OUTPUT_SDL_GLSL:
-                init_sdl_glsl_surface(&width, &height, cfg.color, cfg.bcolor, cfg.bar_width,
+                init_sdl_glsl_surface(&termDim.width, &termDim.height, cfg.color, cfg.bcolor, cfg.bar_width,
                                       cfg.bar_spacing, cfg.gradient, cfg.gradient_count,
                                       cfg.gradient_colors);
                 break;
 #endif
             case OUTPUT_NONCURSES:
-                get_terminal_dim_noncurses(&width, &lines);
+                get_terminal_dim_noncurses(&termDim.width, &lines);
 
                 if (cfg.xaxis != NONE)
                     lines--;
 
-                height = lines;
+                termDim.height = lines;
                 break;
             case OUTPUT_RAW:
             case OUTPUT_NORITAKE:
@@ -1210,15 +1218,15 @@ int main(int argc, char **argv) {
 
                 // width must be hardcoded for raw output. only used to calculate the number of
                 // bars in auto mode
-                width = 512 * output_channels;
+                termDim.width = 512 * output_channels;
                 cfg.bar_width = 1;
                 cfg.bar_spacing = 0;
 
                 if (strcmp(cfg.data_format, "ascii") != 0) {
                     // "binary" or "noritake"
-                    height = pow(2, cfg.bit_format) - 1;
+                    termDim.height = pow(2, cfg.bit_format) - 1;
                 } else {
-                    height = cfg.ascii_range;
+                    termDim.height = cfg.ascii_range;
                 }
                 break;
             default:
@@ -1231,10 +1239,10 @@ int main(int argc, char **argv) {
             if (cfg.fixedbars) {
                 number_of_bars = cfg.fixedbars;
                 if (number_of_bars * cfg.bar_width + cfg.fixedbars * cfg.bar_spacing - cfg.bar_spacing >
-                    width) {
+                    termDim.width) {
                     cleanup();
                     fprintf(stderr, "window is too narrow for number of bars set, maximum is %d\n",
-                            (width - cfg.bar_spacing) / (cfg.bar_width + cfg.bar_spacing));
+                            (termDim.width - cfg.bar_spacing) / (cfg.bar_width + cfg.bar_spacing));
                     audio.terminate = 1;
                     exit(EXIT_FAILURE);
                 }
@@ -1250,7 +1258,7 @@ int main(int argc, char **argv) {
                     exit(EXIT_FAILURE);
                 }
             } else {
-                number_of_bars = (*dimension_bar + cfg.bar_spacing) / (cfg.bar_width + cfg.bar_spacing);
+                number_of_bars = (*termDim.dim_bar + cfg.bar_spacing) / (cfg.bar_width + cfg.bar_spacing);
 
                 if (output_mode == OUTPUT_SDL_GLSL) {
                     if (number_of_bars > 512)
@@ -1274,7 +1282,7 @@ int main(int argc, char **argv) {
 
             // checks if there is still extra room, will use this to center
             if (cfg.center_align) {
-                remainder = (*dimension_bar - number_of_bars * cfg.bar_width -
+                remainder = (*termDim.dim_bar - number_of_bars * cfg.bar_width -
                              number_of_bars * cfg.bar_spacing + cfg.bar_spacing) /
                             2;
                 if (remainder < 0)
@@ -1287,7 +1295,7 @@ int main(int argc, char **argv) {
                 init_terminal_noncurses(inAtty, cfg.color, cfg.bcolor, cfg.col, cfg.bgcol, cfg.gradient,
                                         cfg.gradient_count, cfg.gradient_colors, cfg.horizontal_gradient,
                                         cfg.horizontal_gradient_count, cfg.horizontal_gradient_colors,
-                                        number_of_bars, width, lines, cfg.bar_width, cfg.orientation,
+                                        number_of_bars, termDim.width, lines, cfg.bar_width, cfg.orientation,
                                         cfg.blendDirection);
             }
             if ((cfg.orientation == ORIENT_SPLIT_H || cfg.orientation == ORIENT_SPLIT_V) &&
@@ -1296,7 +1304,7 @@ int main(int argc, char **argv) {
             }
             cfg.number_of_bars = number_of_bars;
             cfg.terminal_lines = lines;
-            cfg.terminal_width = width;
+            cfg.terminal_width = termDim.width;
             cfg.terminal_remainder = remainder;
             cfg.is_tty = inAtty;
 
@@ -1394,8 +1402,7 @@ int main(int argc, char **argv) {
 #endif
 
                 handle_keyboard_input(&ch, &cfg, configPath,
-                                       &dimension_bar, &dimension_value,
-                                       &height, &width,
+                                       &termDim,
                                        &resizeTerminal, &reloadConf);
 
                 if (resizeTerminal)
@@ -1523,7 +1530,7 @@ int main(int argc, char **argv) {
                         buf.cava_out[n] = 0.0;
 
                     if (output_mode != OUTPUT_SDL_GLSL) {
-                        buf.cava_out[n] *= *dimension_value;
+                        buf.cava_out[n] *= *termDim.dim_val;
                     }
                     if (cfg.orientation == ORIENT_SPLIT_H || cfg.orientation == ORIENT_SPLIT_V) {
                         buf.cava_out[n] /= 2;
@@ -1565,13 +1572,13 @@ int main(int argc, char **argv) {
                         if (audio_channels == 2) {
                             buf.bars_left =
                                 monstercat_filter(buf.bars_left, number_of_bars / output_channels,
-                                                  cfg.waves, cfg.monstercat, *dimension_value);
+                                                  cfg.waves, cfg.monstercat, *termDim.dim_val);
                             buf.bars_right =
                                 monstercat_filter(buf.bars_right, number_of_bars / output_channels,
-                                                  cfg.waves, cfg.monstercat, *dimension_value);
+                                                  cfg.waves, cfg.monstercat, *termDim.dim_val);
                         } else {
                             buf.bars_raw = monstercat_filter(buf.bars_raw, number_of_bars, cfg.waves,
-                                                         cfg.monstercat, *dimension_value);
+                                                         cfg.monstercat, *termDim.dim_val);
                         }
                     }
                     if (audio_channels == 2) {
@@ -1668,12 +1675,12 @@ int main(int argc, char **argv) {
 
 #ifndef _WIN32
                 int rc = render_output(output_mode, &cfg, &buf, number_of_bars, remainder,
-                                        *dimension_value, dimension_bar, frame_time_msec, re_paint,
-                                        inAtty, lines, width, fp);
+                                        *termDim.dim_val, termDim.dim_bar, frame_time_msec, re_paint,
+                                        inAtty, lines, termDim.width, fp);
 #else
                 int rc = render_output(output_mode, &cfg, &buf, number_of_bars, remainder,
-                                        *dimension_value, dimension_bar, frame_time_msec, re_paint,
-                                        inAtty, lines, width, hFile);
+                                        *termDim.dim_val, termDim.dim_bar, frame_time_msec, re_paint,
+                                        inAtty, lines, termDim.width, hFile);
 #endif
 
 
