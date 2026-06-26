@@ -856,6 +856,110 @@ static void draw_x_axis(struct config_params *cfg, struct cava_plan *plan, int l
     }
 }
 
+
+#ifndef _WIN32
+static int render_output(int output_mode, struct config_params *cfg, struct cava_buffers *buf,
+               int number_of_bars, int remainder, int dimension_value,
+               int *dimension_bar, int frame_time_msec, int re_paint,
+               int inAtty, int lines, int width, int fp) {
+#else
+static int render_output(int output_mode, struct config_params *cfg, struct cava_buffers *buf,
+               int number_of_bars, int remainder, int dimension_value,
+               int *dimension_bar, int frame_time_msec, int re_paint,
+               int inAtty, int lines, int width, HANDLE hFile) {
+#endif
+  int rc = 0;
+  switch (output_mode) {
+#ifdef SDL
+    case OUTPUT_SDL:
+      rc = draw_sdl(number_of_bars, cfg->bar_width, cfg->bar_spacing, remainder,
+                     dimension_value, buf->bars, buf->previous_frame, frame_time_msec,
+                     cfg->orientation, cfg->gradient);
+
+      break;
+#endif
+#ifdef SDL_GLSL
+    case OUTPUT_SDL_GLSL:
+      rc = draw_sdl_glsl(number_of_bars, buf->bars_raw, buf->previous_bars_raw, frame_time_msec,
+                          re_paint, cfg->continuous_rendering);
+      break;
+#endif
+    case OUTPUT_NONCURSES:
+      if (cfg->orientation == ORIENT_SPLIT_H || cfg->orientation == ORIENT_SPLIT_V) {
+          // in split horizontal mode we need to draw two times
+          // once for bottom and once for top
+          // ORIENT_BOTTOM will be the top bars and ORIENT_TOP the bottom bars
+          // since bottom hear means from mid upwards and top is from mid
+          // downwards
+
+          if (cfg->split_stereo) {
+              // in horizontal stereo mode we need to split the bars array in half
+              // first half is right channel, second half is left channel
+              for (int i = 0; i < number_of_bars / 2; i++) {
+                  buf->right_bars[i] = buf->bars[i + number_of_bars / 2];
+                  buf->right_previous_frame[i] = buf->previous_frame[i + number_of_bars / 2];
+                }
+              if (cfg->orientation == ORIENT_SPLIT_H) {
+                  rc = draw_terminal_noncurses(buf->bars, buf->previous_frame, ORIENT_BOTTOM,
+                                                cfg);
+                  rc = draw_terminal_noncurses(buf->right_bars, buf->right_previous_frame,
+                                                ORIENT_TOP, cfg);
+                }
+              if (cfg->orientation == ORIENT_SPLIT_V) {
+                  rc = draw_terminal_noncurses(buf->right_bars, buf->right_previous_frame,
+                                                ORIENT_LEFT, cfg);
+                  rc =
+                      draw_terminal_noncurses(buf->bars, buf->previous_frame, ORIENT_RIGHT, cfg);
+                }
+
+            } else {
+              // pure mirrored split, same bars for both sides
+              if (cfg->orientation == ORIENT_SPLIT_H) {
+                  rc = draw_terminal_noncurses(buf->bars, buf->previous_frame, ORIENT_BOTTOM,
+                                                cfg);
+                  rc = draw_terminal_noncurses(buf->bars, buf->previous_frame, ORIENT_TOP, cfg);
+                } else if (cfg->orientation == ORIENT_SPLIT_V) {
+                  rc = draw_terminal_noncurses(buf->bars, buf->previous_frame, ORIENT_LEFT, cfg);
+                  rc =
+                      draw_terminal_noncurses(buf->bars, buf->previous_frame, ORIENT_RIGHT, cfg);
+                }
+            }
+        } else {
+          rc = draw_terminal_noncurses(buf->bars, buf->previous_frame, cfg->orientation, cfg);
+        }
+      break;
+    case OUTPUT_NCURSES:
+#ifdef NCURSES
+      rc = draw_terminal_ncurses(inAtty, dimension_value / 8, *dimension_bar,
+                                  number_of_bars, cfg->bar_width, cfg->bar_spacing,
+                                  remainder, buf->bars, buf->previous_frame, cfg->gradient, cfg->xaxis,
+                                  cfg->orientation);
+      break;
+#endif
+    case OUTPUT_RAW:
+#ifndef _WIN32
+      rc = print_raw_out(number_of_bars, fp, cfg->raw_format, cfg->bit_format,
+                          cfg->ascii_range, cfg->bar_delim, cfg->frame_delim, buf->bars);
+#else
+      rc = print_raw_out(number_of_bars, hFile, cfg->raw_format, cfg->bit_format,
+                          cfg->ascii_range, cfg->bar_delim, cfg->frame_delim, buf->bars);
+#endif
+      break;
+    case OUTPUT_NORITAKE:
+#ifndef _WIN32
+      rc = print_ntk_out(number_of_bars, fp, cfg->bit_format, cfg->bar_width, cfg->bar_spacing,
+                          cfg->bar_height, buf->bars);
+#else
+      rc = print_ntk_out(number_of_bars, hFile, cfg->bit_format, cfg->bar_width,
+                          cfg->bar_spacing, cfg->bar_height, buf->bars);
+#endif
+      break;
+    default:
+      exit(EXIT_FAILURE); // Can't happen.
+    }
+  return rc;
+}
+
 // general: entry point
 int main(int argc, char **argv) {
 
@@ -1531,9 +1635,9 @@ int main(int argc, char **argv) {
                         }
                     }
                 }
-#ifdef SDL_GLSL
+
                 int re_paint = 0;
-#endif
+
                 for (int n = 0; n < number_of_bars; n++) {
                     buf.bars[n] = buf.bars_raw[n];
                     // show idle bar heads
@@ -1557,95 +1661,17 @@ int main(int argc, char **argv) {
                     fflush(stdout);
                     printf("\033[2026l\033\\");
                 }
-                int rc = 0;
-                switch (output_mode) {
-#ifdef SDL
-                case OUTPUT_SDL:
-                    rc = draw_sdl(number_of_bars, cfg.bar_width, cfg.bar_spacing, remainder,
-                                  *dimension_value, buf.bars, buf.previous_frame, frame_time_msec,
-                                  cfg.orientation, cfg.gradient);
 
-                    break;
-#endif
-#ifdef SDL_GLSL
-                case OUTPUT_SDL_GLSL:
-                    rc = draw_sdl_glsl(number_of_bars, buf.bars_raw, buf.previous_bars_raw, frame_time_msec,
-                                       re_paint, cfg.continuous_rendering);
-                    break;
-#endif
-                case OUTPUT_NONCURSES:
-                    if (cfg.orientation == ORIENT_SPLIT_H || cfg.orientation == ORIENT_SPLIT_V) {
-                        // in split horizontal mode we need to draw two times
-                        // once for bottom and once for top
-                        // ORIENT_BOTTOM will be the top bars and ORIENT_TOP the bottom bars
-                        // since bottom hear means from mid upwards and top is from mid
-                        // downwards
-
-                        if (cfg.split_stereo) {
-                            // in horizontal stereo mode we need to split the bars array in half
-                            // first half is right channel, second half is left channel
-                            for (int i = 0; i < number_of_bars / 2; i++) {
-                                buf.right_bars[i] = buf.bars[i + number_of_bars / 2];
-                                buf.right_previous_frame[i] = buf.previous_frame[i + number_of_bars / 2];
-                            }
-                            if (cfg.orientation == ORIENT_SPLIT_H) {
-                                rc = draw_terminal_noncurses(buf.bars, buf.previous_frame, ORIENT_BOTTOM,
-                                                             &cfg);
-                                rc = draw_terminal_noncurses(buf.right_bars, buf.right_previous_frame,
-                                                             ORIENT_TOP, &cfg);
-                            }
-                            if (cfg.orientation == ORIENT_SPLIT_V) {
-                                rc = draw_terminal_noncurses(buf.right_bars, buf.right_previous_frame,
-                                                             ORIENT_LEFT, &cfg);
-                                rc =
-                                    draw_terminal_noncurses(buf.bars, buf.previous_frame, ORIENT_RIGHT, &cfg);
-                            }
-
-                        } else {
-                            // pure mirrored split, same bars for both sides
-                            if (cfg.orientation == ORIENT_SPLIT_H) {
-                                rc = draw_terminal_noncurses(buf.bars, buf.previous_frame, ORIENT_BOTTOM,
-                                                             &cfg);
-                                rc = draw_terminal_noncurses(buf.bars, buf.previous_frame, ORIENT_TOP, &cfg);
-                            } else if (cfg.orientation == ORIENT_SPLIT_V) {
-                                rc = draw_terminal_noncurses(buf.bars, buf.previous_frame, ORIENT_LEFT, &cfg);
-                                rc =
-                                    draw_terminal_noncurses(buf.bars, buf.previous_frame, ORIENT_RIGHT, &cfg);
-                            }
-                        }
-                    } else {
-                        rc = draw_terminal_noncurses(buf.bars, buf.previous_frame, cfg.orientation, &cfg);
-                    }
-                    break;
-                case OUTPUT_NCURSES:
-#ifdef NCURSES
-                    rc = draw_terminal_ncurses(inAtty, *dimension_value / 8, *dimension_bar,
-                                               number_of_bars, cfg.bar_width, cfg.bar_spacing,
-                                               remainder, buf.bars, buf.previous_frame, cfg.gradient, cfg.xaxis,
-                                               cfg.orientation);
-                    break;
-#endif
-                case OUTPUT_RAW:
 #ifndef _WIN32
-                    rc = print_raw_out(number_of_bars, fp, cfg.raw_format, cfg.bit_format,
-                                       cfg.ascii_range, cfg.bar_delim, cfg.frame_delim, buf.bars);
+                int rc = render_output(output_mode, &cfg, &buf, number_of_bars, remainder,
+                                        *dimension_value, dimension_bar, frame_time_msec, re_paint,
+                                        inAtty, lines, width, fp);
 #else
-                    rc = print_raw_out(number_of_bars, hFile, cfg.raw_format, cfg.bit_format,
-                                       cfg.ascii_range, cfg.bar_delim, cfg.frame_delim, buf.bars);
+                int rc = render_output(output_mode, &cfg, &buf, number_of_bars, remainder,
+                                        *dimension_value, dimension_bar, frame_time_msec, re_paint,
+                                        inAtty, lines, width, hFile);
 #endif
-                    break;
-                case OUTPUT_NORITAKE:
-#ifndef _WIN32
-                    rc = print_ntk_out(number_of_bars, fp, cfg.bit_format, cfg.bar_width, cfg.bar_spacing,
-                                       cfg.bar_height, buf.bars);
-#else
-                    rc = print_ntk_out(number_of_bars, hFile, cfg.bit_format, cfg.bar_width,
-                                       cfg.bar_spacing, cfg.bar_height, buf.bars);
-#endif
-                    break;
-                default:
-                    exit(EXIT_FAILURE); // Can't happen.
-                }
+
 
                 if (cfg.sync_updates) {
                     printf("\033[2026h\033\\");
