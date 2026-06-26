@@ -806,6 +806,56 @@ static void handle_keyboard_input(char *ch, struct config_params *cfg, char *con
     }
 }
 
+static void draw_x_axis(struct config_params *cfg, struct cava_plan *plan, int lines, int remainder, int number_of_bars) {
+  // process: calculate x axis values
+  if (cfg->xaxis != NONE) {
+      double cut_off_frequency;
+      if (output_mode == OUTPUT_NONCURSES) {
+          printf("\r\033[%dB", lines + 1);
+          if (remainder)
+            printf("\033[%dC", remainder);
+        }
+      for (int n = 0; n < number_of_bars; n++) {
+          if (cfg->stereo) {
+              if (n < number_of_bars / 2)
+                cut_off_frequency = plan->cut_off_frequency[number_of_bars / 2 - 1 - n];
+              else
+                cut_off_frequency = plan->cut_off_frequency[n - number_of_bars / 2];
+            } else {
+              cut_off_frequency = plan->cut_off_frequency[n];
+            }
+
+          float freq_kilohz = cut_off_frequency / 1000;
+          int freq_floor = cut_off_frequency;
+
+          if (output_mode == OUTPUT_NCURSES) {
+#ifdef NCURSES
+              if (cut_off_frequency < 1000)
+                mvprintw(lines, n * (cfg->bar_width + cfg->bar_spacing) + remainder, "%-4d",
+                          freq_floor);
+              else if (cut_off_frequency > 1000 && cut_off_frequency < 10000)
+                mvprintw(lines, n * (cfg->bar_width + cfg->bar_spacing) + remainder, "%.2f",
+                          freq_kilohz);
+              else
+                mvprintw(lines, n * (cfg->bar_width + cfg->bar_spacing) + remainder, "%.1f",
+                          freq_kilohz);
+#endif
+            } else if (output_mode == OUTPUT_NONCURSES) {
+              if (cut_off_frequency < 1000)
+                printf("%-4d", freq_floor);
+              else if (cut_off_frequency > 1000 && cut_off_frequency < 10000)
+                printf("%.2f", freq_kilohz);
+              else
+                printf("%.1f", freq_kilohz);
+
+              if (n < number_of_bars - 1)
+                printf("\033[%dC", cfg->bar_width + cfg->bar_spacing - 4);
+            }
+        }
+      printf("\r\033[%dA", lines + 1);
+    }
+}
+
 // general: entry point
 int main(int argc, char **argv) {
 
@@ -1169,53 +1219,7 @@ int main(int argc, char **argv) {
 
             init_cava_buffers(&buf, number_of_bars, output_channels, audio_channels, cfg.split_stereo);
 
-            // process: calculate x axis values
-            if (cfg.xaxis != NONE) {
-                double cut_off_frequency;
-                if (output_mode == OUTPUT_NONCURSES) {
-                    printf("\r\033[%dB", lines + 1);
-                    if (remainder)
-                        printf("\033[%dC", remainder);
-                }
-                for (int n = 0; n < number_of_bars; n++) {
-                    if (cfg.stereo) {
-                        if (n < number_of_bars / 2)
-                            cut_off_frequency = plan->cut_off_frequency[number_of_bars / 2 - 1 - n];
-                        else
-                            cut_off_frequency = plan->cut_off_frequency[n - number_of_bars / 2];
-                    } else {
-                        cut_off_frequency = plan->cut_off_frequency[n];
-                    }
-
-                    float freq_kilohz = cut_off_frequency / 1000;
-                    int freq_floor = cut_off_frequency;
-
-                    if (output_mode == OUTPUT_NCURSES) {
-#ifdef NCURSES
-                        if (cut_off_frequency < 1000)
-                            mvprintw(lines, n * (cfg.bar_width + cfg.bar_spacing) + remainder, "%-4d",
-                                     freq_floor);
-                        else if (cut_off_frequency > 1000 && cut_off_frequency < 10000)
-                            mvprintw(lines, n * (cfg.bar_width + cfg.bar_spacing) + remainder, "%.2f",
-                                     freq_kilohz);
-                        else
-                            mvprintw(lines, n * (cfg.bar_width + cfg.bar_spacing) + remainder, "%.1f",
-                                     freq_kilohz);
-#endif
-                    } else if (output_mode == OUTPUT_NONCURSES) {
-                        if (cut_off_frequency < 1000)
-                            printf("%-4d", freq_floor);
-                        else if (cut_off_frequency > 1000 && cut_off_frequency < 10000)
-                            printf("%.2f", freq_kilohz);
-                        else
-                            printf("%.1f", freq_kilohz);
-
-                        if (n < number_of_bars - 1)
-                            printf("\033[%dC", cfg.bar_width + cfg.bar_spacing - 4);
-                    }
-                }
-                printf("\r\033[%dA", lines + 1);
-            }
+            draw_x_axis(&cfg, plan, lines, remainder, number_of_bars);
 
             bool resizeTerminal = false;
 
