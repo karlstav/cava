@@ -977,6 +977,64 @@ static void exit_if_audio_thread_unexpectedly_terminated(struct audio_data *audi
   pthread_mutex_unlock(&audio->lock);
 }
 
+static void process_audio_chunk(struct audio_data *audio, struct config_params *cfg,
+                     struct cava_buffers *buf, struct cava_plan *plan,
+                     int high_framerate, int samples_per_frame,
+                     int audio_channels, int number_of_bars) {
+  // process: execute cava
+  pthread_mutex_lock(&audio->lock);
+
+  int samples_to_use = 0;
+
+  if (!high_framerate) {
+      // we dont need buffers and use all available samples.
+      samples_to_use = audio->samples_counter;
+    } else {
+      // we are running with higher framerates and need buffers!
+      // only use the calculated samples per frame
+      samples_to_use = samples_per_frame * audio_channels;
+
+             // buffer underrun! only use what we have
+      if (audio->samples_counter < samples_to_use) {
+          samples_to_use = audio->samples_counter;
+        }
+
+             // buffer overflow! we have more samples than we need, just use them.
+      if (audio->samples_counter > audio->input_buffer_size + samples_to_use) {
+          samples_to_use = audio->samples_counter - audio->input_buffer_size;
+        }
+    }
+
+  if (cfg->waveform) {
+      for (int n = 0; n < samples_to_use; n++) {
+
+          for (int i = number_of_bars - 1; i > 0; i--) {
+              buf->cava_out[i] = buf->cava_out[i - 1];
+            }
+          if (audio_channels == 2) {
+              buf->cava_out[0] =
+                  cfg->sens * (audio->cava_in[n] / 2 + audio->cava_in[n + 1] / 2);
+              n++;
+            } else {
+              buf->cava_out[0] = cfg->sens * audio->cava_in[n];
+            }
+        }
+    } else {
+      cava_execute(audio->cava_in, samples_to_use, buf->cava_out, plan);
+    }
+
+  audio->samples_counter -= samples_to_use;
+
+  if (audio->samples_counter != 0) {
+      // shift the input buffer
+      for (int n = 0; n < audio->samples_counter; n++) {
+          audio->cava_in[n] = audio->cava_in[n + samples_to_use];
+        }
+    }
+
+  pthread_mutex_unlock(&audio->lock);
+}
+
 // general: entry point
 int main(int argc, char **argv) {
 
@@ -1453,58 +1511,8 @@ int main(int argc, char **argv) {
 
 #endif // !_WIN32
 
-                // process: execute cava
-                pthread_mutex_lock(&audio.lock);
-
-                int samples_to_use = 0;
-
-                if (!high_framerate) {
-                    // we dont need buffers and use all available samples.
-                    samples_to_use = audio.samples_counter;
-                } else {
-                    // we are running with higher framerates and need buffers!
-                    // only use the calculated samples per frame
-                    samples_to_use = samples_per_frame * audio_channels;
-
-                    // buffer underrun! only use what we have
-                    if (audio.samples_counter < samples_to_use) {
-                        samples_to_use = audio.samples_counter;
-                    }
-
-                    // buffer overflow! we have more samples than we need, just use them.
-                    if (audio.samples_counter > audio.input_buffer_size + samples_to_use) {
-                        samples_to_use = audio.samples_counter - audio.input_buffer_size;
-                    }
-                }
-
-                if (cfg.waveform) {
-                    for (int n = 0; n < samples_to_use; n++) {
-
-                        for (int i = number_of_bars - 1; i > 0; i--) {
-                            buf.cava_out[i] = buf.cava_out[i - 1];
-                        }
-                        if (audio_channels == 2) {
-                            buf.cava_out[0] =
-                                cfg.sens * (audio.cava_in[n] / 2 + audio.cava_in[n + 1] / 2);
-                            n++;
-                        } else {
-                            buf.cava_out[0] = cfg.sens * audio.cava_in[n];
-                        }
-                    }
-                } else {
-                    cava_execute(audio.cava_in, samples_to_use, buf.cava_out, plan);
-                }
-
-                audio.samples_counter -= samples_to_use;
-
-                if (audio.samples_counter != 0) {
-                    // shift the input buffer
-                    for (int n = 0; n < audio.samples_counter; n++) {
-                        audio.cava_in[n] = audio.cava_in[n + samples_to_use];
-                    }
-                }
-
-                pthread_mutex_unlock(&audio.lock);
+                //capture audio chunk from audio thread and process by cavacore
+                process_audio_chunk(&audio, &cfg, &buf, plan, high_framerate, samples_per_frame, audio_channels, number_of_bars);
 
                 for (int n = 0; n < raw_number_of_bars; n++) {
 
