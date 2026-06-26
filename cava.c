@@ -109,6 +109,16 @@ struct terminal_dimensions {
   int *dim_val;
 };
 
+struct framerate_sync {
+#ifdef _WIN32
+  LARGE_INTEGER frequency;
+  LARGE_INTEGER t1;
+#else
+  struct timespec t1;
+  double wakeupTimens;
+#endif
+};
+
 #ifdef _WIN32
 char *optarg = NULL;
 int optind = 1;
@@ -1188,6 +1198,45 @@ static void format_and_filter_bars(struct cava_buffers *buf, struct config_param
     }
 }
 
+static void sync_framerate(struct framerate_sync *fs, int frame_time_msec, long long frame_time_ns) {
+  if (output_mode != OUTPUT_SDL && output_mode != OUTPUT_SDL_GLSL) {
+#ifdef _WIN32
+  LARGE_INTEGER t2;
+  QueryPerformanceCounter(&t2);
+  double elapsedTime = (t2.QuadPart - fs->t1.QuadPart) * 1000.0 / fs->frequency.QuadPart;
+  int fps_sync_time = frame_time_msec;
+  if (elapsedTime < 1.0)
+    fps_sync_time = frame_time_msec;
+  else if ((int)elapsedTime > frame_time_msec)
+    fps_sync_time = 0;
+  else
+    fps_sync_time = (frame_time_msec - (int)elapsedTime) / 2;
+
+  Sleep(fps_sync_time);
+#else
+      struct timespec t2, t3, sleep_timer;
+      clock_gettime(CLOCK_MONOTONIC, &t2);
+      double elapsedTimens =
+          (t2.tv_sec - fs->t1.tv_sec) * 1000000000.0 + (t2.tv_nsec - fs->t1.tv_nsec);
+
+      int sleep_time_ns = frame_time_ns - (int)elapsedTimens - (int)fs->wakeupTimens;
+
+      if (sleep_time_ns > 1) {
+
+          sleep_timer.tv_sec = sleep_time_ns / 1000000000;
+          sleep_timer.tv_nsec = sleep_time_ns % 1000000000;
+          nanosleep(&sleep_timer, NULL);
+          clock_gettime(CLOCK_MONOTONIC, &t3);
+          double actualSleeptime =
+              (t3.tv_sec - t2.tv_sec) * 1000000000.0 + (t3.tv_nsec - t2.tv_nsec);
+          fs->wakeupTimens = actualSleeptime - sleep_time_ns;
+        } else {
+          fs->wakeupTimens = 0;
+        }
+
+#endif
+    }
+}
 
 // general: entry point
 int main(int argc, char **argv) {
@@ -1561,21 +1610,16 @@ int main(int argc, char **argv) {
             long long frame_time_ns = (long long)(1000000000.0 / (double)cfg.framerate);
             if (frame_time_ns < 1)
                 frame_time_ns = 1;
-            struct timespec sleep_timer = {.tv_sec = frame_time_ns / 1000000000,
-                                           .tv_nsec = frame_time_ns % 1000000000};
+
             int frame_time_msec = (int)(frame_time_ns / 1000000LL);
             if (frame_time_msec < 1)
                 frame_time_msec = 1;
 
+            struct framerate_sync fs;
 #ifdef _WIN32
-            LARGE_INTEGER frequency; // ticks per second
-            LARGE_INTEGER t1, t2;    // ticks
-            double elapsedTime;
-            QueryPerformanceFrequency(&frequency);
+            QueryPerformanceFrequency(&fs.frequency);
 #else
-            struct timespec t1, t2, t3;
-            double elapsedTimens;
-            double wakeupTimens = 0.0;
+            fs.wakeupTimens = 0.0;
 #endif // _WIN32
 
             int sleep_counter = 0;
@@ -1608,9 +1652,9 @@ int main(int argc, char **argv) {
 
             while (!resizeTerminal) {
 #ifdef _WIN32
-                QueryPerformanceCounter(&t1);
+                QueryPerformanceCounter(&fs.t1);
 #else
-                clock_gettime(CLOCK_MONOTONIC, &t1);
+                clock_gettime(CLOCK_MONOTONIC, &fs.t1);
 #endif
 
                 handle_keyboard_input(&ch, &cfg, configPath,
@@ -1756,42 +1800,9 @@ int main(int argc, char **argv) {
                         break;
                     }
                 }
-#ifdef _WIN32
-                QueryPerformanceCounter(&t2);
-                elapsedTime = (t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart;
-                int fps_sync_time = frame_time_msec;
-                if (elapsedTime < 1.0)
-                    fps_sync_time = frame_time_msec;
-                else if ((int)elapsedTime > frame_time_msec)
-                    fps_sync_time = 0;
-                else
-                    fps_sync_time = (frame_time_msec - (int)elapsedTime) / 2;
-#endif
-                if (output_mode != OUTPUT_SDL && output_mode != OUTPUT_SDL_GLSL) {
-#ifdef _WIN32
-                    Sleep(fps_sync_time);
-#else
-                    clock_gettime(CLOCK_MONOTONIC, &t2);
-                    elapsedTimens =
-                        (t2.tv_sec - t1.tv_sec) * 1000000000.0 + (t2.tv_nsec - t1.tv_nsec);
 
-                    int sleep_time_ns = frame_time_ns - (int)elapsedTimens - (int)wakeupTimens;
+              sync_framerate(&fs, frame_time_msec, frame_time_ns);
 
-                    if (sleep_time_ns > 1) {
-
-                        sleep_timer.tv_sec = sleep_time_ns / 1000000000;
-                        sleep_timer.tv_nsec = sleep_time_ns % 1000000000;
-                        nanosleep(&sleep_timer, NULL);
-                        clock_gettime(CLOCK_MONOTONIC, &t3);
-                        double actualSleeptime =
-                            (t3.tv_sec - t2.tv_sec) * 1000000000.0 + (t3.tv_nsec - t2.tv_nsec);
-                        wakeupTimens = actualSleeptime - sleep_time_ns;
-                    } else {
-                        wakeupTimens = 0;
-                    }
-
-#endif
-                }
             } // resize terminal
             cava_destroy(plan);
             free(plan);
