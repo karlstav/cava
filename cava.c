@@ -694,6 +694,118 @@ static void free_cava_buffers(struct cava_buffers *buf, int audio_channels, bool
     }
 }
 
+static void handle_keyboard_input(char *ch, struct config_params *cfg, char *configPath,
+                       int **dimension_bar, int **dimension_value,
+                       int *height, int *width,
+                       bool *resizeTerminal, bool *reloadConf) {
+
+#ifdef NCURSES
+  if (output_mode == OUTPUT_NCURSES)
+    *ch = getch();
+#endif
+
+#ifndef _WIN32
+  if (output_mode == OUTPUT_NONCURSES)
+    read(0, ch, sizeof(*ch));
+#endif
+
+  switch (*ch) {
+    case 65: // key up
+      cfg->sens = cfg->sens * 1.05;
+      break;
+    case 66: // key down
+      cfg->sens = cfg->sens * 0.95;
+      break;
+    case 68: // key right
+      cfg->bar_width++;
+      *resizeTerminal = true;
+      break;
+    case 67: // key left
+      if (cfg->bar_width > 1)
+        cfg->bar_width--;
+      *resizeTerminal = true;
+      break;
+    case 'r': // reload config
+      should_reload = 1;
+      break;
+    case 'c': // reload colors
+      reload_colors = 1;
+      break;
+    case 'f': // change foreground color
+      if (cfg->col < 7)
+        cfg->col++;
+      else
+        cfg->col = 0;
+      *resizeTerminal = true;
+      break;
+    case 'b': // change background color
+      if (cfg->bgcol < 7)
+        cfg->bgcol++;
+      else
+        cfg->bgcol = 0;
+      *resizeTerminal = true;
+      break;
+    case 'o': // change orientation
+      cfg->orientation++;
+      if (output_mode == OUTPUT_NONCURSES) {
+          if (cfg->orientation > ORIENT_SPLIT_V) {
+              cfg->orientation = ORIENT_BOTTOM;
+            }
+        } else if (output_mode == OUTPUT_NCURSES) {
+          if (cfg->orientation > ORIENT_RIGHT) {
+              cfg->orientation = ORIENT_BOTTOM;
+            }
+        } else {
+          cfg->orientation =
+              (cfg->orientation == ORIENT_BOTTOM) ? ORIENT_TOP : ORIENT_BOTTOM;
+        }
+
+      if (cfg->orientation == ORIENT_LEFT || cfg->orientation == ORIENT_RIGHT ||
+          cfg->orientation == ORIENT_SPLIT_V) {
+          dimension_bar = &height;
+          dimension_value = &width;
+        } else {
+          dimension_bar = &width;
+          dimension_value = &height;
+        }
+
+      *resizeTerminal = true;
+      break;
+
+    case 'q':
+      should_reload = 1;
+      should_quit = 1;
+    }
+
+  *ch = 0;
+
+  if (should_reload) {
+      *reloadConf = true;
+      *resizeTerminal = true;
+      should_reload = 0;
+    }
+
+  if (reload_colors) {
+      struct error_s error;
+      char *themeFile;
+      error.length = 0;
+      bool result = get_themeFile(configPath, cfg, NULL, &error, &themeFile);
+      if (!result) {
+          cleanup();
+          exit(EXIT_FAILURE);
+        }
+      if (!load_colors(themeFile, (void *)cfg, &error)) {
+          cleanup();
+          free(themeFile);
+          fprintf(stderr, "Error loading config. %s", error.message);
+          exit(EXIT_FAILURE);
+        }
+      *resizeTerminal = true;
+      reload_colors = 0;
+      free(themeFile);
+    }
+}
+
 // general: entry point
 int main(int argc, char **argv) {
 
@@ -1162,113 +1274,10 @@ int main(int argc, char **argv) {
                 clock_gettime(CLOCK_MONOTONIC, &t1);
 #endif
 
-// general: keyboard controls
-#ifdef NCURSES
-                if (output_mode == OUTPUT_NCURSES)
-                    ch = getch();
-#endif
-
-#ifndef _WIN32
-                if (output_mode == OUTPUT_NONCURSES)
-                    read(0, &ch, sizeof(ch));
-#endif
-
-                switch (ch) {
-                case 65: // key up
-                    cfg.sens = cfg.sens * 1.05;
-                    break;
-                case 66: // key down
-                    cfg.sens = cfg.sens * 0.95;
-                    break;
-                case 68: // key right
-                    cfg.bar_width++;
-                    resizeTerminal = true;
-                    break;
-                case 67: // key left
-                    if (cfg.bar_width > 1)
-                        cfg.bar_width--;
-                    resizeTerminal = true;
-                    break;
-                case 'r': // reload config
-                    should_reload = 1;
-                    break;
-                case 'c': // reload colors
-                    reload_colors = 1;
-                    break;
-                case 'f': // change foreground color
-                    if (cfg.col < 7)
-                        cfg.col++;
-                    else
-                        cfg.col = 0;
-                    resizeTerminal = true;
-                    break;
-                case 'b': // change background color
-                    if (cfg.bgcol < 7)
-                        cfg.bgcol++;
-                    else
-                        cfg.bgcol = 0;
-                    resizeTerminal = true;
-                    break;
-                case 'o': // change orientation
-                    cfg.orientation++;
-                    if (output_mode == OUTPUT_NONCURSES) {
-                        if (cfg.orientation > ORIENT_SPLIT_V) {
-                            cfg.orientation = ORIENT_BOTTOM;
-                        }
-                    } else if (output_mode == OUTPUT_NCURSES) {
-                        if (cfg.orientation > ORIENT_RIGHT) {
-                            cfg.orientation = ORIENT_BOTTOM;
-                        }
-                    } else {
-                        cfg.orientation =
-                            (cfg.orientation == ORIENT_BOTTOM) ? ORIENT_TOP : ORIENT_BOTTOM;
-                    }
-
-                    if (cfg.orientation == ORIENT_LEFT || cfg.orientation == ORIENT_RIGHT ||
-                        cfg.orientation == ORIENT_SPLIT_V) {
-                        dimension_bar = &height;
-                        dimension_value = &width;
-                    } else {
-                        dimension_bar = &width;
-                        dimension_value = &height;
-                    }
-
-                    resizeTerminal = true;
-                    break;
-
-                case 'q':
-                    should_reload = 1;
-                    should_quit = 1;
-                }
-
-                ch = 0;
-
-                if (should_reload) {
-                    reloadConf = true;
-                    resizeTerminal = true;
-                    should_reload = 0;
-                }
-
-                if (reload_colors) {
-                    struct error_s error;
-                    char *themeFile;
-                    error.length = 0;
-                    bool result = get_themeFile(configPath, &cfg, NULL, &error, &themeFile);
-                    if (!result) {
-                        cleanup();
-                        exit(EXIT_FAILURE);
-                    }
-                    if (!load_colors(themeFile, (void *)&cfg, &error)) {
-                        cleanup();
-                        free(themeFile);
-                        fprintf(stderr, "Error loading config. %s", error.message);
-                        exit(EXIT_FAILURE);
-                    }
-                    resizeTerminal = true;
-                    reload_colors = 0;
-                    free(themeFile);
-                    break;
-                }
+                handle_keyboard_input(&ch, &cfg, configPath,
+                                       &dimension_bar, &dimension_value,
+                                       &height, &width,
+                                       &resizeTerminal, &reloadConf);
 
                 if (resizeTerminal)
                     break;
