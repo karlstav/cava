@@ -490,7 +490,7 @@ dnl ######################
 dnl checking for iniparser
 dnl ######################
 
-  PKG_CHECK_MODULES(INIPARSER, libiniparser, have_iniparser_pkg=yes, have_iniparser_pkg=no)
+  PKG_CHECK_MODULES(INIPARSER, iniparser, have_iniparser_pkg=yes, have_iniparser_pkg=no)
   if [[ $have_iniparser_pkg = "yes" ]] ; then
     LIBS="$LIBS $INIPARSER_LIBS"
     CPPFLAGS="$CPPFLAGS $INIPARSER_CFLAGS"
