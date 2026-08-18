@@ -286,6 +286,14 @@ int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[
         if (event.type == SDL_KEYDOWN) {
             if (event.key.keysym.sym == SDLK_q || event.key.keysym.sym == SDLK_ESCAPE)
                 rc = -2;
+            if (event.key.keysym.sym == SDLK_F11 && !event.key.repeat) {
+                Uint32 flags = SDL_GetWindowFlags(glWindow);
+                if (flags & SDL_WINDOW_FULLSCREEN_DESKTOP)
+                    SDL_SetWindowFullscreen(glWindow, 0);
+                else
+                    SDL_SetWindowFullscreen(glWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                rc = -1;
+            }
         }
         if (event.type == SDL_QUIT)
             rc = -2;

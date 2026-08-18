@@ -25,6 +25,7 @@ EXTRA_DIST = \
     output/shaders/orion_circle_rotate.frag \
     output/shaders/orion_saturn_subring.frag \
     output/shaders/orion_saturn_core.frag \
+    output/shaders/winamp_spectrum.frag \
     output/themes/solarized_dark \
     output/themes/tricolor \
     example_files/config \

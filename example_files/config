@@ -243,6 +243,7 @@
 ; fragment_shader = northern_lights.frag
 ; fragment_shader = spectrogram.frag
 ; fragment_shader = winamp_line_style_spectrum.frag
+; fragment_shader = winamp_spectrum.frag
 
 # Orion shaders (use with: method = sdl_glsl)
 # Static Orion

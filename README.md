@@ -685,6 +685,7 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 | <kbd>r</kbd> | Reload configuration |
 | <kbd>c</kbd> | Reload colors only |
 | <kbd>q</kbd> or <kbd>CTRL-C</kbd>| Quit C.A.V.A. |
+| <kbd>F11</kbd> | Toggle fullscreen (SDL / sdl_glsl) |
 
 Configuration
 -------------
