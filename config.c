@@ -1047,6 +1047,8 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     GetPrivateProfileString("output", "xaxis", "none", xaxisScale, 16, configPath);
     GetPrivateProfileString("output", "orientation", "bottom", orientation, 16, configPath);
     GetPrivateProfileString("color", "blend_direction", "up", blendDirection, 16, configPath);
+    p->split_stereo = GetPrivateProfileInt("output", "split_stereo", 0, configPath);
+    p->left_bottom = GetPrivateProfileInt("output", "left_bottom", 0, configPath);
     GetPrivateProfileString("general", "scaling", "linear", scalingMode, 16, configPath);
 
     p->fixedbars = GetPrivateProfileInt("general", "bars", 0, configPath);
