@@ -45,14 +45,7 @@ uniform vec3 bg_color; // background color
 uniform vec3 fg_color; // foreground color
 
 uniform int gradient_count;
-uniform vec3 gradient_colors[8]; // gradient colors
-
-vec3 normalize_C(float y,vec3 col_1, vec3 col_2, float y_min, float y_max)
-{
-    //create color based on fraction of this color and next color
-    float yr = (y - y_min) / (y_max - y_min);
-    return col_1 * (1.0 - yr) + col_2 * yr;
-}
+uniform sampler1D gradientTexture; // gradient colors
 
 void main()
 {
@@ -64,31 +57,23 @@ void main()
     float bar_size = u_resolution.x / bars_count;
 
     //the y coordinate is stretched by 4X to resemble Winamp
-    float y =  min(bars[bar] * 4.0, 1.0);
+    float y = min(bars[bar] * 4.0, 1.0);
 
     // make sure there is a thin line at bottom
     if (y * u_resolution.y < 1.0)
     {
-      y = 1.0 / u_resolution.y;
+        y = 1.0 / u_resolution.y;
     }
 
     vec4 bar_color;
 
     if (gradient_count == 0)
     {
-        bar_color = vec4(fg_color,1.0);
+        bar_color = vec4(fg_color, 1.0);
     }
     else
     {
-        //find color in the configured gradient for the top of the bar
-        int color = int((gradient_count - 1) * y);
-
-        //find where on y this and next color is supposed to be
-        float y_min = float(color) / (gradient_count - 1.0);
-        float y_max = float(color + 1) / (gradient_count - 1.0);
-
-        //make a solid color for the entire bar
-        bar_color = vec4(normalize_C(y, gradient_colors[color], gradient_colors[color + 1], y_min, y_max), 1.0);
+        bar_color = vec4(texture(gradientTexture, y).rgb, 1.0);
     }
 
 
@@ -98,7 +83,7 @@ void main()
         //make some space between bars based on settings
         if (x > (bar + 1) * (bar_size) - bar_spacing)
         {
-            fragColor = vec4(bg_color,1.0);
+            fragColor = vec4(bg_color, 1.0);
         }
         else
         {
@@ -107,6 +92,6 @@ void main()
     }
     else
     {
-        fragColor = vec4(bg_color,1.0);
+        fragColor = vec4(bg_color, 1.0);
     }
 }

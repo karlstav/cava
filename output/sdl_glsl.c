@@ -1,12 +1,7 @@
-#define GL_GLEXT_PROTOTYPES 0
-#ifdef _WIN32
-#include <GL/glew.h>
-#else
-#include <SDL2/SDL_opengl.h>
-#endif
 #include "sdl_glsl.h"
 #include <SDL2/SDL.h>
 
+#include <errno.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -14,43 +9,46 @@
 
 #include "../util.h"
 
-SDL_Window *glWindow = NULL;
-GLuint shading_program;
-GLint uniform_bars;
-GLint uniform_previous_bars;
-GLint uniform_bars_count;
-GLint uniform_time;
-GLint uniform_input_texture;
-GLuint fbo;
-GLuint texture;
-uint64_t start_counter;
-double perf_freq;
+static SDL_Window *glWindow = NULL;
+static GLuint shading_program;
+static GLint uniform_bars;
+static GLint uniform_previous_bars;
+static GLint uniform_bars_count;
+static GLint uniform_time;
+static GLint uniform_input_texture;
+static GLint uniform_gradient_texture;
+static GLuint fbo;
+static GLuint texture;
+static GLuint gradient_texture;
+static uint64_t start_counter;
+static double perf_freq;
 
-SDL_GLContext glContext = NULL;
+static SDL_GLContext glContext = NULL;
 
 struct colors {
-    uint16_t R;
-    uint16_t G;
-    uint16_t B;
+    uint8_t R;
+    uint8_t G;
+    uint8_t B;
 };
 
-static void parse_color(char *color_string, struct colors *color) {
+static void parse_color(const char *color_string, struct colors *color) {
     if (color_string[0] == '#') {
-        sscanf(++color_string, "%02hx%02hx%02hx", &color->R, &color->G, &color->B);
+        // NOLINTNEXTLINE(cert-err34-c) - sscanf is appropriate here; format is already validated
+        sscanf(++color_string, "%02hhx%02hhx%02hhx", &color->R, &color->G, &color->B);
     }
 }
 
-GLuint get_shader(GLenum, const char *);
+static GLuint get_shader(GLenum, const char *);
 
-GLuint custom_shaders(const char *, const char *);
+static GLuint custom_shaders(const char *, const char *);
 
-const char *read_file(const char *);
+static const char *read_file(const char *);
 
-GLuint compile_shader(GLenum type, const char **);
-GLuint program_check(GLuint);
+static GLuint compile_shader(GLenum type, const char **);
+static GLuint program_check(GLuint);
 
-void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
-                          char *const vertex_shader, char *const fragmnet_shader) {
+void init_sdl_glsl_window(const int width, const int height, int x, int y, const int full_screen,
+                          const char *const vertex_shader, const char *const fragment_shader) {
     if (x == -1)
         x = SDL_WINDOWPOS_UNDEFINED;
 
@@ -102,7 +100,7 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
     perf_freq = (double)SDL_GetPerformanceFrequency();
     start_counter = SDL_GetPerformanceCounter();
 
-    shading_program = custom_shaders(vertex_shader, fragmnet_shader);
+    shading_program = custom_shaders(vertex_shader, fragment_shader);
     glReleaseShaderCompiler();
     if (shading_program == 0) {
         fprintf(stderr, "could not compile shaders: %s\n", SDL_GetError());
@@ -121,9 +119,9 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
 
     glClearColor(0.f, 0.f, 0.f, 1.f);
 
-    GLfloat vertexData[] = {-1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f};
+    const GLfloat vertexData[] = {-1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f};
 
-    GLuint indexData[] = {0, 1, 2, 3};
+    const GLuint indexData[] = {0, 1, 2, 3};
 
     GLuint gVBO = 0;
     glGenBuffers(1, &gVBO);
@@ -173,68 +171,119 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
-    int error = glGetError();
+    const GLenum error = glGetError();
     if (error != 0) {
         fprintf(stderr, "glError on init: %d\n", error);
         exit(1);
     }
 }
 
-void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string, char *const bg_color_string,
-                           int bar_width, int bar_spacing, int gradient, int gradient_count,
+GLuint create_gradient_texture(const int gradient_count, char **gradient_color_strings) {
+    if (gradient_count <= 0) {
+        return 0;
+    }
+
+    const int texture_width = 256;
+    float *texture_data = malloc(texture_width * 3 * sizeof(float));
+
+    struct colors color = {0};
+    float t, segment_pos, blend, r1, g1, b1, r2, g2, b2;
+    int lower_idx, upper_idx;
+
+    for (int i = 0; i < texture_width; i++) {
+        t = (float)i / (float)(texture_width - 1);
+        segment_pos = t * (float)(gradient_count - 1);
+        lower_idx = (int)segment_pos;
+        upper_idx = lower_idx + 1;
+        blend = segment_pos - (float)lower_idx;
+
+        // clamp
+        if (upper_idx >= gradient_count) {
+            upper_idx = gradient_count - 1;
+        }
+
+        // reparse
+        parse_color(gradient_color_strings[lower_idx], &color);
+        r1 = (float)color.R / 255.0f;
+        g1 = (float)color.G / 255.0f;
+        b1 = (float)color.B / 255.0f;
+
+        parse_color(gradient_color_strings[upper_idx], &color);
+        r2 = (float)color.R / 255.0f;
+        g2 = (float)color.G / 255.0f;
+        b2 = (float)color.B / 255.0f;
+
+        // interpolate colours
+        texture_data[i * 3 + 0] = r1 * (1.0f - blend) + r2 * blend;
+        texture_data[i * 3 + 1] = g1 * (1.0f - blend) + g2 * blend;
+        texture_data[i * 3 + 2] = b1 * (1.0f - blend) + b2 * blend;
+    }
+
+    GLuint tex;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_1D, tex);
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, texture_width, 0, GL_RGB, GL_FLOAT, texture_data);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+
+    free(texture_data);
+    return tex;
+}
+
+void init_sdl_glsl_surface(int *width, int *height, const char *const fg_color_string,
+                           const char *const bg_color_string, const int bar_width,
+                           const int bar_spacing, const int gradient, int gradient_count,
                            char **gradient_color_strings) {
     struct colors color = {0};
 
-    GLint uniform_bg_col;
-    uniform_bg_col = glGetUniformLocation(shading_program, "bg_color");
+    const GLint uniform_bg_col = glGetUniformLocation(shading_program, "bg_color");
     parse_color(bg_color_string, &color);
-    glUniform3f(uniform_bg_col, (float)color.R / 255.0, (float)color.G / 255.0,
-                (float)color.B / 255.0);
+    glUniform3f(uniform_bg_col, (float)color.R / 255.0f, (float)color.G / 255.0f,
+                (float)color.B / 255.0f);
 
-    GLint uniform_fg_col;
-    uniform_fg_col = glGetUniformLocation(shading_program, "fg_color");
+    const GLint uniform_fg_col = glGetUniformLocation(shading_program, "fg_color");
     parse_color(fg_color_string, &color);
-    glUniform3f(uniform_fg_col, (float)color.R / 255.0, (float)color.G / 255.0,
-                (float)color.B / 255.0);
+    glUniform3f(uniform_fg_col, (float)color.R / 255.0f, (float)color.G / 255.0f,
+                (float)color.B / 255.0f);
 
-    GLint uniform_res;
-    uniform_res = glGetUniformLocation(shading_program, "u_resolution");
-    SDL_GetWindowSize(glWindow, w, h);
-    glUniform3f(uniform_res, (float)*w, (float)*h, 0.0f);
+    const GLint uniform_res = glGetUniformLocation(shading_program, "u_resolution");
+    SDL_GetWindowSize(glWindow, width, height);
+    glUniform3f(uniform_res, (float)*width, (float)*height, 0.0f);
 
-    GLint uniform_bar_width;
-    uniform_bar_width = glGetUniformLocation(shading_program, "bar_width");
+    const GLint uniform_bar_width = glGetUniformLocation(shading_program, "bar_width");
     glUniform1i(uniform_bar_width, bar_width);
 
-    GLint uniform_bar_spacing;
-    uniform_bar_spacing = glGetUniformLocation(shading_program, "bar_spacing");
+    const GLint uniform_bar_spacing = glGetUniformLocation(shading_program, "bar_spacing");
     glUniform1i(uniform_bar_spacing, bar_spacing);
 
-    GLint uniform_gradient_count;
-    uniform_gradient_count = glGetUniformLocation(shading_program, "gradient_count");
+    const GLint uniform_gradient_count = glGetUniformLocation(shading_program, "gradient_count");
     if (gradient == 0)
         gradient_count = 0;
     glUniform1i(uniform_gradient_count, gradient_count);
 
-    GLint uniform_gradient_colors;
-    uniform_gradient_colors = glGetUniformLocation(shading_program, "gradient_colors");
-    float gradient_colors[8][3] = {0};
-    for (int i = 0; i < gradient_count; i++) {
-        parse_color(gradient_color_strings[i], &color);
-        gradient_colors[i][0] = (float)color.R / 255.0;
-        gradient_colors[i][1] = (float)color.G / 255.0;
-        gradient_colors[i][2] = (float)color.B / 255.0;
+    // generate texture
+    if (gradient_count > 0) {
+        if (gradient_texture != 0) {
+            glDeleteTextures(1, &gradient_texture);
+        }
+        gradient_texture = create_gradient_texture(gradient_count, gradient_color_strings);
+
+        uniform_gradient_texture = glGetUniformLocation(shading_program, "gradientTexture");
+        if (uniform_gradient_texture != -1) {
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_1D, gradient_texture);
+            glUniform1i(uniform_gradient_texture, 1);
+        }
     }
-    glUniform3fv(uniform_gradient_colors, 8, (const GLfloat *)gradient_colors);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
     SDL_GL_SwapWindow(glWindow);
 }
 
-int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[], int frame_time,
-                  int re_paint, int continuous_rendering) {
-
+int draw_sdl_glsl(const int bars_count, const float bars[], const float previous_bars[],
+                  const int frame_timer, const int re_paint, const int continuous_rendering) {
     int rc = 0;
     SDL_Event event;
 
@@ -244,6 +293,11 @@ int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[
             glBindTexture(GL_TEXTURE_2D, texture);
             glUniform1i(uniform_input_texture, 0);
         }
+        if (uniform_gradient_texture != -1 && gradient_texture != 0) {
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_1D, gradient_texture);
+            glUniform1i(uniform_gradient_texture, 1);
+        }
         if (uniform_bars != -1)
             glUniform1fv(uniform_bars, bars_count, bars);
         if (uniform_previous_bars != -1)
@@ -251,9 +305,9 @@ int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[
         if (uniform_bars_count != -1)
             glUniform1i(uniform_bars_count, bars_count);
         if (uniform_time != -1) {
-            uint64_t now = SDL_GetPerformanceCounter();
-            double elapsed = (double)(now - start_counter) / perf_freq;
-            float wrapped = (float)fmod(elapsed, 4096.0);
+            const uint64_t now = SDL_GetPerformanceCounter();
+            const double elapsed = (double)(now - start_counter) / perf_freq;
+            const float wrapped = (float)fmod(elapsed, 4096.0);
             glUniform1f(uniform_time, wrapped);
         }
 
@@ -267,7 +321,7 @@ int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
     }
-    SDL_Delay(frame_time);
+    SDL_Delay(frame_timer);
 
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
@@ -304,6 +358,10 @@ int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[
 
 // general: cleanup
 void cleanup_sdl_glsl(void) {
+    if (gradient_texture != 0) {
+        glDeleteTextures(1, &gradient_texture);
+        gradient_texture = 0;
+    }
     if (fbo != 0) {
         glDeleteFramebuffers(1, &fbo);
         fbo = 0;
@@ -324,10 +382,10 @@ void cleanup_sdl_glsl(void) {
 }
 
 const char *read_file(const char *filename) {
-    long length = 0;
     char *result = NULL;
     FILE *file = fopen(filename, "r");
     if (file) {
+        long length = 0;
         int status = fseek(file, 0, SEEK_END);
         if (status != 0) {
             fclose(file);
@@ -353,11 +411,9 @@ const char *read_file(const char *filename) {
 }
 
 GLuint custom_shaders(const char *vsPath, const char *fsPath) {
-    GLuint vertexShader;
-    GLuint fragmentShader;
 
-    vertexShader = get_shader(GL_VERTEX_SHADER, vsPath);
-    fragmentShader = get_shader(GL_FRAGMENT_SHADER, fsPath);
+    const GLuint vertexShader = get_shader(GL_VERTEX_SHADER, vsPath);
+    const GLuint fragmentShader = get_shader(GL_FRAGMENT_SHADER, fsPath);
 
     shading_program = glCreateProgram();
 
@@ -367,30 +423,28 @@ GLuint custom_shaders(const char *vsPath, const char *fsPath) {
     glLinkProgram(shading_program);
 
     // Error Checking
-    GLuint status;
-    status = program_check(shading_program);
+    const GLuint status = program_check(shading_program);
     if (status == GL_FALSE)
         return 0;
     return shading_program;
 }
 
-GLuint get_shader(GLenum eShaderType, const char *filename) {
+GLuint get_shader(const GLenum eShaderType, const char *filename) {
 
     const char *shaderSource = read_file(filename);
-    GLuint shader = compile_shader(eShaderType, &shaderSource);
+    const GLuint shader = compile_shader(eShaderType, &shaderSource);
     free((char *)shaderSource);
     return shader;
 }
 
-GLuint compile_shader(GLenum type, const char **sources) {
+GLuint compile_shader(const GLenum type, const char **sources) {
 
-    GLuint shader;
     GLint success, len;
     GLsizei srclens[1];
 
     srclens[0] = (GLsizei)strlen(sources[0]);
 
-    shader = glCreateShader(type);
+    const GLuint shader = glCreateShader(type);
     glShaderSource(shader, 1, sources, srclens);
     glCompileShader(shader);
 
@@ -398,8 +452,7 @@ GLuint compile_shader(GLenum type, const char **sources) {
     if (!success) {
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len);
         if (len > 1) {
-            char *log;
-            log = malloc(len);
+            char *log = malloc(len);
             glGetShaderInfoLog(shader, len, NULL, log);
             fprintf(stderr, "%s\n\n", log);
             free(log);
@@ -410,7 +463,7 @@ GLuint compile_shader(GLenum type, const char **sources) {
     return shader;
 }
 
-GLuint program_check(GLuint program) {
+GLuint program_check(const GLuint program) {
     // Error Checking
     GLint status;
     glValidateProgram(program);
@@ -419,8 +472,7 @@ GLuint program_check(GLuint program) {
         GLint len;
         glGetProgramiv(program, GL_INFO_LOG_LENGTH, &len);
         if (len > 1) {
-            char *log;
-            log = malloc(len);
+            char *log = malloc(len);
             glGetProgramInfoLog(program, len, &len, log);
             fprintf(stderr, "%s\n\n", log);
             free(log);

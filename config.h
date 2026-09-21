@@ -7,6 +7,8 @@
 
 #define MAX_ERROR_LEN 1024
 
+#define MAX_GRADIENT_COUNT 64
+
 #ifdef PORTAUDIO
 #define HAS_PORTAUDIO true
 #else
@@ -156,5 +158,6 @@ struct error_s {
 bool load_config(char configPath[PATH_MAX], struct config_params *p, struct error_s *error);
 bool load_colors(char *themeFile, struct config_params *p, struct error_s *error);
 void free_config(struct config_params *p);
+void free_colors(struct config_params *p);
 bool get_themeFile(char configPath[PATH_MAX], struct config_params *p, char *cava_config_home,
                    struct error_s *error, char **themeFile);

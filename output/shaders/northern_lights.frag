@@ -14,6 +14,9 @@ uniform vec3 u_resolution; // window resolution, not used here
 uniform vec3 bg_color; // background color(r,g,b) (0.0 - 1.0), not used here
 uniform vec3 fg_color; // foreground color, not used here
 
+uniform int gradient_count;
+uniform sampler1D gradientTexture; // gradient colors
+
 void main()
 {
     // find which bar to use based on where we are on the x axis
@@ -28,7 +31,6 @@ void main()
     bar_r = bar_r * bar_r * 2;
 
     // set color
-    fragColor.r = fg_color.x * y * bar_r;
-    fragColor.g = fg_color.y * y * bar_r;
-    fragColor.b = fg_color.z * y * bar_r;
+    vec3 col = (gradient_count > 0) ? texture(gradientTexture, y).rgb : fg_color;
+    fragColor = vec4(col * y * bar_r, 1.0);
 }

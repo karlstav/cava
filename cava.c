@@ -1213,6 +1213,7 @@ Keys:\n\
                     if (!load_colors(themeFile, (void *)&p, &error)) {
                         cleanup();
                         free(themeFile);
+                        free_colors(&p);
                         fprintf(stderr, "Error loading config. %s", error.message);
                         exit(EXIT_FAILURE);
                     }

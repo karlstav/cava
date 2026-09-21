@@ -20,29 +20,13 @@ uniform vec3 bg_color;
 uniform vec3 fg_color;
 
 uniform int gradient_count;
-uniform vec3 gradient_colors[8];
-
-vec3 normalize_C(float y, vec3 col_1, vec3 col_2, float y_min, float y_max) {
-    const float EPS = 0.0001;
-    float yr = (y - y_min) / max(y_max - y_min, EPS);
-    yr = clamp(yr, 0.0, 1.0);
-    return col_1 * (1.0 - yr) + col_2 * yr;
-}
+uniform sampler1D gradientTexture;
 
 vec3 gradient_map(float amp) {
     if (gradient_count == 0) {
         return fg_color;
     }
-
-    if (gradient_count == 1) {
-        return gradient_colors[0];
-    }
-
-    int color = int(floor((gradient_count - 1) * amp));
-    color = clamp(color, 0, gradient_count - 2);
-    float y_min = float(color) / (gradient_count - 1.0);
-    float y_max = float(color + 1) / (gradient_count - 1.0);
-    return normalize_C(amp, gradient_colors[color], gradient_colors[color + 1], y_min, y_max);
+    return texture(gradientTexture, amp).rgb;
 }
 
 void main() {
@@ -84,7 +68,10 @@ void main() {
     }
     float f = fract(cell);
 
-    float fill = float(bar_width) / max(float(bar_width + bar_spacing), 1.0);
+    float fill = float(bar_width) / max(
+        float(bar_width + bar_spacing),
+        1.0
+    );
     float angular = abs(f - 0.5);
     float px_ang = max(length(dFdx(p)), length(dFdy(p)));
     float df = 0.35 * (float(bc) * px_ang) / (tau * max(r, px_ang));
@@ -93,7 +80,11 @@ void main() {
     float gap_cap = max(gap_half - eps, 0.0);
     float df_cap = min(gap_cap, fill * 0.15);
     df = min(df, max(df_cap, 1e-6));
-    float angular_alpha = 1.0 - smoothstep(fill * 0.5 - df, fill * 0.5 + df, angular);
+    float angular_alpha = 1.0 - smoothstep(
+        fill * 0.5 - df,
+        fill * 0.5 + df,
+        angular
+    );
     angular_alpha *= step(angular, fill * 0.5 + df);
     angular_alpha *= step(0.01, angular_alpha);
 
@@ -108,10 +99,22 @@ void main() {
     float act = smoothstep(0.0, min_len / max_len, amp);
 
     float dr = clamp(px_ang, min_len, 2.0 * min_len);
-    float inner = smoothstep(base_radius - dr, base_radius + dr, r);
-    float outer = 1.0 - smoothstep(base_radius + len - dr, base_radius + len + dr, r);
+    float inner = smoothstep(
+        base_radius - dr,
+        base_radius + dr,
+        r
+    );
+    float outer = 1.0 - smoothstep(
+        base_radius + len - dr,
+        base_radius + len + dr,
+        r
+    );
     float radial_alpha = inner * outer * act;
-    float outer_cap = 1.0 - smoothstep(base_radius + max_len - dr, base_radius + max_len + dr, r);
+    float outer_cap = 1.0 - smoothstep(
+        base_radius + max_len - dr,
+        base_radius + max_len + dr,
+        r
+    );
     radial_alpha *= outer_cap;
 
     float ring_alpha = angular_alpha * radial_alpha;
@@ -136,7 +139,11 @@ void main() {
     float core_act = smoothstep(0.0, 0.04, core_amp);
 
     float core_feather = core_edge + dr;
-    float core_alpha = 1.0 - smoothstep(core_radius - core_feather, core_radius + core_feather, r);
+    float core_alpha = 1.0 - smoothstep(
+        core_radius - core_feather,
+        core_radius + core_feather,
+        r
+    );
     core_alpha = clamp(core_alpha, 0.0, 1.0) * core_act;
 
     if (ring_alpha == 0.0 && core_alpha == 0.0) {

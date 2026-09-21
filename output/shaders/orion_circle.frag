@@ -20,14 +20,7 @@ uniform vec3 bg_color;
 uniform vec3 fg_color;
 
 uniform int gradient_count;
-uniform vec3 gradient_colors[8];
-
-vec3 normalize_C(float y, vec3 col_1, vec3 col_2, float y_min, float y_max) {
-    const float EPS = 0.0001;
-    float yr = (y - y_min) / max(y_max - y_min, EPS);
-    yr = clamp(yr, 0.0, 1.0);
-    return col_1 * (1.0 - yr) + col_2 * yr;
-}
+uniform sampler1D gradientTexture;
 
 void main() {
     vec2 p = fragCoord - vec2(0.5);
@@ -113,16 +106,7 @@ void main() {
     if (gradient_count == 0) {
         col = fg_color;
     } else {
-        if (gradient_count == 1) {
-            col = gradient_colors[0];
-        } else {
-            int color = int(floor((gradient_count - 1) * amp));
-            color = clamp(color, 0, gradient_count - 2);
-            float y_min = float(color) / (gradient_count - 1.0);
-            float y_max = float(color + 1) / (gradient_count - 1.0);
-            col =
-                normalize_C(amp, gradient_colors[color], gradient_colors[color + 1], y_min, y_max);
-        }
+        col = texture(gradientTexture, amp).rgb;
     }
 
     fragColor = vec4(mix(bg_color, col, alpha), 1.0);

@@ -289,7 +289,7 @@
 
 # Gradient mode, only hex defined colors are supported,
 # background must also be defined in hex or remain commented out. 1 = on, 0 = off.
-# You can define as many as 8 different colors. They range from bottom to top of the screen
+# You can define as many as 64 different colors. They range from bottom to top of the screen.
 ; gradient = 0
 ; gradient_color_1 = '#59cc33'
 ; gradient_color_2 = '#80cc33'
