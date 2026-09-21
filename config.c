@@ -1046,7 +1046,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     p->noise_reduction = GetPrivateProfileInt("smoothing", "noise_reduction", 70, configPath);
     GetPrivateProfileString("output", "xaxis", "none", xaxisScale, 16, configPath);
     GetPrivateProfileString("output", "orientation", "bottom", orientation, 16, configPath);
-    GetPrivateProfileString("color", "blend_orientation", "up", orientation, 16, configPath);
+    GetPrivateProfileString("color", "blend_direction", "up", blendDirection, 16, configPath);
     GetPrivateProfileString("general", "scaling", "linear", scalingMode, 16, configPath);
 
     p->fixedbars = GetPrivateProfileInt("general", "bars", 0, configPath);
