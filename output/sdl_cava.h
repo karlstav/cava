@@ -1,5 +1,4 @@
 #include "../config.h"
-#include <SDL2/SDL.h>
 
 int sdl_cursor_display(void);
 void init_sdl_window(int width, int height, int x, int y, int full_screen);
@@ -10,5 +9,6 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
              const int bars[], int previous_frame[], int frame_timer, enum orientation orientation,
              int gradient);
 void cleanup_sdl(void);
+struct SDL_Window;
 int sdl_load_full_screen(int config_full_screen);
-void sdl_toggle_full_screen(SDL_Window *window);
+void sdl_toggle_full_screen(struct SDL_Window *window);
