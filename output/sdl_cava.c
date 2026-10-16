@@ -59,7 +59,7 @@ void init_sdl_window(int width, int height, int x, int y, int full_screen) {
 
         Uint32 sdl_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 
-        if (full_screen == 1)
+        if (sdl_load_full_screen(full_screen) == 1)
             sdl_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 
         gWindow = SDL_CreateWindow("cava", x, y, width, height, sdl_flags);
@@ -227,8 +227,35 @@ void cleanup_sdl(void) {
     SDL_Quit();
 }
 
-// general: toggle desktop full screen
+// general: remembered full screen state, stored as "0" or "1" in SDL's per-user pref dir
+static FILE *open_full_screen_state(const char *mode) {
+    char *dir = SDL_GetPrefPath("cava", "cava");
+    if (dir == NULL)
+        return NULL;
+    char path[4096];
+    snprintf(path, sizeof(path), "%sfullscreen", dir);
+    SDL_free(dir);
+    return fopen(path, mode);
+}
+
+int sdl_load_full_screen(int config_full_screen) {
+    FILE *f = open_full_screen_state("r");
+    if (f == NULL)
+        return config_full_screen;
+    int full_screen = config_full_screen;
+    if (fscanf(f, "%d", &full_screen) != 1)
+        full_screen = config_full_screen;
+    fclose(f);
+    return full_screen;
+}
+
+// general: toggle desktop full screen and remember it for the next start
 void sdl_toggle_full_screen(SDL_Window *window) {
     int full_screen = !(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN_DESKTOP);
     SDL_SetWindowFullscreen(window, full_screen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+    FILE *f = open_full_screen_state("w");
+    if (f != NULL) {
+        fprintf(f, "%d\n", full_screen);
+        fclose(f);
+    }
 }

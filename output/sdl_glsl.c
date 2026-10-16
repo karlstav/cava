@@ -72,7 +72,7 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
 
     Uint32 sdl_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 
-    if (full_screen == 1)
+    if (sdl_load_full_screen(full_screen) == 1)
         sdl_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 
     glWindow = SDL_CreateWindow("cava", x, y, width, height, sdl_flags);
