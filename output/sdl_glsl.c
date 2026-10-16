@@ -4,6 +4,7 @@
 #else
 #include <SDL2/SDL_opengl.h>
 #endif
+#include "sdl_cava.h"
 #include "sdl_glsl.h"
 #include <SDL2/SDL.h>
 
@@ -287,13 +288,14 @@ int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[
             if (event.key.keysym.sym == SDLK_q || event.key.keysym.sym == SDLK_ESCAPE)
                 rc = -2;
             if (event.key.keysym.sym == SDLK_F11 && !event.key.repeat) {
-                Uint32 flags = SDL_GetWindowFlags(glWindow);
-                if (flags & SDL_WINDOW_FULLSCREEN_DESKTOP)
-                    SDL_SetWindowFullscreen(glWindow, 0);
-                else
-                    SDL_SetWindowFullscreen(glWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                sdl_toggle_full_screen(glWindow);
                 rc = -1;
             }
+        }
+        if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT &&
+            event.button.clicks == 2) {
+            sdl_toggle_full_screen(glWindow);
+            rc = -1;
         }
         if (event.type == SDL_QUIT)
             rc = -2;

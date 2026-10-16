@@ -1,4 +1,5 @@
 #include "../config.h"
+#include <SDL2/SDL.h>
 
 void init_sdl_window(int width, int height, int x, int y, int full_screen);
 void init_sdl_surface(int *width, int *height, char *const fg_color_string,
@@ -8,3 +9,4 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
              const int bars[], int previous_frame[], int frame_timer, enum orientation orientation,
              int gradient);
 void cleanup_sdl(void);
+void sdl_toggle_full_screen(SDL_Window *window);
