@@ -219,6 +219,8 @@
 ; sdl_height = 512
 ; sdl_x = -1
 ; sdl_y= -1
+# Fullscreen toggled with F11 or a double click is remembered and overrides
+# sdl_full_screen on the next start (stored in ~/.local/share/cava/fullscreen).
 ; sdl_full_screen = 0
 
 # set label on bars on the x-axis. Can be 'frequency' or 'none'. Default: 'none'
