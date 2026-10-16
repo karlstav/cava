@@ -205,13 +205,14 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
             if (e.key.keysym.sym == SDLK_q || e.key.keysym.sym == SDLK_ESCAPE)
                 rc = -2;
             if (e.key.keysym.sym == SDLK_F11 && !e.key.repeat) {
-                Uint32 flags = SDL_GetWindowFlags(gWindow);
-                if (flags & SDL_WINDOW_FULLSCREEN_DESKTOP)
-                    SDL_SetWindowFullscreen(gWindow, 0);
-                else
-                    SDL_SetWindowFullscreen(gWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                sdl_toggle_full_screen(gWindow);
                 rc = -1;
             }
+        }
+        if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT &&
+            e.button.clicks == 2) {
+            sdl_toggle_full_screen(gWindow);
+            rc = -1;
         }
         if (e.type == SDL_QUIT)
             rc = -2;
@@ -224,4 +225,10 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
 void cleanup_sdl(void) {
     SDL_DestroyWindow(gWindow);
     SDL_Quit();
+}
+
+// general: toggle desktop full screen
+void sdl_toggle_full_screen(SDL_Window *window) {
+    int full_screen = !(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN_DESKTOP);
+    SDL_SetWindowFullscreen(window, full_screen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 }
