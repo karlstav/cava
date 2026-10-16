@@ -33,16 +33,30 @@ static void parse_color(char *color_string, struct colors *color) {
     }
 }
 
+// index of the display under the mouse cursor, so the window opens where it was launched from
+int sdl_cursor_display(void) {
+    int mx, my;
+    SDL_GetGlobalMouseState(&mx, &my);
+    SDL_Point cursor = {mx, my};
+    for (int i = 0; i < SDL_GetNumVideoDisplays(); i++) {
+        SDL_Rect bounds;
+        if (SDL_GetDisplayBounds(i, &bounds) == 0 && SDL_PointInRect(&cursor, &bounds))
+            return i;
+    }
+    return 0;
+}
+
 void init_sdl_window(int width, int height, int x, int y, int full_screen) {
-    if (x == -1)
-        x = SDL_WINDOWPOS_UNDEFINED;
-
-    if (y == -1)
-        y = SDL_WINDOWPOS_UNDEFINED;
-
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
     } else {
+        int display = sdl_cursor_display();
+        if (x == -1)
+            x = SDL_WINDOWPOS_CENTERED_DISPLAY(display);
+
+        if (y == -1)
+            y = SDL_WINDOWPOS_CENTERED_DISPLAY(display);
+
         Uint32 sdl_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 
         if (full_screen == 1)

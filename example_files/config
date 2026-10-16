@@ -214,7 +214,7 @@
 ; bar_delimiter = 59
 ; frame_delimiter = 10
 
-# sdl window size and position. -1,-1 is centered.
+# sdl window size and position. -1,-1 is centered on the display under the mouse cursor.
 ; sdl_width = 1024
 ; sdl_height = 512
 ; sdl_x = -1

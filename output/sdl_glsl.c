@@ -4,6 +4,7 @@
 #else
 #include <SDL2/SDL_opengl.h>
 #endif
+#include "sdl_cava.h"
 #include "sdl_glsl.h"
 #include <SDL2/SDL.h>
 
@@ -51,16 +52,17 @@ GLuint program_check(GLuint);
 
 void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
                           char *const vertex_shader, char *const fragmnet_shader) {
-    if (x == -1)
-        x = SDL_WINDOWPOS_UNDEFINED;
-
-    if (y == -1)
-        y = SDL_WINDOWPOS_UNDEFINED;
-
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fprintf(stderr, "SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         exit(1);
     }
+
+    int display = sdl_cursor_display();
+    if (x == -1)
+        x = SDL_WINDOWPOS_CENTERED_DISPLAY(display);
+
+    if (y == -1)
+        y = SDL_WINDOWPOS_CENTERED_DISPLAY(display);
 
 #ifdef __APPLE__
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
