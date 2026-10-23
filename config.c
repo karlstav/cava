@@ -915,6 +915,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     p->show_idle_bar_heads = iniparser_getint(ini, "output:show_idle_bar_heads", 1);
 
     p->waveform = iniparser_getint(ini, "output:waveform", 0);
+    p->waveform_sync = iniparser_getint(ini, "output:waveform_sync", 0);
 
     p->sync_updates = iniparser_getint(ini, "output:synchronized_sync", 0);
 
@@ -1085,6 +1086,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     p->sync_updates = GetPrivateProfileInt("output", "synchronized_sync", 0, configPath);
     p->show_idle_bar_heads = GetPrivateProfileInt("output", "show_idle_bar_heads", 1, configPath);
     p->waveform = GetPrivateProfileInt("output", "waveform", 0, configPath);
+    p->waveform_sync = GetPrivateProfileInt("output", "waveform_sync", 0, configPath);
 
     // read eq values
     p->userEQ_keys = 0;

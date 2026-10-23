@@ -275,6 +275,10 @@
 # show waveform instead of frequency spectrum, 1 = on, 0 = off
 ; waveform = 0
 
+# waveform only: start each frame at a rising zero crossing, like an oscilloscope trigger,
+# so steady tones stand still. Shows half a frame of audio. 1 = on, 0 = off
+; waveform_sync = 0
+
 
 [color]
 

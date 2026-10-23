@@ -318,6 +318,35 @@ static double waveform_sample(const double *in, int frame, int channels) {
     return in[frame];
 }
 
+// find the first rising zero crossing of a low-passed copy of the signal, with hysteresis so
+// noise around zero does not trigger. crossings before the filter has settled are ignored.
+// returns -1 if none is found
+static int waveform_trigger(const double *in, int search, int channels) {
+    const int warmup = 100;
+    if (search <= warmup)
+        return -1;
+
+    double y = 0.0, peak = 0.0;
+    for (int f = 0; f < search; f++) {
+        y += 0.05 * (waveform_sample(in, f, channels) - y);
+        if (fabs(y) > peak)
+            peak = fabs(y);
+    }
+
+    y = 0.0;
+    int armed = 0;
+    for (int f = 0; f < search; f++) {
+        y += 0.05 * (waveform_sample(in, f, channels) - y);
+        if (f < warmup)
+            continue;
+        if (y < -0.1 * peak)
+            armed = 1;
+        else if (armed && y >= 0.0)
+            return f;
+    }
+    return -1;
+}
+
 // general: entry point
 int main(int argc, char **argv) {
 
@@ -1313,10 +1342,20 @@ Keys:\n\
 
                 if (p.waveform) {
                     int frames = samples_to_use / audio_channels;
+                    int offset = 0;
+                    int span = frames;
+                    if (p.waveform_sync) {
+                        span = samples_per_frame / 2;
+                        offset = waveform_trigger(audio.cava_in,
+                                                  audio.samples_counter / audio_channels - span,
+                                                  audio_channels);
+                        if (offset < 0)
+                            span = 0;
+                    }
                     double peak = 0.0;
-                    for (int b = 0; frames > 0 && b < number_of_bars; b++) {
-                        int start = (long)b * frames / number_of_bars;
-                        int end = (long)(b + 1) * frames / number_of_bars;
+                    for (int b = 0; span > 0 && b < number_of_bars; b++) {
+                        int start = offset + (long)b * span / number_of_bars;
+                        int end = offset + (long)(b + 1) * span / number_of_bars;
                         if (end <= start)
                             end = start + 1;
                         double sum = 0.0;
@@ -1331,7 +1370,7 @@ Keys:\n\
                         if (fabs(cava_out[n]) > peak)
                             peak = fabs(cava_out[n]);
                     }
-                    if (p.autosens && frames > 0) {
+                    if (p.autosens && span > 0) {
                         if (peak > 1.0) {
                             p.sens *= 0.98;
                             waveform_sens_init = 0;
