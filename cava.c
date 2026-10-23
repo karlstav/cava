@@ -312,6 +312,12 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
     return bars;
 }
 
+static double waveform_sample(const double *in, int frame, int channels) {
+    if (channels == 2)
+        return (in[frame * 2] + in[frame * 2 + 1]) / 2;
+    return in[frame];
+}
+
 // general: entry point
 int main(int argc, char **argv) {
 
@@ -709,6 +715,7 @@ Keys:\n\
 
         float *bars_left, *bars_right;
         double *cava_out;
+        double *waveform_out;
         float *bars_raw;
         float *previous_bars_raw;
 
@@ -1001,6 +1008,8 @@ Keys:\n\
             memset(previous_bars_raw, 0, sizeof(float) * number_of_bars);
             memset(previous_frame, 0, sizeof(int) * number_of_bars);
             memset(cava_out, 0, sizeof(double) * number_of_bars * audio.channels / output_channels);
+            waveform_out = (double *)malloc(number_of_bars * sizeof(double));
+            memset(waveform_out, 0, sizeof(double) * number_of_bars);
 
             if (p.split_stereo) {
                 right_bars = (int *)malloc(number_of_bars * sizeof(int));
@@ -1099,6 +1108,7 @@ Keys:\n\
 
             // check if drawing loop is faster than audio loop.
             int high_framerate = 0;
+            int waveform_sens_init = 1;
             if (samples_per_frame < audio.input_buffer_size / audio_channels) {
                 high_framerate = 1;
             }
@@ -1302,17 +1312,33 @@ Keys:\n\
                 }
 
                 if (p.waveform) {
-                    for (int n = 0; n < samples_to_use; n++) {
-
-                        for (int i = number_of_bars - 1; i > 0; i--) {
-                            cava_out[i] = cava_out[i - 1];
-                        }
-                        if (audio_channels == 2) {
-                            cava_out[0] =
-                                p.sens * (audio.cava_in[n] / 2 + audio.cava_in[n + 1] / 2);
-                            n++;
-                        } else {
-                            cava_out[0] = p.sens * audio.cava_in[n];
+                    int frames = samples_to_use / audio_channels;
+                    double peak = 0.0;
+                    for (int b = 0; frames > 0 && b < number_of_bars; b++) {
+                        int start = (long)b * frames / number_of_bars;
+                        int end = (long)(b + 1) * frames / number_of_bars;
+                        if (end <= start)
+                            end = start + 1;
+                        double sum = 0.0;
+                        for (int f = start; f < end; f++)
+                            sum += waveform_sample(audio.cava_in, f, audio_channels);
+                        double *out = &waveform_out[number_of_bars - 1 - b];
+                        *out = *out * p.noise_reduction +
+                               sum / (end - start) / 32768 * (1 - p.noise_reduction);
+                    }
+                    for (int n = 0; n < number_of_bars; n++) {
+                        cava_out[n] = p.sens * waveform_out[n];
+                        if (fabs(cava_out[n]) > peak)
+                            peak = fabs(cava_out[n]);
+                    }
+                    if (p.autosens && frames > 0) {
+                        if (peak > 1.0) {
+                            p.sens *= 0.98;
+                            waveform_sens_init = 0;
+                        } else if (peak > 0.0) {
+                            p.sens *= 1.001;
+                            if (waveform_sens_init)
+                                p.sens *= 1.1;
                         }
                     }
                 } else {
@@ -1335,11 +1361,6 @@ Keys:\n\
                     if (!p.waveform) {
                         cava_out[n] *= p.sens;
                     } else {
-                        if (cava_out[n] > 1.0)
-                            p.sens *= 0.999;
-                        else
-                            p.sens *= 1.00001;
-
                         if (p.orientation != ORIENT_SPLIT_H)
                             cava_out[n] = (cava_out[n] + 1.0) / 2.0;
                     }
@@ -1679,6 +1700,7 @@ Keys:\n\
                 free(bars_right);
             }
             free(cava_out);
+            free(waveform_out);
             free(bars);
             free(bars_raw);
             free(previous_bars_raw);
