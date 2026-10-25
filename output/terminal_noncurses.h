@@ -7,6 +7,6 @@ int init_terminal_noncurses(int inAtty, char *const fg_color_string, char *const
                             int number_of_bars, int w, int h, int bar_width,
                             enum orientation orientation, enum orientation blendDirection);
 void get_terminal_dim_noncurses(int *w, int *h);
-int draw_terminal_noncurses(int bars[], int previous_frame[], enum orientation orientation,
-                            void *config);
+int draw_terminal_noncurses(int bars[], int previous_frame[], const int base[],
+                            const int previous_base[], enum orientation orientation, void *config);
 void cleanup_terminal_noncurses(void);

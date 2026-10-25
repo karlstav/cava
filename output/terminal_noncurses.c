@@ -386,8 +386,17 @@ void get_terminal_dim_noncurses(int *width, int *lines) {
 #endif
 }
 
-int draw_terminal_noncurses(int bars[], int previous_frame[], enum orientation orientation,
-                            void *config) {
+static int clamp_cell(int value) { return value < 0 ? 0 : (value > 8 ? 8 : value); }
+
+static void cell_range(int top, int base, int *low, int *high) {
+    *low = clamp_cell(base);
+    *high = clamp_cell(top);
+    if (*high <= *low)
+        *low = *high = 0;
+}
+
+int draw_terminal_noncurses(int bars[], int previous_frame[], const int base[],
+                            const int previous_base[], enum orientation orientation, void *config) {
 
     struct config_params *p = (struct config_params *)config;
     int vertical_gradient = p->gradient;
@@ -464,17 +473,21 @@ int draw_terminal_noncurses(int bars[], int previous_frame[], enum orientation o
 
             for (int i = 0; i < number_of_bars; i++) {
 
-                if (orientation == ORIENT_BOTTOM) {
-                    current_cell = bars[i] - current_line * 8;
-                    prev_cell = previous_frame[i] - current_line * 8;
-                } else if (orientation == ORIENT_TOP) {
-                    current_cell = bars[i] - (lines - current_line - 1) * 8;
-                    prev_cell = previous_frame[i] - (lines - current_line - 1) * 8;
-                }
+                int line_offset = current_line;
+                if (orientation == ORIENT_TOP)
+                    line_offset = lines - current_line - 1;
+
+                current_cell = bars[i] - line_offset * 8;
+                prev_cell = previous_frame[i] - line_offset * 8;
+
+                int cell_low, cell_high, prev_low, prev_high;
+                cell_range(current_cell, base ? base[i] - line_offset * 8 : 0, &cell_low,
+                           &cell_high);
+                cell_range(prev_cell, previous_base ? previous_base[i] - line_offset * 8 : 0,
+                           &prev_low, &prev_high);
 
                 // same as last frame
-                if ((current_cell < 1 && prev_cell < 1) || (current_cell > 7 && prev_cell > 7) ||
-                    (current_cell == prev_cell)) {
+                if (cell_low == prev_low && cell_high == prev_high) {
                     same_bar++;
                 } else {
                     if (tty) {
@@ -510,7 +523,7 @@ int draw_terminal_noncurses(int bars[], int previous_frame[], enum orientation o
                         }
 
                         // horizontal vertical_gradient
-                        if (current_cell > 0) {
+                        if (cell_high > 0) {
                             if (!vertical_gradient && horizontal_gradient) {
                                 cx += change_color(i, cx, tty);
                             }
@@ -524,15 +537,15 @@ int draw_terminal_noncurses(int bars[], int previous_frame[], enum orientation o
                             }
                         }
 
-                        if (current_cell < 1)
+                        if (cell_high < 1)
                             cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "%s",
                                            ttyspacestring);
-                        else if (current_cell > 7)
+                        else if (cell_high > 7 || cell_low > 0)
                             cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "%s",
                                            ttybarstring[0]);
                         else
                             cx += snprintf(ttyframe_buffer + cx, ttybuf_length - cx, "%s",
-                                           ttybarstring[current_cell]);
+                                           ttybarstring[cell_high]);
 
                         if (bar_spacing && i < number_of_bars - 1) {
                             if (bar_spacing == 1)
@@ -575,7 +588,7 @@ int draw_terminal_noncurses(int bars[], int previous_frame[], enum orientation o
                         }
 
                         // horizontal vertical_gradient
-                        if (current_cell > 0) {
+                        if (cell_high > 0) {
                             if (!vertical_gradient && horizontal_gradient) {
                                 cx += change_color(i, cx, tty);
                             }
@@ -589,10 +602,13 @@ int draw_terminal_noncurses(int bars[], int previous_frame[], enum orientation o
                             }
                         }
 
-                        if (current_cell < 1) {
+                        if (cell_high < 1) {
                             cx += swprintf(frame_buffer + cx, buf_length - cx,
                                            spacestring); // clear
-                        } else if (current_cell > 7) {
+                        } else if (cell_low > 0) {
+                            cx += swprintf(frame_buffer + cx, buf_length - cx,
+                                           top_barstring[8 - cell_low]); // fragment (top)
+                        } else if (cell_high > 7) {
                             if (orientation == ORIENT_BOTTOM)
                                 cx += swprintf(frame_buffer + cx, buf_length - cx,
                                                barstring[0]); // draw full

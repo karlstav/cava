@@ -312,39 +312,179 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
     return bars;
 }
 
-static double waveform_sample(const double *in, int frame, int channels) {
-    if (channels == 2)
-        return (in[frame * 2] + in[frame * 2 + 1]) / 2;
-    return in[frame];
+// the most recent mono audio, normalized to +-1, oldest first.
+// the newest `window` samples are displayed. 50 ms more is kept for sync.
+struct waveform_history {
+    double *samples;
+    int length, capacity, keep, window;
+    double *min, *max;
+};
+
+static void waveform_init(struct waveform_history *h, int rate, int duration_ms, int bars) {
+    h->window = (long)rate * duration_ms / 1000;
+
+    if (h->window < 1)
+        h->window = 1;
+
+    h->keep = h->window + rate / 20;
+    h->capacity = 2 * h->keep;
+    h->length = h->keep;
+    h->samples = (double *)calloc(h->capacity, sizeof(double));
+    h->min = (double *)calloc(bars, sizeof(double));
+    h->max = (double *)calloc(bars, sizeof(double));
 }
 
-// find the first rising zero crossing of a low-passed copy of the signal, with hysteresis so
-// noise around zero does not trigger. crossings before the filter has settled are ignored.
+static void waveform_free(struct waveform_history *h) {
+    free(h->samples);
+    free(h->min);
+    free(h->max);
+    memset(h, 0, sizeof(*h));
+}
+
+// append interleaved audio. the history is compacted only when full
+static void waveform_push(struct waveform_history *h, const double *in, int frames, int channels,
+                          enum mono_option mono) {
+    if (frames > h->keep) {
+        in += (long)(frames - h->keep) * channels;
+        frames = h->keep;
+    }
+
+    if (h->length + frames > h->capacity) {
+        int retain = h->keep - frames;
+        memmove(h->samples, h->samples + h->length - retain, retain * sizeof(double));
+        h->length = retain;
+    }
+
+    for (int f = 0; f < frames; f++) {
+        double sample = in[f * channels];
+        if (channels == 2) {
+            if (mono == AVERAGE)
+                sample = (in[f * 2] + in[f * 2 + 1]) / 2;
+            else if (mono == RIGHT)
+                sample = in[f * 2 + 1];
+        }
+
+        h->samples[h->length++] = sample / 32768;
+    }
+}
+
+// find the last rising zero crossing of a low-passed copy of the signal, with hysteresis so
+// noise around zero does not trigger. crossings before the filter has settled are ignored. the
+// filter lags the signal, so the trigger is moved back to where the signal itself crossed zero.
 // returns -1 if none is found
-static int waveform_trigger(const double *in, int search, int channels) {
+static int waveform_trigger(const double *in, int search) {
     const int warmup = 100;
     if (search <= warmup)
         return -1;
 
     double y = 0.0, peak = 0.0;
     for (int f = 0; f < search; f++) {
-        y += 0.05 * (waveform_sample(in, f, channels) - y);
+        y += 0.05 * (in[f] - y);
         if (fabs(y) > peak)
             peak = fabs(y);
     }
 
     y = 0.0;
-    int armed = 0;
+    int armed = 0, trigger = -1, last_negative = -1;
     for (int f = 0; f < search; f++) {
-        y += 0.05 * (waveform_sample(in, f, channels) - y);
+        y += 0.05 * (in[f] - y);
         if (f < warmup)
             continue;
-        if (y < -0.1 * peak)
+        if (y < -0.1 * peak && !armed) {
             armed = 1;
-        else if (armed && y >= 0.0)
-            return f;
+            last_negative = -1;
+        }
+        if (!armed)
+            continue;
+        if (y < 0.0) {
+            if (in[f] < 0.0)
+                last_negative = f;
+        } else {
+            trigger = (in[f] < 0.0 || last_negative < 0) ? f : last_negative + 1;
+            armed = 0;
+        }
     }
-    return -1;
+
+    return trigger;
+}
+
+// reduce a window to the minimum and maximum sample of each bar. the samples next to a bar are
+// included so neighbouring bars connect. the oldest samples end up in the first bar and the newest
+// in the last. returns the peak amplitude, before clamping.
+static double waveform_envelope(struct waveform_history *h, const double *window, int bars,
+                                double sens) {
+    double peak = 0.0;
+    for (int b = 0; b < bars; b++) {
+        int start = (long)b * h->window / bars;
+        int end = (long)(b + 1) * h->window / bars;
+
+        if (end <= start)
+            end = start + 1;
+
+        int from = start > 0 ? start - 1 : 0;
+        int to = end + 1 < h->window ? end + 1 : h->window;
+        double min = window[from], max = window[from];
+
+        for (int f = from + 1; f < to; f++) {
+            if (window[f] < min)
+                min = window[f];
+            else if (window[f] > max)
+                max = window[f];
+        }
+
+        min *= sens;
+        max *= sens;
+
+        if (fabs(min) > peak)
+            peak = fabs(min);
+
+        if (fabs(max) > peak)
+            peak = fabs(max);
+
+        h->min[b] = fmax(-1.0, fmin(1.0, min));
+        h->max[b] = fmax(-1.0, fmin(1.0, max));
+    }
+
+    return peak;
+}
+
+// snap the span [low, high] to whole pixels. all values are in pixels from the bottom and zero is
+// the pixel border that is silence. the edges are rounded by their distance to zero so mirrored
+// spans stay mirrored, with ties going away from zero. a span thinner than a pixel becomes the
+// pixel it's centered in.
+static void waveform_snap(double low, double high, double zero, int height, int *bottom, int *top) {
+    double a, b;
+
+    if (high - low < 1.0) {
+        double distance = (low + high) / 2 - zero;
+        double pixel = zero + (distance > 0 ? floor(distance) : -1 - floor(-distance));
+        pixel = fmax(0.0, fmin(pixel, height - 1.0));
+        a = pixel;
+        b = fmin(pixel + 1.0, height);
+    } else {
+        a = fmax(0.0, fmin(zero + round(low - zero), height));
+        b = fmax(0.0, fmin(zero + round(high - zero), height));
+    }
+
+    *bottom = a;
+    *top = b;
+}
+
+// turn the envelope into [base, top] bar ranges, drawn as a line around the center. `total` is
+// the full range of the output and `pixel` the size of the smallest step it can draw, both in
+// output units. an even number of pixels is used so the center falls on a pixel border.
+static void waveform_ranges(const struct waveform_history *h, int bars, double total, int pixel,
+                            float *top, int *base) {
+    int half = total / pixel / 2;
+
+    for (int n = 0; n < bars; n++) {
+        int bottom, upper;
+        waveform_snap(half + h->min[n] * half, half + h->max[n] * half,
+                      half, 2 * half, &bottom, &upper);
+
+        base[n] = bottom * pixel;
+        top[n] = upper * pixel;
+    }
 }
 
 // general: entry point
@@ -744,7 +884,9 @@ Keys:\n\
 
         float *bars_left, *bars_right;
         double *cava_out;
-        double *waveform_out;
+        struct waveform_history waveform = {0};
+        int *bars_base, *previous_base;
+        int *raw_ranges = NULL;
         float *bars_raw;
         float *previous_bars_raw;
 
@@ -1037,8 +1179,21 @@ Keys:\n\
             memset(previous_bars_raw, 0, sizeof(float) * number_of_bars);
             memset(previous_frame, 0, sizeof(int) * number_of_bars);
             memset(cava_out, 0, sizeof(double) * number_of_bars * audio.channels / output_channels);
-            waveform_out = (double *)malloc(number_of_bars * sizeof(double));
-            memset(waveform_out, 0, sizeof(double) * number_of_bars);
+            bars_base = (int *)calloc(number_of_bars, sizeof(int));
+            previous_base = (int *)calloc(number_of_bars, sizeof(int));
+
+            // the waveform is drawn as a line from a base to a top value in each bar.
+            // the pixel is the smallest step the output can draw, in bar units.
+            int waveform_pixel = 1;
+            if (p.waveform) {
+                waveform_init(&waveform, audio.rate, p.waveform_duration, number_of_bars);
+                if (output_mode == OUTPUT_NONCURSES || output_mode == OUTPUT_NCURSES)
+                    waveform_pixel = inAtty ? 8 : 4; // the tty font has no upper half block.
+                else if (output_mode == OUTPUT_NORITAKE && p.bar_height / 8 > 1)
+                    waveform_pixel = 1 << (p.bar_height / 8 - 1);
+                if (output_mode == OUTPUT_RAW)
+                    raw_ranges = (int *)malloc(2 * number_of_bars * sizeof(int));
+            }
 
             if (p.split_stereo) {
                 right_bars = (int *)malloc(number_of_bars * sizeof(int));
@@ -1138,6 +1293,7 @@ Keys:\n\
             // check if drawing loop is faster than audio loop.
             int high_framerate = 0;
             int waveform_sens_init = 1;
+            int waveform_untriggered = 0; // frames of new audio since the last trigger
             if (samples_per_frame < audio.input_buffer_size / audio_channels) {
                 high_framerate = 1;
             }
@@ -1201,6 +1357,8 @@ Keys:\n\
                     resizeTerminal = true;
                     break;
                 case 'o': // change orientation
+                    if (p.waveform) // the waveform ignores the orientation
+                        break;
                     p.orientation++;
                     if (output_mode == OUTPUT_NONCURSES) {
                         if (p.orientation > ORIENT_SPLIT_V) {
@@ -1320,6 +1478,7 @@ Keys:\n\
                 pthread_mutex_lock(&audio.lock);
 
                 int samples_to_use = 0;
+                int waveform_new_frames = 0;
 
                 if (!high_framerate) {
                     // we dont need buffers and use all available samples.
@@ -1341,45 +1500,11 @@ Keys:\n\
                 }
 
                 if (p.waveform) {
-                    int frames = samples_to_use / audio_channels;
-                    int offset = 0;
-                    int span = frames;
-                    if (p.waveform_sync) {
-                        span = samples_per_frame / 2;
-                        offset = waveform_trigger(audio.cava_in,
-                                                  audio.samples_counter / audio_channels - span,
-                                                  audio_channels);
-                        if (offset < 0)
-                            span = 0;
-                    }
-                    double peak = 0.0;
-                    for (int b = 0; span > 0 && b < number_of_bars; b++) {
-                        int start = offset + (long)b * span / number_of_bars;
-                        int end = offset + (long)(b + 1) * span / number_of_bars;
-                        if (end <= start)
-                            end = start + 1;
-                        double sum = 0.0;
-                        for (int f = start; f < end; f++)
-                            sum += waveform_sample(audio.cava_in, f, audio_channels);
-                        double *out = &waveform_out[number_of_bars - 1 - b];
-                        *out = *out * p.noise_reduction +
-                               sum / (end - start) / 32768 * (1 - p.noise_reduction);
-                    }
-                    for (int n = 0; n < number_of_bars; n++) {
-                        cava_out[n] = p.sens * waveform_out[n];
-                        if (fabs(cava_out[n]) > peak)
-                            peak = fabs(cava_out[n]);
-                    }
-                    if (p.autosens && span > 0) {
-                        if (peak > 1.0) {
-                            p.sens *= 0.98;
-                            waveform_sens_init = 0;
-                        } else if (peak > 0.0) {
-                            p.sens *= 1.001;
-                            if (waveform_sens_init)
-                                p.sens *= 1.1;
-                        }
-                    }
+                    // keep every sample, the history is what limits the duration.
+                    int frames = audio.samples_counter / audio_channels;
+                    samples_to_use = frames * audio_channels;
+                    waveform_new_frames = frames;
+                    waveform_push(&waveform, audio.cava_in, frames, audio_channels, p.mono_opt);
                 } else {
                     cava_execute(audio.cava_in, samples_to_use, cava_out, plan);
                 }
@@ -1395,40 +1520,65 @@ Keys:\n\
 
                 pthread_mutex_unlock(&audio.lock);
 
-                for (int n = 0; n < raw_number_of_bars; n++) {
+                if (p.waveform) {
+                    int offset = waveform.length - waveform.window;
+                    if (p.waveform_sync) {
+                        int trigger = waveform_trigger(waveform.samples, offset + 1);
+                        if (trigger >= 0) {
+                            offset = trigger;
+                            waveform_untriggered = 0;
+                        } else if (waveform_untriggered < (int)(audio.rate / 10)) {
+                            waveform_untriggered += waveform_new_frames;
+                            offset = -1;
+                        }
+                    }
+                    if (offset >= 0) {
+                        double peak = waveform_envelope(&waveform, waveform.samples + offset,
+                                                        number_of_bars, p.sens);
 
-                    if (!p.waveform) {
+                        if (p.autosens && waveform_new_frames > 0) {
+                            if (peak > 1.0) {
+                                p.sens *= 0.98;
+                                waveform_sens_init = 0;
+                            } else if (peak > 0.0) {
+                                p.sens *= 1.001;
+                                if (waveform_sens_init)
+                                    p.sens *= 1.1;
+                            }
+                        }
+                    }
+
+                    double total = *dimension_value;
+                    
+                    if (output_mode == OUTPUT_NONCURSES)
+                        total *= 8 * p.max_height;
+
+                    waveform_ranges(&waveform, number_of_bars, total, waveform_pixel, bars_raw,
+                                    bars_base);
+                } else {
+                    for (int n = 0; n < raw_number_of_bars; n++) {
                         cava_out[n] *= p.sens;
-                    } else {
-                        if (p.orientation != ORIENT_SPLIT_H)
-                            cava_out[n] = (cava_out[n] + 1.0) / 2.0;
+
+                        if (p.sdl_glsl_gain != 1.0) {
+                            cava_out[n] *= p.sdl_glsl_gain;
+                        }
+
+                        if (cava_out[n] > 1.0)
+                            cava_out[n] = 1.0;
+                        else if (cava_out[n] < 0.0)
+                            cava_out[n] = 0.0;
+
+                        if (output_mode != OUTPUT_SDL_GLSL) {
+                            cava_out[n] *= *dimension_value;
+                        }
+                        if (p.orientation == ORIENT_SPLIT_H || p.orientation == ORIENT_SPLIT_V) {
+                            cava_out[n] /= 2;
+                        }
+                        if (output_mode == OUTPUT_NONCURSES) {
+                            cava_out[n] *= 8 * p.max_height;
+                        }
                     }
 
-                    if (p.sdl_glsl_gain != 1.0) {
-                        cava_out[n] *= p.sdl_glsl_gain;
-                    }
-
-                    if (cava_out[n] > 1.0)
-                        cava_out[n] = 1.0;
-                    else if (cava_out[n] < 0.0)
-                        cava_out[n] = 0.0;
-
-                    if (output_mode != OUTPUT_SDL_GLSL) {
-                        cava_out[n] *= *dimension_value;
-                    }
-                    if (p.orientation == ORIENT_SPLIT_H || p.orientation == ORIENT_SPLIT_V) {
-                        cava_out[n] /= 2;
-                    }
-                    if (output_mode == OUTPUT_NONCURSES) {
-                        cava_out[n] *= 8 * p.max_height;
-                    }
-
-                    if (p.waveform) {
-                        bars_raw[n] = cava_out[n];
-                    }
-                }
-
-                if (!p.waveform) {
                     if (audio_channels == 2) {
                         for (int n = 0; n < number_of_bars / output_channels; n++) {
                             if (p.userEQ_enabled)
@@ -1557,12 +1707,15 @@ Keys:\n\
                     printf("\033[2026l\033\\");
                 }
                 int rc = 0;
+                // the waveform draws each bar from a base, the spectrum from zero
+                const int *base = p.waveform ? bars_base : NULL;
+                const int *previous_base_frame = p.waveform ? previous_base : NULL;
                 switch (output_mode) {
 #ifdef SDL
                 case OUTPUT_SDL:
                     rc = draw_sdl(number_of_bars, p.bar_width, p.bar_spacing, remainder,
-                                  *dimension_value, bars, previous_frame, frame_time_msec,
-                                  p.orientation, p.gradient);
+                                  *dimension_value, bars, previous_frame, base, previous_base_frame,
+                                  frame_time_msec, p.orientation, p.gradient);
 
                     break;
 #endif
@@ -1588,58 +1741,75 @@ Keys:\n\
                                 right_previous_frame[i] = previous_frame[i + number_of_bars / 2];
                             }
                             if (p.orientation == ORIENT_SPLIT_H) {
-                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_BOTTOM,
-                                                             &p);
-                                rc = draw_terminal_noncurses(right_bars, right_previous_frame,
-                                                             ORIENT_TOP, &p);
+                                rc = draw_terminal_noncurses(bars, previous_frame, NULL, NULL,
+                                                             ORIENT_BOTTOM, &p);
+                                rc = draw_terminal_noncurses(right_bars, right_previous_frame, NULL,
+                                                             NULL, ORIENT_TOP, &p);
                             }
                             if (p.orientation == ORIENT_SPLIT_V) {
-                                rc = draw_terminal_noncurses(right_bars, right_previous_frame,
-                                                             ORIENT_LEFT, &p);
-                                rc =
-                                    draw_terminal_noncurses(bars, previous_frame, ORIENT_RIGHT, &p);
+                                rc = draw_terminal_noncurses(right_bars, right_previous_frame, NULL,
+                                                             NULL, ORIENT_LEFT, &p);
+                                rc = draw_terminal_noncurses(bars, previous_frame, NULL, NULL,
+                                                             ORIENT_RIGHT, &p);
                             }
 
                         } else {
                             // pure mirrored split, same bars for both sides
                             if (p.orientation == ORIENT_SPLIT_H) {
-                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_BOTTOM,
-                                                             &p);
-                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_TOP, &p);
+                                rc = draw_terminal_noncurses(bars, previous_frame, NULL, NULL,
+                                                             ORIENT_BOTTOM, &p);
+                                rc = draw_terminal_noncurses(bars, previous_frame, NULL, NULL,
+                                                             ORIENT_TOP, &p);
                             } else if (p.orientation == ORIENT_SPLIT_V) {
-                                rc = draw_terminal_noncurses(bars, previous_frame, ORIENT_LEFT, &p);
-                                rc =
-                                    draw_terminal_noncurses(bars, previous_frame, ORIENT_RIGHT, &p);
+                                rc = draw_terminal_noncurses(bars, previous_frame, NULL, NULL,
+                                                             ORIENT_LEFT, &p);
+                                rc = draw_terminal_noncurses(bars, previous_frame, NULL, NULL,
+                                                             ORIENT_RIGHT, &p);
                             }
                         }
                     } else {
-                        rc = draw_terminal_noncurses(bars, previous_frame, p.orientation, &p);
+                        rc = draw_terminal_noncurses(bars, previous_frame, base,
+                                                     previous_base_frame, p.orientation, &p);
                     }
                     break;
                 case OUTPUT_NCURSES:
 #ifdef NCURSES
-                    rc = draw_terminal_ncurses(inAtty, *dimension_value / 8, *dimension_bar,
-                                               number_of_bars, p.bar_width, p.bar_spacing,
-                                               remainder, bars, previous_frame, p.gradient, p.xaxis,
-                                               p.orientation);
+                    rc = draw_terminal_ncurses(
+                        inAtty, *dimension_value / 8, *dimension_bar, number_of_bars, p.bar_width,
+                        p.bar_spacing, remainder, bars, previous_frame, base, previous_base_frame,
+                        p.gradient, p.xaxis, p.orientation);
                     break;
 #endif
-                case OUTPUT_RAW:
+                case OUTPUT_RAW: {
+                    // the waveform outputs a base and a top value for each bar.
+                    int raw_count = number_of_bars;
+                    const int *raw_values = bars;
+
+                    if (raw_ranges) {
+                        for (int n = 0; n < number_of_bars; n++) {
+                            raw_ranges[2 * n] = bars_base[n];
+                            raw_ranges[2 * n + 1] = bars[n];
+                        }
+
+                        raw_count = 2 * number_of_bars;
+                        raw_values = raw_ranges;
+                    }
 #ifndef _WIN32
-                    rc = print_raw_out(number_of_bars, fp, p.raw_format, p.bit_format,
-                                       p.ascii_range, p.bar_delim, p.frame_delim, bars);
+                    rc = print_raw_out(raw_count, fp, p.raw_format, p.bit_format, p.ascii_range,
+                                       p.bar_delim, p.frame_delim, raw_values);
 #else
-                    rc = print_raw_out(number_of_bars, hFile, p.raw_format, p.bit_format,
-                                       p.ascii_range, p.bar_delim, p.frame_delim, bars);
+                    rc = print_raw_out(raw_count, hFile, p.raw_format, p.bit_format, p.ascii_range,
+                                       p.bar_delim, p.frame_delim, raw_values);
 #endif
                     break;
+                }
                 case OUTPUT_NORITAKE:
 #ifndef _WIN32
                     rc = print_ntk_out(number_of_bars, fp, p.bit_format, p.bar_width, p.bar_spacing,
-                                       p.bar_height, bars);
+                                       p.bar_height, bars, base);
 #else
                     rc = print_ntk_out(number_of_bars, hFile, p.bit_format, p.bar_width,
-                                       p.bar_spacing, p.bar_height, bars);
+                                       p.bar_spacing, p.bar_height, bars, base);
 #endif
                     break;
                 default:
@@ -1662,6 +1832,7 @@ Keys:\n\
                 }
 
                 memcpy(previous_frame, bars, number_of_bars * sizeof(int));
+                memcpy(previous_base, bars_base, number_of_bars * sizeof(int));
                 if (p.output == OUTPUT_SDL_GLSL) {
                     memcpy(previous_bars_raw, bars_raw, number_of_bars * sizeof(float));
                 }
@@ -1739,7 +1910,11 @@ Keys:\n\
                 free(bars_right);
             }
             free(cava_out);
-            free(waveform_out);
+            waveform_free(&waveform);
+            free(bars_base);
+            free(previous_base);
+            free(raw_ranges);
+            raw_ranges = NULL;
             free(bars);
             free(bars_raw);
             free(previous_bars_raw);

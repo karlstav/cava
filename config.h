@@ -138,7 +138,8 @@ struct config_params {
         active, remix, virtual_node, samplerate, samplebits, channels, autoconnect, sleep_timer,
         live_config, sdl_width, sdl_height, sdl_x, sdl_y, sdl_full_screen, draw_and_quit, zero_test,
         non_zero_test, reverse, sync_updates, continuous_rendering, disable_blanking,
-        show_idle_bar_heads, waveform, waveform_sync, center_align, split_stereo, left_bottom;
+        show_idle_bar_heads, waveform, waveform_sync, waveform_duration, center_align, split_stereo,
+        left_bottom;
 
     // non config params, used internally
     int number_of_bars;

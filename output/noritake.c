@@ -7,15 +7,15 @@
 #include <unistd.h>
 
 int print_ntk_out(int bars_count, int fd, int bit_format, int bar_width, int bar_spacing,
-                  int bar_height, int const f[]) {
+                  int bar_height, int const f[], int const base[]) {
 #else
 #define _CRT_SECURE_NO_WARNINGS 1
 
 int print_ntk_out(int bars_count, HANDLE hFile, int bit_format, int bar_width, int bar_spacing,
-                  int bar_height, int const f[]) {
+                  int bar_height, int const f[], int const base[]) {
 #endif
     int8_t buf_8;
-    int8_t val1;
+    int8_t val0, val1;
     uint64_t bits;
     int8_t j;
     int8_t k;
@@ -28,6 +28,17 @@ int print_ntk_out(int bars_count, HANDLE hFile, int bit_format, int bar_width, i
 
         val1 = f_limited >> (bar_height / 8 - 1); // Will not work above 32 for now
         bits = pow(2, val1) - 1;
+
+        // The waveform lights only the pixels from its base up
+        if (base) {
+            int base_limited = base[i];
+            if (base_limited > f_limited)
+                base_limited = f_limited;
+
+            val0 = base_limited >> (bar_height / 8 - 1);
+            bits &= ~(uint64_t)(pow(2, val0) - 1);
+        }
+
         for (k = 0; k < bar_width; k++) {
             for (j = 0; j < bar_height / 8; j++) {
                 buf_8 = bits >> (8 * (bar_height / 8 - 1 - j)) & 0xff;

@@ -221,10 +221,52 @@ void get_terminal_dim_ncurses(int *width, int *height) {
 
 #define TERMINAL_RESIZED -1
 
+static int clamp_cell(int value) {
+    return value < 0 ? 0 : (value > num_bar_heights ? num_bar_heights : value);
+}
+
+// the waveform covers each bar from `base` up to `bars`, always drawn bottom up. a changed bar is
+// redrawn over the full height. its grid of half characters (whole characters on a tty) means a
+// bar that starts inside a character always reaches the top of it
+static void draw_waveform(int is_tty, int max_value, int bars_count, int bar_width, int bar_spacing,
+                          int rest, const int bars[], const int previous_frame[], const int base[],
+                          const int previous_base[], int gradient) {
+    for (int line = 0; line <= max_value; line++) {
+        if (gradient) {
+            change_colors(line, max_value);
+        }
+
+        for (int bar = 0; bar < bars_count; bar++) {
+            if (bars[bar] == previous_frame[bar] &&
+                (!previous_base || base[bar] == previous_base[bar])) {
+                continue;
+            }
+
+            int low = clamp_cell(base[bar] - line * num_bar_heights);
+            int high = clamp_cell(bars[bar] - line * num_bar_heights);
+            int cur_col = bar * bar_width + bar * bar_spacing + rest;
+
+            for (int col = cur_col, i = 0; i < bar_width; i++, col++) {
+                int x, y;
+                get_screen_coords(line, col, max_value, ORIENT_BOTTOM, &x, &y);
+
+                if (high <= low)
+                    mvaddch(y, x, ' ');
+                else if (is_tty)
+                    mvaddch(y, x, 0x41 + (low > 0 ? num_bar_heights : high) - 1);
+                else if (low > 0)
+                    mvaddwstr(y, x, bar_heights_top[num_bar_heights - 1 - low]);
+                else
+                    mvaddwstr(y, x, bar_heights_bottom[high - 1]);
+            }
+        }
+    }
+}
+
 int draw_terminal_ncurses(int is_tty, int dimension_value, int dimension_bar, int bars_count,
                           int bar_width, int bar_spacing, int rest, const int bars[],
-                          int previous_frame[], int gradient, int x_axis_info,
-                          enum orientation orientation) {
+                          int previous_frame[], const int base[], const int previous_base[],
+                          int gradient, int x_axis_info, enum orientation orientation) {
     const int max_value = dimension_value - 1;
 
     // output: check if terminal has been resized
@@ -244,6 +286,13 @@ int draw_terminal_ncurses(int is_tty, int dimension_value, int dimension_bar, in
             if (x_axis_info)
                 dimension_value--;
         }
+    }
+
+    if (base) {
+        draw_waveform(is_tty, max_value, bars_count, bar_width, bar_spacing, rest,
+                      bars, previous_frame, base, previous_base, gradient);
+        refresh();
+        return 0;
     }
 
     // Compute how much of the screen we possibly need to update ahead-of-time.

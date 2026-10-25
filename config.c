@@ -458,24 +458,26 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         p->blendDirection = ORIENT_RIGHT;
     }
 
+    // the waveform is always drawn from left to right, the orientation is ignored
+    const char *orientation_name = p->waveform ? "bottom" : orientation;
     p->orientation = ORIENT_BOTTOM;
-    if (strcmp(orientation, "top") == 0) {
+    if (strcmp(orientation_name, "top") == 0) {
         p->orientation = ORIENT_TOP;
     }
-    if (strcmp(orientation, "left") == 0) {
+    if (strcmp(orientation_name, "left") == 0) {
         p->orientation = ORIENT_LEFT;
     }
-    if (strcmp(orientation, "right") == 0) {
+    if (strcmp(orientation_name, "right") == 0) {
         p->orientation = ORIENT_RIGHT;
     }
-    if (strcmp(orientation, "horizontal") == 0) {
+    if (strcmp(orientation_name, "horizontal") == 0) {
         if (p->output != OUTPUT_NONCURSES) {
             write_errorf(error, "only noncurses output supports horizontal orientation\n");
             return false;
         }
         p->orientation = ORIENT_SPLIT_H;
     }
-    if (strcmp(orientation, "vertical") == 0) {
+    if (strcmp(orientation_name, "vertical") == 0) {
         if (p->output != OUTPUT_NONCURSES) {
             write_errorf(error, "only noncurses output supports vertical orientation\n");
             return false;
@@ -501,6 +503,15 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         !(p->output == OUTPUT_SDL || p->output == OUTPUT_NCURSES ||
           p->output == OUTPUT_NONCURSES)) {
         write_errorf(error, "only noncurses, ncurses and sdl supports top orientation\n");
+        return false;
+    }
+
+    if (p->waveform && p->output == OUTPUT_SDL_GLSL) {
+        write_errorf(error, "waveform is not supported by sdl_glsl output\n");
+        return false;
+    }
+    if (p->waveform_duration < 10 || p->waveform_duration > 250) {
+        write_errorf(error, "waveform_duration must be between 10 and 250 ms\n");
         return false;
     }
 
@@ -916,6 +927,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
 
     p->waveform = iniparser_getint(ini, "output:waveform", 0);
     p->waveform_sync = iniparser_getint(ini, "output:waveform_sync", 0);
+    p->waveform_duration = iniparser_getint(ini, "output:waveform_duration", 50);
 
     p->sync_updates = iniparser_getint(ini, "output:synchronized_sync", 0);
 
@@ -1087,6 +1099,7 @@ bool load_config(char configPath[PATH_MAX], struct config_params *p, struct erro
     p->show_idle_bar_heads = GetPrivateProfileInt("output", "show_idle_bar_heads", 1, configPath);
     p->waveform = GetPrivateProfileInt("output", "waveform", 0, configPath);
     p->waveform_sync = GetPrivateProfileInt("output", "waveform_sync", 0, configPath);
+    p->waveform_duration = GetPrivateProfileInt("output", "waveform_duration", 50, configPath);
 
     // read eq values
     p->userEQ_keys = 0;
