@@ -274,16 +274,16 @@
 # show a flat bar at the bottom of the screen when idle, 1 = on, 0 = off
 ; show_idle_bar_heads = 1
 
-# show waveform instead of frequency spectrum, 1 = on, 0 = off
-# not supported by sdl_glsl. raw output prints a base and a top value for each bar, in that order
-# (see the 'raw' output method above).
+# show waveform instead of frequency spectrum, 1 = on, 0 = off.
+# raw output prints a base and a top value for each bar, in that order.
+# sdl_glsl output is currently unsupported for waveform.
 ; waveform = 0
 
-# waveform only: how much audio, in milliseconds, is shown at once. 10 - 250. Default: 50
+# waveform only: how much audio, in milliseconds, is shown at once. 10 - 250. Default: 50.
 ; waveform_duration = 50
 
 # waveform only: start each frame at a rising zero crossing, like an oscilloscope trigger,
-# so steady tones stand still. 1 = on, 0 = off
+# so steady tones stand still. 1 = on, 0 = off.
 ; waveform_sync = 0
 
 

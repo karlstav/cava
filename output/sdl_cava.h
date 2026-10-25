@@ -7,7 +7,7 @@ void init_sdl_surface(int *width, int *height, char *const fg_color_string,
                       char **gradient_color_strings);
 int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int height,
              const int bars[], int previous_frame[], const int base[], const int previous_base[],
-             int frame_timer, enum orientation orientation, int gradient);
+             enum orientation orientation, int gradient);
 void cleanup_sdl(void);
 struct SDL_Window;
 int sdl_load_full_screen(int config_full_screen);

@@ -45,6 +45,7 @@
 #include "config.h"
 
 #include "util.h"
+#include "waveform.h"
 
 #ifdef SDL
 #include "output/sdl_cava.h"
@@ -312,178 +313,43 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
     return bars;
 }
 
-// the most recent mono audio, normalized to +-1, oldest first.
-// the newest `window` samples are displayed. 50 ms more is kept for sync.
-struct waveform_history {
-    double *samples;
-    int length, capacity, keep, window;
-    double *min, *max;
-};
-
-static void waveform_init(struct waveform_history *h, int rate, int duration_ms, int bars) {
-    h->window = (long)rate * duration_ms / 1000;
-
-    if (h->window < 1)
-        h->window = 1;
-
-    h->keep = h->window + rate / 20;
-    h->capacity = 2 * h->keep;
-    h->length = h->keep;
-    h->samples = (double *)calloc(h->capacity, sizeof(double));
-    h->min = (double *)calloc(bars, sizeof(double));
-    h->max = (double *)calloc(bars, sizeof(double));
+static int64_t monotonic_time_ns(void) {
+#ifdef _WIN32
+    LARGE_INTEGER counter, frequency;
+    QueryPerformanceCounter(&counter);
+    QueryPerformanceFrequency(&frequency);
+    return counter.QuadPart / frequency.QuadPart * 1000000000LL +
+           counter.QuadPart % frequency.QuadPart * 1000000000LL / frequency.QuadPart;
+#else
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (int64_t)now.tv_sec * 1000000000LL + now.tv_nsec;
+#endif
 }
 
-static void waveform_free(struct waveform_history *h) {
-    free(h->samples);
-    free(h->min);
-    free(h->max);
-    memset(h, 0, sizeof(*h));
+// Keep the original phase, skipping whole missed intervals. A late/blocking draw has already
+// spent its frame interval, so allow the next draw immediately, then return to the regular
+// schedule.
+static int64_t frame_next_deadline(int64_t deadline, int64_t now, int64_t period) {
+    deadline += period;
+    if (deadline < now)
+        deadline += (now - deadline) / period * period;
+    return deadline;
 }
 
-// append interleaved audio. the history is compacted only when full
-static void waveform_push(struct waveform_history *h, const double *in, int frames, int channels,
-                          enum mono_option mono) {
-    if (frames > h->keep) {
-        in += (long)(frames - h->keep) * channels;
-        frames = h->keep;
-    }
-
-    if (h->length + frames > h->capacity) {
-        int retain = h->keep - frames;
-        memmove(h->samples, h->samples + h->length - retain, retain * sizeof(double));
-        h->length = retain;
-    }
-
-    for (int f = 0; f < frames; f++) {
-        double sample = in[f * channels];
-        if (channels == 2) {
-            if (mono == AVERAGE)
-                sample = (in[f * 2] + in[f * 2 + 1]) / 2;
-            else if (mono == RIGHT)
-                sample = in[f * 2 + 1];
-        }
-
-        h->samples[h->length++] = sample / 32768;
-    }
-}
-
-// find the last rising zero crossing of a low-passed copy of the signal, with hysteresis so
-// noise around zero does not trigger. crossings before the filter has settled are ignored. the
-// filter lags the signal, so the trigger is moved back to where the signal itself crossed zero.
-// returns -1 if none is found
-static int waveform_trigger(const double *in, int search) {
-    const int warmup = 100;
-    if (search <= warmup)
-        return -1;
-
-    double y = 0.0, peak = 0.0;
-    for (int f = 0; f < search; f++) {
-        y += 0.05 * (in[f] - y);
-        if (fabs(y) > peak)
-            peak = fabs(y);
-    }
-
-    y = 0.0;
-    int armed = 0, trigger = -1, last_negative = -1;
-    for (int f = 0; f < search; f++) {
-        y += 0.05 * (in[f] - y);
-        if (f < warmup)
-            continue;
-        if (y < -0.1 * peak && !armed) {
-            armed = 1;
-            last_negative = -1;
-        }
-        if (!armed)
-            continue;
-        if (y < 0.0) {
-            if (in[f] < 0.0)
-                last_negative = f;
-        } else {
-            trigger = (in[f] < 0.0 || last_negative < 0) ? f : last_negative + 1;
-            armed = 0;
-        }
-    }
-
-    return trigger;
-}
-
-// reduce a window to the minimum and maximum sample of each bar. the samples next to a bar are
-// included so neighbouring bars connect. the oldest samples end up in the first bar and the newest
-// in the last. returns the peak amplitude, before clamping.
-static double waveform_envelope(struct waveform_history *h, const double *window, int bars,
-                                double sens) {
-    double peak = 0.0;
-    for (int b = 0; b < bars; b++) {
-        int start = (long)b * h->window / bars;
-        int end = (long)(b + 1) * h->window / bars;
-
-        if (end <= start)
-            end = start + 1;
-
-        int from = start > 0 ? start - 1 : 0;
-        int to = end + 1 < h->window ? end + 1 : h->window;
-        double min = window[from], max = window[from];
-
-        for (int f = from + 1; f < to; f++) {
-            if (window[f] < min)
-                min = window[f];
-            else if (window[f] > max)
-                max = window[f];
-        }
-
-        min *= sens;
-        max *= sens;
-
-        if (fabs(min) > peak)
-            peak = fabs(min);
-
-        if (fabs(max) > peak)
-            peak = fabs(max);
-
-        h->min[b] = fmax(-1.0, fmin(1.0, min));
-        h->max[b] = fmax(-1.0, fmin(1.0, max));
-    }
-
-    return peak;
-}
-
-// snap the span [low, high] to whole pixels. all values are in pixels from the bottom and zero is
-// the pixel border that is silence. the edges are rounded by their distance to zero so mirrored
-// spans stay mirrored, with ties going away from zero. a span thinner than a pixel becomes the
-// pixel it's centered in.
-static void waveform_snap(double low, double high, double zero, int height, int *bottom, int *top) {
-    double a, b;
-
-    if (high - low < 1.0) {
-        double distance = (low + high) / 2 - zero;
-        double pixel = zero + (distance > 0 ? floor(distance) : -1 - floor(-distance));
-        pixel = fmax(0.0, fmin(pixel, height - 1.0));
-        a = pixel;
-        b = fmin(pixel + 1.0, height);
-    } else {
-        a = fmax(0.0, fmin(zero + round(low - zero), height));
-        b = fmax(0.0, fmin(zero + round(high - zero), height));
-    }
-
-    *bottom = a;
-    *top = b;
-}
-
-// turn the envelope into [base, top] bar ranges, drawn as a line around the center. `total` is
-// the full range of the output and `pixel` the size of the smallest step it can draw, both in
-// output units. an even number of pixels is used so the center falls on a pixel border.
-static void waveform_ranges(const struct waveform_history *h, int bars, double total, int pixel,
-                            float *top, int *base) {
-    int half = total / pixel / 2;
-
-    for (int n = 0; n < bars; n++) {
-        int bottom, upper;
-        waveform_snap(half + h->min[n] * half, half + h->max[n] * half,
-                      half, 2 * half, &bottom, &upper);
-
-        base[n] = bottom * pixel;
-        top[n] = upper * pixel;
+static void wait_until(int64_t deadline) {
+    int64_t remaining;
+    while ((remaining = deadline - monotonic_time_ns()) > 0) {
+#ifdef _WIN32
+        Sleep((DWORD)((remaining + 999999) / 1000000));
+#else
+        struct timespec delay = {.tv_sec = remaining / 1000000000LL,
+                                 .tv_nsec = remaining % 1000000000LL};
+        if (nanosleep(&delay, NULL) < 0 && errno != EINTR)
+            break;
+        if (should_reload || should_quit)
+            break;
+#endif
     }
 }
 
@@ -696,6 +562,8 @@ Keys:\n\
         audio.format = -1;
         audio.rate = 0;
         audio.samples_counter = 0;
+        audio.buffer_generation = 0;
+        audio.max_input_frames = 0;
         audio.channels = 2;
         audio.IEEE_FLOAT = 0;
         audio.autoconnect = 0;
@@ -1186,7 +1054,13 @@ Keys:\n\
             // the pixel is the smallest step the output can draw, in bar units.
             int waveform_pixel = 1;
             if (p.waveform) {
-                waveform_init(&waveform, audio.rate, p.waveform_duration, number_of_bars);
+                if (!waveform_init(&waveform, audio.rate, p.waveform_duration, number_of_bars,
+                                   audio.input_buffer_size / audio_channels, p.framerate)) {
+                    waveform_free(&waveform);
+                    cleanup();
+                    fprintf(stderr, "Could not allocate waveform history.\n");
+                    exit(EXIT_FAILURE);
+                }
                 if (output_mode == OUTPUT_NONCURSES || output_mode == OUTPUT_NCURSES)
                     waveform_pixel = inAtty ? 8 : 4; // the tty font has no upper half block.
                 else if (output_mode == OUTPUT_NORITAKE && p.bar_height / 8 > 1)
@@ -1255,22 +1129,7 @@ Keys:\n\
             long long frame_time_ns = (long long)(1000000000.0 / (double)p.framerate);
             if (frame_time_ns < 1)
                 frame_time_ns = 1;
-            struct timespec sleep_timer = {.tv_sec = frame_time_ns / 1000000000,
-                                           .tv_nsec = frame_time_ns % 1000000000};
-            int frame_time_msec = (int)(frame_time_ns / 1000000LL);
-            if (frame_time_msec < 1)
-                frame_time_msec = 1;
-
-#ifdef _WIN32
-            LARGE_INTEGER frequency; // ticks per second
-            LARGE_INTEGER t1, t2;    // ticks
-            double elapsedTime;
-            QueryPerformanceFrequency(&frequency);
-#else
-            struct timespec t1, t2, t3;
-            double elapsedTimens;
-            double wakeupTimens = 0.0;
-#endif // _WIN32
+            int64_t frame_deadline = monotonic_time_ns();
 
             int sleep_counter = 0;
             bool silence = false;
@@ -1283,32 +1142,19 @@ Keys:\n\
             // audio samples to use per visual frame.
             int samples_per_frame = audio.rate / p.framerate;
 
-            // on sdl we use SDL_delay instead of our own sleep and it is in whole milliseconds, so
-            // we need to adjust a little
-            if (output_mode == OUTPUT_SDL_GLSL || output_mode == OUTPUT_SDL) {
-                float actual_framerate = 1000.0 / (float)frame_time_msec;
-                samples_per_frame = audio.rate / actual_framerate;
-            }
-
             // check if drawing loop is faster than audio loop.
             int high_framerate = 0;
             int waveform_sens_init = 1;
-            int waveform_untriggered = 0; // frames of new audio since the last trigger
             if (samples_per_frame < audio.input_buffer_size / audio_channels) {
                 high_framerate = 1;
             }
 
             pthread_mutex_lock(&audio.lock);
             audio.samples_counter = 0;
+            uint64_t waveform_generation = audio.buffer_generation;
             pthread_mutex_unlock(&audio.lock);
 
             while (!resizeTerminal) {
-#ifdef _WIN32
-                QueryPerformanceCounter(&t1);
-#else
-                clock_gettime(CLOCK_MONOTONIC, &t1);
-#endif
-
 // general: keyboard controls
 #ifdef NCURSES
                 if (output_mode == OUTPUT_NCURSES)
@@ -1356,7 +1202,7 @@ Keys:\n\
                         p.bgcol = 0;
                     resizeTerminal = true;
                     break;
-                case 'o': // change orientation
+                case 'o':           // change orientation
                     if (p.waveform) // the waveform ignores the orientation
                         break;
                     p.orientation++;
@@ -1434,12 +1280,14 @@ Keys:\n\
                 // process: check if input is present
                 silence = true;
 
+                pthread_mutex_lock(&audio.lock);
                 for (int n = 0; n < audio.samples_counter; n++) {
                     if (audio.cava_in[n]) {
                         silence = false;
                         break;
                     }
                 }
+                pthread_mutex_unlock(&audio.lock);
 #ifndef _WIN32
 
                 if (output_mode != OUTPUT_SDL) {
@@ -1455,6 +1303,7 @@ Keys:\n\
 
                         if (sleep_counter > sleep_limit) {
                             nanosleep(&sleep_mode_timer, NULL);
+                            frame_deadline = monotonic_time_ns();
                             if (p.live_config) {
                                 time_t new_mtime = 0;
                                 long long new_size = 0;
@@ -1477,8 +1326,14 @@ Keys:\n\
                 // process: execute cava
                 pthread_mutex_lock(&audio.lock);
 
+                if (p.waveform && audio.rate != (unsigned int)waveform.rate) {
+                    pthread_mutex_unlock(&audio.lock);
+                    // Reinitialize the window, buffering, and clock at the new rate.
+                    resizeTerminal = true;
+                    break;
+                }
+
                 int samples_to_use = 0;
-                int waveform_new_frames = 0;
 
                 if (!high_framerate) {
                     // we dont need buffers and use all available samples.
@@ -1500,11 +1355,21 @@ Keys:\n\
                 }
 
                 if (p.waveform) {
-                    // keep every sample, the history is what limits the duration.
+                    if (waveform_generation != audio.buffer_generation) {
+                        waveform_discontinuity(&waveform, number_of_bars);
+                        waveform_sens_init = 1;
+                        waveform_generation = audio.buffer_generation;
+                    }
+                    waveform_buffer(&waveform, audio.max_input_frames);
+                    // Ingest every sample; the independent cursor controls presentation.
                     int frames = audio.samples_counter / audio_channels;
                     samples_to_use = frames * audio_channels;
-                    waveform_new_frames = frames;
-                    waveform_push(&waveform, audio.cava_in, frames, audio_channels, p.mono_opt);
+                    enum waveform_channel mono = WAVEFORM_AVERAGE;
+                    if (p.mono_opt == LEFT)
+                        mono = WAVEFORM_LEFT;
+                    else if (p.mono_opt == RIGHT)
+                        mono = WAVEFORM_RIGHT;
+                    waveform_push(&waveform, audio.cava_in, frames, audio_channels, mono);
                 } else {
                     cava_execute(audio.cava_in, samples_to_use, cava_out, plan);
                 }
@@ -1521,35 +1386,21 @@ Keys:\n\
                 pthread_mutex_unlock(&audio.lock);
 
                 if (p.waveform) {
-                    int offset = waveform.length - waveform.window;
-                    if (p.waveform_sync) {
-                        int trigger = waveform_trigger(waveform.samples, offset + 1);
-                        if (trigger >= 0) {
-                            offset = trigger;
-                            waveform_untriggered = 0;
-                        } else if (waveform_untriggered < (int)(audio.rate / 10)) {
-                            waveform_untriggered += waveform_new_frames;
-                            offset = -1;
-                        }
-                    }
+                    int64_t now = monotonic_time_ns();
+                    waveform_advance(&waveform, now);
+                    int offset = waveform_select(&waveform, now, p.waveform_sync);
                     if (offset >= 0) {
                         double peak = waveform_envelope(&waveform, waveform.samples + offset,
                                                         number_of_bars, p.sens);
 
-                        if (p.autosens && waveform_new_frames > 0) {
-                            if (peak > 1.0) {
-                                p.sens *= 0.98;
-                                waveform_sens_init = 0;
-                            } else if (peak > 0.0) {
-                                p.sens *= 1.001;
-                                if (waveform_sens_init)
-                                    p.sens *= 1.1;
-                            }
-                        }
+                        double seconds = (waveform.cursor - waveform.gain_cursor) / waveform.rate;
+                        if (p.autosens && seconds > 0.0)
+                            p.sens *= waveform_gain(peak, seconds, &waveform_sens_init);
+                        waveform.gain_cursor = waveform.cursor;
                     }
 
                     double total = *dimension_value;
-                    
+
                     if (output_mode == OUTPUT_NONCURSES)
                         total *= 8 * p.max_height;
 
@@ -1715,14 +1566,14 @@ Keys:\n\
                 case OUTPUT_SDL:
                     rc = draw_sdl(number_of_bars, p.bar_width, p.bar_spacing, remainder,
                                   *dimension_value, bars, previous_frame, base, previous_base_frame,
-                                  frame_time_msec, p.orientation, p.gradient);
+                                  p.orientation, p.gradient);
 
                     break;
 #endif
 #ifdef SDL_GLSL
                 case OUTPUT_SDL_GLSL:
-                    rc = draw_sdl_glsl(number_of_bars, bars_raw, previous_bars_raw, frame_time_msec,
-                                       re_paint, p.continuous_rendering);
+                    rc = draw_sdl_glsl(number_of_bars, bars_raw, previous_bars_raw, re_paint,
+                                       p.continuous_rendering);
                     break;
 #endif
                 case OUTPUT_NONCURSES:
@@ -1866,42 +1717,9 @@ Keys:\n\
                         break;
                     }
                 }
-#ifdef _WIN32
-                QueryPerformanceCounter(&t2);
-                elapsedTime = (t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart;
-                int fps_sync_time = frame_time_msec;
-                if (elapsedTime < 1.0)
-                    fps_sync_time = frame_time_msec;
-                else if ((int)elapsedTime > frame_time_msec)
-                    fps_sync_time = 0;
-                else
-                    fps_sync_time = (frame_time_msec - (int)elapsedTime) / 2;
-#endif
-                if (output_mode != OUTPUT_SDL && output_mode != OUTPUT_SDL_GLSL) {
-#ifdef _WIN32
-                    Sleep(fps_sync_time);
-#else
-                    clock_gettime(CLOCK_MONOTONIC, &t2);
-                    elapsedTimens =
-                        (t2.tv_sec - t1.tv_sec) * 1000000000.0 + (t2.tv_nsec - t1.tv_nsec);
-
-                    int sleep_time_ns = frame_time_ns - (int)elapsedTimens - (int)wakeupTimens;
-
-                    if (sleep_time_ns > 1) {
-
-                        sleep_timer.tv_sec = sleep_time_ns / 1000000000;
-                        sleep_timer.tv_nsec = sleep_time_ns % 1000000000;
-                        nanosleep(&sleep_timer, NULL);
-                        clock_gettime(CLOCK_MONOTONIC, &t3);
-                        double actualSleeptime =
-                            (t3.tv_sec - t2.tv_sec) * 1000000000.0 + (t3.tv_nsec - t2.tv_nsec);
-                        wakeupTimens = actualSleeptime - sleep_time_ns;
-                    } else {
-                        wakeupTimens = 0;
-                    }
-
-#endif
-                }
+                frame_deadline =
+                    frame_next_deadline(frame_deadline, monotonic_time_ns(), frame_time_ns);
+                wait_until(frame_deadline);
             } // resize terminal
             cava_destroy(plan);
             free(plan);

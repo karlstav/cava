@@ -123,7 +123,7 @@ void init_sdl_surface(int *w, int *h, char *const fg_color_string, char *const b
 
 int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int height,
              const int bars[], int previous_frame[], const int base[], const int previous_base[],
-             int frame_time, enum orientation orientation, int gradient) {
+             enum orientation orientation, int gradient) {
 
     bool update = false;
     int rc = 0;
@@ -192,8 +192,6 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
         }
         SDL_RenderPresent(gRenderer);
     }
-
-    SDL_Delay(frame_time);
 
     while (SDL_PollEvent(&e)) {
         if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
