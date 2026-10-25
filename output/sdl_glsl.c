@@ -234,8 +234,8 @@ void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string, char *co
     SDL_GL_SwapWindow(glWindow);
 }
 
-int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[], int frame_time,
-                  int re_paint, int continuous_rendering) {
+int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[], int re_paint,
+                  int continuous_rendering) {
 
     int rc = 0;
     SDL_Event event;
@@ -269,8 +269,6 @@ int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
     }
-    SDL_Delay(frame_time);
-
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
             glViewport(0, 0, event.window.data1, event.window.data2);

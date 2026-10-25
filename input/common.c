@@ -8,6 +8,9 @@ int write_to_cava_input_buffers(int16_t samples, unsigned char *buf, void *data)
         return 0;
     struct audio_data *audio = (struct audio_data *)data;
     pthread_mutex_lock(&audio->lock);
+    int frames = samples / audio->channels;
+    if (frames > audio->max_input_frames)
+        audio->max_input_frames = frames;
     int bytes_per_sample = audio->format / 8;
     if (audio->samples_counter + samples > audio->cava_buffer_size) {
         // buffer overflow, discard what ever is in the buffer and start over
@@ -15,6 +18,7 @@ int write_to_cava_input_buffers(int16_t samples, unsigned char *buf, void *data)
             audio->cava_in[n] = 0;
         }
         audio->samples_counter = 0;
+        audio->buffer_generation++;
     }
     int n = 0;
     for (uint16_t i = 0; i < samples; i++) {
@@ -52,6 +56,7 @@ void reset_output_buffers(struct audio_data *data) {
         audio->cava_in[n] = 0;
     }
     audio->samples_counter = audio->cava_buffer_size;
+    audio->buffer_generation++;
     pthread_mutex_unlock(&audio->lock);
 }
 

@@ -289,8 +289,8 @@ int draw_terminal_ncurses(int is_tty, int dimension_value, int dimension_bar, in
     }
 
     if (base) {
-        draw_waveform(is_tty, max_value, bars_count, bar_width, bar_spacing, rest,
-                      bars, previous_frame, base, previous_base, gradient);
+        draw_waveform(is_tty, max_value, bars_count, bar_width, bar_spacing, rest, bars,
+                      previous_frame, base, previous_base, gradient);
         refresh();
         return 0;
     }

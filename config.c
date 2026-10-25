@@ -458,8 +458,9 @@ bool validate_config(struct config_params *p, struct error_s *error) {
         p->blendDirection = ORIENT_RIGHT;
     }
 
-    // the waveform is always drawn from left to right, the orientation is ignored
+    // orientation is always `bottom` for waveform
     const char *orientation_name = p->waveform ? "bottom" : orientation;
+
     p->orientation = ORIENT_BOTTOM;
     if (strcmp(orientation_name, "top") == 0) {
         p->orientation = ORIENT_TOP;
@@ -507,7 +508,7 @@ bool validate_config(struct config_params *p, struct error_s *error) {
     }
 
     if (p->waveform && p->output == OUTPUT_SDL_GLSL) {
-        write_errorf(error, "waveform is not supported by sdl_glsl output\n");
+        write_errorf(error, "waveform mode currently does not support sdl_glsl output\n");
         return false;
     }
     if (p->waveform_duration < 10 || p->waveform_duration > 250) {
