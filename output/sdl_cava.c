@@ -122,15 +122,16 @@ void init_sdl_surface(int *w, int *h, char *const fg_color_string, char *const b
 }
 
 int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int height,
-             const int bars[], int previous_frame[], int frame_time, enum orientation orientation,
-             int gradient) {
+             const int bars[], int previous_frame[], const int base[], const int previous_base[],
+             int frame_time, enum orientation orientation, int gradient) {
 
     bool update = false;
     int rc = 0;
     SDL_Rect fillRect;
 
     for (int bar = 0; bar < bars_count; bar++) {
-        if (bars[bar] != previous_frame[bar]) {
+        if (bars[bar] != previous_frame[bar] ||
+            (base && previous_base && base[bar] != previous_base[bar])) {
             update = true;
             break;
         }
@@ -146,7 +147,7 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
                                        gradient_colors_sdl[line].RGB[1],
                                        gradient_colors_sdl[line].RGB[2], 0xFF);
                 for (int bar = 0; bar < bars_count; bar++) {
-                    if (bars[bar] > line) {
+                    if (bars[bar] > line && (!base || base[bar] <= line)) {
                         int x1 = bar * (bar_width + bar_spacing);
                         if (bar == 0)
                             x1 = 0;
@@ -180,7 +181,7 @@ int draw_sdl(int bars_count, int bar_width, int bar_spacing, int remainder, int 
                     fillRect.x = bar * (bar_width + bar_spacing) + remainder;
                     fillRect.y = height - bars[bar];
                     fillRect.w = bar_width;
-                    fillRect.h = bars[bar];
+                    fillRect.h = bars[bar] - (base ? base[bar] : 0);
                     break;
                 }
 
