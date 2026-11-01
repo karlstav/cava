@@ -52,8 +52,10 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         fft_buffer_size *= 16;
     else if (rate > 150000 && rate <= 300000)
         fft_buffer_size *= 32;
-    else if (rate > 300000)
+    else if (rate > 300000 && rate <= 705600)
         fft_buffer_size *= 64;
+    else if (rate > 705600)
+        fft_buffer_size *= 128;
 
     if (number_of_bars < 1) {
         snprintf(p->error_message, 1024,
