@@ -34,7 +34,7 @@ struct cava_plan *cava_init(int number_of_bars, unsigned int rate, int channels,
         p->status = -1;
         return p;
     }
-    if (rate < 1 || rate > 384000) {
+    if (rate < 1) {
         snprintf(p->error_message, 1024, "cava_init called with illegal sample rate: %d\n", rate);
         p->status = -1;
         return p;
