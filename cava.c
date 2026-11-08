@@ -285,16 +285,18 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
         height_normalizer = height / 912.76;
     }
     if (waves > 0) {
+        // de is an integer distance, so de * de is exact and avoids a pow() call
+        // in this O(number_of_bars^2) loop.
         for (z = 0; z < number_of_bars; z++) { // waves
             bars[z] = bars[z] / 1.25;
             // if (bars[z] < 1) bars[z] = 1;
             for (m_y = z - 1; m_y >= 0; m_y--) {
                 de = z - m_y;
-                bars[m_y] = max(bars[z] - height_normalizer * pow(de, 2), bars[m_y]);
+                bars[m_y] = max(bars[z] - height_normalizer * ((double)de * de), bars[m_y]);
             }
             for (m_y = z + 1; m_y < number_of_bars; m_y++) {
                 de = m_y - z;
-                bars[m_y] = max(bars[z] - height_normalizer * pow(de, 2), bars[m_y]);
+                bars[m_y] = max(bars[z] - height_normalizer * ((double)de * de), bars[m_y]);
             }
         }
     } else if (monstercat > 0) {
