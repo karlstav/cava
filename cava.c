@@ -299,16 +299,39 @@ float *monstercat_filter(float *bars, int number_of_bars, int waves, double mons
                 bars[m_y] = max(bars[z] - height_normalizer * ((double)de * de), bars[m_y]);
             }
         }
-    } else if (monstercat > 0) {
-        for (z = 0; z < number_of_bars; z++) {
-            // if (bars[z] < 1)bars[z] = 1;
-            for (m_y = z - 1; m_y >= 0; m_y--) {
-                de = z - m_y;
-                bars[m_y] = max(bars[z] / pow(monstercat * 1.5, de), bars[m_y]);
+    } else if (monstercat > 0 && number_of_bars > 0) {
+        const double base = monstercat * 1.5;
+        // The loop below only uses exponents from 1 to number_of_bars - 1,
+        // so precompute them instead of calling pow() O(number_of_bars^2) times.
+        double *powers = malloc((size_t)number_of_bars * sizeof(*powers));
+        if (powers != NULL) {
+            powers[0] = 1.0;
+            for (z = 1; z < number_of_bars; z++) {
+                powers[z] = pow(base, z);
             }
-            for (m_y = z + 1; m_y < number_of_bars; m_y++) {
-                de = m_y - z;
-                bars[m_y] = max(bars[z] / pow(monstercat * 1.5, de), bars[m_y]);
+            for (z = 0; z < number_of_bars; z++) {
+                // if (bars[z] < 1)bars[z] = 1;
+                for (m_y = z - 1; m_y >= 0; m_y--) {
+                    de = z - m_y;
+                    bars[m_y] = max(bars[z] / powers[de], bars[m_y]);
+                }
+                for (m_y = z + 1; m_y < number_of_bars; m_y++) {
+                    de = m_y - z;
+                    bars[m_y] = max(bars[z] / powers[de], bars[m_y]);
+                }
+            }
+            free(powers);
+        } else {
+            for (z = 0; z < number_of_bars; z++) {
+                // if (bars[z] < 1)bars[z] = 1;
+                for (m_y = z - 1; m_y >= 0; m_y--) {
+                    de = z - m_y;
+                    bars[m_y] = max(bars[z] / pow(base, de), bars[m_y]);
+                }
+                for (m_y = z + 1; m_y < number_of_bars; m_y++) {
+                    de = m_y - z;
+                    bars[m_y] = max(bars[z] / pow(base, de), bars[m_y]);
+                }
             }
         }
     }
