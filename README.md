@@ -688,6 +688,31 @@ If cava quits unexpectedly or is force killed, echo must be turned on manually w
 | <kbd>F11</kbd> | Toggle fullscreen (SDL / sdl_glsl) |
 | Double click | Toggle fullscreen (SDL / sdl_glsl) |
 
+### Desktop dashboard on Linux
+
+Right-click the window in `sdl` or `sdl_glsl` mode to open the dashboard menu.
+Click a panel name to show or hide it. Click a number beside an enabled panel to
+swap it with the panel in that region. Green numbers appear in the top-right
+corners while the menu is open and stay bright over the dimmed panels. Right-click again,
+click outside the menu, or press Escape to close it.
+
+The spectrum starts on by default. One panel fills the window, two are
+side by side, three are arranged one above two, four form a 2×2 grid, and
+five are arranged two above three. Regions are numbered from left to right,
+starting with the top row. Panel choices last for the current run.
+
+The resource panels show the last 60 seconds and update once a second. CPU
+plots total and per-logical-CPU utilization. Memory plots RAM and swap usage.
+Disk plots read and write rates, and network plots receive and transmit rates.
+The disk and network scales adjust to the visible peaks. Each chart has a
+top-three process list below it.
+
+On a CPU process row, 100% corresponds to one logical CPU. The memory list
+ranks processes by resident memory. The disk list uses the I/O counters
+readable by the current user. The network list ranks observed TCP traffic on
+visible sockets present in both samples. Loopback and UDP traffic are excluded
+from the process ranking.
+
 Configuration
 -------------
 

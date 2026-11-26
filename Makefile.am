@@ -98,7 +98,8 @@ if NCURSES
 endif
 
 if SDL
-    cava_SOURCES += output/sdl_cava.c output/sdl_cava.h
+    cava_SOURCES += output/sdl_cava.c output/sdl_cava.h output/sdl_dashboard.c \
+                    output/sdl_dashboard.h output/dashboard_metrics.c output/dashboard_metrics.h
 endif
 
 if SDL_GLSL

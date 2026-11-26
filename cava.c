@@ -1315,7 +1315,7 @@ Keys:\n\
                 pthread_mutex_unlock(&audio.lock);
 #ifndef _WIN32
 
-                if (output_mode != OUTPUT_SDL) {
+                if (output_mode != OUTPUT_SDL && output_mode != OUTPUT_SDL_GLSL) {
                     if (p.sleep_timer) {
                         int effective_framerate = p.framerate;
                         if (effective_framerate <= 0)
