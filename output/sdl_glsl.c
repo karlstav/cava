@@ -8,6 +8,10 @@
 #include "sdl_glsl.h"
 #include <SDL2/SDL.h>
 
+#ifdef __linux__
+#include "sdl_dashboard.h"
+#endif
+
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -49,6 +53,84 @@ const char *read_file(const char *);
 
 GLuint compile_shader(GLenum type, const char **);
 GLuint program_check(GLuint);
+
+#ifdef __linux__
+static GLuint dashboard_program, dashboard_texture;
+static SDL_Surface *dashboard_surface;
+static SDL_Renderer *dashboard_renderer;
+static GLint spectrum_resolution, spectrum_bar_width, spectrum_bar_spacing;
+static int configured_bar_width, configured_bar_spacing;
+static bool redraw_surface;
+
+static void init_dashboard_gl(void) {
+    // Match the quad already bound by the spectrum renderer.
+    const char *vertex = "#version 330\n"
+                         "layout(location = 0) in vec2 position;\n"
+                         "out vec2 uv;\n"
+                         "void main() {\n"
+                         "    gl_Position = vec4(position, 0.0, 1.0);\n"
+                         "    uv = (position * vec2(1.0, -1.0) + 1.0) * 0.5;\n"
+                         "}\n";
+    const char *fragment = "#version 330\n"
+                           "in vec2 uv;\n"
+                           "out vec4 color;\n"
+                           "uniform sampler2D overlay;\n"
+                           "void main() { color = texture(overlay, uv); }\n";
+    GLuint vs = compile_shader(GL_VERTEX_SHADER, &vertex);
+    GLuint fs = compile_shader(GL_FRAGMENT_SHADER, &fragment);
+    dashboard_program = glCreateProgram();
+    glAttachShader(dashboard_program, vs);
+    glAttachShader(dashboard_program, fs);
+    glLinkProgram(dashboard_program);
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+    if (!program_check(dashboard_program)) {
+        glDeleteProgram(dashboard_program);
+        dashboard_program = 0;
+        return;
+    }
+    glGenTextures(1, &dashboard_texture);
+    glBindTexture(GL_TEXTURE_2D, dashboard_texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+static bool update_dashboard_gl(int width, int height, bool changed) {
+    if (!dashboard_program || width <= 0 || height <= 0)
+        return false;
+    bool resized =
+        !dashboard_surface || dashboard_surface->w != width || dashboard_surface->h != height;
+    if (resized) {
+        SDL_DestroyRenderer(dashboard_renderer);
+        SDL_FreeSurface(dashboard_surface);
+        dashboard_surface =
+            SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL_PIXELFORMAT_RGBA32);
+        dashboard_renderer =
+            dashboard_surface ? SDL_CreateSoftwareRenderer(dashboard_surface) : NULL;
+        if (!dashboard_renderer) {
+            SDL_FreeSurface(dashboard_surface);
+            dashboard_surface = NULL;
+            return false;
+        }
+    }
+    if (changed || resized) {
+        SDL_SetRenderDrawColor(dashboard_renderer, 0, 0, 0, 0);
+        SDL_RenderClear(dashboard_renderer);
+        dashboard_draw(dashboard_renderer);
+        SDL_RenderPresent(dashboard_renderer);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, dashboard_texture);
+        if (resized)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                         dashboard_surface->pixels);
+        else
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE,
+                            dashboard_surface->pixels);
+    }
+    return true;
+}
+#endif
 
 void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
                           char *const vertex_shader, char *const fragmnet_shader) {
@@ -175,6 +257,13 @@ void init_sdl_glsl_window(int width, int height, int x, int y, int full_screen,
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
+#ifdef __linux__
+    init_dashboard_gl();
+    spectrum_resolution = glGetUniformLocation(shading_program, "u_resolution");
+    spectrum_bar_width = glGetUniformLocation(shading_program, "bar_width");
+    spectrum_bar_spacing = glGetUniformLocation(shading_program, "bar_spacing");
+#endif
+
     int error = glGetError();
     if (error != 0) {
         fprintf(stderr, "glError on init: %d\n", error);
@@ -229,9 +318,15 @@ void init_sdl_glsl_surface(int *w, int *h, char *const fg_color_string, char *co
     }
     glUniform3fv(uniform_gradient_colors, 8, (const GLfloat *)gradient_colors);
 
+#ifdef __linux__
+    configured_bar_width = bar_width;
+    configured_bar_spacing = bar_spacing;
+    redraw_surface = true;
+#else
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
     SDL_GL_SwapWindow(glWindow);
+#endif
 }
 
 int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[], int re_paint,
@@ -240,7 +335,22 @@ int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[
     int rc = 0;
     SDL_Event event;
 
-    if (re_paint || continuous_rendering) {
+#ifdef __linux__
+    int width, height, drawable_width, drawable_height;
+    SDL_GetWindowSize(glWindow, &width, &height);
+    SDL_GL_GetDrawableSize(glWindow, &drawable_width, &drawable_height);
+    bool changed = dashboard_update(glWindow);
+    bool overlay = dashboard_has_overlay() && update_dashboard_gl(width, height, changed);
+    SDL_Rect spectrum = overlay ? dashboard_spectrum_rect() : (SDL_Rect){0, 0, width, height};
+    bool draw_spectrum = spectrum.w > 0 && spectrum.h > 0 && width > 0 && height > 0;
+    bool draw_frame =
+        redraw_surface || changed || (draw_spectrum && (re_paint || continuous_rendering));
+    redraw_surface = false;
+#else
+    bool draw_frame = re_paint || continuous_rendering;
+#endif
+
+    if (draw_frame) {
         if (uniform_input_texture != -1) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texture);
@@ -260,16 +370,58 @@ int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[
         }
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+#ifdef __linux__
+        if (draw_spectrum) {
+            int x = spectrum.x * drawable_width / width;
+            int y = spectrum.y * drawable_height / height;
+            int right = (spectrum.x + spectrum.w) * drawable_width / width;
+            int bottom = (spectrum.y + spectrum.h) * drawable_height / height;
+            glViewport(x, drawable_height - bottom, right - x, bottom - y);
+            glUniform3f(spectrum_resolution, spectrum.w, spectrum.h, 0);
+            int bar_width = configured_bar_width * spectrum.w / width;
+            glUniform1i(spectrum_bar_width, bar_width > 0 ? bar_width : 1);
+            glUniform1i(spectrum_bar_spacing, configured_bar_spacing * spectrum.w / width);
+            glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
+        }
+        glViewport(0, 0, drawable_width, drawable_height);
+
+        if (overlay) {
+            glUseProgram(dashboard_program);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, dashboard_texture);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
+            glDisable(GL_BLEND);
+            glUseProgram(shading_program);
+            if (uniform_input_texture != -1)
+                glBindTexture(GL_TEXTURE_2D, texture);
+        }
+#else
         glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
+#endif
         SDL_GL_SwapWindow(glWindow);
 
-        if (uniform_input_texture != -1) {
+        if (uniform_input_texture != -1
+#ifdef __linux__
+            && draw_spectrum
+#endif
+        ) {
             glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+#ifdef __linux__
+            glViewport(0, 0, width, height);
+#endif
             glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, NULL);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
     }
     while (SDL_PollEvent(&event)) {
+#ifdef __linux__
+        if (dashboard_program && dashboard_handle_event(&event))
+            continue;
+        if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_EXPOSED)
+            redraw_surface = true;
+#endif
         if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
             glViewport(0, 0, event.window.data1, event.window.data2);
             if (uniform_input_texture != -1) {
@@ -305,6 +457,19 @@ int draw_sdl_glsl(int bars_count, const float bars[], const float previous_bars[
 
 // general: cleanup
 void cleanup_sdl_glsl(void) {
+#ifdef __linux__
+    dashboard_close();
+    SDL_DestroyRenderer(dashboard_renderer);
+    dashboard_renderer = NULL;
+    SDL_FreeSurface(dashboard_surface);
+    dashboard_surface = NULL;
+    if (dashboard_program)
+        glDeleteProgram(dashboard_program);
+    dashboard_program = 0;
+    if (dashboard_texture)
+        glDeleteTextures(1, &dashboard_texture);
+    dashboard_texture = 0;
+#endif
     if (fbo != 0) {
         glDeleteFramebuffers(1, &fbo);
         fbo = 0;
