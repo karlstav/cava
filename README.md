@@ -699,7 +699,8 @@ click outside the menu, or press Escape to close it.
 The spectrum starts on by default. One panel fills the window, two are
 side by side, three are arranged one above two, four form a 2×2 grid, and
 five are arranged two above three. Regions are numbered from left to right,
-starting with the top row. Panel choices last for the current run.
+starting with the top row. Cava saves the enabled panels and their order when
+you change them and restores the layout the next time it starts.
 
 The resource panels show the last 60 seconds and update once a second. CPU
 plots total and per-logical-CPU utilization. Memory plots RAM and swap usage.

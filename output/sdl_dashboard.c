@@ -6,8 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static const char *const panel_names[] = {"Spectrum", "CPU", "Memory", "Disk", "Network"};
+static const char *const panel_ids[] = {"spectrum", "cpu", "memory", "disk", "network"};
+static const char layout_header[] = "v1\n";
 static const int layouts[][2] = {{0, 0}, {1, 0}, {2, 0}, {1, 2}, {2, 2}, {2, 3}};
 static enum dashboard_panel panels[DASHBOARD_PANEL_COUNT] = {DASHBOARD_SPECTRUM};
 static int panel_count = 1;
@@ -28,7 +31,7 @@ static struct history_point history[HISTORY_SECONDS + 1];
 static int history_head, history_count;
 
 static int window_width, window_height;
-static bool dirty = true, menu_open, sample_started;
+static bool dirty = true, menu_open, sample_started, layout_loaded;
 static Uint32 last_sample;
 static SDL_Point menu_origin, pointer;
 static SDL_Rect menu;
@@ -238,6 +241,96 @@ static const struct history_point *history_point_at(int age) {
     return &history[index];
 }
 
+static char *layout_path(void) {
+    char *dir = SDL_GetPrefPath("cava", "cava");
+    if (!dir)
+        return NULL;
+
+    const char filename[] = "dashboard-layout";
+    size_t size = strlen(dir) + sizeof(filename);
+    char *path = malloc(size);
+    if (path)
+        snprintf(path, size, "%s%s", dir, filename);
+    SDL_free(dir);
+    return path;
+}
+
+static void load_layout(void) {
+    char *path = layout_path();
+    FILE *file = path ? fopen(path, "r") : NULL;
+    free(path);
+    if (!file)
+        return;
+
+    enum dashboard_panel saved[DASHBOARD_PANEL_COUNT];
+    int count = 0;
+    unsigned seen = 0;
+    char line[32];
+    bool valid = fgets(line, sizeof(line), file) && strcmp(line, layout_header) == 0;
+    while (valid && fgets(line, sizeof(line), file)) {
+        char *end = strchr(line, '\n');
+        if (!end || count == DASHBOARD_PANEL_COUNT) {
+            valid = false;
+            break;
+        }
+        *end = '\0';
+
+        int panel = 0;
+        while (panel < DASHBOARD_PANEL_COUNT && strcmp(line, panel_ids[panel]) != 0)
+            panel++;
+        if (panel == DASHBOARD_PANEL_COUNT || (seen & (1u << panel))) {
+            valid = false;
+            break;
+        }
+        seen |= 1u << panel;
+        saved[count++] = panel;
+    }
+
+    if (valid && !ferror(file)) {
+        memcpy(panels, saved, count * sizeof(*saved));
+        panel_count = count;
+    }
+    fclose(file);
+}
+
+static bool write_layout(const char *path, char *temp_path) {
+    int fd = mkstemp(temp_path);
+    if (fd < 0)
+        return false;
+
+    FILE *file = fdopen(fd, "w");
+    bool saved = false;
+    if (file) {
+        fputs(layout_header, file);
+        for (int i = 0; i < panel_count; i++)
+            fprintf(file, "%s\n", panel_ids[panels[i]]);
+        bool complete = !ferror(file);
+        saved = fclose(file) == 0 && complete && rename(temp_path, path) == 0;
+    } else {
+        close(fd);
+    }
+    if (!saved)
+        unlink(temp_path);
+    return saved;
+}
+
+static void save_layout(void) {
+    char *path = layout_path();
+    if (!path) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Could not locate the dashboard layout file");
+        return;
+    }
+
+    size_t size = strlen(path) + sizeof(".XXXXXX");
+    char *temp_path = malloc(size);
+    if (temp_path)
+        snprintf(temp_path, size, "%s.XXXXXX", path);
+    if (!temp_path || !write_layout(path, temp_path))
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Could not save dashboard layout: %s", path);
+    free(temp_path);
+    free(path);
+}
+
 static void toggle_panel(enum dashboard_panel panel) {
     int slot = panel_slot(panel);
     if (slot < 0) {
@@ -257,9 +350,14 @@ static void toggle_panel(enum dashboard_panel panel) {
         }
     }
     layout_panels();
+    save_layout();
 }
 
 bool dashboard_update(SDL_Window *window) {
+    if (!layout_loaded) {
+        load_layout();
+        layout_loaded = true;
+    }
     int width, height;
     SDL_GetWindowSize(window, &width, &height);
     if (width != window_width || height != window_height) {
@@ -316,9 +414,10 @@ bool dashboard_handle_event(const SDL_Event *event) {
                     break;
                 for (int slot = 0; slot < panel_count; slot++) {
                     SDL_Rect target = menu_slot(row, slot);
-                    if (SDL_PointInRect(&pointer, &target)) {
+                    if (slot != current && SDL_PointInRect(&pointer, &target)) {
                         panels[current] = panels[slot];
                         panels[slot] = panel;
+                        save_layout();
                         break;
                     }
                 }
